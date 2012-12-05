@@ -1,0 +1,79 @@
+package torrent.download;
+
+import torrent.download.tracker.Tracker;
+import torrent.util.StringUtil;
+
+public class MagnetLink {
+
+	/**
+	 * Returns if this Magnet link is valid "enough" to be downloaded with JavaTorrent
+	 */
+	private boolean downloadable;
+	/**
+	 * The resulting torrent from this Magnet link
+	 */
+	private Torrent torrent;
+
+	public MagnetLink(String magnetLink) {
+		boolean succeed = true;
+		if (magnetLink.startsWith("magnet:?")) {
+			String[] linkData = magnetLink.split("\\?")[1].split("&");
+			torrent = new Torrent();
+			for (int i = 0; i < linkData.length; i++) {
+				String[] data = linkData[i].split("=");
+				switch (data[0]) {
+				case "dn":
+					linkData[i] = StringUtil.spaceFix(data[1]);
+					torrent.setDisplayName(linkData[1]);
+					System.out.println("Torrent Name: " + torrent.getDisplayName());
+					break;
+
+				case "tr":
+					linkData[i] = StringUtil.removeHex(data[1]);
+					torrent.addTracker(new Tracker(torrent, linkData[i]));
+					break;
+
+				case "xt":
+					String[] subdata = data[1].split(":");
+					if (subdata.length < 3) {
+						succeed = false;
+						System.err.println("XT from MagnetLink is incomplete");
+					} else if (!subdata[0].equals("urn")) {
+						succeed = false;
+						System.err.println("[XT] Expected a URN at position 0");
+					} else if (!subdata[1].equals("btih")) {
+						succeed = false;
+						System.err.println("[XT] Unsupported Hashing: " + subdata[1]);
+					} else if (subdata[2].length() != 40) {
+						succeed = false;
+						System.err.println("[XT] Invalid Hash length: " + subdata[2].length());
+					} else {
+						byte[] hash = new byte[20];
+						for (int j = 0; j < subdata[2].length() / 2; j++) {
+							hash[j] = (byte) Integer.parseInt(subdata[2].substring(j * 2, j * 2 + 2), 16);
+						}
+						torrent.setHash(hash);
+						System.out.println("Torrent Hash: " + subdata[2].toUpperCase());
+					}
+					break;
+
+				default:
+					System.err.println("Unhandled Magnet Data: " + linkData[i]);
+				}
+				downloadable = (torrent.hasHash() && torrent.hasTracker() && succeed);
+			}
+		} else {
+			System.err.println("Invalid Resource");
+			downloadable = false;
+		}
+	}
+
+	public Torrent getTorrent() {
+		return torrent;
+	}
+
+	public boolean isDownloadable() {
+		return downloadable;
+	}
+
+}
