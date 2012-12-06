@@ -21,8 +21,8 @@ public class Manager {
 		peerId[2] = 'T';
 		peerId[3] = '0';
 		peerId[4] = '0';
-		peerId[5] = '0';
-		peerId[6] = '1';
+		peerId[5] = '1';
+		peerId[6] = '0';
 		peerId[7] = '-';
 		for (int i = 8; i < peerId.length; i++) {
 			peerId[i] = (byte) (new Random().nextInt() & 0xFF);

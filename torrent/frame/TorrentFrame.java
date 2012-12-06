@@ -4,9 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.ArrayList;
 
-import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
-import javax.swing.JList;
 
 import torrent.JavaTorrent;
 import torrent.download.Torrent;
@@ -19,7 +17,6 @@ public class TorrentFrame extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private TorrentDetails details;
 	private TorrentList torrentList;
-	private DefaultListModel<Torrent> torrentListModel;
 	private ArrayList<Torrent> torrents;
 
 	public TorrentFrame() {

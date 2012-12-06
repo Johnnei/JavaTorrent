@@ -255,8 +255,8 @@ public class Peer extends Thread implements Logable, ISortable {
 							int index = stream.readInt();
 							int offset = stream.readInt();
 							byte[] data = stream.readByteArray(stream.available());
-							torrent.collectPiece(index, offset, data);
 							synchronized(this) {
+								torrent.collectPiece(index, offset, data);
 								workingQueue.remove(index);
 							}
 							if(readDuration > 30000 || readDuration < 1) {
@@ -317,11 +317,15 @@ public class Peer extends Thread implements Logable, ISortable {
 									if ((int) dictionary.get("total_size") == torrent.getMetadata().getTotalSize()) {
 										stream.moveBack(decoder.remainingChars());
 										byte[] data = stream.readByteArray(stream.available());
-										torrent.collectPiece((int) dictionary.get("piece"), data);
-										workingQueue.remove(-1 - (int)dictionary.get("piece"));
+										synchronized (this) {
+											torrent.collectPiece((int) dictionary.get("piece"), data);
+											workingQueue.remove(-1 - (int)dictionary.get("piece"));
+										}
 									} else {
 										log("Piece Request size check failed: " + dictionary.get("total_size"), true);
-										torrent.collectPiece((int) dictionary.get("piece"), null);
+										synchronized (this) {
+											torrent.collectPiece((int) dictionary.get("piece"), null);
+										}
 									}
 									break;
 
