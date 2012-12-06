@@ -14,7 +14,7 @@ public class TabPeers extends TableBase {
 	private Torrent torrent;
 
 	public TabPeers() {
-		super();
+		super(20);
 	}
 
 	public void setTorrent(Torrent torrent) {
@@ -32,7 +32,6 @@ public class TabPeers extends TableBase {
 	
 	protected void paintData(Graphics g) {
 		if (torrent != null) {
-			int textY = 13;
 			//Sort
 			ArrayList<Peer> peers = torrent.getPeers();
 			Heap peerHeap = new Heap(peers.size());
@@ -43,17 +42,17 @@ public class TabPeers extends TableBase {
 			peerList.sort();
 			//Draw
 			for (int i = 0; i < peerList.getItems().length; i++) {
-				textY += 20;
-				if (textY >= getScrollY() && textY < (getScrollY() + 400)) {
+				if (rowIsVisible()) {
 					Peer peer = (Peer) peerList.getItems()[i];
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
-					g.drawString(peer.toString(), 5, textY - getScrollY());
-					g.drawString(peer.getDownloadRate() + " b/s", 160, textY - getScrollY());
-					g.drawString(peer.getUploadRate() + " b/s", 270, textY - getScrollY());
-					g.drawString(duration + " s", 370, textY - getScrollY());
-					g.drawString("" + peer.getClient().hasPieceCount(), 440, textY - getScrollY());
-					g.drawString(peer.getWorkQueue() + " | " + peer.getMaxWorkLoad() + " | 0", 540, textY - getScrollY());
+					g.drawString(peer.toString(), 5, getTextY());
+					g.drawString(peer.getDownloadRate() + " b/s", 160, getTextY());
+					g.drawString(peer.getUploadRate() + " b/s", 270, getTextY());
+					g.drawString(duration + " s", 370, getTextY());
+					g.drawString("" + peer.getClient().hasPieceCount(), 440, getTextY());
+					g.drawString(peer.getWorkQueue() + " | " + peer.getMaxWorkLoad() + " | 0", 540, getTextY());
 				}
+				advanceLine();
 			}
 		}
 	}
