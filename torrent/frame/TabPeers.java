@@ -27,7 +27,7 @@ public class TabPeers extends TableBase {
 		g.drawString("Upload Speed", 270, 13);
 		g.drawString("Time idle", 370, 13);
 		g.drawString("Having Pieces", 440, 13);
-		g.drawString("Requests (Down | maxDown | up)", 540, 13);
+		g.drawString("Requests", 540, 13);
 	}
 	
 	protected void paintData(Graphics g) {
@@ -50,7 +50,7 @@ public class TabPeers extends TableBase {
 					g.drawString(peer.getUploadRate() + " b/s", 270, getTextY());
 					g.drawString(duration + " s", 370, getTextY());
 					g.drawString("" + peer.getClient().hasPieceCount(), 440, getTextY());
-					g.drawString(peer.getWorkQueue() + " | " + peer.getMaxWorkLoad() + " | 0", 540, getTextY());
+					g.drawString(peer.getWorkQueue() + " | 0", 540, getTextY());
 				}
 				advanceLine();
 			}

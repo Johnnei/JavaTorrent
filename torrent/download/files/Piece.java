@@ -2,8 +2,9 @@ package torrent.download.files;
 
 import torrent.download.Torrent;
 import torrent.network.Message;
+import torrent.util.ISortable;
 
-public class Piece extends PieceInfo {
+public class Piece extends PieceInfo implements ISortable {
 
 	/**
 	 * The pieces used to reference to any smaller sub-piece
@@ -163,6 +164,18 @@ public class Piece extends PieceInfo {
 		int count = 0;
 		for(int i = 0; i < subPieces.length; i++) {
 			if(subPieces[i].isRequested() && !subPieces[i].isDone())
+				count++;
+		}
+		return count;
+	}
+
+	@Override
+	public int getValue() {
+		int count = 0;
+		for(int i = 0; i < subPieces.length; i++) {
+			if(subPieces[i].isRequested())
+				count++;
+			if(subPieces[i].isDone()) //Done counts for 2
 				count++;
 		}
 		return count;

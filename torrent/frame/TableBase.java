@@ -41,6 +41,7 @@ public abstract class TableBase extends JPanel implements MouseWheelListener {
 	@Override
 	public void paintComponent(Graphics g) {
 		//Background
+		drawY = 0;
 		g.setColor(getBackgroundColor());
 		g.fillRect(0, 0, getWidth(), getHeight());
 		g.setColor(getForegroundColor());
