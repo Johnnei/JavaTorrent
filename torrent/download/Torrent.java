@@ -347,8 +347,10 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public void cancelPiece(int index, int piece) {
 		if(index < 0) {
+			log("Canceling MetaPiece: " + (-(index + 1)));
 			metadata.getPiece(-(index + 1)).setRequested(false);
 		} else {
+			log("Canceling Piece: " + index + "-" + piece);
 			torrentFiles.getPiece(index).cancel(piece);
 		}
 	}

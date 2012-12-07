@@ -58,7 +58,7 @@ public class Peer extends Thread implements Logable, ISortable {
 	/**
 	 * The working queue, Remembers which pieces are requested<br/>
 	 */
-	private HashMap<Integer, Integer> workingQueue;
+	private HashMap<Job, Integer> workingQueue;
 	/**
 	 * The maximum amount of simultaneous piece requests<br/>
 	 * This is being corrected after every piece receive
@@ -74,10 +74,6 @@ public class Peer extends Thread implements Logable, ISortable {
 	private int uploadRate;
 	private boolean passedHandshake;
 
-	public static void addReservedByte(byte bit) {
-
-	}
-
 	public Peer(Torrent torrent) {
 		super("Peer Thread");
 		this.torrent = torrent;
@@ -86,7 +82,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		myClient = new Client();
 		status = "";
 		messageQueue = new ArrayList<Message>();
-		workingQueue = new HashMap<Integer, Integer>();
+		workingQueue = new HashMap<Job, Integer>();
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
 		downloadRate = 0;
@@ -257,7 +253,7 @@ public class Peer extends Thread implements Logable, ISortable {
 							byte[] data = stream.readByteArray(stream.available());
 							synchronized(this) {
 								torrent.collectPiece(index, offset, data);
-								workingQueue.remove(index);
+								workingQueue.remove(new Job(index, torrent.getTorrentFiles().getSubpieceIndexByOffset(offset)));
 							}
 							if(readDuration > 30000 || readDuration < 1) {
 								maxWorkload = 1;
@@ -319,7 +315,7 @@ public class Peer extends Thread implements Logable, ISortable {
 										byte[] data = stream.readByteArray(stream.available());
 										synchronized (this) {
 											torrent.collectPiece((int) dictionary.get("piece"), data);
-											workingQueue.remove(-1 - (int)dictionary.get("piece"));
+											workingQueue.remove(new Job(-1 - (int)dictionary.get("piece")));
 										}
 									} else {
 										log("Piece Request size check failed: " + dictionary.get("total_size"), true);
@@ -368,9 +364,8 @@ public class Peer extends Thread implements Logable, ISortable {
 		if (workingQueue.size() > 0) {
 			Object[] keys = workingQueue.keySet().toArray();
 			for (int i = 0; i < keys.length; i++) {
-				int key = (int) keys[i];
-				int subPiece = workingQueue.get(keys[i]);
-				torrent.cancelPiece(key, subPiece);
+				Job job = (Job) keys[i];
+				torrent.cancelPiece(job.getPieceIndex(), job.getSubpiece());
 			}
 		}
 		if (socket != null) {
@@ -438,7 +433,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		if (result.length > 0) {
 			synchronized(this) {
 				messageQueue.add(m);
-				workingQueue.put(piece.getIndex(), result[0]);
+				workingQueue.put(new Job(piece.getIndex(), result[0]), 0);
 			}
 			log("Requesting Piece: " + piece.getIndex() + "-" + result[0] + " (" + result[1] + " bytes)");
 		} else {
@@ -462,7 +457,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		m.getStream().writeString(bencoded);
 		synchronized (this) {
 			messageQueue.add(m);
-			workingQueue.put(-1 - index, 0);
+			workingQueue.put(new Job(-1 - index), 0);
 		}
 	}
 

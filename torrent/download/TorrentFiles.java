@@ -220,4 +220,8 @@ public class TorrentFiles implements IDownloadable {
 		return undownloaded;
 	}
 
+	public int getSubpieceIndexByOffset(int offset) {
+		return offset / pieceSize;
+	}
+
 }
