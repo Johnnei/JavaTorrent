@@ -1,40 +1,24 @@
 package torrent.frame;
 
-import java.awt.BorderLayout;
-
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.SwingUtilities;
-import javax.swing.table.DefaultTableModel;
+import java.awt.Graphics;
 
 import torrent.download.Torrent;
 import torrent.download.tracker.Tracker;
 
-public class TabTracker extends JPanel {
+public class TabTracker extends TableBase {
 
 	public static final long serialVersionUID = 1L;
-
-	private final Object[] HEADER = { "Tracker", "Status", "Seeders", "Leechers" };
-	private JTable table;
-	private DefaultTableModel tableModel;
-	private JScrollPane scrollPane;
 	private Torrent torrent;
 
 	public TabTracker() {
-		tableModel = new DefaultTableModel(new Object[][] {}, HEADER);
-		table = new JTable(tableModel);
-		table.setFillsViewportHeight(true);
-		scrollPane = new JScrollPane(table);
-		setLayout(new BorderLayout());
-		add(scrollPane, BorderLayout.CENTER);
+		super(25);	
 	}
 
 	public void setTorrent(Torrent torrent) {
 		this.torrent = torrent;
 	}
 
-	public void updateData() {
+	/*public void updateData() {
 		if (torrent == null)
 			return;
 		Tracker[] trackers = torrent.getTrackers();
@@ -60,5 +44,31 @@ public class TabTracker extends JPanel {
 				tableModel.setDataVector(invokeData, HEADER);
 			}
 		});
+	}*/
+
+	@Override
+	protected void paintHeader(Graphics g) {
+		g.drawString("Tracker", 5, getHeaderTextY());
+		g.drawString("Status", 200, getHeaderTextY());
+		g.drawString("Seeders", 350, getHeaderTextY());
+		g.drawString("Leechers", 450, getHeaderTextY());
+	}
+
+	@Override
+	protected void paintData(Graphics g) {
+		if(torrent != null) {
+			Tracker[] trackers = torrent.getTrackers();
+			for(int i = 0; i < trackers.length; i++) {
+				if(isVisible()) {
+					if(trackers[i] != null) {
+						g.drawString(trackers[i].getTrackerName(), 5, getTextY());
+						g.drawString(trackers[i].getStatus(), 200, getTextY());
+						g.drawString("" + trackers[i].getSeeders(), 350, getTextY());
+						g.drawString("" + trackers[i].getLeechers(), 450, getTextY());
+					}
+				}
+				advanceLine();
+			}
+		}
 	}
 }

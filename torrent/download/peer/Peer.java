@@ -152,7 +152,14 @@ public class Peer extends Thread implements Logable, ISortable {
 		long handShakeSentTime = System.currentTimeMillis();
 		while (inStream.available() < 68) {
 			Torrent.sleep(10);
+			if (System.currentTimeMillis() - handShakeSentTime > 5000) {
+				if(inStream.available() == 0) {
+					socket.close();
+					return;
+				}
+			}
 			if (System.currentTimeMillis() - handShakeSentTime > 30000) {
+				log("Handshake error: " + inStream.available() + " bytes in 30 seconds", true);
 				socket.close();
 				return;
 			}
@@ -191,189 +198,195 @@ public class Peer extends Thread implements Logable, ISortable {
 		connect();
 		while (torrent.keepDownloading() && !closed()) {
 			try {
-				if (inStream.available() > 0) {
-					int length = inStream.readInt();
-					if (length == 0) {
-						// Keep-Alive
-					} else {
-						int messageId = inStream.readByte();
-						length -= 1;
-						Stream stream = new Stream(length);
-						long readDuration = System.currentTimeMillis();
-						if (length > 0) {
-							stream.fill(inStream.readByteArray(length));
-							readDuration = System.currentTimeMillis() - readDuration;
-						}
-						switch (messageId) {
-						case BitTorrent.MESSAGE_CHOKE:
-							log("Got choked");
-							myClient.choke();
-							break;
-
-						case BitTorrent.MESSAGE_UNCHOKE:
-							log("Got unchoked");
-							myClient.unchoke();
-							break;
-
-						case BitTorrent.MESSAGE_INTERESTED:
-							log("They have interest");
-							myClient.interested();
-							break;
-
-						case BitTorrent.MESSAGE_UNINTERESTED:
-							log("They no longer have interest");
-							myClient.uninterested();
-							break;
-
-						case BitTorrent.MESSAGE_HAVE:
-							peerClient.addPiece(stream.readInt());
-							break;
-
-						case BitTorrent.MESSAGE_BITFIELD:
-							int pieceIndex = 0;
-							while (stream.available() > 0) {
-								int b = stream.readByte();
-								for (int bit = 0; bit < 8; bit++) {
-									if (((b >> bit) & 1) == 1) {
-										peerClient.addPiece(pieceIndex);
-									}
-									pieceIndex++;
-								}
-							}
-							break;
-
-						case BitTorrent.MESSAGE_REQUEST:
-							PieceRequest pr = new PieceRequest(stream.readInt(), stream.readInt(), stream.readInt());
-							peerClient.requesting(pr);
-							break;
-
-						case BitTorrent.MESSAGE_PIECE: {
-							int index = stream.readInt();
-							int offset = stream.readInt();
-							byte[] data = stream.readByteArray(stream.available());
-							synchronized(this) {
-								torrent.collectPiece(index, offset, data);
-								workingQueue.remove(new Job(index, torrent.getTorrentFiles().getSubpieceIndexByOffset(offset)));
-							}
-							if(readDuration > 30000 || readDuration < 1) {
-								maxWorkload = 1;
-							} else if(readDuration >= 1000) {
-								maxWorkload = 2;
-							} else {
-								maxWorkload = (int)Math.ceil(1000D / readDuration);
-							}
-							break;
-						}
-
-						case BitTorrent.MESSAGE_EXTENDED_MESSAGE:
-							int extendedMessageId = stream.readByte();
-							length -= 1;
-							switch (extendedMessageId) {
-							case BitTorrent.EXTENDED_MESSAGE_HANDSHAKE: {
-								String bencoded = stream.readString(length);
-								Bencode bencoding = new Bencode(bencoded);
-								HashMap<String, Object> dictionary = bencoding.decodeDictionary();
-								Object o = dictionary.get("m");
-								if (o == null) {
-									log("Error: M Dictionary is missing", true);
-								} else {
-									HashMap<String, Object> data = (HashMap<String, Object>) o;
-									if (data.containsKey("ut_metadata")) {
-										peerClient.addExtentionID("ut_metadata", (int) data.get("ut_metadata"));
-										if(dictionary.get("metadata_size") != null)
-											torrent.getMetadata().setFilesize((int) dictionary.get("metadata_size"));
-									}
-								}
-								break;
-							}
-
-							case UTMetadata.EXTENDED_MESSAGE_UT_METADATA: {
-
-								Bencode decoder = new Bencode(stream.readString(length));
-								HashMap<String, Object> dictionary = decoder.decodeDictionary();
-
-								switch ((int) dictionary.get("msg_type")) {
-								case UTMetadata.UT_METADATA_REQUEST:
-									Bencoder encode = new Bencoder();
-									encode.dictionaryStart();
-									encode.string("msg_type");
-									encode.integer(UTMetadata.UT_METADATA_REJECT);
-									encode.string("piece");
-									encode.integer((int) dictionary.get("piece"));
-									encode.dictionaryEnd();
-									String bencodedReject = encode.getBencodedData();
-									Message m = new Message(2 + bencodedReject.length());
-									m.getStream().writeByte(BitTorrent.MESSAGE_EXTENDED_MESSAGE);
-									m.getStream().writeByte(peerClient.getExtentionID("ut_metadata"));
-									m.getStream().writeString(bencodedReject);
-									messageQueue.add(m);
-									break;
-
-								case UTMetadata.UT_METADATA_DATA:
-									if ((int) dictionary.get("total_size") == torrent.getMetadata().getTotalSize()) {
-										stream.moveBack(decoder.remainingChars());
-										byte[] data = stream.readByteArray(stream.available());
-										synchronized (this) {
-											torrent.collectPiece((int) dictionary.get("piece"), data);
-											workingQueue.remove(new Job(-1 - (int)dictionary.get("piece")));
-										}
-									} else {
-										log("Piece Request size check failed: " + dictionary.get("total_size"), true);
-										synchronized (this) {
-											torrent.collectPiece((int) dictionary.get("piece"), null);
-										}
-									}
-									break;
-
-								case UTMetadata.UT_METADATA_REJECT:
-									log("Piece Request got rejected: " + dictionary.get("piece"), true);
-									torrent.collectPiece((int) dictionary.get("piece"), null);
-									break;
-								}
-
-							}
-								break;
-							}
-							break;
-
-						default:
-							log("Unhandled message: " + messageId, true);
-							break;
-						}
-					}
-					lastActivity = System.currentTimeMillis();
-				}
-				if (messageQueue.size() > 0) {
-					Message message = messageQueue.remove(0);
-					outStream.write(message.getMessage());
-				}
-				if (System.currentTimeMillis() - lastActivity > 90000) {// 1.5 Minute
-					if (peerClient.isInterested() && workingQueue.size() == 0) {
-						Message m = new Message(0);
-						lastActivity = System.currentTimeMillis();
-						addToQueue(m);
-					} else if (System.currentTimeMillis() - lastActivity > 120000) {// 2 Minutes
-						close();
-					}
-				}
+				readMessage();
+				sendMessage();
+				checkDisconnect();
 			} catch (IOException e) {
 				close();
 			}
 			Torrent.sleep(1);
 		}
-		if (workingQueue.size() > 0) {
-			Object[] keys = workingQueue.keySet().toArray();
-			for (int i = 0; i < keys.length; i++) {
-				Job job = (Job) keys[i];
-				torrent.cancelPiece(job.getPieceIndex(), job.getSubpiece());
+		close();
+		setStatus("Connection closed");
+	}
+	
+	private void readMessage() throws IOException {
+		if (inStream.available() > 0) {
+			int length = inStream.readInt();
+			if (length == 0) {
+				// Keep-Alive
+			} else {
+				int messageId = inStream.readByte();
+				length -= 1;
+				Stream stream = new Stream(length);
+				long readDuration = System.currentTimeMillis();
+				if (length > 0) {
+					stream.fill(inStream.readByteArray(length));
+					readDuration = System.currentTimeMillis() - readDuration;
+				}
+				switch (messageId) {
+				case BitTorrent.MESSAGE_CHOKE:
+					myClient.choke();
+					cancelAllPieces();
+					break;
+
+				case BitTorrent.MESSAGE_UNCHOKE:
+					myClient.unchoke();
+					break;
+
+				case BitTorrent.MESSAGE_INTERESTED:
+					myClient.interested();
+					break;
+
+				case BitTorrent.MESSAGE_UNINTERESTED:
+					myClient.uninterested();
+					break;
+
+				case BitTorrent.MESSAGE_HAVE:
+					peerClient.addPiece(stream.readInt());
+					break;
+
+				case BitTorrent.MESSAGE_BITFIELD:
+					int pieceIndex = 0;
+					while (stream.available() > 0) {
+						int b = stream.readByte();
+						for (int bit = 0; bit < 8; bit++) {
+							if (((b >> bit) & 1) == 1) {
+								peerClient.addPiece(pieceIndex);
+							}
+							pieceIndex++;
+						}
+					}
+					break;
+
+				case BitTorrent.MESSAGE_REQUEST:
+					PieceRequest pr = new PieceRequest(stream.readInt(), stream.readInt(), stream.readInt());
+					peerClient.requesting(pr);
+					break;
+
+				case BitTorrent.MESSAGE_PIECE: {
+					int index = stream.readInt();
+					int offset = stream.readInt();
+					byte[] data = stream.readByteArray(stream.available());
+					synchronized(this) {
+						torrent.collectPiece(index, offset, data);
+						workingQueue.remove(new Job(index, torrent.getTorrentFiles().getBlockIndexByOffset(offset)));
+					}
+					if(readDuration > 30000 || readDuration < 1) {
+						maxWorkload = 1;
+					} else if(readDuration >= 1000) {
+						maxWorkload = 2;
+					} else {
+						maxWorkload = (maxWorkload + (int)Math.ceil(1000D / readDuration)) / 2;
+					}
+					break;
+				}
+
+				case BitTorrent.MESSAGE_EXTENDED_MESSAGE:
+					int extendedMessageId = stream.readByte();
+					length -= 1;
+					switch (extendedMessageId) {
+					case BitTorrent.EXTENDED_MESSAGE_HANDSHAKE: {
+						String bencoded = stream.readString(length);
+						Bencode bencoding = new Bencode(bencoded);
+						HashMap<String, Object> dictionary = bencoding.decodeDictionary();
+						Object o = dictionary.get("m");
+						if (o == null) {
+							log("Error: M Dictionary is missing", true);
+						} else {
+							HashMap<String, Object> data = (HashMap<String, Object>) o;
+							if (data.containsKey("ut_metadata")) {
+								peerClient.addExtentionID("ut_metadata", (int) data.get("ut_metadata"));
+								if(dictionary.get("metadata_size") != null)
+									torrent.getMetadata().setFilesize((int) dictionary.get("metadata_size"));
+							}
+						}
+						break;
+					}
+
+					case UTMetadata.EXTENDED_MESSAGE_UT_METADATA: {
+
+						Bencode decoder = new Bencode(stream.readString(length));
+						HashMap<String, Object> dictionary = decoder.decodeDictionary();
+
+						switch ((int) dictionary.get("msg_type")) {
+						case UTMetadata.UT_METADATA_REQUEST:
+							Bencoder encode = new Bencoder();
+							encode.dictionaryStart();
+							encode.string("msg_type");
+							encode.integer(UTMetadata.UT_METADATA_REJECT);
+							encode.string("piece");
+							encode.integer((int) dictionary.get("piece"));
+							encode.dictionaryEnd();
+							String bencodedReject = encode.getBencodedData();
+							Message m = new Message(2 + bencodedReject.length());
+							m.getStream().writeByte(BitTorrent.MESSAGE_EXTENDED_MESSAGE);
+							m.getStream().writeByte(peerClient.getExtentionID("ut_metadata"));
+							m.getStream().writeString(bencodedReject);
+							messageQueue.add(m);
+							break;
+
+						case UTMetadata.UT_METADATA_DATA:
+							if ((int) dictionary.get("total_size") == torrent.getMetadata().getTotalSize()) {
+								stream.moveBack(decoder.remainingChars());
+								byte[] data = stream.readByteArray(stream.available());
+								synchronized (this) {
+									torrent.collectPiece((int) dictionary.get("piece"), data);
+									workingQueue.remove(new Job(-1 - (int)dictionary.get("piece")));
+								}
+							} else {
+								log("Piece Request size check failed: " + dictionary.get("total_size"), true);
+								synchronized (this) {
+									torrent.collectPiece((int) dictionary.get("piece"), null);
+								}
+							}
+							break;
+
+						case UTMetadata.UT_METADATA_REJECT:
+							log("Piece Request got rejected: " + dictionary.get("piece"), true);
+							torrent.collectPiece((int) dictionary.get("piece"), null);
+							break;
+						}
+
+					}
+						break;
+					}
+					break;
+
+				default:
+					log("Unhandled message: " + messageId, true);
+					break;
+				}
 			}
+			lastActivity = System.currentTimeMillis();
 		}
-		if (socket != null) {
-			if (!socket.isClosed()) {
+	}
+	
+	private void sendMessage() throws IOException {
+		if (messageQueue.size() > 0) {
+			Message message = messageQueue.remove(0);
+			outStream.write(message.getMessage());
+			lastActivity = System.currentTimeMillis();
+		}
+	}
+	
+	private void checkDisconnect() {
+		long millisSinceLastAction = System.currentTimeMillis() - lastActivity;
+		if (millisSinceLastAction > 90000) {// 1.5 Minute
+			if (workingQueue.size() > 0) {
+				close();
+			} else if (!myClient.isChoked()) {
+				if(workingQueue.size() == 0) {
+					addToQueue(new Message(0));
+				} else {
+					close();
+				}
+			} else {
 				close();
 			}
+		} else if (millisSinceLastAction > 120000) {// 2 Minutes
+			close();
 		}
-		setStatus("Connection closed");
 	}
 
 	/**
@@ -522,13 +535,29 @@ public class Peer extends Thread implements Logable, ISortable {
 	public int getUploadRate() {
 		return uploadRate;
 	}
+	
+	/**
+	 * Cancels all pieces
+	 */
+	public void cancelAllPieces() {
+		if (workingQueue.size() > 0) {
+			Object[] keys = workingQueue.keySet().toArray();
+			for (int i = 0; i < keys.length; i++) {
+				Job job = (Job) keys[i];
+				torrent.cancelPiece(job.getPieceIndex(), job.getSubpiece());
+			}
+		}
+	}
 
 	public void close() {
 		try {
-			if (socket != null)
-				socket.close();
+			if (socket != null) {
+				if(!socket.isClosed())
+					socket.close();
+			}
 		} catch (IOException e) {
 		}
+		cancelAllPieces();
 	}
 
 	public boolean getPassedHandshake() {

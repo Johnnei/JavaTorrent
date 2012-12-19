@@ -68,7 +68,7 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * The default request size of 16KB
 	 */
-	public static final int REQUEST_SIZE = 1 << 15;
+	public static final int REQUEST_SIZE = 1 << 14;
 
 	/**
 	 * Creates a torrent with space for 10 trackers
@@ -84,7 +84,7 @@ public class Torrent extends Thread implements Logable {
 		metadata = new Metadata();
 		status = "Parsing Magnet Link";
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(500, 1.5F);
+		peerManager = new BurstPeerManager(250, 1.5F);
 		System.setOut(new Logger(System.out));
 	}
 
@@ -224,12 +224,17 @@ public class Torrent extends Thread implements Logable {
 	 * Checks if the peers are still connected
 	 */
 	private synchronized void checkPeers() {
+		int dcCount = 0;
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p.closed()) {
 				peers.remove(i--);
+				dcCount++;
 				continue;
 			}
+		}
+		if(dcCount > 0) {
+			log("Removed " + dcCount + " disconnected peers");
 		}
 	}
 
@@ -248,6 +253,7 @@ public class Torrent extends Thread implements Logable {
 						Message m = new Message(1);
 						m.getStream().writeByte(BitTorrent.MESSAGE_INTERESTED);
 						p.addToQueue(m);
+						p.getClient().interested();
 					}
 					break;
 				}
@@ -256,6 +262,7 @@ public class Torrent extends Thread implements Logable {
 				Message m = new Message(1);
 				m.getStream().writeByte(BitTorrent.MESSAGE_UNINTERESTED);
 				p.addToQueue(m);
+				p.getClient().uninterested();
 			}
 		}
 	}
@@ -347,10 +354,8 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public void cancelPiece(int index, int piece) {
 		if(index < 0) {
-			log("Canceling MetaPiece: " + (-(index + 1)));
 			metadata.getPiece(-(index + 1)).setRequested(false);
 		} else {
-			log("Canceling Piece: " + index + "-" + piece);
 			torrentFiles.getPiece(index).cancel(piece);
 		}
 	}
@@ -359,7 +364,7 @@ public class Torrent extends Thread implements Logable {
 		synchronized (this) {
 			torrentFiles.fillPiece(index, offset, data);
 			log("Received Piece: " + index + "-" + (offset / REQUEST_SIZE));
-			if (torrentFiles.getPiece(index).hasAllSubpieces()) {
+			if (torrentFiles.getPiece(index).hasAllBlocks()) {
 				if (torrentFiles.getPiece(index).checkHash()) {
 					try {
 						torrentFiles.save(index);
@@ -453,6 +458,10 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 		return ulRate;
+	}
+	
+	public int getConnectingCount() {
+		return peers.size() - getSeedCount() - getLeecherCount();
 	}
 
 	public int getSeedCount() {

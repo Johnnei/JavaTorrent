@@ -31,10 +31,10 @@ public class TabPieces extends TableBase {
 	}
 	
 	protected void paintHeader(Graphics g) {
-		g.drawString("Piece #", 5, 13);
-		g.drawString("Size", 100, 13);
-		g.drawString("Progress", 200, 13);
-		g.drawString("Subpieces (Remaining | Requested)", 300, 13);
+		g.drawString("Piece #", 5, getHeaderTextY());
+		g.drawString("Size", 100, getHeaderTextY());
+		g.drawString("Progress", 200, getHeaderTextY());
+		g.drawString("Subpieces (Remaining | Requested)", 300, getHeaderTextY());
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class TabPieces extends TableBase {
 				g.drawString("" + p.getIndex(), 5, getTextY());
 				g.drawString("" + p.getSize(), 100, getTextY());
 				g.drawString(p.getProgress() + "%", 200, getTextY());
-				g.drawString((p.getSubpieceCount() - p.getDoneCount()) + " | " + p.getRequestedCount(), 300, getTextY());
+				g.drawString((p.getBlockCount() - p.getDoneCount()) + " | " + p.getRequestedCount(), 300, getTextY());
 			}
 			advanceLine();
 		}

@@ -16,9 +16,4 @@ public class Message {
 	public byte[] getMessage() {
 		return stream.getBuffer();
 	}
-
-	public byte getMessageId() {
-		return stream.getBuffer()[5];
-	}
-
 }

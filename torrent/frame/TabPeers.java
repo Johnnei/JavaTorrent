@@ -22,12 +22,13 @@ public class TabPeers extends TableBase {
 	}
 
 	protected void paintHeader(Graphics g) {
-		g.drawString("IP", 5, 13);
-		g.drawString("Download Speed", 160, 13);
-		g.drawString("Upload Speed", 270, 13);
-		g.drawString("Time idle", 370, 13);
-		g.drawString("Having Pieces", 440, 13);
-		g.drawString("Requests", 540, 13);
+		g.drawString("IP", 5, getHeaderTextY());
+		g.drawString("Download Speed", 160, getHeaderTextY());
+		g.drawString("Upload Speed", 270, getHeaderTextY());
+		g.drawString("Time idle", 370, getHeaderTextY());
+		g.drawString("Having Pieces", 440, getHeaderTextY());
+		g.drawString("Requests", 540, getHeaderTextY());
+		g.drawString("Choked | Interested", 610, getHeaderTextY());
 	}
 	
 	protected void paintData(Graphics g) {
@@ -36,7 +37,9 @@ public class TabPeers extends TableBase {
 			ArrayList<Peer> peers = torrent.getPeers();
 			Heap peerHeap = new Heap(peers.size());
 			for (int i = 0; i < peers.size(); i++) {
-				peerHeap.add(peers.get(i));
+				Peer p = peers.get(i);
+				if(p.getPassedHandshake())
+					peerHeap.add(p);
 			}
 			HeapSort peerList = new HeapSort(peerHeap);
 			peerList.sort();
@@ -51,6 +54,7 @@ public class TabPeers extends TableBase {
 					g.drawString(duration + " s", 370, getTextY());
 					g.drawString("" + peer.getClient().hasPieceCount(), 440, getTextY());
 					g.drawString(peer.getWorkQueue() + " | 0", 540, getTextY());
+					g.drawString(peer.getMyClient().isChoked() + " | " + peer.getClient().isInterested(), 610, getTextY());
 				}
 				advanceLine();
 			}

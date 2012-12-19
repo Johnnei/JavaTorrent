@@ -2,12 +2,14 @@ package torrent.frame;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
 import javax.swing.JPanel;
 
-public abstract class TableBase extends JPanel implements MouseWheelListener {
+public abstract class TableBase extends JPanel implements MouseListener, MouseWheelListener {
 	
 	/**
 	 * 
@@ -28,6 +30,7 @@ public abstract class TableBase extends JPanel implements MouseWheelListener {
 	
 	public TableBase(int rowSize) {
 		addMouseWheelListener(this);
+		addMouseListener(this);
 		rowHeight = rowSize;
 	}
 	
@@ -101,6 +104,14 @@ public abstract class TableBase extends JPanel implements MouseWheelListener {
 	public int getTextY() {
 		return getDrawY() + (rowHeight / 2);
 	}
+	
+	/**
+	 * Gets the header text height for drawString
+	 * @return
+	 */
+	public int getHeaderTextY() {
+		return (rowHeight / 2);
+	}
 
 	/**
 	 * Gets the current Scroll Y offset
@@ -108,5 +119,35 @@ public abstract class TableBase extends JPanel implements MouseWheelListener {
 	 */
 	public int getScrollY() {
 		return scrollY * rowHeight;
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 }

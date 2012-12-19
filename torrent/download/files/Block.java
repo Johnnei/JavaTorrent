@@ -1,11 +1,11 @@
 package torrent.download.files;
 
-public class SubPiece extends PieceInfo {
+public class Block extends PieceInfo {
 
 	private boolean requested;
 	private boolean done;
 
-	public SubPiece(int index, int size) {
+	public Block(int index, int size) {
 		super(index, size);
 		requested = false;
 		done = false;

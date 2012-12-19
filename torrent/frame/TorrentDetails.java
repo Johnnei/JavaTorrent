@@ -51,7 +51,6 @@ public class TorrentDetails extends JTabbedPane {
 	}
 
 	public void updateData() {
-		tabTracker.updateData();
 		tabFiles.updateData();
 	}
 

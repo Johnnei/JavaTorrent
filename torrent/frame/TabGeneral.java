@@ -26,6 +26,7 @@ public class TabGeneral extends JPanel {
 		String pieces = "Pieces: ";
 		String peers = "Peers: ";
 		String leechers = "Leechers: ";
+		String pending = "Pending Connections: ";
 		String download = "Download Speed: ";
 		String upload = "Upload Speed: ";
 
@@ -39,6 +40,7 @@ public class TabGeneral extends JPanel {
 				totalSize += torrent.getTorrentFiles().getTotalSize() + " bytes";
 				pieces += torrent.getTorrentFiles().getPieceCount();
 			}
+			pending += torrent.getConnectingCount();
 			peers += torrent.getSeedCount();
 			leechers += torrent.getLeecherCount();
 			download += StringUtil.speedToString(torrent.getDownloadRate());
@@ -64,8 +66,9 @@ public class TabGeneral extends JPanel {
 		int x = getWidth() / 2;
 		g.drawString(peers, x, 50);
 		g.drawString(leechers, x, 75);
-		g.drawString(download, x, 100);
-		g.drawString(upload, x, 125);
+		g.drawString(pending, x, 100);
+		g.drawString(download, x, 125);
+		g.drawString(upload, x, 150);
 	}
 
 }
