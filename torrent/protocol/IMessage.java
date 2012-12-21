@@ -22,7 +22,7 @@ public interface IMessage {
 	 */
 	public void process(Peer peer);
 	/**
-	 * The length of the message
+	 * The length of the message (only needed on writing)
 	 * @return
 	 * integer
 	 */

@@ -7,14 +7,31 @@ import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.Message;
 import torrent.network.Stream;
+import torrent.protocol.messages.MessageBitfield;
+import torrent.protocol.messages.MessageChoke;
+import torrent.protocol.messages.MessageHave;
+import torrent.protocol.messages.MessageInterested;
 import torrent.protocol.messages.MessageKeepAlive;
+import torrent.protocol.messages.MessageRequest;
+import torrent.protocol.messages.MessageUnchoke;
+import torrent.protocol.messages.MessageUninterested;
 
 public class MessageUtils {
 	
 	private static MessageUtils instance;
 	
 	private MessageUtils() {
-		
+		registerMessage(new MessageChoke());
+		registerMessage(new MessageUnchoke());
+		registerMessage(new MessageInterested());
+		registerMessage(new MessageUninterested());
+		registerMessage(new MessageHave());
+		registerMessage(new MessageBitfield());
+		registerMessage(new MessageRequest());
+	}
+	
+	private void registerMessage(IMessage message) {
+		idToMessage.put(message.getId(), message);
 	}
 	
 	public static MessageUtils getUtils() {
@@ -30,11 +47,11 @@ public class MessageUtils {
 		if(length == 0) {
 			return new MessageKeepAlive();
 		} else {
-			stream.fill(inStream.readByteArray(4)); //Read ID
-			int id = stream.readInt();
+			stream.fill(inStream.readByteArray(1)); //Read ID
+			int id = stream.readByte();
 			try {
 				IMessage message = idToMessage.get(id).getClass().newInstance();
-				stream.fill(inStream.readByteArray(message.getLength() - 1));
+				stream.fill(inStream.readByteArray(length - 1));
 				message.read(stream);
 				return message;
 			} catch (IllegalAccessException | InstantiationException ex ) {

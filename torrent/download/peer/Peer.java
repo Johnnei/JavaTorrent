@@ -473,6 +473,10 @@ public class Peer extends Thread implements Logable, ISortable {
 			workingQueue.put(new Job(-1 - index), 0);
 		}
 	}
+	
+	public void removeFromQueue(Job job) {
+		workingQueue.remove(job);
+	}
 
 	public boolean hasExtentionId(String extention) {
 		return peerClient.hasExtentionID(extention);
@@ -566,6 +570,10 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	public long getLastActivity() {
 		return lastActivity;
+	}
+	
+	public Torrent getTorrent() {
+		return torrent;
 	}
 
 	@Override
