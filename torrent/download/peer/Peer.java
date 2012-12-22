@@ -19,6 +19,7 @@ import torrent.network.Message;
 import torrent.network.PieceRequest;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
+import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
 import torrent.util.ISortable;
 import torrent.util.StringUtil;
@@ -121,7 +122,7 @@ public class Peer extends Thread implements Logable, ISortable {
 			encoder.string("m");
 			encoder.dictionaryStart();
 			encoder.string("ut_metadata");
-			encoder.integer(UTMetadata.EXTENDED_MESSAGE_UT_METADATA);
+			encoder.integer(UTMetadata.ID);
 			encoder.dictionaryEnd();
 			encoder.string("v");
 			encoder.string(JavaTorrent.BUILD);
@@ -304,17 +305,17 @@ public class Peer extends Thread implements Logable, ISortable {
 						break;
 					}
 
-					case UTMetadata.EXTENDED_MESSAGE_UT_METADATA: {
+					case UTMetadata.ID: {
 
 						Bencode decoder = new Bencode(stream.readString(length));
 						HashMap<String, Object> dictionary = decoder.decodeDictionary();
 
 						switch ((int) dictionary.get("msg_type")) {
-						case UTMetadata.UT_METADATA_REQUEST:
+						case UTMetadata.REQUEST:
 							Bencoder encode = new Bencoder();
 							encode.dictionaryStart();
 							encode.string("msg_type");
-							encode.integer(UTMetadata.UT_METADATA_REJECT);
+							encode.integer(UTMetadata.REJECT);
 							encode.string("piece");
 							encode.integer((int) dictionary.get("piece"));
 							encode.dictionaryEnd();
@@ -326,7 +327,7 @@ public class Peer extends Thread implements Logable, ISortable {
 							messageQueue.add(m);
 							break;
 
-						case UTMetadata.UT_METADATA_DATA:
+						case UTMetadata.DATA:
 							if ((int) dictionary.get("total_size") == torrent.getMetadata().getTotalSize()) {
 								stream.moveBack(decoder.remainingChars());
 								byte[] data = stream.readByteArray(stream.available());
@@ -342,7 +343,7 @@ public class Peer extends Thread implements Logable, ISortable {
 							}
 							break;
 
-						case UTMetadata.UT_METADATA_REJECT:
+						case UTMetadata.REJECT:
 							log("Piece Request got rejected: " + dictionary.get("piece"), true);
 							torrent.collectPiece((int) dictionary.get("piece"), null);
 							break;
@@ -459,7 +460,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		Bencoder encoder = new Bencoder();
 		encoder.dictionaryStart();
 		encoder.string("msg_type");
-		encoder.integer(UTMetadata.UT_METADATA_REQUEST);
+		encoder.integer(UTMetadata.REQUEST);
 		encoder.string("piece");
 		encoder.integer(index);
 		encoder.dictionaryEnd();
@@ -509,6 +510,10 @@ public class Peer extends Thread implements Logable, ISortable {
 	
 	public int getMaxWorkLoad() {
 		return maxWorkload;
+	}
+	
+	public void addToQueue(IMessage m) {
+		//TODO Convert messageQueue to new system
 	}
 
 	public void addToQueue(Message m) {

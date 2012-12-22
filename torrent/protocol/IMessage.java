@@ -22,7 +22,8 @@ public interface IMessage {
 	 */
 	public void process(Peer peer);
 	/**
-	 * The length of the message (only needed on writing)
+	 * The length of the message (only needed on writing)<br/>
+	 * The length should include the byte for the message id
 	 * @return
 	 * integer
 	 */
