@@ -23,7 +23,7 @@ public abstract class Message implements IMessage {
 		encode.string("msg_type");
 		encode.integer(getId());
 		encode.string("piece");
-		encode.integer((int) dictionary.get("piece"));
+		encode.integer(piece);
 		encode.dictionaryEnd();
 		bencodedData = encode.getBencodedData();
 	}

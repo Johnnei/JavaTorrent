@@ -8,6 +8,7 @@ import torrent.network.ByteOutputStream;
 import torrent.network.Message;
 import torrent.network.Stream;
 import torrent.protocol.messages.MessageBitfield;
+import torrent.protocol.messages.MessageBlock;
 import torrent.protocol.messages.MessageChoke;
 import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
@@ -15,12 +16,14 @@ import torrent.protocol.messages.MessageKeepAlive;
 import torrent.protocol.messages.MessageRequest;
 import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
+import torrent.protocol.messages.extention.MessageExtension;
 
 public class MessageUtils {
 	
-	private static MessageUtils instance;
+	private static MessageUtils instance = new MessageUtils();
 	
 	private MessageUtils() {
+		idToMessage = new HashMap<>();
 		registerMessage(new MessageChoke());
 		registerMessage(new MessageUnchoke());
 		registerMessage(new MessageInterested());
@@ -28,6 +31,8 @@ public class MessageUtils {
 		registerMessage(new MessageHave());
 		registerMessage(new MessageBitfield());
 		registerMessage(new MessageRequest());
+		registerMessage(new MessageBlock());
+		registerMessage(new MessageExtension());
 	}
 	
 	private void registerMessage(IMessage message) {
@@ -50,6 +55,8 @@ public class MessageUtils {
 			stream.fill(inStream.readByteArray(1)); //Read ID
 			int id = stream.readByte();
 			try {
+				if(!idToMessage.containsKey(id))
+					throw new IOException("Unhandled Message: " + id);
 				IMessage message = idToMessage.get(id).getClass().newInstance();
 				stream.fill(inStream.readByteArray(length - 1));
 				message.read(stream);
