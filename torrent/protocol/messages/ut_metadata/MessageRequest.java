@@ -16,7 +16,7 @@ public class MessageRequest extends Message {
 	@Override
 	public void process(Peer peer) {
 		MessageReject mr = new MessageReject((int)dictionary.get("piece"));
-		MessageExtension extendedMessage = new MessageExtension(UTMetadata.ID, mr);
+		MessageExtension extendedMessage = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), mr);
 		peer.addToQueue(extendedMessage);
 	}
 

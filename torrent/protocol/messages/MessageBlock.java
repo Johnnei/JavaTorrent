@@ -3,6 +3,7 @@ package torrent.protocol.messages;
 import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
+import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 
 public class MessageBlock implements IMessage {
@@ -42,14 +43,12 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public int getLength() {
-		// TODO Auto-generated method stub
-		return 0;
+		return 13;
 	}
 
 	@Override
 	public int getId() {
-		// TODO Auto-generated method stub
-		return 0;
+		return BitTorrent.MESSAGE_PIECE;
 	}
 
 }

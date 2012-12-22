@@ -70,7 +70,7 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * The default request size of 16KB
 	 */
-	public static final int REQUEST_SIZE = 1 << 14;
+	public static final int REQUEST_SIZE = 1 << 15;
 
 	/**
 	 * Creates a torrent with space for 10 trackers

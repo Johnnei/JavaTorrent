@@ -70,6 +70,7 @@ public class MessageUtils {
 	public void writeMessage(ByteOutputStream outStream, IMessage message) throws IOException {
 		Message messageStream = new Message(message.getLength());
 		if(message.getLength() > 0) {
+			messageStream.getStream().writeByte(message.getId());
 			message.write(messageStream.getStream());
 		}
 		outStream.write(messageStream.getMessage());

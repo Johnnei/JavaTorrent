@@ -12,10 +12,13 @@ import torrent.download.Torrent;
 import torrent.download.files.Piece;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
+import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
+import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.MessageKeepAlive;
 import torrent.protocol.messages.MessageRequest;
+import torrent.protocol.messages.extention.MessageExtension;
 import torrent.protocol.messages.extention.MessageHandshake;
 import torrent.util.ISortable;
 import torrent.util.StringUtil;
@@ -109,7 +112,7 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	private void sendExtentionMessage() throws IOException {
 		if (peerClient.supportsExtention(5, 0x10)) { // EXTENDED_MESSAGE
-			addToQueue(new MessageHandshake());
+			addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake()));
 		}
 	}
 
@@ -287,8 +290,9 @@ public class Peer extends Thread implements Logable, ISortable {
 	public void requestMetadataPiece(int index) {
 		log("Requesting Metadata Piece: " + index);
 		torrent.protocol.messages.ut_metadata.MessageRequest mr = new torrent.protocol.messages.ut_metadata.MessageRequest(index);
+		MessageExtension me = new MessageExtension(peerClient.getExtentionID(UTMetadata.NAME), mr);
 		synchronized (this) {
-			messageQueue.add(mr);
+			messageQueue.add(me);
 			workingQueue.put(new Job(-1 - index), 0);
 		}
 	}
