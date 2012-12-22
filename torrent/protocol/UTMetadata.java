@@ -6,6 +6,7 @@ public class UTMetadata {
 	 * The ID that this client expects for the UT_METADATA extension
 	 */
 	public static final int ID = 1;
+	public static final String NAME = "ut_metadata";
 	
 	/**
 	 * Requests a metadata piece<br/>

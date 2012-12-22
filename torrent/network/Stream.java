@@ -92,11 +92,6 @@ public class Stream {
 		return s;
 	}
 
-	public String readString() {
-		int length = readByte();
-		return readString(length);
-	}
-
 	/**
 	 * Resets the stream and resizes it
 	 * 

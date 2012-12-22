@@ -13,8 +13,10 @@ import torrent.download.algos.IPeerManager;
 import torrent.download.files.PieceInfo;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.Tracker;
-import torrent.network.Message;
-import torrent.protocol.BitTorrent;
+import torrent.protocol.IMessage;
+import torrent.protocol.messages.MessageHave;
+import torrent.protocol.messages.MessageInterested;
+import torrent.protocol.messages.MessageUninterested;
 import torrent.util.Logger;
 import torrent.util.StringUtil;
 
@@ -250,18 +252,14 @@ public class Torrent extends Thread implements Logable {
 				if (p.hasPiece(neededPieces.get(j).getIndex())) {
 					hasNoPieces = false;
 					if (!p.getClient().isInterested()) {
-						Message m = new Message(1);
-						m.getStream().writeByte(BitTorrent.MESSAGE_INTERESTED);
-						p.addToQueue(m);
+						p.addToQueue(new MessageInterested());
 						p.getClient().interested();
 					}
 					break;
 				}
 			}
 			if (hasNoPieces && p.getClient().isInterested()) {
-				Message m = new Message(1);
-				m.getStream().writeByte(BitTorrent.MESSAGE_UNINTERESTED);
-				p.addToQueue(m);
+				p.addToQueue(new MessageUninterested());
 				p.getClient().uninterested();
 			}
 		}
@@ -369,10 +367,7 @@ public class Torrent extends Thread implements Logable {
 					try {
 						torrentFiles.save(index);
 						torrentFiles.getPiece(index).reset();
-						Message haveMessage = new Message(5);
-						haveMessage.getStream().writeByte(BitTorrent.MESSAGE_HAVE);
-						haveMessage.getStream().writeInt(index);
-						broadcastMessage(haveMessage);
+						broadcastMessage(new MessageHave(index));
 						log("Recieved and verified piece: " + index);
 						String p = Double.toString(getProgress());
 						log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
@@ -397,7 +392,7 @@ public class Torrent extends Thread implements Logable {
 		}
 	}
 
-	public synchronized void broadcastMessage(Message m) {
+	public synchronized void broadcastMessage(IMessage m) {
 		for (int i = 0; i < peers.size(); i++) {
 			if (!peers.get(i).closed())
 				peers.get(i).addToQueue(m);

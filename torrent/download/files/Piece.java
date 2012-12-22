@@ -1,7 +1,6 @@
 package torrent.download.files;
 
 import torrent.download.Torrent;
-import torrent.network.Message;
 import torrent.util.ISortable;
 
 public class Piece extends PieceInfo implements ISortable {
@@ -115,18 +114,14 @@ public class Piece extends PieceInfo implements ISortable {
 	 * 
 	 * @param message
 	 *            The message to be filled
-	 * @return An array of size 2 in format { pieceId, subPieceId } Or an array of size 0 in case of an error
+	 * @return An array of size 3 in format { blockId, length, Offset } Or an array of size 0 in case of an error
 	 */
-	public int[] fillPieceRequest(Message message) {
+	public int[] getPieceRequest() {
 		for (int i = 0; i < blocks.length; i++) {
 			if (blocks[i].isRequested())
 				continue;
-			message.getStream().writeInt(getIndex());
-			message.getStream().writeInt(Torrent.REQUEST_SIZE * blocks[i].getIndex()); // offset
-			message.getStream().writeInt(blocks[i].getSize()); // size
-			message.getStream().fit();
 			blocks[i].setRequested(true);
-			return new int[] { i, blocks[i].getSize() };
+			return new int[] { i, blocks[i].getSize(), Torrent.REQUEST_SIZE * blocks[i].getIndex() };
 		}
 		return new int[] {};
 	}

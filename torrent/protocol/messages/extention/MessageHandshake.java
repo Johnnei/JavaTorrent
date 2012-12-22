@@ -1,39 +1,75 @@
 package torrent.protocol.messages.extention;
 
+import java.util.HashMap;
+
+import torrent.JavaTorrent;
 import torrent.download.peer.Peer;
+import torrent.encoding.Bencode;
+import torrent.encoding.Bencoder;
 import torrent.network.Stream;
+import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
+import torrent.protocol.UTMetadata;
 
 public class MessageHandshake implements IMessage {
+	
+	private String bencodedHandshake;
+	
+	public MessageHandshake() {
+		Bencoder encoder = new Bencoder();
+		encoder.dictionaryStart();
+		encoder.string("m");
+		encoder.dictionaryStart();
+		encoder.string("ut_metadata");
+		encoder.integer(UTMetadata.ID);
+		encoder.dictionaryEnd();
+		encoder.string("v");
+		encoder.string(JavaTorrent.BUILD);
+		encoder.dictionaryEnd();
+		bencodedHandshake = encoder.getBencodedData();
+	}
 
 	@Override
 	public void write(Stream outStream) {
-		// TODO Auto-generated method stub
-
+		outStream.writeString(bencodedHandshake);
 	}
 
 	@Override
 	public void read(Stream inStream) {
-		// TODO Auto-generated method stub
-
+		bencodedHandshake = inStream.readString(inStream.available());
 	}
 
 	@Override
 	public void process(Peer peer) {
-		// TODO Auto-generated method stub
-
+		Bencode decoder = new Bencode(bencodedHandshake);
+		try {
+			HashMap<String, Object> dictionary = (HashMap<String, Object>)decoder.decodeDictionary();
+			Object m = dictionary.get("m");
+			if(m == null)
+				throw new NullPointerException("Missing M tree");
+			if(m instanceof HashMap<?, ?>) {
+				HashMap<?, ?> extensionData = (HashMap<?, ?>)m;
+				if(extensionData.containsKey(UTMetadata.NAME)) {
+					peer.getClient().addExtentionID(UTMetadata.NAME, (Integer)extensionData.get(UTMetadata.NAME));
+					if(dictionary.containsKey("metadata_size")) {
+						peer.getTorrent().getMetadata().setFilesize((int)dictionary.get("metadata_size"));
+					}
+				}
+			}
+		} catch (Exception e) {
+			peer.log("Extension handshake error: " + e.getMessage());
+			peer.close();
+		}
 	}
 
 	@Override
 	public int getLength() {
-		// TODO Auto-generated method stub
-		return 0;
+		return bencodedHandshake.length();
 	}
 
 	@Override
 	public int getId() {
-		// TODO Auto-generated method stub
-		return 0;
+		return BitTorrent.EXTENDED_MESSAGE_HANDSHAKE;
 	}
 
 }

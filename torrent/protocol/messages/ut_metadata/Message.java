@@ -7,7 +7,6 @@ import torrent.encoding.Bencode;
 import torrent.encoding.Bencoder;
 import torrent.network.Stream;
 import torrent.protocol.IMessage;
-import torrent.protocol.UTMetadata;
 
 public abstract class Message implements IMessage {
 	
@@ -22,7 +21,7 @@ public abstract class Message implements IMessage {
 		Bencoder encode = new Bencoder();
 		encode.dictionaryStart();
 		encode.string("msg_type");
-		encode.integer(UTMetadata.REJECT);
+		encode.integer(getId());
 		encode.string("piece");
 		encode.integer((int) dictionary.get("piece"));
 		encode.dictionaryEnd();

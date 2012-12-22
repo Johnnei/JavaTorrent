@@ -6,21 +6,17 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import torrent.JavaTorrent;
 import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
-import torrent.encoding.Bencode;
-import torrent.encoding.Bencoder;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
-import torrent.network.Message;
-import torrent.network.PieceRequest;
-import torrent.network.Stream;
-import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
-import torrent.protocol.UTMetadata;
+import torrent.protocol.MessageUtils;
+import torrent.protocol.messages.MessageKeepAlive;
+import torrent.protocol.messages.MessageRequest;
+import torrent.protocol.messages.extention.MessageHandshake;
 import torrent.util.ISortable;
 import torrent.util.StringUtil;
 
@@ -37,10 +33,6 @@ public class Peer extends Thread implements Logable, ISortable {
 	private ByteInputStream inStream;
 	private boolean crashed;
 	/**
-	 * The peer on which we are connected his id
-	 */
-	private byte[] peerId;
-	/**
 	 * Client information about the connected peer
 	 */
 	private Client peerClient;
@@ -55,7 +47,7 @@ public class Peer extends Thread implements Logable, ISortable {
 	/**
 	 * The message queue
 	 */
-	private ArrayList<Message> messageQueue;
+	private ArrayList<IMessage> messageQueue;
 	/**
 	 * The working queue, Remembers which pieces are requested<br/>
 	 */
@@ -82,7 +74,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		peerClient = new Client();
 		myClient = new Client();
 		status = "";
-		messageQueue = new ArrayList<Message>();
+		messageQueue = new ArrayList<>();
 		workingQueue = new HashMap<Job, Integer>();
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
@@ -117,22 +109,7 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	private void sendExtentionMessage() throws IOException {
 		if (peerClient.supportsExtention(5, 0x10)) { // EXTENDED_MESSAGE
-			Bencoder encoder = new Bencoder();
-			encoder.dictionaryStart();
-			encoder.string("m");
-			encoder.dictionaryStart();
-			encoder.string("ut_metadata");
-			encoder.integer(UTMetadata.ID);
-			encoder.dictionaryEnd();
-			encoder.string("v");
-			encoder.string(JavaTorrent.BUILD);
-			encoder.dictionaryEnd();
-			String bencoded = encoder.getBencodedData();
-			Message message = new Message(2 + bencoded.length());
-			message.getStream().writeByte(BitTorrent.MESSAGE_EXTENDED_MESSAGE);
-			message.getStream().writeByte(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE);
-			message.getStream().writeString(bencoded);
-			outStream.write(message.getStream().getBuffer());
+			addToQueue(new MessageHandshake());
 		}
 	}
 
@@ -143,7 +120,7 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 
 	public void processHandshake() throws IOException {
-		setStatus("Sending Handshake");
+		setStatus("Sending Handshake"); //Not making this more OO because it's not within the message-flow
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
 		outStream.write(RESERVED_EXTENTION_BYTES);
@@ -175,7 +152,7 @@ public class Peer extends Thread implements Logable, ISortable {
 				peerClient.setReservedBytes(inStream.readByteArray(8));
 				byte[] torrentHash = inStream.readByteArray(20);
 				if (torrentHash != torrent.getHashArray()) {
-					peerId = inStream.readByteArray(20);
+					inStream.readByteArray(20);
 					setStatus("Awaiting Orders");
 					passedHandshake = true;
 					// if(peerId != stream.readByteArray(20))
@@ -213,160 +190,15 @@ public class Peer extends Thread implements Logable, ISortable {
 	
 	private void readMessage() throws IOException {
 		if (inStream.available() > 0) {
-			int length = inStream.readInt();
-			if (length == 0) {
-				// Keep-Alive
-			} else {
-				int messageId = inStream.readByte();
-				length -= 1;
-				Stream stream = new Stream(length);
-				long readDuration = System.currentTimeMillis();
-				if (length > 0) {
-					stream.fill(inStream.readByteArray(length));
-					readDuration = System.currentTimeMillis() - readDuration;
-				}
-				switch (messageId) {
-				case BitTorrent.MESSAGE_CHOKE:
-					myClient.choke();
-					cancelAllPieces();
-					break;
-
-				case BitTorrent.MESSAGE_UNCHOKE:
-					myClient.unchoke();
-					break;
-
-				case BitTorrent.MESSAGE_INTERESTED:
-					myClient.interested();
-					break;
-
-				case BitTorrent.MESSAGE_UNINTERESTED:
-					myClient.uninterested();
-					break;
-
-				case BitTorrent.MESSAGE_HAVE:
-					peerClient.addPiece(stream.readInt());
-					break;
-
-				case BitTorrent.MESSAGE_BITFIELD:
-					int pieceIndex = 0;
-					while (stream.available() > 0) {
-						int b = stream.readByte();
-						for (int bit = 0; bit < 8; bit++) {
-							if (((b >> bit) & 1) == 1) {
-								peerClient.addPiece(pieceIndex);
-							}
-							pieceIndex++;
-						}
-					}
-					break;
-
-				case BitTorrent.MESSAGE_REQUEST:
-					PieceRequest pr = new PieceRequest(stream.readInt(), stream.readInt(), stream.readInt());
-					peerClient.requesting(pr);
-					break;
-
-				case BitTorrent.MESSAGE_PIECE: {
-					int index = stream.readInt();
-					int offset = stream.readInt();
-					byte[] data = stream.readByteArray(stream.available());
-					synchronized(this) {
-						torrent.collectPiece(index, offset, data);
-						workingQueue.remove(new Job(index, torrent.getTorrentFiles().getBlockIndexByOffset(offset)));
-					}
-					if(readDuration > 30000 || readDuration < 1) {
-						maxWorkload = 1;
-					} else if(readDuration >= 1000) {
-						maxWorkload = 2;
-					} else {
-						maxWorkload = (maxWorkload + (int)Math.ceil(1000D / readDuration)) / 2;
-					}
-					break;
-				}
-
-				case BitTorrent.MESSAGE_EXTENDED_MESSAGE:
-					int extendedMessageId = stream.readByte();
-					length -= 1;
-					switch (extendedMessageId) {
-					case BitTorrent.EXTENDED_MESSAGE_HANDSHAKE: {
-						String bencoded = stream.readString(length);
-						Bencode bencoding = new Bencode(bencoded);
-						HashMap<String, Object> dictionary = bencoding.decodeDictionary();
-						Object o = dictionary.get("m");
-						if (o == null) {
-							log("Error: M Dictionary is missing", true);
-						} else {
-							HashMap<String, Object> data = (HashMap<String, Object>) o;
-							if (data.containsKey("ut_metadata")) {
-								peerClient.addExtentionID("ut_metadata", (int) data.get("ut_metadata"));
-								if(dictionary.get("metadata_size") != null)
-									torrent.getMetadata().setFilesize((int) dictionary.get("metadata_size"));
-							}
-						}
-						break;
-					}
-
-					case UTMetadata.ID: {
-
-						Bencode decoder = new Bencode(stream.readString(length));
-						HashMap<String, Object> dictionary = decoder.decodeDictionary();
-
-						switch ((int) dictionary.get("msg_type")) {
-						case UTMetadata.REQUEST:
-							Bencoder encode = new Bencoder();
-							encode.dictionaryStart();
-							encode.string("msg_type");
-							encode.integer(UTMetadata.REJECT);
-							encode.string("piece");
-							encode.integer((int) dictionary.get("piece"));
-							encode.dictionaryEnd();
-							String bencodedReject = encode.getBencodedData();
-							Message m = new Message(2 + bencodedReject.length());
-							m.getStream().writeByte(BitTorrent.MESSAGE_EXTENDED_MESSAGE);
-							m.getStream().writeByte(peerClient.getExtentionID("ut_metadata"));
-							m.getStream().writeString(bencodedReject);
-							messageQueue.add(m);
-							break;
-
-						case UTMetadata.DATA:
-							if ((int) dictionary.get("total_size") == torrent.getMetadata().getTotalSize()) {
-								stream.moveBack(decoder.remainingChars());
-								byte[] data = stream.readByteArray(stream.available());
-								synchronized (this) {
-									torrent.collectPiece((int) dictionary.get("piece"), data);
-									workingQueue.remove(new Job(-1 - (int)dictionary.get("piece")));
-								}
-							} else {
-								log("Piece Request size check failed: " + dictionary.get("total_size"), true);
-								synchronized (this) {
-									torrent.collectPiece((int) dictionary.get("piece"), null);
-								}
-							}
-							break;
-
-						case UTMetadata.REJECT:
-							log("Piece Request got rejected: " + dictionary.get("piece"), true);
-							torrent.collectPiece((int) dictionary.get("piece"), null);
-							break;
-						}
-
-					}
-						break;
-					}
-					break;
-
-				default:
-					log("Unhandled message: " + messageId, true);
-					break;
-				}
-			}
+			IMessage message = MessageUtils.getUtils().readMessage(inStream);
+			message.process(this);
 			lastActivity = System.currentTimeMillis();
 		}
 	}
 	
 	private void sendMessage() throws IOException {
 		if (messageQueue.size() > 0) {
-			Message message = messageQueue.remove(0);
-			outStream.write(message.getMessage());
+			MessageUtils.getUtils().writeMessage(outStream, messageQueue.remove(0));
 			lastActivity = System.currentTimeMillis();
 		}
 	}
@@ -378,7 +210,7 @@ public class Peer extends Thread implements Logable, ISortable {
 				close();
 			} else if (!myClient.isChoked()) {
 				if(workingQueue.size() == 0) {
-					addToQueue(new Message(0));
+					addToQueue(new MessageKeepAlive());
 				} else {
 					close();
 				}
@@ -441,14 +273,11 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 
 	public void requestPiece(Piece piece) {
-		Message m = new Message(13);
-		m.getStream().writeByte(BitTorrent.MESSAGE_REQUEST);
-		int[] result = piece.fillPieceRequest(m);
+		int[] result = piece.getPieceRequest();
 		if (result.length > 0) {
-			synchronized(this) {
-				messageQueue.add(m);
-				workingQueue.put(new Job(piece.getIndex(), result[0]), 0);
-			}
+			MessageRequest m = new MessageRequest(piece.getIndex(), result[2], result[1]);
+			messageQueue.add(m);
+			workingQueue.put(new Job(piece.getIndex(), result[0]), 0);
 			log("Requesting Piece: " + piece.getIndex() + "-" + result[0] + " (" + result[1] + " bytes)");
 		} else {
 			log("Ordered to request piece " + piece.getIndex() + " but it has no remaining sub-pieces!", true);
@@ -457,20 +286,9 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	public void requestMetadataPiece(int index) {
 		log("Requesting Metadata Piece: " + index);
-		Bencoder encoder = new Bencoder();
-		encoder.dictionaryStart();
-		encoder.string("msg_type");
-		encoder.integer(UTMetadata.REQUEST);
-		encoder.string("piece");
-		encoder.integer(index);
-		encoder.dictionaryEnd();
-		String bencoded = encoder.getBencodedData();
-		Message m = new Message(2 + bencoded.length());
-		m.getStream().writeByte(BitTorrent.MESSAGE_EXTENDED_MESSAGE);
-		m.getStream().writeByte(peerClient.getExtentionID("ut_metadata"));
-		m.getStream().writeString(bencoded);
+		torrent.protocol.messages.ut_metadata.MessageRequest mr = new torrent.protocol.messages.ut_metadata.MessageRequest(index);
 		synchronized (this) {
-			messageQueue.add(m);
+			messageQueue.add(mr);
 			workingQueue.put(new Job(-1 - index), 0);
 		}
 	}
@@ -511,12 +329,8 @@ public class Peer extends Thread implements Logable, ISortable {
 	public int getMaxWorkLoad() {
 		return maxWorkload;
 	}
-	
-	public void addToQueue(IMessage m) {
-		//TODO Convert messageQueue to new system
-	}
 
-	public void addToQueue(Message m) {
+	public void addToQueue(IMessage m) {
 		messageQueue.add(m);
 	}
 
