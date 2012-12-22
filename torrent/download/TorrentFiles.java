@@ -59,10 +59,10 @@ public class TorrentFiles implements IDownloadable {
 		long remainingSize = 0L;
 
 		if (dictionary.containsKey("files")) { // Multi-file torrent
-			ArrayList<Object> files = (ArrayList<Object>) dictionary.get("files");
+			ArrayList<?> files = (ArrayList<?>) dictionary.get("files");
 			fileInfo = new FileInfo[files.size()];
 			for (int i = 0; i < fileInfo.length; i++) {
-				HashMap<String, Object> file = (HashMap<String, Object>) files.get(i);
+				HashMap<?, ?> file = (HashMap<?, ?>) files.get(i);
 				long fileSize = 0L;
 				Object o = file.get("length");
 				if (o instanceof Integer) {
@@ -71,7 +71,7 @@ public class TorrentFiles implements IDownloadable {
 					fileSize = (long) o;
 				}
 				remainingSize += fileSize;
-				ArrayList<Object> fileStructure = (ArrayList<Object>) file.get("path");
+				ArrayList<?> fileStructure = (ArrayList<?>) file.get("path");
 				String fileName = "";
 				if (fileStructure.size() > 1) {
 					for (int j = 0; j < fileStructure.size(); j++) {
