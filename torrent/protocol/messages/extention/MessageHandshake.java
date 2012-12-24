@@ -45,16 +45,20 @@ public class MessageHandshake implements IMessage {
 		try {
 			HashMap<String, Object> dictionary = (HashMap<String, Object>)decoder.decodeDictionary();
 			Object m = dictionary.get("m");
-			if(m == null)
-				throw new NullPointerException("Missing M tree");
-			if(m instanceof HashMap<?, ?>) {
-				HashMap<?, ?> extensionData = (HashMap<?, ?>)m;
-				if(extensionData.containsKey(UTMetadata.NAME)) {
-					peer.getClient().addExtentionID(UTMetadata.NAME, (Integer)extensionData.get(UTMetadata.NAME));
-					if(dictionary.containsKey("metadata_size")) {
-						peer.getTorrent().getMetadata().setFilesize((int)dictionary.get("metadata_size"));
+			if(m != null) {
+				if(m instanceof HashMap<?, ?>) {
+					HashMap<?, ?> extensionData = (HashMap<?, ?>)m;
+					if(extensionData.containsKey(UTMetadata.NAME)) {
+						peer.getClient().addExtentionID(UTMetadata.NAME, (Integer)extensionData.get(UTMetadata.NAME));
+						if(dictionary.containsKey("metadata_size")) {
+							peer.getTorrent().getMetadata().setFilesize((int)dictionary.get("metadata_size"));
+						}
 					}
 				}
+			}
+			Object reqq = dictionary.get("reqq");
+			if(reqq != null) {
+				peer.getClient().setMaxRequests((int)reqq);
 			}
 		} catch (Exception e) {
 			peer.log("Extension handshake error: " + e.getMessage());

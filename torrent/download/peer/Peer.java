@@ -56,11 +56,6 @@ public class Peer extends Thread implements Logable, ISortable {
 	 */
 	private HashMap<Job, Integer> workingQueue;
 	/**
-	 * The maximum amount of simultaneous piece requests<br/>
-	 * This is being corrected after every piece receive
-	 */
-	private int maxWorkload;
-	/**
 	 * The last time this connection showed any form of activity<br/>
 	 * <i>Values are System.currentMillis()</i>
 	 */
@@ -84,7 +79,6 @@ public class Peer extends Thread implements Logable, ISortable {
 		downloadRate = 0;
 		uploadRate = 0;
 		passedHandshake = false;
-		maxWorkload = 1;
 	}
 
 	public void connect() {
@@ -323,7 +317,7 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 	
 	public int getFreeWorkTime() {
-		return (workingQueue.size() >= maxWorkload) ?  0 : maxWorkload - workingQueue.size();
+		return (workingQueue.size() >= myClient.getMaxRequests()) ?  0 : myClient.getMaxRequests() - workingQueue.size();
 	}
 
 	public int getWorkQueue() {
@@ -331,7 +325,7 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 	
 	public int getMaxWorkLoad() {
-		return maxWorkload;
+		return myClient.getMaxRequests();
 	}
 
 	public void addToQueue(IMessage m) {

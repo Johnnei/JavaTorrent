@@ -16,6 +16,11 @@ public class Client {
 	private ArrayList<PieceRequest> requestedPieces;
 	private byte[] reserved_bytes;
 	private HashMap<String, Integer> extentionIds;
+	/**
+	 * The number of outstanding request messages this client supports without dropping any.<br/>
+	 * Extension Protocol item: dictionary["reqq"]
+	 */
+	private int maxRequests;
 
 	public Client() {
 		isChoked = true;
@@ -23,6 +28,7 @@ public class Client {
 		pieces = new HashMap<Integer, Boolean>();
 		requestedPieces = new ArrayList<PieceRequest>();
 		extentionIds = new HashMap<>();
+		maxRequests = 1;
 	}
 
 	public void setReservedBytes(byte[] l) {
@@ -68,6 +74,14 @@ public class Client {
 
 	public void requesting(PieceRequest pr) {
 		requestedPieces.add(pr);
+	}
+	
+	public void setMaxRequests(int i) {
+		maxRequests = i;
+	}
+	
+	public int getMaxRequests() {
+		return maxRequests;
 	}
 
 	public void addExtentionID(String key, int id) {
