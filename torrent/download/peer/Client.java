@@ -2,6 +2,7 @@ package torrent.download.peer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 import torrent.network.PieceRequest;
 
@@ -17,6 +18,10 @@ public class Client {
 	private byte[] reserved_bytes;
 	private HashMap<String, Integer> extentionIds;
 	/**
+	 * The pieces to be send or be requested
+	 */
+	private HashMap<Job, Integer> workingQueue;
+	/**
 	 * The number of outstanding request messages this client supports without dropping any.<br/>
 	 * Extension Protocol item: dictionary["reqq"]
 	 */
@@ -29,6 +34,7 @@ public class Client {
 		requestedPieces = new ArrayList<PieceRequest>();
 		extentionIds = new HashMap<>();
 		maxRequests = 1;
+		workingQueue = new HashMap<>();
 	}
 
 	public void setReservedBytes(byte[] l) {
@@ -98,6 +104,35 @@ public class Client {
 
 	public boolean hasExtentionID(String extention) {
 		return extentionIds.containsKey(extention);
+	}
+	
+	public Set<Job> getKeySet() {
+		return workingQueue.keySet();
+	}
+	
+	/**
+	 * Removes a job from the working queue if it was listed
+	 * @param job
+	 */
+	public void removeJob(Job job) {
+		
+	}
+	
+	/**
+	 * Adds a job to the working queue
+	 * @param job
+	 */
+	public void addJob(Job job) {
+		workingQueue.put(job, 0);
+	}
+	
+	/**
+	 * The amount of jobs on the working queue
+	 * @return
+	 * the amount
+	 */
+	public int getQueueSize() {
+		return workingQueue.size();
 	}
 
 }

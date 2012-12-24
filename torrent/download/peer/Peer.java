@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import torrent.Logable;
 import torrent.Manager;
@@ -52,10 +51,6 @@ public class Peer extends Thread implements Logable, ISortable {
 	 */
 	private ArrayList<IMessage> messageQueue;
 	/**
-	 * The working queue, Remembers which pieces are requested<br/>
-	 */
-	private HashMap<Job, Integer> workingQueue;
-	/**
 	 * The last time this connection showed any form of activity<br/>
 	 * <i>Values are System.currentMillis()</i>
 	 */
@@ -73,7 +68,6 @@ public class Peer extends Thread implements Logable, ISortable {
 		myClient = new Client();
 		status = "";
 		messageQueue = new ArrayList<>();
-		workingQueue = new HashMap<Job, Integer>();
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
 		downloadRate = 0;
@@ -203,10 +197,10 @@ public class Peer extends Thread implements Logable, ISortable {
 	private void checkDisconnect() {
 		long millisSinceLastAction = System.currentTimeMillis() - lastActivity;
 		if (millisSinceLastAction > 90000) {// 1.5 Minute
-			if (workingQueue.size() > 0) {
+			if (myClient.getQueueSize() > 0) {
 				close();
 			} else if (!myClient.isChoked()) {
-				if(workingQueue.size() == 0) {
+				if(myClient.getQueueSize() == 0) {
 					addToQueue(new MessageKeepAlive());
 				} else {
 					close();
@@ -274,7 +268,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		if (result.length > 0) {
 			MessageRequest m = new MessageRequest(piece.getIndex(), result[2], result[1]);
 			messageQueue.add(m);
-			workingQueue.put(new Job(piece.getIndex(), result[0]), 0);
+			myClient.addJob(new Job(piece.getIndex(), result[0]));
 			log("Requesting Piece: " + piece.getIndex() + "-" + result[0] + " (" + result[1] + " bytes)");
 		} else {
 			log("Ordered to request piece " + piece.getIndex() + " but it has no remaining sub-pieces!", true);
@@ -287,12 +281,8 @@ public class Peer extends Thread implements Logable, ISortable {
 		MessageExtension me = new MessageExtension(peerClient.getExtentionID(UTMetadata.NAME), mr);
 		synchronized (this) {
 			messageQueue.add(me);
-			workingQueue.put(new Job(-1 - index), 0);
+			myClient.addJob(new Job(-1 - index));
 		}
-	}
-	
-	public void removeFromQueue(Job job) {
-		workingQueue.remove(job);
 	}
 
 	public boolean hasExtentionId(String extention) {
@@ -313,15 +303,15 @@ public class Peer extends Thread implements Logable, ISortable {
 	 * @return
 	 */
 	public boolean isWorking() {
-		return workingQueue.size() > 0;
+		return getWorkQueueSize() > 0;
 	}
 	
 	public int getFreeWorkTime() {
-		return (workingQueue.size() >= myClient.getMaxRequests()) ?  0 : myClient.getMaxRequests() - workingQueue.size();
+		return (getWorkQueueSize() >= myClient.getMaxRequests()) ?  0 : myClient.getMaxRequests() - getWorkQueueSize();
 	}
 
-	public int getWorkQueue() {
-		return workingQueue.size();
+	public int getWorkQueueSize() {
+		return myClient.getQueueSize();
 	}
 	
 	public int getMaxWorkLoad() {
@@ -361,8 +351,8 @@ public class Peer extends Thread implements Logable, ISortable {
 	 * Cancels all pieces
 	 */
 	public void cancelAllPieces() {
-		if (workingQueue.size() > 0) {
-			Object[] keys = workingQueue.keySet().toArray();
+		if (getWorkQueueSize() > 0) {
+			Object[] keys = myClient.getKeySet().toArray();
 			for (int i = 0; i < keys.length; i++) {
 				Job job = (Job) keys[i];
 				torrent.cancelPiece(job.getPieceIndex(), job.getSubpiece());
@@ -395,7 +385,7 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	@Override
 	public int getValue() {
-		return getWorkQueue();
+		return getWorkQueueSize();
 	}
 
 }

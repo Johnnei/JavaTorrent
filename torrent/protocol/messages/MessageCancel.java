@@ -6,17 +6,17 @@ import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 
-public class MessageRequest implements IMessage {
-	
+public class MessageCancel implements IMessage {
+
 	private int index;
 	private int begin;
 	private int offset;
 	
-	public MessageRequest() {
+	public MessageCancel() {
 		
 	}
 	
-	public MessageRequest(int index, int begin, int offset) {
+	public MessageCancel(int index, int begin, int offset) {
 		this.index = index;
 		this.begin = begin;
 		this.offset = offset;
@@ -38,13 +38,7 @@ public class MessageRequest implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		if(peer.hasPiece(index)) {
-			peer.getClient().addJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
-			//TODO Add actual file load and sending, Delaying it until I can finally receive a piece at a proper speed
-		} else {
-			peer.log("Requested a piece which I don't have", true);
-			peer.close();
-		}
+		peer.getClient().removeJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
 	}
 
 	@Override
@@ -54,7 +48,7 @@ public class MessageRequest implements IMessage {
 
 	@Override
 	public int getId() {
-		return BitTorrent.MESSAGE_REQUEST;
+		return BitTorrent.MESSAGE_CANCEL;
 	}
 
 }

@@ -53,7 +53,7 @@ public class TabPeers extends TableBase {
 					g.drawString(peer.getUploadRate() + " b/s", 270, getTextY());
 					g.drawString(duration + " s", 370, getTextY());
 					g.drawString("" + peer.getClient().hasPieceCount(), 440, getTextY());
-					g.drawString(peer.getWorkQueue() + " | 0", 540, getTextY());
+					g.drawString(peer.getWorkQueueSize() + " | 0", 540, getTextY());
 					g.drawString(peer.getMyClient().isChoked() + " | " + peer.getClient().isInterested(), 610, getTextY());
 				}
 				advanceLine();

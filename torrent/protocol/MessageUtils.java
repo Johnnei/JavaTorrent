@@ -9,6 +9,7 @@ import torrent.network.Message;
 import torrent.network.Stream;
 import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageBlock;
+import torrent.protocol.messages.MessageCancel;
 import torrent.protocol.messages.MessageChoke;
 import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
@@ -33,6 +34,7 @@ public class MessageUtils {
 		registerMessage(new MessageRequest());
 		registerMessage(new MessageBlock());
 		registerMessage(new MessageExtension());
+		registerMessage(new MessageCancel());
 	}
 	
 	private void registerMessage(IMessage message) {

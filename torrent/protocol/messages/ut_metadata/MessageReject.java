@@ -18,7 +18,7 @@ public class MessageReject extends Message {
 	public void process(Peer peer) {
 		peer.log("Piece Request got rejected: " + dictionary.get("piece"), true);
 		peer.getTorrent().collectPiece((int) dictionary.get("piece"), null);
-		peer.removeFromQueue(new Job(-1 - (int)dictionary.get("piece")));
+		peer.getMyClient().removeJob(new Job(-1 - (int)dictionary.get("piece")));
 	}
 
 	@Override

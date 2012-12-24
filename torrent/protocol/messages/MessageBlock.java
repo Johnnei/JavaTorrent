@@ -38,12 +38,12 @@ public class MessageBlock implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece(index, offset, data);
-		peer.removeFromQueue(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
+		peer.getMyClient().removeJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
 	}
 
 	@Override
 	public int getLength() {
-		return 13;
+		return 13 + data.length;
 	}
 
 	@Override

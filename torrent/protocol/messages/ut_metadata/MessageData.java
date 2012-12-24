@@ -33,7 +33,7 @@ public class MessageData extends Message {
 	@Override
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece((int) dictionary.get("piece"), data);
-		peer.removeFromQueue(new Job(-1 - (int)dictionary.get("piece")));
+		peer.getMyClient().removeJob(new Job(-1 - (int)dictionary.get("piece")));
 	}
 
 	@Override
