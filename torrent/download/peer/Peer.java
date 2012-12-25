@@ -195,20 +195,28 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 	
 	private void checkDisconnect() {
-		long millisSinceLastAction = System.currentTimeMillis() - lastActivity;
-		if (millisSinceLastAction > 90000) {// 1.5 Minute
-			if (myClient.getQueueSize() > 0) {
-				close();
-			} else if (!myClient.isChoked()) {
-				if(myClient.getQueueSize() == 0) {
-					addToQueue(new MessageKeepAlive());
-				} else {
+		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
+		if (inactiveSeconds > 30) {
+			if(myClient.isInterested() && !myClient.isChoked()) { //We are able to download pieces
+				if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
 					close();
+					return;
 				}
-			} else {
-				close();
 			}
-		} else if (millisSinceLastAction > 120000) {// 2 Minutes
+		}
+		if (inactiveSeconds > 60) { //We are waiting for something to happen by now
+			if(myClient.isInterested() && myClient.isChoked()) { //They are not unchoking us
+				close();
+				return;
+			}
+		}
+		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to timeout D:
+			if(myClient.isInterested()) {
+				addToQueue(new MessageKeepAlive());
+				return;
+			}
+		} 
+		if (inactiveSeconds > 120) {// 2 Minutes, We've hit the timeout mark
 			close();
 		}
 	}
