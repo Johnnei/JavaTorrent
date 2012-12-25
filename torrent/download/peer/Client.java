@@ -115,7 +115,7 @@ public class Client {
 	 * @param job
 	 */
 	public void removeJob(Job job) {
-		
+		workingQueue.remove(job);
 	}
 	
 	/**
