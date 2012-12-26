@@ -204,10 +204,18 @@ public class TorrentFiles implements IDownloadable {
 		return undownloaded;
 	}
 
+	/**
+	 * The amount of pieces in all pieces
+	 * @return
+	 */
 	public int getPieceCount() {
 		return pieces.length;
 	}
 
+	/**
+	 * The total size of all pieces together
+	 * @return
+	 */
 	public long getTotalSize() {
 		return totalSize;
 	}
@@ -218,6 +226,14 @@ public class TorrentFiles implements IDownloadable {
 
 	public ArrayList<PieceInfo> getUndownloadedPieces() {
 		return undownloaded;
+	}
+	
+	/**
+	 * The amount of pieces we still need to download
+	 * @return
+	 */
+	public int getNeededPiecesCount() {
+		return undownloaded.size();
 	}
 
 	public int getBlockIndexByOffset(int offset) {

@@ -195,8 +195,15 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 	
 	private void checkDisconnect() {
+		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+			if (peerClient.hasPieceCount() == 0) { //They don't have anything
+				if(torrent.getTorrentFiles().getPieceCount() == torrent.getTorrentFiles().getNeededPiecesCount()) { //We can't send them anything
+					close(); //We are of no use to eachother
+				}
+			}
+		}
 		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
-		if (inactiveSeconds > 30) {
+		if (inactiveSeconds > 10) {
 			if(myClient.isInterested() && !myClient.isChoked()) { //We are able to download pieces
 				if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
 					close();
