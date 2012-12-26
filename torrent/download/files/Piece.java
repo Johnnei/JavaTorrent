@@ -154,6 +154,19 @@ public class Piece extends PieceInfo implements ISortable {
 		}
 		return count;
 	}
+	
+	/**
+	 * The amount of bytes still needed to be downloaded
+	 * @return
+	 */
+	public int getRemainingBytes() {
+		int bytes = 0;
+		for(int i = 0; i < blocks.length; i++) {
+			if(!blocks[i].isDone())
+				bytes += blocks[i].getSize();
+		}
+		return bytes;
+	}
 
 	public int getRequestedCount() {
 		int count = 0;

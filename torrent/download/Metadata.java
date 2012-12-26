@@ -130,5 +130,15 @@ public class Metadata implements IDownloadable {
 			return 0;
 		return pieces.length;
 	}
+	
+	public long getRemainingBytes() {
+		if (pieces == null)
+			return 16384;
+		long left = 0;
+		for(int i = 0; i < pieces.length; i++) {
+			left += pieces[i].getRemainingBytes();
+		}
+		return left;
+	}
 
 }

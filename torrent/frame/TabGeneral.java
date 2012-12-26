@@ -23,6 +23,7 @@ public class TabGeneral extends JPanel {
 		String name = "Name: ";
 		String hash = "Hash: ";
 		String totalSize = "Total Size: ";
+		String leftSize =  "Remaining: ";
 		String pieces = "Pieces: ";
 		String peers = "Peers: ";
 		String leechers = "Leechers: ";
@@ -36,9 +37,11 @@ public class TabGeneral extends JPanel {
 			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 				totalSize += "Retrieving metadata";
 				pieces += "Retrieving metadata";
+				leftSize += "Retrieving metadata";
 			} else {
 				totalSize += torrent.getTorrentFiles().getTotalSize() + " bytes";
 				pieces += torrent.getTorrentFiles().getPieceCount();
+				leftSize += torrent.getRemainingBytes() + " bytes";
 			}
 			pending += torrent.getConnectingCount();
 			peers += torrent.getSeedCount();
@@ -61,7 +64,8 @@ public class TabGeneral extends JPanel {
 		g.drawString(name, 10, 50);
 		g.drawString(hash, 10, 75);
 		g.drawString(totalSize, 10, 100);
-		g.drawString(pieces, 10, 125);
+		g.drawString(leftSize, 10, 125);
+		g.drawString(pieces, 10, 150);
 
 		int x = getWidth() / 2;
 		g.drawString(peers, x, 50);

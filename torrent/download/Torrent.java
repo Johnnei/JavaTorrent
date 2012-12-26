@@ -63,6 +63,10 @@ public class Torrent extends Thread implements Logable {
 	 * Regulates the connection with peers
 	 */
 	private IPeerManager peerManager;
+	/**
+	 * The amount of downloaded bytes
+	 */
+	private long downloadedBytes;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
@@ -81,6 +85,7 @@ public class Torrent extends Thread implements Logable {
 
 	public Torrent(int trackerCount) {
 		trackers = new Tracker[trackerCount];
+		downloadedBytes = 0L;
 		peers = new ArrayList<Peer>();
 		keepDownloading = true;
 		metadata = new Metadata();
@@ -226,17 +231,12 @@ public class Torrent extends Thread implements Logable {
 	 * Checks if the peers are still connected
 	 */
 	private synchronized void checkPeers() {
-		int dcCount = 0;
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p.closed()) {
 				peers.remove(i--);
-				dcCount++;
 				continue;
 			}
-		}
-		if(dcCount > 0) {
-			log("Removed " + dcCount + " disconnected peers");
 		}
 	}
 
@@ -360,6 +360,7 @@ public class Torrent extends Thread implements Logable {
 
 	public void collectPiece(int index, int offset, byte[] data) {
 		synchronized (this) {
+			downloadedBytes += data.length;
 			torrentFiles.fillPiece(index, offset, data);
 			log("Received Piece: " + index + "-" + (offset / REQUEST_SIZE));
 			if (torrentFiles.getPiece(index).hasAllBlocks()) {
@@ -489,6 +490,21 @@ public class Torrent extends Thread implements Logable {
 
 	public ArrayList<Peer> getPeers() {
 		return peers;
+	}
+	
+	/**
+	 * The amount of bytes downloaded
+	 * @return
+	 */
+	public long getDownloadedBytes() {
+		return downloadedBytes;
+	}
+	
+	public long getRemainingBytes() {
+		if(torrentStatus == STATE_DOWNLOAD_DATA)
+			return torrentFiles.getRemainingBytes();
+		else
+			return metadata.getRemainingBytes();
 	}
 
 	/**

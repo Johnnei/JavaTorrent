@@ -41,6 +41,7 @@ public class Tracker extends Thread implements Logable {
 	// Announce Data
 	private long lastAnnounce;
 	private int announceInterval;
+	private boolean firstAnnounce;
 
 	private String status;
 
@@ -49,6 +50,7 @@ public class Tracker extends Thread implements Logable {
 		this.torrent = torrent;
 		stream = new Stream();
 		connectionId = 0x41727101980L;
+		firstAnnounce = true;
 		transactionId = Manager.getTransactionId();
 		String[] urlData = url.split(":");
 		if (!urlData[0].equals("udp")) {
@@ -140,10 +142,15 @@ public class Tracker extends Thread implements Logable {
 		stream.writeInt(transactionId);
 		stream.writeByte(torrent.getHashArray());
 		stream.writeByte(Manager.getPeerId());
-		stream.writeLong(0); // Downloaded Bytes
-		stream.writeLong(0); // Bytes left
+		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
+		stream.writeLong(torrent.getRemainingBytes()); // Bytes left
 		stream.writeLong(0); // Uploaded bytes
-		stream.writeInt(2); // EVENT: None = 0, Completed = 1, Started = 2, Stopped = 3
+		if(firstAnnounce) {
+			stream.writeInt(2); // EVENT: None = 0, Completed = 1, Started = 2, Stopped = 3
+			firstAnnounce = false;
+		} else {
+			stream.writeInt(0);
+		}
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
 		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold

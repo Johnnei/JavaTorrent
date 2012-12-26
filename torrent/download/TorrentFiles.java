@@ -239,5 +239,17 @@ public class TorrentFiles implements IDownloadable {
 	public int getBlockIndexByOffset(int offset) {
 		return offset / pieceSize;
 	}
+	
+	/**
+	 * The amount of bytes still needed to be downloaded
+	 * @return
+	 */
+	public long getRemainingBytes() {
+		long left = 0;
+		for(int i = 0; i < pieces.length; i++) {
+			left += pieces[i].getRemainingBytes();
+		}
+		return left;
+	}
 
 }
