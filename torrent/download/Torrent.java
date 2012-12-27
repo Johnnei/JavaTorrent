@@ -91,7 +91,7 @@ public class Torrent extends Thread implements Logable {
 		metadata = new Metadata();
 		status = "Parsing Magnet Link";
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(250, 1.5F);
+		peerManager = new BurstPeerManager(500, 1.5F);
 		System.setOut(new Logger(System.out));
 	}
 

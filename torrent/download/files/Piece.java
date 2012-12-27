@@ -160,6 +160,8 @@ public class Piece extends PieceInfo implements ISortable {
 	 * @return
 	 */
 	public int getRemainingBytes() {
+		if(blocks == null)
+			return 0;
 		int bytes = 0;
 		for(int i = 0; i < blocks.length; i++) {
 			if(!blocks[i].isDone())
