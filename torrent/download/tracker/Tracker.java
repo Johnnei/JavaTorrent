@@ -35,9 +35,29 @@ public class Tracker extends Thread implements Logable {
 	private int transactionId;
 	private int action;
 
+	/**
+	 * The amount of total seeders
+	 */
+	private int seedersInSwarm;
+	/**
+	 * The amount of total downloaders
+	 */
+	private int leechersInSwarm;
+	
+	/**
+	 * The amount of connected seeders
+	 */
 	private int seeders;
+	/**
+	 * The amount of connected leechers
+	 */
 	private int leechers;
+	/**
+	 * Times this torrent was downloaded
+	 */
+	private int downloaded;
 
+	private long lastScrape;
 	// Announce Data
 	private long lastAnnounce;
 	private int announceInterval;
@@ -89,10 +109,13 @@ public class Tracker extends Thread implements Logable {
 				if (!attemptConnect())
 					break;
 			} else {
-				if (lastAnnounce + announceInterval < System.currentTimeMillis() && torrent.needAnnounce()) {
+				if (System.currentTimeMillis() - lastAnnounce >= announceInterval && torrent.needAnnounce()) {
 					announce();
 				}
-				// scrape
+				if (System.currentTimeMillis() - lastScrape >= 30000) {
+					scrape();
+					lastScrape = System.currentTimeMillis();
+				}
 			}
 			try {
 				Thread.sleep(50);
@@ -106,7 +129,7 @@ public class Tracker extends Thread implements Logable {
 		stream.reset(1000);
 		stream.writeLong(connectionId);
 		stream.writeInt(0x0);
-		stream.writeInt(transactionId);
+		stream.writeInt(++transactionId);
 		try {
 			if (socket == null) {
 				socket = new DatagramSocket();
@@ -118,14 +141,11 @@ public class Tracker extends Thread implements Logable {
 			action = stream.readInt();
 			if (stream.readInt() != transactionId)
 				action = ACTION_TRANSACTION_ID_ERROR;
-			else
-				log("Transaction ID Matched with " + transactionId);
 			if (action != ACTION_CONNECT) {
 				String error = stream.readString(stream.available());
 				log("Tracker Error: " + action + ", Message: " + error, true);
 			} else {
 				connectionId = stream.readLong();
-				log("Recieved Connection ID: " + connectionId);
 			}
 		} catch (IOException e) {
 			log(e.getMessage(), true);
@@ -139,7 +159,7 @@ public class Tracker extends Thread implements Logable {
 		stream.reset(100);
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_ANNOUNCE);
-		stream.writeInt(transactionId);
+		stream.writeInt(++transactionId);
 		stream.writeByte(torrent.getHashArray());
 		stream.writeByte(Manager.getPeerId());
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
@@ -172,8 +192,8 @@ public class Tracker extends Thread implements Logable {
 			}
 			lastAnnounce = System.currentTimeMillis();
 			announceInterval = stream.readInt();
-			leechers = stream.readInt();
-			seeders = stream.readInt();
+			leechersInSwarm = stream.readInt();
+			seedersInSwarm = stream.readInt();
 			while (stream.available() >= 6) {
 				byte[] address = stream.readIP();
 				int port = stream.readShort();
@@ -185,7 +205,39 @@ public class Tracker extends Thread implements Logable {
 			}
 			setStatus("Announced");
 		} catch (IOException e) {
-
+			log("Announce IOException: " + e.getMessage(), true);
+		}
+	}
+	
+	public void scrape() {
+		setStatus("Scraping");
+		stream.reset(36);
+		stream.writeLong(connectionId);
+		stream.writeInt(ACTION_SCRAPE);
+		stream.writeInt(++transactionId);
+		stream.writeByte(torrent.getHashArray());
+		try {
+			socket.send(stream.write(address, port));
+			stream.read(socket);
+			action = stream.readInt();
+			if (stream.readInt() != transactionId)
+				action = ACTION_TRANSACTION_ID_ERROR;
+			if(action == ACTION_SCRAPE) {
+				seeders = stream.readInt();
+				downloaded = stream.readInt();
+				leechers = stream.readInt();
+				setStatus("Scraped");
+			} else {
+				String error = stream.readString(stream.available());
+				log("Scrape failed with error: " + action + ", Message: " + error, true);
+				setStatus("Scrape failed");
+				announceInterval = 30000;
+				lastAnnounce = System.currentTimeMillis();
+				handleError(error);
+				return;
+			}
+		} catch (IOException e) {
+			log("Scrape IOException: " + e.getMessage(), true);
 		}
 	}
 
@@ -226,13 +278,25 @@ public class Tracker extends Thread implements Logable {
 		status = s;
 		setName(name + " " + status);
 	}
-
+	
+	public int getSeeders() {
+		return seeders;
+	}
+	
 	public int getLeechers() {
 		return leechers;
 	}
 
-	public int getSeeders() {
-		return seeders;
+	public int getLeechersInSwarm() {
+		return leechersInSwarm;
+	}
+
+	public int getSeedersInSwarm() {
+		return seedersInSwarm;
+	}
+	
+	public int getDownloadedCount() {
+		return downloaded;
 	}
 
 	@Override
