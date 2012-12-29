@@ -61,5 +61,13 @@ public class MessageExtension implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_EXTENDED_MESSAGE;
 	}
+	
+	@Override
+	public String toString() {
+		if(message != null)
+			return "Extension " + message.toString();
+		else
+			return "Extension";
+	}
 
 }

@@ -29,5 +29,10 @@ public class MessageInterested implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_INTERESTED;
 	}
+	
+	@Override
+	public String toString() {
+		return "Interested";
+	}
 
 }

@@ -147,7 +147,6 @@ public class Torrent extends Thread implements Logable {
 		
 		for(int i = 0; i < torrentFiles.getFiles().length; i++) {
 			FileInfo fInfo = torrentFiles.getFiles()[i];
-			log("Reserving " + fInfo.getSize() + " bytes for " + fInfo.getFilename());
 			try {
 				fInfo.getPieceWriter().reserveDiskspace(fInfo.getSize());
 			} catch (IOException e) {

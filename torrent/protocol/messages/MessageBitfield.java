@@ -55,5 +55,10 @@ public class MessageBitfield implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_BITFIELD;
 	}
+	
+	@Override
+	public String toString() {
+		return "Bitfield";
+	}
 
 }

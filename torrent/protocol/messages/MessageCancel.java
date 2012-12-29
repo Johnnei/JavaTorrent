@@ -50,5 +50,10 @@ public class MessageCancel implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_CANCEL;
 	}
+	
+	@Override
+	public String toString() {
+		return "Cancel";
+	}
 
 }

@@ -28,7 +28,8 @@ public class TabPeers extends TableBase {
 		g.drawString("Time idle", 370, getHeaderTextY());
 		g.drawString("Having Pieces", 440, getHeaderTextY());
 		g.drawString("Requests", 540, getHeaderTextY());
-		g.drawString("Choked | Interested", 610, getHeaderTextY());
+		g.drawString("C | I", 610, getHeaderTextY());
+		g.drawString("State", 700, getHeaderTextY());
 	}
 	
 	protected void paintData(Graphics g) {
@@ -55,6 +56,7 @@ public class TabPeers extends TableBase {
 					g.drawString("" + peer.getClient().hasPieceCount(), 440, getTextY());
 					g.drawString(peer.getWorkQueueSize() + " | 0", 540, getTextY());
 					g.drawString(peer.getMyClient().isChoked() + " | " + peer.getClient().isInterested(), 610, getTextY());
+					g.drawString(peer.getStatus(), 700, getTextY());
 				}
 				advanceLine();
 			}

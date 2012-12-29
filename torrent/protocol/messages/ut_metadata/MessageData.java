@@ -45,5 +45,10 @@ public class MessageData extends Message {
 	public int getId() {
 		return UTMetadata.DATA;
 	}
+	
+	@Override
+	public String toString() {
+		return "UT_Metadata Data";
+	}
 
 }

@@ -30,5 +30,10 @@ public class MessageReject extends Message {
 	public int getId() {
 		return UTMetadata.REJECT;
 	}
+	
+	@Override
+	public String toString() {
+		return "UT_Metadata Reject";
+	}
 
 }

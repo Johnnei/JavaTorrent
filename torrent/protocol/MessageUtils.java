@@ -3,6 +3,7 @@ package torrent.protocol;
 import java.io.IOException;
 import java.util.HashMap;
 
+import torrent.download.peer.Peer;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.Message;
@@ -47,11 +48,13 @@ public class MessageUtils {
 	
 	private HashMap<Integer, IMessage> idToMessage;
 	
-	public IMessage readMessage(ByteInputStream inStream) throws IOException {
+	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
+		p.setStatus("Receiving Message: ...");
 		Stream stream = new Stream(4);
 		stream.fill(inStream.readByteArray(4)); //Read Length
 		int length = stream.readInt();
 		if(length == 0) {
+			p.setStatus("Receiving Message: KeepAlive");
 			return new MessageKeepAlive();
 		} else {
 			stream.fill(inStream.readByteArray(1)); //Read ID
@@ -60,8 +63,10 @@ public class MessageUtils {
 				if(!idToMessage.containsKey(id))
 					throw new IOException("Unhandled Message: " + id);
 				IMessage message = idToMessage.get(id).getClass().newInstance();
+				p.setStatus("Receiving Message: " + message.toString());
 				stream.fill(inStream.readByteArray(length - 1));
 				message.read(stream);
+				p.setStatus("Received Message: " + message.toString());
 				return message;
 			} catch (IllegalAccessException | InstantiationException ex ) {
 				throw new IOException("Message Read Error", ex);

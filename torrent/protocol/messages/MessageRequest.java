@@ -56,5 +56,10 @@ public class MessageRequest implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_REQUEST;
 	}
+	
+	@Override
+	public String toString() {
+		return "Request";
+	}
 
 }

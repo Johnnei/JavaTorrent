@@ -75,5 +75,10 @@ public class MessageHandshake implements IMessage {
 	public int getId() {
 		return BitTorrent.EXTENDED_MESSAGE_HANDSHAKE;
 	}
+	
+	@Override
+	public String toString() {
+		return "Handshake";
+	}
 
 }

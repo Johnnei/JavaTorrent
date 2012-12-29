@@ -29,5 +29,10 @@ public class MessageUnchoke implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_UNCHOKE;
 	}
+	
+	@Override
+	public String toString() {
+		return "Unchoke";
+	}
 
 }

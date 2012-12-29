@@ -83,6 +83,7 @@ public class Peer extends Thread implements Logable, ISortable {
 				return;
 			}
 			socket = new Socket(address, port);
+			setName(toString());
 			inStream = new ByteInputStream(this, socket.getInputStream());
 			outStream = new ByteOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
@@ -181,7 +182,7 @@ public class Peer extends Thread implements Logable, ISortable {
 	
 	private void readMessage() throws IOException {
 		if (inStream.available() > 0) {
-			IMessage message = MessageUtils.getUtils().readMessage(inStream);
+			IMessage message = MessageUtils.getUtils().readMessage(inStream, this);
 			message.process(this);
 			lastActivity = System.currentTimeMillis();
 		}
@@ -189,7 +190,10 @@ public class Peer extends Thread implements Logable, ISortable {
 	
 	private void sendMessage() throws IOException {
 		if (messageQueue.size() > 0) {
-			MessageUtils.getUtils().writeMessage(outStream, messageQueue.remove(0));
+			IMessage message = messageQueue.remove(0);
+			setStatus("Sending Message: " + message);
+			MessageUtils.getUtils().writeMessage(outStream, message);
+			setStatus("Sended Message: " + message);
 			lastActivity = System.currentTimeMillis();
 		}
 	}
@@ -197,11 +201,9 @@ public class Peer extends Thread implements Logable, ISortable {
 	private void checkDisconnect() {
 		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
 		if (inactiveSeconds > 10) {
-			if(myClient.isInterested() && !myClient.isChoked()) { //We are able to download pieces
-				if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
-					close();
-					return;
-				}
+			if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
+				close();
+				return;
 			}
 		}
 		if (inactiveSeconds > 30 && torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
@@ -265,9 +267,8 @@ public class Peer extends Thread implements Logable, ISortable {
 		log(s, false);
 	}
 
-	private void setStatus(String s) {
+	public void setStatus(String s) {
 		status = s;
-		setName(toString() + " " + status);
 	}
 
 	@Override

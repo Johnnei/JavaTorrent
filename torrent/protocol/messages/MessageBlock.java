@@ -50,5 +50,10 @@ public class MessageBlock implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_PIECE;
 	}
+	
+	@Override
+	public String toString() {
+		return "Block";
+	}
 
 }

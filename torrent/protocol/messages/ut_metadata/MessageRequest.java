@@ -29,5 +29,10 @@ public class MessageRequest extends Message {
 	public int getId() {
 		return UTMetadata.REQUEST;
 	}
+	
+	@Override
+	public String toString() {
+		return "UT_Metadata Request";
+	}
 
 }

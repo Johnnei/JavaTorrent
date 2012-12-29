@@ -40,5 +40,10 @@ public class MessageHave implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_HAVE;
 	}
+	
+	@Override
+	public String toString() {
+		return "Have";
+	}
 
 }
