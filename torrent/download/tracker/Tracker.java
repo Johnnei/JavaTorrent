@@ -9,7 +9,6 @@ import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
-import torrent.network.LeStream;
 import torrent.network.Stream;
 
 public class Tracker extends Thread implements Logable {
@@ -19,11 +18,6 @@ public class Tracker extends Thread implements Logable {
 	public static final int ACTION_SCRAPE = 2;
 	public static final int ACTION_ERROR = 3;
 	public static final int ACTION_TRANSACTION_ID_ERROR = 256;
-	
-	/**
-	 * The ACTION_ERROR equivalent in Little Endian format, Used to detect LE Stream
-	 */
-	public static final int ERROR_LE_ERROR = 50331648;
 
 	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
 
@@ -260,10 +254,6 @@ public class Tracker extends Thread implements Logable {
 	private void handleError(String error) {
 		if (error.startsWith(ERROR_CONNECTION_ID)) {
 			connectionId = 0x41727101980L;
-			if(action == ERROR_LE_ERROR) {
-				stream = new LeStream();
-				log("Detected LE Stream, Switching to match it");
-			}
 		}
 	}
 

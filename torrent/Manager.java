@@ -14,7 +14,7 @@ public class Manager {
 	private byte[] peerId;
 
 	private Manager() {
-		transactionId = 0;
+		transactionId = new Random().nextInt();
 		peerId = new byte[20];
 		peerId[0] = '-';
 		peerId[1] = 'J';
