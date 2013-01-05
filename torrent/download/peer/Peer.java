@@ -2,6 +2,7 @@ package torrent.download.peer;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -82,7 +83,8 @@ public class Peer extends Thread implements Logable, ISortable {
 				setStatus("Connected (Outside request)");
 				return;
 			}
-			socket = new Socket(address, port);
+			socket = new Socket();
+			socket.connect(new InetSocketAddress(address, port), 4000);
 			setName(toString());
 			inStream = new ByteInputStream(this, socket.getInputStream());
 			outStream = new ByteOutputStream(socket.getOutputStream());
@@ -147,10 +149,6 @@ public class Peer extends Thread implements Logable, ISortable {
 					inStream.readByteArray(20);
 					setStatus("Awaiting Orders");
 					passedHandshake = true;
-					// if(peerId != stream.readByteArray(20))
-					// log("Peer ID Mismatch: " +
-					// Decoder.byteArrayToString(peerId) + " expected " +
-					// Decoder.byteArrayToString(Manager.getPeerId()), true);
 				} else {
 					log("Torrent Hash Mismatch: " + StringUtil.byteArrayToString(torrentHash), true);
 				}
@@ -170,7 +168,6 @@ public class Peer extends Thread implements Logable, ISortable {
 			try {
 				readMessage();
 				sendMessage();
-				checkDisconnect();
 			} catch (IOException e) {
 				close();
 			}
@@ -198,7 +195,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		}
 	}
 	
-	private void checkDisconnect() {
+	public void checkDisconnect() {
 		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
 		if (inactiveSeconds > 10) {
 			if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds

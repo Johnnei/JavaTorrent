@@ -183,7 +183,7 @@ public class Tracker extends Thread implements Logable {
 		}
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
-		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
+		stream.writeInt(-1); // Use defaults num_want (-1) Use the max our buffer can hold
 		stream.writeInt(socket.getLocalPort());
 		try {
 			socket.send(stream.write(address, port));
@@ -204,6 +204,7 @@ public class Tracker extends Thread implements Logable {
 			announceInterval = stream.readInt();
 			leechersInSwarm = stream.readInt();
 			seedersInSwarm = stream.readInt();
+			log("Obtained " + (stream.available() / 6) + " new possible peers");
 			while (stream.available() >= 6) {
 				byte[] address = stream.readIP();
 				int port = stream.readShort();

@@ -67,6 +67,14 @@ public class Torrent extends Thread implements Logable {
 	 * The amount of downloaded bytes
 	 */
 	private long downloadedBytes;
+	/**
+	 * The last time all peer has been checked for disconnects
+	 */
+	private long lastPeerCheck = System.currentTimeMillis();
+	/**
+	 * The last time all peer interest states have been updated
+	 */
+	private long lastPeerUpdate = System.currentTimeMillis();
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
@@ -91,7 +99,7 @@ public class Torrent extends Thread implements Logable {
 		metadata = new Metadata();
 		status = "Parsing Magnet Link";
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(50, 1.5F);
+		peerManager = new BurstPeerManager(500, 1.5F);
 		System.setOut(new Logger(System.out));
 	}
 
@@ -136,6 +144,21 @@ public class Torrent extends Thread implements Logable {
 		downloadTorrentFile();
 		downloadFiles();
 	}
+	
+	/**
+	 * Manages all states about peers
+	 */
+	private void processPeers() {
+		if (System.currentTimeMillis() - lastPeerUpdate > 10000) {
+			updatePeers();
+			lastPeerUpdate = System.currentTimeMillis();
+		}
+		if (System.currentTimeMillis() - lastPeerCheck > 5000) {
+			log("Checking peers");
+			checkPeers();
+			lastPeerCheck = System.currentTimeMillis();
+		}
+	}
 
 	private void downloadFiles() {
 		torrentFiles = new TorrentFiles(new File("./" + displayName + ".torrent"));
@@ -154,19 +177,9 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 
-		long lastPeerCheck = System.currentTimeMillis();
-		long lastPeerUpdate = System.currentTimeMillis();
-
 		while (!torrentFiles.hasAllPieces()) {
 			long startTime = System.currentTimeMillis();
-			if (System.currentTimeMillis() - lastPeerUpdate > 10000) {
-				updatePeers();
-				lastPeerUpdate = System.currentTimeMillis();
-			}
-			if (System.currentTimeMillis() - lastPeerCheck > 5000) {
-				checkPeers();
-				lastPeerCheck = System.currentTimeMillis();
-			}
+			processPeers();
 			synchronized (this) {
 				PieceInfo piece = downloadRegulator.getPiece();
 				if (piece != null) {
@@ -213,6 +226,7 @@ public class Torrent extends Thread implements Logable {
 					}
 				}
 			}
+			processPeers();
 			sleep(100);
 		}
 		log("Recieved all pieces, Checking hash");
@@ -235,6 +249,8 @@ public class Torrent extends Thread implements Logable {
 			if (p.closed()) {
 				peers.remove(i--);
 				continue;
+			} else {
+				p.checkDisconnect();
 			}
 		}
 	}
@@ -243,6 +259,8 @@ public class Torrent extends Thread implements Logable {
 	 * Updates the interested states
 	 */
 	private synchronized void updatePeers() {
+		if(torrentFiles == null)
+			return;
 		ArrayList<PieceInfo> neededPieces = torrentFiles.getNeededPieces();
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
