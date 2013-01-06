@@ -283,14 +283,12 @@ public class Peer extends Thread implements Logable, ISortable {
 			MessageRequest m = new MessageRequest(piece.getIndex(), result[2], result[1]);
 			messageQueue.add(m);
 			myClient.addJob(new Job(piece.getIndex(), result[0]));
-			log("Requesting Piece: " + piece.getIndex() + "-" + result[0] + " (" + result[1] + " bytes)");
 		} else {
 			log("Ordered to request piece " + piece.getIndex() + " but it has no remaining sub-pieces!", true);
 		}
 	}
 
 	public void requestMetadataPiece(int index) {
-		log("Requesting Metadata Piece: " + index);
 		torrent.protocol.messages.ut_metadata.MessageRequest mr = new torrent.protocol.messages.ut_metadata.MessageRequest(index);
 		MessageExtension me = new MessageExtension(peerClient.getExtentionID(UTMetadata.NAME), mr);
 		synchronized (this) {

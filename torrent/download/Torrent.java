@@ -154,7 +154,6 @@ public class Torrent extends Thread implements Logable {
 			lastPeerUpdate = System.currentTimeMillis();
 		}
 		if (System.currentTimeMillis() - lastPeerCheck > 5000) {
-			log("Checking peers");
 			checkPeers();
 			lastPeerCheck = System.currentTimeMillis();
 		}

@@ -43,8 +43,12 @@ public class MessageBlock implements IMessage {
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece(index, offset, data);
 		peer.getMyClient().removeJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
-		if(readDuration > 0)
+		if(readDuration > 0) {
+			peer.log("Retrieved block of " + data.length + " bytes in " + readDuration + " ms which comes down to " + (data.length / (readDuration / 1000)) + "B/s");
 			peer.getMyClient().setMaxRequests((int)Math.ceil(data.length / (int)readDuration));
+		} else {
+			peer.log("Retrieved block of " + data.length + " bytes in " + readDuration + " ms");
+		}
 	}
 
 	@Override

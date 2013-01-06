@@ -164,7 +164,6 @@ public class Tracker extends Thread implements Logable {
 	}
 
 	public void announce() {
-		log("Announcing (Want: " + torrent.peersWanted() + ")");
 		setStatus("Announcing");
 		stream.reset(100);
 		stream.writeLong(connectionId);
@@ -204,7 +203,6 @@ public class Tracker extends Thread implements Logable {
 			announceInterval = stream.readInt();
 			leechersInSwarm = stream.readInt();
 			seedersInSwarm = stream.readInt();
-			log("Obtained " + (stream.available() / 6) + " new possible peers");
 			while (stream.available() >= 6) {
 				byte[] address = stream.readIP();
 				int port = stream.readShort();
