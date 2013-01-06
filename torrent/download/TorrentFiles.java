@@ -100,16 +100,6 @@ public class TorrentFiles implements IDownloadable {
 		}
 	}
 
-	private synchronized void removeUndownload(int index) {
-		for (int i = 0; i < undownloaded.size(); i++) {
-			PieceInfo pi = undownloaded.get(i);
-			if (pi.getIndex() == index) {
-				undownloaded.remove(i);
-				return;
-			}
-		}
-	}
-
 	@Override
 	public boolean hasAllPieces() {
 		return undownloaded.size() == 0;
@@ -117,17 +107,6 @@ public class TorrentFiles implements IDownloadable {
 
 	public PieceInfo getInfo(int index) {
 		return undownloaded.get(index);
-	}
-
-	@Override
-	public synchronized void requestedPiece(int index) {
-		if (pieces[index].isRequestedAll()) {
-			removeUndownload(index);
-		}
-	}
-
-	@Override
-	public synchronized void requestedPiece(int index, boolean requested) {
 	}
 
 	@Override
@@ -148,11 +127,7 @@ public class TorrentFiles implements IDownloadable {
 	}
 
 	@Override
-	public synchronized HashedPiece getPiece(int index) {
-		return pieces[index];
-	}
-
-	public Piece getPieceReadOnly(int index) {
+	public HashedPiece getPiece(int index) {
 		return pieces[index];
 	}
 	

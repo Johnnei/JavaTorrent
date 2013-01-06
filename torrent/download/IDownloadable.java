@@ -14,10 +14,6 @@ public interface IDownloadable {
 	 */
 	public boolean hasAllPieces();
 
-	public void requestedPiece(int index);
-
-	public void requestedPiece(int index, boolean requested);
-
 	public void fillPiece(int index, int offset, byte[] data);
 
 	public void fillPiece(int index, byte[] data);

@@ -47,7 +47,7 @@ public class TabPieces extends TableBase {
 		TorrentFiles tf = torrent.getTorrentFiles();
 		for(int i = 0; i < tf.getPieceCount(); i++) {
 			if(tf.getPiece(i).isStarted()) {
-				 pieceHeep.add(torrent.getTorrentFiles().getPieceReadOnly(i));
+				 pieceHeep.add(torrent.getTorrentFiles().getPiece(i));
 			}
 		}
 		HeapSort sortedHeap = new HeapSort(pieceHeep);

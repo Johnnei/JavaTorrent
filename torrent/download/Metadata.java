@@ -13,9 +13,6 @@ public class Metadata implements IDownloadable {
 	private Piece[] pieces;
 	private int filesize;
 
-	public Metadata() {
-	}
-
 	public synchronized void setFilesize(int size) {
 		if (pieces != null)
 			return;
@@ -61,15 +58,6 @@ public class Metadata implements IDownloadable {
 				return i;
 		}
 		return -1;
-	}
-
-	@Override
-	public void requestedPiece(int index) {
-	}
-
-	@Override
-	public void requestedPiece(int index, boolean requested) {
-		pieces[index].setRequested(requested);
 	}
 
 	@Override

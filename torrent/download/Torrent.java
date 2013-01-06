@@ -218,7 +218,7 @@ public class Torrent extends Thread implements Logable {
 							Peer p = peers.get(i);
 							if (p.hasExtentionId("ut_metadata") && !p.isWorking()) {
 								p.requestMetadataPiece(index);
-								metadata.requestedPiece(index, true);
+								metadata.getPiece(index).setRequested(true);
 								break;
 							}
 						}
@@ -242,7 +242,7 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * Checks if the peers are still connected
 	 */
-	private synchronized void checkPeers() {
+	private void checkPeers() {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p.closed()) {
@@ -257,7 +257,7 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * Updates the interested states
 	 */
-	private synchronized void updatePeers() {
+	private void updatePeers() {
 		if(torrentFiles == null)
 			return;
 		ArrayList<PieceInfo> neededPieces = torrentFiles.getNeededPieces();
@@ -366,7 +366,7 @@ public class Torrent extends Thread implements Logable {
 	 * if negative it will be a metadata piece else a normal piece
 	 * @param piece
 	 */
-	public void cancelPiece(int index, int piece) {
+	public synchronized void cancelPiece(int index, int piece) {
 		if(index < 0) {
 			metadata.getPiece(-(index + 1)).setRequested(false);
 		} else {
@@ -374,42 +374,40 @@ public class Torrent extends Thread implements Logable {
 		}
 	}
 
-	public void collectPiece(int index, int offset, byte[] data) {
-		synchronized (this) {
-			downloadedBytes += data.length;
-			torrentFiles.fillPiece(index, offset, data);
-			log("Received Piece: " + index + "-" + (offset / REQUEST_SIZE));
-			if (torrentFiles.getPiece(index).hasAllBlocks()) {
-				if (torrentFiles.getPiece(index).checkHash()) {
-					try {
-						torrentFiles.save(index);
-						torrentFiles.getPiece(index).reset();
-						broadcastMessage(new MessageHave(index));
-						log("Recieved and verified piece: " + index);
-						String p = Double.toString(getProgress());
-						log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
-					} catch (IOException e) {
-						log("Saving piece " + index + " failed: " + e.getMessage(), true);
-					}
-				} else {
-					log("Hash check failed on piece: " + index, true);
+	public synchronized void collectPiece(int index, int offset, byte[] data) {
+		downloadedBytes += data.length;
+		torrentFiles.fillPiece(index, offset, data);
+		log("Received Piece: " + index + "-" + (offset / REQUEST_SIZE));
+		if (torrentFiles.getPiece(index).hasAllBlocks()) {
+			if (torrentFiles.getPiece(index).checkHash()) {
+				try {
+					torrentFiles.save(index);
 					torrentFiles.getPiece(index).reset();
+					broadcastMessage(new MessageHave(index));
+					log("Recieved and verified piece: " + index);
+					String p = Double.toString(getProgress());
+					log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
+				} catch (IOException e) {
+					log("Saving piece " + index + " failed: " + e.getMessage(), true);
 				}
+			} else {
+				log("Hash check failed on piece: " + index, true);
+				torrentFiles.getPiece(index).reset();
 			}
 		}
 	}
 
-	public void collectPiece(int index, byte[] data) {
+	public synchronized void collectPiece(int index, byte[] data) {
 		if (data == null) {
 			log("Retrieved Error on piece: " + index, true);
-			metadata.requestedPiece(index, false);
+			metadata.getPiece(index).setRequested(false);
 		} else {
 			log("Retrieved Piece " + index);
 			metadata.fillPiece(index, data);
 		}
 	}
 
-	public synchronized void broadcastMessage(IMessage m) {
+	public void broadcastMessage(IMessage m) {
 		for (int i = 0; i < peers.size(); i++) {
 			if (!peers.get(i).closed())
 				peers.get(i).addToQueue(m);
