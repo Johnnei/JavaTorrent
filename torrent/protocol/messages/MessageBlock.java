@@ -12,6 +12,8 @@ public class MessageBlock implements IMessage {
 	private int offset;
 	private byte[] data;
 	
+	private long readDuration;
+	
 	public MessageBlock() {
 	}
 	
@@ -30,15 +32,19 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public void read(Stream inStream) {
+		readDuration = System.currentTimeMillis();
 		index = inStream.readInt();
 		offset = inStream.readInt();
 		data = inStream.readByteArray(inStream.available());
+		readDuration = System.currentTimeMillis() - readDuration;
 	}
 
 	@Override
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece(index, offset, data);
 		peer.getMyClient().removeJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
+		if(readDuration > 0)
+			peer.getMyClient().setMaxRequests((int)Math.ceil(data.length / (int)readDuration));
 	}
 
 	@Override
