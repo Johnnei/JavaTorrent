@@ -523,14 +523,14 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	/**
-	 * Gets all lecheers which: has atleast 1 piece, does not have all pieces and has us unchoked
+	 * Gets all lecheers which: has atleast 1 piece and has us unchoked
 	 * @return
 	 */
 	public ArrayList<Peer> getDownloadableLeechers() {
 		ArrayList<Peer> leechers = new ArrayList<Peer>();
-		synchronized(this) {
+		synchronized(this) { //TODO Speed this one up!
 			for(Peer p : peers) {
-				if(p.hasPieceCount() > 0 && p.hasPieceCount() != torrentFiles.getPieceCount() && !p.getMyClient().isChoked())
+				if(p.hasPieceCount() > 0 && !p.getMyClient().isChoked())
 					leechers.add(p);
 			}
 		}

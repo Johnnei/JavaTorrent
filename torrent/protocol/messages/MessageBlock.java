@@ -42,7 +42,7 @@ public class MessageBlock implements IMessage {
 		peer.getTorrent().collectPiece(index, offset, data);
 		peer.getMyClient().removeJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
 		if(readDuration > 0) {
-			peer.getMyClient().setMaxRequests((int)Math.ceil(data.length / ((int)readDuration / 1000)));
+			peer.getMyClient().setMaxRequests((int)Math.ceil((data.length / ((int)readDuration) * 0.001)));
 		}
 	}
 
