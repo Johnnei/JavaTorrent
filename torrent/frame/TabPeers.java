@@ -5,8 +5,8 @@ import java.util.ArrayList;
 
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
-import torrent.util.Heap;
-import torrent.util.HeapSort;
+import torrent.util.ISortable;
+import torrent.util.Mergesort;
 
 public class TabPeers extends TableBase {
 
@@ -36,18 +36,18 @@ public class TabPeers extends TableBase {
 		if (torrent != null) {
 			//Sort
 			ArrayList<Peer> peers = torrent.getPeers();
-			Heap peerHeap = new Heap(peers.size());
+			ArrayList<ISortable> toSort = new ArrayList<>();
 			for (int i = 0; i < peers.size(); i++) {
 				Peer p = peers.get(i);
 				if(p.getPassedHandshake())
-					peerHeap.add(p);
+					toSort.add(p);
 			}
-			HeapSort peerList = new HeapSort(peerHeap);
+			Mergesort peerList = new Mergesort(toSort);
 			peerList.sort();
 			//Draw
-			for (int i = 0; i < peerList.getItems().length; i++) {
+			for (int i = toSort.size() - 1; i > 0 ; i--) {
 				if (rowIsVisible()) {
-					Peer peer = (Peer) peerList.getItems()[i];
+					Peer peer = (Peer) peerList.getItem(i);
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
 					g.drawString(peer.toString(), 5, getTextY());
 					g.drawString(peer.getDownloadRate() + " b/s", 160, getTextY());

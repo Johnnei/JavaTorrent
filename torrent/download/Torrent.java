@@ -179,16 +179,14 @@ public class Torrent extends Thread implements Logable {
 		while (!torrentFiles.hasAllPieces()) {
 			long startTime = System.currentTimeMillis();
 			processPeers();
-			synchronized (this) {
-				PieceInfo piece = downloadRegulator.getPiece();
-				if (piece != null) {
-					ArrayList<Peer> peerList = downloadRegulator.getPeerForPiece(piece);
-					for (int i = 0; i < peerList.size() && !torrentFiles.getPiece(piece.getIndex()).isRequestedAll(); i++) {
-						Peer p = peerList.get(i);
-						int requestAmount = p.getFreeWorkTime();
-						while(requestAmount-- > 0 && !torrentFiles.getPiece(piece.getIndex()).isRequestedAll()) {
-							p.requestPiece(torrentFiles.getPiece(piece.getIndex()));
-						}
+			PieceInfo piece = downloadRegulator.getPiece();
+			if (piece != null) {
+				ArrayList<Peer> peerList = downloadRegulator.getPeerForPiece(piece);
+				for (int i = 0; i < peerList.size() && !torrentFiles.getPiece(piece.getIndex()).isRequestedAll(); i++) {
+					Peer p = peerList.get(i);
+					int requestAmount = p.getFreeWorkTime();
+					while(requestAmount-- > 0 && !torrentFiles.getPiece(piece.getIndex()).isRequestedAll()) {
+						p.requestPiece(torrentFiles.getPiece(piece.getIndex()));
 					}
 				}
 			}
@@ -491,8 +489,11 @@ public class Torrent extends Thread implements Logable {
 		int leechers = 0;
 		synchronized (this) {
 			for (int i = 0; i < peers.size(); i++) {
-				if (peers.get(i).getPassedHandshake())
+				Peer peer = peers.get(i);
+				if (peer != null) {
+					if (peer.getPassedHandshake())
 					leechers++;
+				}
 			}
 		}
 		return leechers - getSeedCount();

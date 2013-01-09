@@ -2,12 +2,13 @@ package torrent.frame;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
 
 import torrent.download.Torrent;
 import torrent.download.TorrentFiles;
 import torrent.download.files.Piece;
-import torrent.util.Heap;
-import torrent.util.HeapSort;
+import torrent.util.ISortable;
+import torrent.util.Mergesort;
 
 public class TabPieces extends TableBase {
 
@@ -43,18 +44,18 @@ public class TabPieces extends TableBase {
 			return;
 		if(torrent.getDownloadStatus() != Torrent.STATE_DOWNLOAD_DATA)
 			return;
-		Heap pieceHeep = new Heap(100);
+		ArrayList<ISortable> pieceList = new ArrayList<>();
 		TorrentFiles tf = torrent.getTorrentFiles();
 		for(int i = 0; i < tf.getPieceCount(); i++) {
 			if(tf.getPiece(i).isStarted()) {
-				 pieceHeep.add(torrent.getTorrentFiles().getPiece(i));
+				pieceList.add(torrent.getTorrentFiles().getPiece(i));
 			}
 		}
-		HeapSort sortedHeap = new HeapSort(pieceHeep);
-		sortedHeap.sort();
-		for(int i = 0; i < sortedHeap.getItems().length; i++) {
+		Mergesort sortedPieces = new Mergesort(pieceList);
+		sortedPieces.sort();
+		for(int i = pieceList.size() - 1; i > 0 ; i--) {
 			if(isVisible()) {
-				Piece p = (Piece)sortedHeap.getItems()[i];
+				Piece p = (Piece)sortedPieces.getItem(i);
 				g.drawString("" + p.getIndex(), 5, getTextY());
 				g.drawString("" + p.getSize(), 100, getTextY());
 				g.drawString(p.getProgress() + "%", 200, getTextY());

@@ -397,7 +397,7 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	@Override
 	public int getValue() {
-		return getWorkQueueSize();
+		return (getWorkQueueSize() * 1000) + peerClient.hasPieceCount() + downloadRate;
 	}
 
 }
