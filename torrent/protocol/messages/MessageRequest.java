@@ -58,6 +58,10 @@ public class MessageRequest implements IMessage {
 	}
 	
 	@Override
+	public void setReadDuration(int duration) {
+	}
+	
+	@Override
 	public String toString() {
 		return "Request";
 	}

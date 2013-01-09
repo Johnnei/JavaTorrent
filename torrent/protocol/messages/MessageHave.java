@@ -35,6 +35,10 @@ public class MessageHave implements IMessage {
 	public int getLength() {
 		return 5;
 	}
+	
+	@Override
+	public void setReadDuration(int duration) {
+	}
 
 	@Override
 	public int getId() {

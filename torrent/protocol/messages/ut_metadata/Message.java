@@ -42,5 +42,9 @@ public abstract class Message implements IMessage {
 		} catch (InvalidObjectException e) {
 		}
 	}
+	
+	@Override
+	public void setReadDuration(int duration) {
+	}
 
 }

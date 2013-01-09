@@ -140,6 +140,9 @@ public class Peer extends Thread implements Logable, ISortable {
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
 			log("Protocol Length Mismatch: " + protocolLength);
+			socket.close();
+			crashed = true;
+			return;
 		} else {
 			String protocol = inStream.readString(0x13);
 			if ("BitTorrent protocol".equals(protocol)) {
@@ -151,11 +154,15 @@ public class Peer extends Thread implements Logable, ISortable {
 					passedHandshake = true;
 				} else {
 					log("Torrent Hash Mismatch: " + StringUtil.byteArrayToString(torrentHash), true);
+					socket.close();
+					crashed = true;
+					return;
 				}
 			} else {
 				log("Protocol Mismatch: " + protocol, true);
 				crashed = true;
 				socket.close();
+				return;
 			}
 		}
 		sendExtentionMessage();

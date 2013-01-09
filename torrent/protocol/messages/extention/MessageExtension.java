@@ -63,6 +63,10 @@ public class MessageExtension implements IMessage {
 	}
 	
 	@Override
+	public void setReadDuration(int duration) {
+	}
+	
+	@Override
 	public String toString() {
 		if(message != null)
 			return "Extension " + message.toString();

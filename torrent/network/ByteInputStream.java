@@ -20,7 +20,7 @@ public class ByteInputStream extends DataInputStream {
 
 	public int read() throws IOException {
 		if (peer != null) {
-			if (available() == 0) {
+			while (available() == 0) {
 				if (System.currentTimeMillis() - peer.getLastActivity() > 30000) // 30 Second Read time-out
 					throw new IOException("Read timed out");
 				Torrent.sleep(1);

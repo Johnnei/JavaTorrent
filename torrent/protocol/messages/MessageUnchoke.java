@@ -31,6 +31,10 @@ public class MessageUnchoke implements IMessage {
 	}
 	
 	@Override
+	public void setReadDuration(int duration) {
+	}
+	
+	@Override
 	public String toString() {
 		return "Unchoke";
 	}

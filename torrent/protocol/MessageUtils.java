@@ -50,6 +50,7 @@ public class MessageUtils {
 	
 	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
 		p.setStatus("Receiving Message: ...");
+		long readStart = System.currentTimeMillis();
 		Stream stream = new Stream(4);
 		stream.fill(inStream.readByteArray(4)); //Read Length
 		int length = stream.readInt();
@@ -65,6 +66,7 @@ public class MessageUtils {
 				IMessage message = idToMessage.get(id).getClass().newInstance();
 				p.setStatus("Receiving Message: " + message.toString());
 				stream.fill(inStream.readByteArray(length - 1));
+				message.setReadDuration((int)(System.currentTimeMillis() - readStart));
 				message.read(stream);
 				p.setStatus("Received Message: " + message.toString());
 				return message;

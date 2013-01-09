@@ -77,6 +77,10 @@ public class MessageHandshake implements IMessage {
 	}
 	
 	@Override
+	public void setReadDuration(int duration) {
+	}
+	
+	@Override
 	public String toString() {
 		return "Handshake";
 	}

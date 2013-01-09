@@ -32,6 +32,10 @@ public class MessageChoke implements IMessage {
 	}
 	
 	@Override
+	public void setReadDuration(int duration) {
+	}
+	
+	@Override
 	public String toString() {
 		return "Choke";
 	}

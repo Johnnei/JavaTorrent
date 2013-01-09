@@ -34,6 +34,12 @@ public interface IMessage {
 	 * id
 	 */
 	public int getId();
+	
+	/**
+	 * Sets the read duration of this message
+	 * @param duration TODO
+	 */
+	public void setReadDuration(int duration);
 
 	public String toString();
 

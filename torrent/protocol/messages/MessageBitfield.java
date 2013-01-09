@@ -57,6 +57,10 @@ public class MessageBitfield implements IMessage {
 	}
 	
 	@Override
+	public void setReadDuration(int duration) {
+	}
+	
+	@Override
 	public String toString() {
 		return "Bitfield";
 	}
