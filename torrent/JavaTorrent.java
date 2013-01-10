@@ -1,7 +1,8 @@
 package torrent;
 
+import org.johnnei.utils.ThreadUtils;
+
 import torrent.download.MagnetLink;
-import torrent.download.Torrent;
 import torrent.frame.TorrentFrame;
 
 public class JavaTorrent extends Thread {
@@ -39,7 +40,7 @@ public class JavaTorrent extends Thread {
 			frame.repaint();
 			long duration = System.currentTimeMillis() - startTime;
 			if(duration > 0 && duration < 1000)
-				Torrent.sleep(1000 - (int)duration);
+				ThreadUtils.sleep(1000 - (int)duration);
 			/*
 			 * } catch (Exception e) { }
 			 */

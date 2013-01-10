@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.johnnei.utils.ThreadUtils;
+
 import torrent.Logable;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
@@ -192,7 +194,7 @@ public class Torrent extends Thread implements Logable {
 			}
 			int sleep = (int) (25 - (System.currentTimeMillis() - startTime));
 			if (sleep > 0) {
-				sleep(sleep);
+				ThreadUtils.sleep(sleep);
 			}
 		}
 	}
@@ -224,7 +226,7 @@ public class Torrent extends Thread implements Logable {
 				}
 			}
 			processPeers();
-			sleep(100);
+			ThreadUtils.sleep(100);
 		}
 		log("Recieved all pieces, Checking hash");
 		if (metadata.checkHash(btihHash)) {
@@ -243,6 +245,8 @@ public class Torrent extends Thread implements Logable {
 	private void checkPeers() {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
+			if (p == null)
+				continue;
 			if (p.closed()) {
 				peers.remove(i--);
 				continue;
@@ -429,13 +433,6 @@ public class Torrent extends Thread implements Logable {
 		return peerManager.getAnnounceWantAmount(torrentStatus, getSeedCount() + getLeecherCount());
 	}
 
-	public static void sleep(int ms) {
-		try {
-			Thread.sleep(ms);
-		} catch (InterruptedException e) {
-		}
-	}
-
 	public void pollRates() {
 		synchronized (this) {
 			for (int i = 0; i < peers.size(); i++) {
@@ -476,12 +473,14 @@ public class Torrent extends Thread implements Logable {
 		int seeds = 0;
 		if (torrentFiles == null || peers == null)
 			return 0;
-		synchronized (this) {
-			for (int i = 0; i < peers.size(); i++) {
-				if (peers.get(i).getClient().hasPieceCount() == torrentFiles.getPieceCount())
-					++seeds;
-			}
+		for (int i = 0; i < peers.size(); i++) {
+			Peer p = peers.get(i);
+			if (p == null)
+				continue;
+			if (p.getClient().hasPieceCount() == torrentFiles.getPieceCount())
+				++seeds;
 		}
+		
 		return seeds;
 	}
 
@@ -528,11 +527,12 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public ArrayList<Peer> getDownloadableLeechers() {
 		ArrayList<Peer> leechers = new ArrayList<Peer>();
-		synchronized(this) { //TODO Speed this one up!
-			for(Peer p : peers) {
-				if(p.hasPieceCount() > 0 && !p.getMyClient().isChoked())
-					leechers.add(p);
-			}
+		for(int i = 0; i < peers.size(); i++) {
+			Peer p = peers.get(i);
+			if(p == null)
+				continue;
+			if(p.hasPieceCount() > 0 && !p.getMyClient().isChoked())
+				leechers.add(p);
 		}
 		return leechers;
 	}

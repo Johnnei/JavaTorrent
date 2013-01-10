@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.johnnei.utils.ThreadUtils;
+
 import torrent.download.files.HashedPiece;
 import torrent.download.files.Piece;
 import torrent.download.files.PieceInfo;
@@ -46,7 +48,7 @@ public class TorrentFiles implements IDownloadable {
 			Bencode decoder = new Bencode(data);
 			parseDictionary(decoder.decodeDictionary());
 		} catch (IOException e) {
-			Torrent.sleep(10);
+			ThreadUtils.sleep(10);
 			parseTorrentFileData(torrentFile);
 		}
 	}

@@ -6,6 +6,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import org.johnnei.utils.ThreadUtils;
+
 import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
@@ -123,7 +125,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		setStatus("Awaiting Handshake response");
 		long handShakeSentTime = System.currentTimeMillis();
 		while (inStream.available() < 68) {
-			Torrent.sleep(10);
+			ThreadUtils.sleep(10);
 			if (System.currentTimeMillis() - handShakeSentTime > 5000) {
 				if(inStream.available() == 0) {
 					socket.close();
@@ -178,7 +180,7 @@ public class Peer extends Thread implements Logable, ISortable {
 			} catch (IOException e) {
 				close();
 			}
-			Torrent.sleep(1);
+			ThreadUtils.sleep(1);
 		}
 		close();
 		setStatus("Connection closed");

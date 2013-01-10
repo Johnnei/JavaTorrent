@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.johnnei.utils.ThreadUtils;
+
 import torrent.download.files.Piece;
 import torrent.encoding.SHA1;
 
@@ -70,7 +72,7 @@ public class Metadata implements IDownloadable {
 			out.flush();
 			out.close();
 		} catch (IOException e) {
-			Torrent.sleep(10);
+			ThreadUtils.sleep(10);
 			save(file);
 		}
 	}
