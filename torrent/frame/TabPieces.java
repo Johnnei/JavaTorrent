@@ -53,11 +53,11 @@ public class TabPieces extends TableBase {
 		}
 		Mergesort sortedPieces = new Mergesort(pieceList);
 		sortedPieces.sort();
-		for(int i = pieceList.size() - 1; i > 0 ; i--) {
+		for(int i = pieceList.size() - 1; i >= 0 ; i--) {
 			if(isVisible()) {
 				Piece p = (Piece)sortedPieces.getItem(i);
 				int doneCount = p.getDoneCount();
-				int progress = 100 * (doneCount / p.getBlockCount());
+				int progress = (int)(100 * (doneCount / (double)p.getBlockCount()));
 				
 				g.drawString("" + p.getIndex(), 5, getTextY());
 				g.drawString("" + p.getSize(), 100, getTextY());

@@ -45,7 +45,7 @@ public class TabPeers extends TableBase {
 			Mergesort peerList = new Mergesort(toSort);
 			peerList.sort();
 			//Draw
-			for (int i = toSort.size() - 1; i > 0 ; i--) {
+			for (int i = toSort.size() - 1; i >= 0 ; i--) {
 				if (rowIsVisible()) {
 					Peer peer = (Peer) peerList.getItem(i);
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
