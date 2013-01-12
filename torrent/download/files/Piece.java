@@ -1,194 +1,220 @@
 package torrent.download.files;
 
-import torrent.download.Torrent;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+
+import org.johnnei.utils.JMath;
+
+import torrent.TorrentException;
+import torrent.download.FileInfo;
+import torrent.download.Files;
 import torrent.util.ISortable;
 
-public class Piece extends PieceInfo implements ISortable {
-
+public class Piece implements ISortable {
+	
 	/**
-	 * The pieces used to reference to any smaller sub-piece
+	 * The files associated with this piece
+	 */
+	protected Files files;
+	/**
+	 * The index of this piece in the torrent
+	 */
+	private int index;
+	/**
+	 * All the blocks in this piece
 	 */
 	private Block[] blocks;
-	private byte[] data;
-	private int obtainedData;
-	private boolean obtainedAllData;
-	private boolean isRequested;
-
-	public Piece(int index, int size) {
-		super(index, size);
-		data = new byte[size];
-		obtainedAllData = false;
-		obtainedData = 0;
+	
+	public Piece(Files files, int index, int pieceSize, int blockSize) {
+		this.index = index;
+		this.files = files;
+		blocks = new Block[JMath.ceil(pieceSize / (double)blockSize)];
+		int blockOffset = 0;
+		while(pieceSize > 0) {
+			blocks[blockOffset] = new Block(blockOffset, JMath.min(blockSize, pieceSize));
+			pieceSize -= blocks[blockOffset].getSize();
+			++blockOffset;
+		}
 	}
-
+	
+	/**
+	 * Reset the entire piece as unstarted
+	 */
+	public void reset() {
+		for(int i = 0; i < blocks.length; i++) {
+			blocks[i].setDone(false);
+			blocks[i].setRequested(false);
+		}
+	}
+	
+	/**
+	 * Resets a single block as unstarted
+	 * @param blockIndex
+	 */
+	public void reset(int blockIndex) {
+		blocks[blockIndex].setDone(false);
+		blocks[blockIndex].setRequested(false);
+	}
+	
+	/**
+	 * Writes the block into the correct file(s)
+	 * @param blockIndex The index of the block to write
+	 * @param blockData The data of the block
+	 * @throws Exception
+	 */
+	public void storeBlock(int blockIndex, byte[] blockData) throws TorrentException {
+		Block block = blocks[blockIndex];
+		if(block.getSize() == blockData.length) {
+			int remainingBytes = block.getSize();
+			//Write Block
+			while(remainingBytes > 0) {
+				int dataOffset = (block.getSize() - remainingBytes);
+				//Retrieve fileinfo
+				FileInfo outputFile = files.getFileForBlock(index, blockIndex, dataOffset);
+				long totalOffset = (index * files.getPieceSize()) + (blockIndex * files.getBlockSize()) + dataOffset;
+				long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
+				int bytesToWrite = remainingBytes;
+				if(offsetInFile + remainingBytes > outputFile.getSize()) {
+					bytesToWrite = (int)(outputFile.getSize() - offsetInFile);
+				}
+				//Write Bytes
+				synchronized (outputFile.FILE_LOCK) {
+					RandomAccessFile file = outputFile.getFileAcces();
+					try {
+						file.seek(offsetInFile);
+						file.write(blockData, dataOffset, bytesToWrite);
+						remainingBytes -= bytesToWrite;
+					} catch (IOException e) {
+						block.setDone(false);
+						block.setRequested(false);
+					}
+				}
+				block.setDone(true);
+			}
+		} else {
+			blocks[blockIndex].setDone(false);
+			blocks[blockIndex].setRequested(false);
+			throw new TorrentException("Block x-"+ blockIndex +" size did not match. Expected: " + blocks[blockIndex].getSize() + ", Got: " + blockData.length);
+		}
+	}
+	
+	/**
+	 * Counts all block sizes which are not done yet
+	 * @return The remaining amount of bytes to finish this piece
+	 */
+	public long getRemainingBytes() {
+		long remaining = 0L;
+		for(int i = 0; i < blocks.length; i++) {
+			if(!blocks[i].isDone()) {
+				remaining += blocks[i].getSize();
+			}
+		}
+		return remaining;
+	}
+	
+	/**
+	 * Checks if all blocks are done
+	 * @return If this piece is completed
+	 */
+	public boolean isDone() {
+		for(int i = 0; i < blocks.length; i++) {
+			if(!blocks[i].isDone())
+				return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Checks all blockStates if they have been started
+	 * @return true if any progress is found
+	 */
 	public boolean isStarted() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isRequested())
+		for(int i = 0; i < blocks.length; i++) {
+			if(blocks[i].isStarted())
 				return true;
 		}
 		return false;
 	}
 
-	public int getProgress() {
-		double done = 0D;
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isDone())
-				++done;
+	@Override
+	public int getValue() {
+		int value = 0;
+		for(int i = 0; i < blocks.length; i++) {
+			if(blocks[i].isDone())
+				value += 2;
+			else if(blocks[i].isRequested())
+				value += 1;
 		}
-		int p = (int) (100 * (done / blocks.length));
-		return p;
-	}
-
-	public void setRequested(boolean requested) {
-		isRequested = requested;
-	}
-
-	public boolean isRequested() {
-		return isRequested;
-	}
-
-	public boolean isRequestedAll() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (!blocks[i].isRequested())
-				return false;
-		}
-		return true;
-	}
-
-	public boolean hasData() {
-		return obtainedAllData;
-	}
-
-	public boolean hasAllBlocks() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (!blocks[i].isDone())
-				return false;
-		}
-		return true;
-	}
-
-	public boolean fill(byte[] data, int offset) {
-		if (offset + data.length <= getSize()) {
-			for (int i = 0; i < data.length; i++) {
-				this.data[offset + i] = data[i];
-				obtainedData++;
-			}
-			blocks[offset / Torrent.REQUEST_SIZE].setDone(true);
-			obtainedAllData = obtainedData == this.data.length;
-		}
-		return obtainedAllData;
+		return value;
 	}
 
 	/**
-	 * Resets the buffer to store new bytes
+	 * Gets the amount of blocks in this piece
+	 * @return block count
 	 */
-	public void resetBuffer() {
-		data = new byte[getSize()];
-		obtainedAllData = false;
-	}
-
-	public void reset() {
-		data = new byte[0];
-		obtainedAllData = false;
-		for (int i = 0; i < blocks.length; i++) {
-			blocks[i].setDone(false);
-			blocks[i].setRequested(false);
-		}
-	}
-
-	public void cancel(int piece) {
-		blocks[piece].setRequested(false);
-	}
-
-	public boolean fill(byte[] data) {
-		if (data.length == getSize()) {
-			this.data = data;
-			obtainedData = data.length;
-			obtainedAllData = true;
-		}
-		return obtainedAllData;
-	}
-
-	/**
-	 * Fills the message with the request data
-	 * 
-	 * @param message
-	 *            The message to be filled
-	 * @return An array of size 3 in format { blockId, length, Offset } Or an array of size 0 in case of an error
-	 */
-	public int[] getPieceRequest() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isRequested())
-				continue;
-			blocks[i].setRequested(true);
-			return new int[] { i, blocks[i].getSize(), Torrent.REQUEST_SIZE * blocks[i].getIndex() };
-		}
-		return new int[] {};
-	}
-
-	public void setSize(int size) {
-		super.setSize(size);
-		int blockCount = (int) Math.ceil(getSize() / Torrent.REQUEST_SIZE);
-		blocks = new Block[blockCount];
-		int remaining = getSize();
-		for (int i = 0; i < blockCount; i++) {
-			int pSize = (remaining >= Torrent.REQUEST_SIZE) ? Torrent.REQUEST_SIZE : remaining;
-			blocks[i] = new Block(i, pSize);
-			remaining -= blocks[i].getSize();
-		}
-	}
-
-	public byte[] getData() {
-		return data;
-	}
-
 	public int getBlockCount() {
 		return blocks.length;
 	}
-
-	public int getDoneCount() {
-		int count = 0;
-		for(int i = 0; i < blocks.length; i++) {
-			if(blocks[i].isDone())
-				count++;
-		}
-		return count;
-	}
 	
 	/**
-	 * The amount of bytes still needed to be downloaded
+	 * Gets the index of this Piece<br/>
+	 * The index is equal to the offset in the file divided by the default piece size
 	 * @return
 	 */
-	public int getRemainingBytes() {
-		if(blocks == null)
-			return 0;
-		int bytes = 0;
-		for(int i = 0; i < blocks.length; i++) {
-			if(!blocks[i].isDone())
-				bytes += blocks[i].getSize();
-		}
-		return bytes;
+	public int getIndex() {
+		return index;
 	}
 
+	/**
+	 * Gets the total size of all blocks
+	 * @return The size of this piece
+	 */
+	public int getSize() {
+		int size = 0;
+		for(int i = 0; i < blocks.length; i++) {
+			size += blocks[i].getSize();
+		}
+		return size;
+	}
+
+	/**
+	 * Gets the amount of blocks done
+	 * @return block done count
+	 */
+	public int getDoneCount() {
+		int doneCount = 0;
+		for(int i = 0; i < blocks.length; i++) {
+			if(blocks[i].isDone())
+				++doneCount;
+		}
+		return doneCount;
+	}
+
+	/**
+	 * Gets the amount of block requested
+	 * @return block requested count
+	 */
 	public int getRequestedCount() {
-		int count = 0;
-		for(int i = 0; i < blocks.length; i++) {
-			if(blocks[i].isRequested() && !blocks[i].isDone())
-				count++;
-		}
-		return count;
-	}
-
-	@Override
-	public int getValue() {
-		int count = 0;
+		int requestedCount = 0;
 		for(int i = 0; i < blocks.length; i++) {
 			if(blocks[i].isRequested())
-				count++;
-			if(blocks[i].isDone()) //Done counts for 2
-				count++;
+				++requestedCount;
 		}
-		return count;
+		return requestedCount;
+	}
+
+	/**
+	 * Gets a new block to be requested
+	 * @return an unrequested block
+	 */
+	public Block getRequestBlock() {
+		for(int i = 0; i < blocks.length; i++) {
+			if(!blocks[i].isDone() && !blocks[i].isRequested()) {
+				blocks[i].setRequested(true);
+				return blocks[i];
+			}
+		}
+		return null;
 	}
 
 }

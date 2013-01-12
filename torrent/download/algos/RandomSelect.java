@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import torrent.download.Torrent;
-import torrent.download.files.PieceInfo;
+import torrent.download.files.Piece;
 import torrent.download.peer.Peer;
 
 /**
@@ -29,24 +29,23 @@ public class RandomSelect implements IDownloadRegulator {
 	}
 
 	@Override
-	public ArrayList<Peer> getPeerForPiece(PieceInfo pieceInfo) {
-		ArrayList<Peer> peerList = new ArrayList<Peer>();
-		for (int i = 0; i < torrent.getPeers().size(); i++) {
-			Peer p = torrent.getPeers().get(i);
+	public ArrayList<Peer> getPeerForPiece(Piece pieceInfo) {
+		ArrayList<Peer> peerList = torrent.getDownloadablePeers();
+		ArrayList<Peer> resultList = new ArrayList<Peer>();
+		for (int i = 0; i < peerList.size(); i++) {
+			Peer p = peerList.get(i);
 			if (p.isWorking() && p.getFreeWorkTime() == 0)
 				continue;
-			if (p.getMyClient().isChoked())
-				continue;
-			if (p.hasPiece(pieceInfo.getIndex())) {
-				peerList.add(p);
+			if (p.getClient().hasPiece(pieceInfo.getIndex())) {
+				resultList.add(p);
 			}
 		}
-		return peerList;
+		return resultList;
 	}
 
 	@Override
-	public PieceInfo getPiece() {
-		ArrayList<PieceInfo> undownloaded = torrent.getTorrentFiles().getUndownloadedPieces();
+	public Piece getPiece() {
+		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
 		if (undownloaded.size() == 0)
 			return null;
 		return undownloaded.get(rand.nextInt(undownloaded.size()));

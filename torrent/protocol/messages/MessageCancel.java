@@ -38,7 +38,7 @@ public class MessageCancel implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.getClient().removeJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
+		peer.getClient().removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)));
 	}
 
 	@Override

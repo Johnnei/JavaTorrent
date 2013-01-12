@@ -39,12 +39,12 @@ public class TabFiles extends JPanel {
 			return;
 		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 			return;
-		FileInfo[] f = torrent.getTorrentFiles().getFiles();
+		FileInfo[] f = torrent.getFiles().getFiles();
 		Object[][] data = new Object[f.length][HEADER.length];
 		for (int i = 0; i < f.length; i++) {
 			data[i][0] = f[i].getFilename();
 			data[i][1] = f[i].getSize();
-			data[i][2] = "" + (int) Math.ceil(f[i].getSize() / (double) torrent.getTorrentFiles().getPieceSize());
+			data[i][2] = "" + (int) Math.ceil(f[i].getSize() / (double) torrent.getFiles().getPieceSize());
 			data[i][3] = "" + f[i].getPieceHaveCount();
 		}
 		final Object[][] invokeData = data;

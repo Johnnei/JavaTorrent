@@ -5,6 +5,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Random;
 
+import org.johnnei.utils.ThreadUtils;
+
 import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
@@ -92,12 +94,8 @@ public class Tracker extends Thread implements Logable {
 		for (int i = 0; i < 3; i++) {
 			connect();
 			if (socket == null) {
-				try {
-					setStatus("Delaying reconnecting");
-					Thread.sleep(10000);
-				} catch (InterruptedException e) {
-					
-				}
+				setStatus("Delaying reconnecting");
+				ThreadUtils.sleep(10000);
 				setStatus("Connecting (Attempt: " + (2 + i) + ")");
 			} else
 				return true;
@@ -123,10 +121,7 @@ public class Tracker extends Thread implements Logable {
 					lastScrape = System.currentTimeMillis();
 				}
 			}
-			try {
-				Thread.sleep(50);
-			} catch (Exception e) {
-			}
+			ThreadUtils.sleep(1000);
 		}
 		setStatus("Unable to connect");
 	}
@@ -172,7 +167,7 @@ public class Tracker extends Thread implements Logable {
 		stream.writeByte(torrent.getHashArray());
 		stream.writeByte(Manager.getPeerId());
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
-		stream.writeLong(torrent.getRemainingBytes()); // Bytes left
+		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
 		stream.writeLong(0); // Uploaded bytes
 		if(firstAnnounce) {
 			stream.writeInt(2); // EVENT: None = 0, Completed = 1, Started = 2, Stopped = 3

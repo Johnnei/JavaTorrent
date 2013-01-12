@@ -135,4 +135,8 @@ public class Client {
 		return workingQueue.size();
 	}
 
+	public void clearJobs() {
+		workingQueue.clear();
+	}
+
 }

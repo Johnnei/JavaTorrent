@@ -1,29 +1,49 @@
 package torrent.download.files;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+
+import org.johnnei.utils.ThreadUtils;
+
+import torrent.TorrentException;
+import torrent.download.FileInfo;
+import torrent.download.Files;
 import torrent.encoding.SHA1;
 
-/**
- * A commenly more large piece with a 20 byte SHA1 hash
- * 
- * @author Johnnei
- * 
- */
 public class HashedPiece extends Piece {
 
-	private byte[] sha1Hash;
-
-	public HashedPiece(int index, int size, byte[] sha1Hash) {
-		super(index, 0);
-		this.sha1Hash = sha1Hash;
-		setSize(size);
+	private byte[] shaHash;
+	
+	public HashedPiece(byte[] shaHash, Files files, int index, int pieceSize, int blockSize) {
+		super(files, index, pieceSize, blockSize);
+		this.shaHash = shaHash;
 	}
-
-	/**
-	 * Checks if the hash matches with the one in the torrent file
-	 * 
-	 * @return
-	 */
-	public boolean checkHash() {
-		return SHA1.match(sha1Hash, SHA1.hash(getData()));
+	
+	public boolean checkHash() throws TorrentException {
+		byte[] pieceData = new byte[getSize()];
+		int bytesCollected = 0;
+		int pieceOffset = getIndex() * files.getPieceSize();
+		while(bytesCollected < pieceData.length) {
+			int blockIndex = bytesCollected / files.getBlockSize();
+			int blockDataOffset = bytesCollected % files.getBlockSize();
+			int bytesToRead = getSize() - bytesCollected;
+			FileInfo file = files.getFileForBlock(getIndex(), blockIndex, blockDataOffset);
+			if(file.getSize() < pieceOffset + bytesToRead) {
+				bytesToRead = (int)(file.getSize() - pieceOffset);
+			}
+			synchronized (file.FILE_LOCK) {
+				try {
+					RandomAccessFile fileAccess = file.getFileAcces();
+					fileAccess.seek(pieceOffset + bytesCollected); 
+					int read = fileAccess.read(pieceData, bytesCollected, bytesToRead);
+					if(read >= 0)
+						bytesCollected += read;
+				} catch (IOException e) {
+					ThreadUtils.sleep(10);
+					return checkHash();
+				}
+			}
+		}
+		return SHA1.match(shaHash, SHA1.hash(pieceData));
 	}
 }

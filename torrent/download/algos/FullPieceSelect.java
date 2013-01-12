@@ -5,7 +5,6 @@ import java.util.Random;
 
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
-import torrent.download.files.PieceInfo;
 import torrent.download.peer.Peer;
 
 /**
@@ -34,19 +33,19 @@ public class FullPieceSelect implements IDownloadRegulator {
 	}
 
 	@Override
-	public ArrayList<Peer> getPeerForPiece(PieceInfo p) {
+	public ArrayList<Peer> getPeerForPiece(Piece p) {
 		return randSelect.getPeerForPiece(p);
 	}
 	
-	private PieceInfo getMostAvailable() {
-		ArrayList<PieceInfo> undownloaded = torrent.getTorrentFiles().getUndownloadedPieces();
-		int[] availability = new int[torrent.getTorrentFiles().getPieceCount()];
+	private Piece getMostAvailable() {
+		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
+		int[] availability = new int[torrent.getFiles().getPieceCount()];
 		int max = 0;
-		PieceInfo info = null;
-		for(PieceInfo pieceInfo : undownloaded) {
-			ArrayList<Peer> peers = torrent.getDownloadableLeechers();
+		Piece info = null;
+		for(Piece pieceInfo : undownloaded) {
+			ArrayList<Peer> peers = torrent.getDownloadablePeers();
 			for(Peer p : peers) {
-				if(p.hasPiece(pieceInfo.getIndex()))
+				if(p.getClient().hasPiece(pieceInfo.getIndex()))
 					availability[pieceInfo.getIndex()]++;
 				if(availability[pieceInfo.getIndex()] > max) {
 					max = availability[pieceInfo.getIndex()];
@@ -62,17 +61,17 @@ public class FullPieceSelect implements IDownloadRegulator {
 	}
 
 	@Override
-	public PieceInfo getPiece() {
-		ArrayList<PieceInfo> undownloaded = torrent.getTorrentFiles().getUndownloadedPieces();
-		ArrayList<PieceInfo> started = new ArrayList<PieceInfo>();
+	public Piece getPiece() {
+		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
+		ArrayList<Piece> started = new ArrayList<Piece>();
 		for (int i = 0; i < undownloaded.size(); i++) {
-			PieceInfo info = undownloaded.get(i);
-			Piece piece = torrent.getTorrentFiles().getPiece(info.getIndex());
-			if (piece.isStarted() && !piece.isRequestedAll()) {
+			Piece info = undownloaded.get(i);
+			Piece piece = torrent.getFiles().getPiece(info.getIndex());
+			if (piece.isStarted() && piece.getRequestedCount() < piece.getBlockCount()) {
 				started.add(info);
 			}
 		}
-		if (started.size() < 10)
+		if (started.size() < 2)
 			return getMostAvailable();
 		else
 			return started.get(rand.nextInt(started.size()));

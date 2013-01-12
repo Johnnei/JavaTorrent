@@ -1,24 +1,28 @@
 package torrent.download;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.Logable;
+import torrent.TorrentException;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
 import torrent.download.algos.IDownloadRegulator;
 import torrent.download.algos.IPeerManager;
-import torrent.download.files.PieceInfo;
+import torrent.download.files.Block;
+import torrent.download.files.Piece;
+import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.Tracker;
 import torrent.protocol.IMessage;
+import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
 import torrent.protocol.messages.MessageUninterested;
+import torrent.protocol.messages.extention.MessageExtension;
+import torrent.protocol.messages.ut_metadata.MessageRequest;
 import torrent.util.Logger;
 import torrent.util.StringUtil;
 
@@ -46,13 +50,9 @@ public class Torrent extends Thread implements Logable {
 	 */
 	private String status;
 	/**
-	 * Contains the metadata of this torrent
-	 */
-	private Metadata metadata;
-	/**
 	 * Contains all data of the actual torrent
 	 */
-	private TorrentFiles torrentFiles;
+	private Files files;
 	/**
 	 * The current state of the torrent
 	 */
@@ -77,14 +77,13 @@ public class Torrent extends Thread implements Logable {
 	 * The last time all peer interest states have been updated
 	 */
 	private long lastPeerUpdate = System.currentTimeMillis();
+	/**
+	 * Remembers if the torrent is collecting a piece so we can wait until all pieces are written to the hdd before continueing
+	 */
+	private int collectingPiece;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
-
-	/**
-	 * The default request size of 16KB
-	 */
-	public static final int REQUEST_SIZE = 1 << 15;
 
 	/**
 	 * Creates a torrent with space for 10 trackers
@@ -95,14 +94,15 @@ public class Torrent extends Thread implements Logable {
 
 	public Torrent(int trackerCount) {
 		trackers = new Tracker[trackerCount];
+		torrentStatus = STATE_DOWNLOAD_METADATA;
 		downloadedBytes = 0L;
 		peers = new ArrayList<Peer>();
 		keepDownloading = true;
-		metadata = new Metadata();
 		status = "Parsing Magnet Link";
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(500, 1.5F);
 		System.setOut(new Logger(System.out));
+		System.setErr(new Logger(System.err));
 	}
 
 	private boolean hasPeer(Peer p) {
@@ -143,8 +143,53 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void run() {
-		downloadTorrentFile();
-		downloadFiles();
+		for(int i = 0; i < trackers.length; i++) {
+			Tracker t = trackers[i];
+			if(t != null) {
+				try {
+					if(!t.isAlive()) {
+						t.start();
+					}
+				} catch (IllegalStateException e) {}
+			}
+		}
+		while(!files.isDone() || collectingPiece > 0) {
+			processPeers();
+			Piece piece = downloadRegulator.getPiece();
+			if(piece != null) {
+				ArrayList<Peer> downloadPeers = downloadRegulator.getPeerForPiece(piece);
+				while(piece.getRequestedCount() < piece.getBlockCount() && downloadPeers.size() > 0) {
+					Peer p = downloadPeers.get(0);
+					Block block = piece.getRequestBlock();
+					if(block == null) {
+						break;
+					} else {
+						IMessage message = null;
+						if(files.isMetadata()) {
+							message = new MessageExtension(p.getClient().getExtentionID(UTMetadata.NAME), new MessageRequest(block.getIndex()));
+						} else {
+							message = new torrent.protocol.messages.MessageRequest(piece.getIndex(), block.getIndex() * files.getBlockSize(), block.getSize());
+						}
+						p.getMyClient().addJob(new Job(piece.getIndex(), block.getIndex()));
+						p.addToQueue(message);
+						if(p.getFreeWorkTime() == 0)
+							downloadPeers.remove(0);
+					}
+				}
+			}
+			ThreadUtils.sleep(1);
+		}
+		if(files.isMetadata()) {
+			FileInfo f = files.getFiles()[0];
+			torrentStatus = STATE_DOWNLOAD_DATA;
+			log("Metadata download completed, Starting phase 2");
+			files = new Files(new File(f.getFilename()));
+			run();
+		} else {
+			log("Completed download, Switching to upload mode!");
+			//TODO Upload Mode
+		}
+		log("loop ended", true);
 	}
 	
 	/**
@@ -158,84 +203,6 @@ public class Torrent extends Thread implements Logable {
 		if (System.currentTimeMillis() - lastPeerCheck > 5000) {
 			checkPeers();
 			lastPeerCheck = System.currentTimeMillis();
-		}
-	}
-
-	private void downloadFiles() {
-		torrentFiles = new TorrentFiles(new File("./" + displayName + ".torrent"));
-		torrentStatus = STATE_DOWNLOAD_DATA;
-
-		log("Phase 2: Downloading torrent files");
-		log("Download Regulator: " + downloadRegulator.getName());
-		log("Peer Manager: " + peerManager.getName());
-		
-		for(int i = 0; i < torrentFiles.getFiles().length; i++) {
-			FileInfo fInfo = torrentFiles.getFiles()[i];
-			try {
-				fInfo.getPieceWriter().reserveDiskspace(fInfo.getSize());
-			} catch (IOException e) {
-				
-			}
-		}
-
-		while (!torrentFiles.hasAllPieces()) {
-			long startTime = System.currentTimeMillis();
-			processPeers();
-			PieceInfo piece = downloadRegulator.getPiece();
-			if (piece != null) {
-				ArrayList<Peer> peerList = downloadRegulator.getPeerForPiece(piece);
-				for (int i = 0; i < peerList.size() && !torrentFiles.getPiece(piece.getIndex()).isRequestedAll(); i++) {
-					Peer p = peerList.get(i);
-					int requestAmount = p.getFreeWorkTime();
-					while(requestAmount-- > 0 && !torrentFiles.getPiece(piece.getIndex()).isRequestedAll()) {
-						p.requestPiece(torrentFiles.getPiece(piece.getIndex()));
-					}
-				}
-			}
-			int sleep = (int) (25 - (System.currentTimeMillis() - startTime));
-			if (sleep > 0) {
-				ThreadUtils.sleep(sleep);
-			}
-		}
-	}
-
-	private void downloadTorrentFile() {
-		System.out.println("Initiating Download");
-		for (Tracker t : trackers) {
-			if (t != null) {
-				if(!t.isAlive())
-					t.start();
-			}
-		}
-		log("Phase 1: Downloading " + displayName + ".torrent");
-		while (!metadata.hasAllPieces()) {
-			if (metadata.hasMetainfo()) {
-				int index = metadata.getNextPieceIndex();
-				if (index > -1) { // Check if we still need a piece
-					synchronized (this) {
-						Random r = new Random();
-						for (int i = r.nextInt(peers.size()); i < peers.size(); i++) {
-							Peer p = peers.get(i);
-							if (p.hasExtentionId("ut_metadata") && !p.isWorking()) {
-								p.requestMetadataPiece(index);
-								metadata.getPiece(index).setRequested(true);
-								break;
-							}
-						}
-					}
-				}
-			}
-			processPeers();
-			ThreadUtils.sleep(100);
-		}
-		log("Recieved all pieces, Checking hash");
-		if (metadata.checkHash(btihHash)) {
-			log("Hash matched, Saving file to disk");
-			metadata.save(new File("./" + displayName + ".torrent"));
-		} else {
-			log("Hash failed, Redownloading metadata");
-			metadata.clear();
-			downloadTorrentFile();
 		}
 	}
 
@@ -260,14 +227,14 @@ public class Torrent extends Thread implements Logable {
 	 * Updates the interested states
 	 */
 	private void updatePeers() {
-		if(torrentFiles == null)
+		if(files == null)
 			return;
-		ArrayList<PieceInfo> neededPieces = torrentFiles.getNeededPieces();
+		ArrayList<Piece> neededPieces = files.getNeededPieces();
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			boolean hasNoPieces = true;
 			for (int j = 0; j < neededPieces.size(); j++) {
-				if (p.hasPiece(neededPieces.get(j).getIndex())) {
+				if (p.getClient().hasPiece(neededPieces.get(j).getIndex())) {
 					hasNoPieces = false;
 					if (!p.getClient().isInterested()) {
 						p.addToQueue(new MessageInterested());
@@ -285,6 +252,7 @@ public class Torrent extends Thread implements Logable {
 
 	public void setDisplayName(String displayName) {
 		this.displayName = displayName;
+		files = new Files("./" + displayName + ".torrent");
 		setName(displayName);
 	}
 
@@ -336,14 +304,6 @@ public class Torrent extends Thread implements Logable {
 		return keepDownloading;
 	}
 
-	public Metadata getMetadata() {
-		return metadata;
-	}
-
-	public int getPieceSize(int index, boolean isMetadata) {
-		return (isMetadata) ? metadata.getPieceSize(index) : -1;
-	}
-
 	@Override
 	public String getStatus() {
 		return status;
@@ -355,57 +315,42 @@ public class Torrent extends Thread implements Logable {
 
 	public double getProgress() {
 		double progress = 0D;
-		for(int i = 0; i < torrentFiles.getPieceCount(); i++) {
-			progress += torrentFiles.getPiece(i).getProgress();
+		for(int i = 0; i < files.getPieceCount(); i++) {
+			Piece p = files.getPiece(i);
+			progress += 100 * (p.getDoneCount() / p.getBlockCount());
 		}
-		return 100D * (progress / (torrentFiles.getPieceCount() * 100));
+		return 100D * (progress / (files.getPieceCount() * 100));
 	}
 
-	/**
-	 * Cancels the piece<br/>
-	 * It will re-add this piece to the requestable pieces pool
-	 * @param index
-	 * if negative it will be a metadata piece else a normal piece
-	 * @param piece
-	 */
-	public synchronized void cancelPiece(int index, int piece) {
-		if(index < 0) {
-			metadata.getPiece(-(index + 1)).setRequested(false);
-		} else {
-			torrentFiles.getPiece(index).cancel(piece);
+	public void collectPiece(int index, int offset, byte[] data) {
+		synchronized(this) {
+			++collectingPiece;
 		}
-	}
-
-	public synchronized void collectPiece(int index, int offset, byte[] data) {
-		downloadedBytes += data.length;
-		torrentFiles.fillPiece(index, offset, data);
-		log("Received Piece: " + index + "-" + (offset / REQUEST_SIZE));
-		if (torrentFiles.getPiece(index).hasAllBlocks()) {
-			if (torrentFiles.getPiece(index).checkHash()) {
-				try {
-					torrentFiles.save(index);
-					torrentFiles.getPiece(index).reset();
+		int blockIndex = offset / files.getBlockSize();
+		try {
+			log("Received Block: " + index + "-" + blockIndex);
+			files.getPiece(index).storeBlock(blockIndex, data);
+			if(!files.isMetadata()) {
+				downloadedBytes += data.length;
+			}
+			if (files.getPiece(index).isDone()) {
+				if (files.getPiece(index).checkHash()) {
 					broadcastMessage(new MessageHave(index));
 					log("Recieved and verified piece: " + index);
 					String p = Double.toString(getProgress());
 					log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
-				} catch (IOException e) {
-					log("Saving piece " + index + " failed: " + e.getMessage(), true);
+				} else {
+					log("Hash check failed on piece: " + index, true);
+					files.getPiece(index).reset();
 				}
-			} else {
-				log("Hash check failed on piece: " + index, true);
-				torrentFiles.getPiece(index).reset();
 			}
+		} catch (TorrentException e) {
+			log(e.getMessage(), true);
+			log("Resetting Block: " + index + "-" + blockIndex);
+			files.getPiece(index).reset(blockIndex);
 		}
-	}
-
-	public synchronized void collectPiece(int index, byte[] data) {
-		if (data == null) {
-			log("Retrieved Error on piece: " + index, true);
-			metadata.getPiece(index).setRequested(false);
-		} else {
-			log("Retrieved Piece " + index);
-			metadata.fillPiece(index, data);
+		synchronized(this) {
+			--collectingPiece;
 		}
 	}
 
@@ -441,8 +386,8 @@ public class Torrent extends Thread implements Logable {
 		}
 	}
 
-	public TorrentFiles getTorrentFiles() {
-		return torrentFiles;
+	public Files getFiles() {
+		return files;
 	}
 
 	public int getDownloadRate() {
@@ -470,14 +415,16 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public int getSeedCount() {
+		if(torrentStatus == STATE_DOWNLOAD_METADATA)
+			return 0;
 		int seeds = 0;
-		if (torrentFiles == null || peers == null)
+		if (files == null || peers == null)
 			return 0;
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p == null)
 				continue;
-			if (p.getClient().hasPieceCount() == torrentFiles.getPieceCount())
+			if (p.getClient().hasPieceCount() == files.getPieceCount())
 				++seeds;
 		}
 		
@@ -513,26 +460,24 @@ public class Torrent extends Thread implements Logable {
 	public long getDownloadedBytes() {
 		return downloadedBytes;
 	}
-	
-	public long getRemainingBytes() {
-		if(torrentStatus == STATE_DOWNLOAD_DATA)
-			return torrentFiles.getRemainingBytes();
-		else
-			return metadata.getRemainingBytes();
-	}
 
 	/**
 	 * Gets all lecheers which: has atleast 1 piece and has us unchoked
 	 * @return
 	 */
-	public ArrayList<Peer> getDownloadableLeechers() {
+	public ArrayList<Peer> getDownloadablePeers() {
 		ArrayList<Peer> leechers = new ArrayList<Peer>();
 		for(int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if(p == null)
 				continue;
-			if(p.hasPieceCount() > 0 && !p.getMyClient().isChoked())
-				leechers.add(p);
+			if(torrentStatus == STATE_DOWNLOAD_METADATA) {
+				if(p.getClient().hasExtentionID(UTMetadata.NAME))
+					leechers.add(p);
+			} else {
+				if(p.getClient().hasPieceCount() > 0 && !p.getMyClient().isChoked())
+					leechers.add(p);
+			}
 		}
 		return leechers;
 	}

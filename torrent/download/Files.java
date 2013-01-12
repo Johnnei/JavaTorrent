@@ -8,22 +8,21 @@ import java.util.HashMap;
 
 import org.johnnei.utils.ThreadUtils;
 
+import torrent.TorrentException;
 import torrent.download.files.HashedPiece;
 import torrent.download.files.Piece;
-import torrent.download.files.PieceInfo;
 import torrent.encoding.Bencode;
 import torrent.network.ByteInputStream;
 
-public class TorrentFiles implements IDownloadable {
+public class Files {
 
 	/**
 	 * The pieces downloaded by this torrent
 	 */
 	private HashedPiece[] pieces;
 	/**
-	 * The pieces which are still being downloaded
+	 * The folder name to put the files in
 	 */
-	private ArrayList<PieceInfo> undownloaded;
 	private String folderName;
 	/**
 	 * The size of a standard block
@@ -34,9 +33,30 @@ public class TorrentFiles implements IDownloadable {
 	 */
 	private FileInfo[] fileInfo;
 	private long totalSize;
+	private boolean isMetadata;
+	/**
+	 * The default size for a block
+	 */
+	private int blockSize;
+	
+	/**
+	 * Creates a Files instance based upon a magnet-link
+	 * @param filename
+	 */
+	public Files(String filename) {
+		isMetadata = true;
+		blockSize = 16384;
+		fileInfo = new FileInfo[1];
+		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(filename));
+		pieces = new HashedPiece[0];
+	}
 
-	public TorrentFiles(File torrentFile) {
-		undownloaded = new ArrayList<PieceInfo>();
+	/**
+	 * Creates a Files instance based upon a .torrent file
+	 * @param torrentFile
+	 */
+	public Files(File torrentFile) {
+		blockSize = 1 << 15;
 		parseTorrentFileData(torrentFile);
 	}
 
@@ -47,6 +67,7 @@ public class TorrentFiles implements IDownloadable {
 			in.close();
 			Bencode decoder = new Bencode(data);
 			parseDictionary(decoder.decodeDictionary());
+			isMetadata = false;
 		} catch (IOException e) {
 			ThreadUtils.sleep(10);
 			parseTorrentFileData(torrentFile);
@@ -72,7 +93,6 @@ public class TorrentFiles implements IDownloadable {
 				} else {
 					fileSize = (long) o;
 				}
-				remainingSize += fileSize;
 				ArrayList<?> fileStructure = (ArrayList<?>) file.get("path");
 				String fileName = "";
 				if (fileStructure.size() > 1) {
@@ -82,8 +102,9 @@ public class TorrentFiles implements IDownloadable {
 				} else {
 					fileName = (String) fileStructure.get(0);
 				}
-				FileInfo info = new FileInfo(i, fileName, fileSize, getFile(fileName));
+				FileInfo info = new FileInfo(i, fileName, fileSize, remainingSize, getFile(fileName));
 				fileInfo[i] = info;
+				remainingSize += fileSize;
 			}
 		} else { // Single file torrent
 
@@ -96,88 +117,59 @@ public class TorrentFiles implements IDownloadable {
 			int hashOffset = index * 20;
 			int size = (remainingSize >= pieceSize) ? pieceSize : (int) remainingSize;
 			byte[] sha1Hash = pieceHashes.substring(hashOffset, hashOffset + 20).getBytes();
-			pieces[index] = new HashedPiece(index, size, sha1Hash);
-			undownloaded.add(new PieceInfo(index, size));
+			pieces[index] = new HashedPiece(sha1Hash, this, index, size, blockSize);
 			remainingSize -= size;
 		}
 	}
 
-	@Override
-	public boolean hasAllPieces() {
-		return undownloaded.size() == 0;
-	}
-
-	public PieceInfo getInfo(int index) {
-		return undownloaded.get(index);
-	}
-
-	@Override
-	public synchronized void fillPiece(int index, int offset, byte[] data) {
-		if (pieces[index].getData().length != pieces[index].getSize()) {
-			pieces[index].resetBuffer();
+	/**
+	 * Checks if all files are downloaded
+	 * @return
+	 */
+	public boolean isDone() {
+		if(isMetadata) {
+			if(fileInfo[0].getSize() == 0L)
+				return false;
 		}
-		pieces[index].fill(data, offset);
+		return getNeededPieces().size() == 0;
 	}
 
+	/**
+	 * Gets the proper file location for the given filename
+	 * @param name The desired file name
+	 * @return The file within the download folder
+	 */
 	private File getFile(String name) {
 		return new File("./" + folderName + "/" + name);
 	}
 
-	@Override
-	public synchronized void fillPiece(int index, byte[] data) {
-		fillPiece(index, 0, data);
-	}
-
-	@Override
 	public HashedPiece getPiece(int index) {
 		return pieces[index];
-	}
-	
-	private FileInfo getFileInfoByPiece(Piece p) {
-		long fileOffset = p.getIndex() * pieceSize;
-		for (int i = 0; i < fileInfo.length; i++) {
-			FileInfo info = fileInfo[i];
-			totalSize += info.getSize();
-			if (fileOffset < totalSize) {
-				return info;
-			}
-		}
-		return null;
-	}
-
-	@Override
-	public synchronized void save(int index) throws IOException {
-		getFileInfoByPiece(pieces[index]).getPieceWriter().saveChunk(pieces[index], pieceSize);
-		long fileOffset = index * pieceSize;
-		long totalSize = 0L;
-		for (int i = 0; i < fileInfo.length; i++) {
-			FileInfo info = fileInfo[i];
-			totalSize += info.getSize();
-			if (fileOffset < totalSize) {
-				info.addPiece();
-				return;
-			}
-		}
-	}
-
-	@Override
-	public void save(File dic) {
 	}
 
 	public File getFolderName() {
 		return new File(folderName);
 	}
 
+	/**
+	 * Gets the default piece size
+	 * @return The default piece size
+	 */
 	public int getPieceSize() {
 		return pieceSize;
 	}
 
 	/**
-	 * Used to check if we are interested in the peer
-	 * 
+	 * Returns the list of pieces which are not completed yet
 	 * @return
 	 */
-	public ArrayList<PieceInfo> getNeededPieces() {
+	public ArrayList<Piece> getNeededPieces() {
+		ArrayList<Piece> undownloaded = new ArrayList<>();
+		for(int i = 0; i < pieces.length; i++) {
+			if(!pieces[i].isDone()) {
+				undownloaded.add(pieces[i]);
+			}
+		}
 		return undownloaded;
 	}
 
@@ -201,20 +193,12 @@ public class TorrentFiles implements IDownloadable {
 		return fileInfo;
 	}
 
-	public ArrayList<PieceInfo> getUndownloadedPieces() {
-		return undownloaded;
-	}
-	
-	/**
-	 * The amount of pieces we still need to download
-	 * @return
-	 */
-	public int getNeededPiecesCount() {
-		return undownloaded.size();
-	}
-
 	public int getBlockIndexByOffset(int offset) {
 		return offset / pieceSize;
+	}
+	
+	public int getBlockSize() {
+		return blockSize;
 	}
 	
 	/**
@@ -227,6 +211,51 @@ public class TorrentFiles implements IDownloadable {
 			left += pieces[i].getRemainingBytes();
 		}
 		return left;
+	}
+
+	/**
+	 * Gets the FileInfo for the given piece and block
+	 * @param index The piece index
+	 * @param blockIndex The block index within the piece
+	 * @param blockDataOffset The offset within the block
+	 * @return The FileInfo for the given data
+	 */
+	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
+		long pieceOffset = (index * pieceSize) + (blockIndex * blockSize) + blockDataOffset;
+		if(pieceOffset <= 0) {
+			return fileInfo[0];
+		} else {
+			long fileTotal = 0L;
+			for(int i = 0; i < fileInfo.length; i++) {
+				fileTotal += fileInfo[i].getSize();
+				if(pieceOffset <= fileTotal) {
+					return fileInfo[i];
+				}
+			}
+			throw new TorrentException("Piece is not within any of the files");
+		}
+	}
+	
+	/**
+	 * Sets the size of the metadata file  
+	 * @param torrentHash the associated torrent hash
+	 * @param size the size of the metadata file
+	 */
+	public void setFilesize(byte[] torrentHash, int size) {
+		if(isMetadata && fileInfo[0].getSize() == 0L && size > 0) {
+			pieceSize = size;
+			pieces = new HashedPiece[] { new HashedPiece(torrentHash, this, 0, size, blockSize) };
+			FileInfo f = fileInfo[0];
+			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(f.getFilename()));
+		}
+	}
+
+	/**
+	 * checks if the files are metadata
+	 * @return
+	 */
+	public boolean isMetadata() {
+		return isMetadata;
 	}
 
 }

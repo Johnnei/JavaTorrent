@@ -39,9 +39,9 @@ public class TabGeneral extends JPanel {
 				pieces += "Retrieving metadata";
 				leftSize += "Retrieving metadata";
 			} else {
-				totalSize += torrent.getTorrentFiles().getTotalSize() + " bytes";
-				pieces += torrent.getTorrentFiles().getPieceCount();
-				leftSize += torrent.getRemainingBytes() + " bytes";
+				totalSize += torrent.getFiles().getTotalSize() + " bytes";
+				pieces += torrent.getFiles().getPieceCount();
+				leftSize += torrent.getFiles().getRemainingBytes() + " bytes";
 			}
 			pending += torrent.getConnectingCount();
 			peers += torrent.getSeedCount();

@@ -51,7 +51,7 @@ public class MessageHandshake implements IMessage {
 					if(extensionData.containsKey(UTMetadata.NAME)) {
 						peer.getClient().addExtentionID(UTMetadata.NAME, (Integer)extensionData.get(UTMetadata.NAME));
 						if(dictionary.containsKey("metadata_size")) {
-							peer.getTorrent().getMetadata().setFilesize((int)dictionary.get("metadata_size"));
+							peer.getTorrent().getFiles().setFilesize(peer.getTorrent().getHashArray(), (int)dictionary.get("metadata_size"));
 						}
 					}
 				}

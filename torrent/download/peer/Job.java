@@ -23,7 +23,7 @@ public class Job {
 		return pieceIndex;
 	}
 	
-	public int getSubpiece() {
+	public int getBlockIndex() {
 		return subPiece;
 	}
 

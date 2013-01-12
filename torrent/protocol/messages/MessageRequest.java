@@ -9,37 +9,37 @@ import torrent.protocol.IMessage;
 public class MessageRequest implements IMessage {
 	
 	private int index;
-	private int begin;
 	private int offset;
+	private int length;
 	
 	public MessageRequest() {
 		
 	}
 	
-	public MessageRequest(int index, int begin, int offset) {
+	public MessageRequest(int index, int offset, int length) {
 		this.index = index;
-		this.begin = begin;
 		this.offset = offset;
+		this.length = length;
 	}
 
 	@Override
 	public void write(Stream outStream) {
 		outStream.writeInt(index);
-		outStream.writeInt(begin);
 		outStream.writeInt(offset);
+		outStream.writeInt(length);
 	}
 
 	@Override
 	public void read(Stream inStream) {
 		index = inStream.readInt();
-		begin = inStream.readInt();
 		offset = inStream.readInt();
+		length = inStream.readInt();
 	}
 
 	@Override
 	public void process(Peer peer) {
-		if(peer.hasPiece(index)) {
-			peer.getClient().addJob(new Job(index, peer.getTorrent().getTorrentFiles().getBlockIndexByOffset(offset)));
+		if(peer.getClient().hasPiece(index)) {
+			peer.getClient().addJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(length)));
 			//TODO Add actual file load and sending, Delaying it until I can finally receive a piece at a proper speed
 		} else {
 			peer.log("Requested a piece which I don't have", true);

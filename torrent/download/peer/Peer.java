@@ -11,15 +11,12 @@ import org.johnnei.utils.ThreadUtils;
 import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
-import torrent.download.files.Piece;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
-import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.MessageKeepAlive;
-import torrent.protocol.messages.MessageRequest;
 import torrent.protocol.messages.extention.MessageExtension;
 import torrent.protocol.messages.extention.MessageHandshake;
 import torrent.util.ISortable;
@@ -214,7 +211,7 @@ public class Peer extends Thread implements Logable, ISortable {
 		}
 		if (inactiveSeconds > 30 && torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
 			if (peerClient.hasPieceCount() == 0) { //They don't have anything
-				if(torrent.getTorrentFiles().getPieceCount() == torrent.getTorrentFiles().getNeededPiecesCount()) { //We can't send them anything
+				if(torrent.getFiles().getPieceCount() == torrent.getFiles().getNeededPieces().size()) { //We can't send them anything
 					close(); //We are of no use to eachother
 					return;
 				}
@@ -282,38 +279,6 @@ public class Peer extends Thread implements Logable, ISortable {
 		return status;
 	}
 
-	public boolean hasPiece(int index) {
-		return peerClient.hasPiece(index);
-	}
-
-	public void requestPiece(Piece piece) {
-		int[] result = piece.getPieceRequest();
-		if (result.length > 0) {
-			MessageRequest m = new MessageRequest(piece.getIndex(), result[2], result[1]);
-			messageQueue.add(m);
-			myClient.addJob(new Job(piece.getIndex(), result[0]));
-		} else {
-			log("Ordered to request piece " + piece.getIndex() + " but it has no remaining sub-pieces!", true);
-		}
-	}
-
-	public void requestMetadataPiece(int index) {
-		torrent.protocol.messages.ut_metadata.MessageRequest mr = new torrent.protocol.messages.ut_metadata.MessageRequest(index);
-		MessageExtension me = new MessageExtension(peerClient.getExtentionID(UTMetadata.NAME), mr);
-		synchronized (this) {
-			messageQueue.add(me);
-			myClient.addJob(new Job(-1 - index));
-		}
-	}
-
-	public boolean hasExtentionId(String extention) {
-		return peerClient.hasExtentionID(extention);
-	}
-
-	public boolean supportsExtention(int index, int bit) {
-		return peerClient.supportsExtention(index, bit);
-	}
-
 	public void updateLastActivity() {
 		lastActivity = System.currentTimeMillis();
 	}
@@ -341,10 +306,6 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	public void addToQueue(IMessage m) {
 		messageQueue.add(m);
-	}
-
-	public int hasPieceCount() {
-		return peerClient.hasPieceCount();
 	}
 
 	public Client getClient() {
@@ -376,8 +337,10 @@ public class Peer extends Thread implements Logable, ISortable {
 			Object[] keys = myClient.getKeySet().toArray();
 			for (int i = 0; i < keys.length; i++) {
 				Job job = (Job) keys[i];
-				torrent.cancelPiece(job.getPieceIndex(), job.getSubpiece());
+				torrent.getFiles().getPiece(job.getPieceIndex()).reset(job.getBlockIndex());
+				log("Reseting Piece: " + job.getPieceIndex() + "-" + job.getBlockIndex());
 			}
+			myClient.clearJobs();
 		}
 	}
 
@@ -406,7 +369,7 @@ public class Peer extends Thread implements Logable, ISortable {
 
 	@Override
 	public int getValue() {
-		return (getWorkQueueSize() * 1000) + peerClient.hasPieceCount() + downloadRate;
+		return (getWorkQueueSize() * 5000) + peerClient.hasPieceCount() + downloadRate;
 	}
 
 }
