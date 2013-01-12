@@ -197,7 +197,7 @@ public class Piece implements ISortable {
 	public int getRequestedCount() {
 		int requestedCount = 0;
 		for(int i = 0; i < blocks.length; i++) {
-			if(blocks[i].isRequested())
+			if(blocks[i].isRequested() && !blocks[i].isDone())
 				++requestedCount;
 		}
 		return requestedCount;

@@ -196,7 +196,7 @@ public class Files {
 	}
 
 	public int getBlockIndexByOffset(int offset) {
-		return offset / pieceSize;
+		return offset / blockSize;
 	}
 	
 	public int getBlockSize() {

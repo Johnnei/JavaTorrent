@@ -177,13 +177,13 @@ public class Torrent extends Thread implements Logable {
 					}
 				}
 			}
-			ThreadUtils.sleep(1);
+			ThreadUtils.sleep(25);
 		}
 		if(files.isMetadata()) {
 			FileInfo f = files.getFiles()[0];
-			torrentStatus = STATE_DOWNLOAD_DATA;
 			log("Metadata download completed, Starting phase 2");
 			files = new Files(new File(f.getFilename()));
+			torrentStatus = STATE_DOWNLOAD_DATA;
 			run();
 		} else {
 			log("Completed download, Switching to upload mode!");
