@@ -34,16 +34,11 @@ public class JavaTorrent extends Thread {
 
 	public void run() {
 		while (true) {
-			// try {
 			long startTime = System.currentTimeMillis();
 			frame.updateData();
 			frame.repaint();
-			long duration = System.currentTimeMillis() - startTime;
-			if(duration > 0 && duration < 1000)
-				ThreadUtils.sleep(1000 - (int)duration);
-			/*
-			 * } catch (Exception e) { }
-			 */
+			int duration = 1000 - (int)(System.currentTimeMillis() - startTime);
+			ThreadUtils.sleep(duration);
 		}
 	}
 
