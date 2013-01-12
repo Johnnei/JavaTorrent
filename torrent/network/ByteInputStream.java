@@ -20,18 +20,15 @@ public class ByteInputStream extends DataInputStream {
 	}
 
 	public int read() throws IOException {
-		if (peer != null) {
-			while (available() == 0) {
-				if (System.currentTimeMillis() - peer.getLastActivity() > 30000) // 30 Second Read time-out
-					throw new IOException("Read timed out");
-				ThreadUtils.sleep(1);
-			}
+		while (available() == 0) {
+			if (System.currentTimeMillis() - peer.getLastActivity() > 30000) // 30 Second Read time-out
+				throw new IOException("Read timed out");
+			ThreadUtils.sleep(1);
 		}
 		int b = super.read();
 		if (b != -1) {
-			speed++;
-			if (peer != null)
-				peer.updateLastActivity();
+			++speed;
+			peer.updateLastActivity();
 		}
 		return b;
 	}
@@ -57,10 +54,12 @@ public class ByteInputStream extends DataInputStream {
 		return array;
 	}
 
-	public synchronized int getSpeedAndReset() {
-		int speed = this.speed;
-		this.speed = 0;
+	public int getSpeed() {
 		return speed;
+	}
+	
+	public void reset(int downloadRate) {
+		speed -= downloadRate;
 	}
 
 }

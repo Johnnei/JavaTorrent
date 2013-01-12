@@ -1,5 +1,6 @@
 package torrent.download;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,7 +13,6 @@ import torrent.TorrentException;
 import torrent.download.files.HashedPiece;
 import torrent.download.files.Piece;
 import torrent.encoding.Bencode;
-import torrent.network.ByteInputStream;
 
 public class Files {
 
@@ -62,8 +62,10 @@ public class Files {
 
 	private void parseTorrentFileData(File torrentFile) {
 		try {
-			ByteInputStream in = new ByteInputStream(null, new FileInputStream(torrentFile));
-			String data = in.readString(in.available());
+			DataInputStream in = new DataInputStream(new FileInputStream(torrentFile));
+			String data = "";
+			while(in.available() > 0)
+				data += (char)in.readByte();
 			in.close();
 			Bencode decoder = new Bencode(data);
 			parseDictionary(decoder.decodeDictionary());

@@ -52,13 +52,18 @@ public class TabGeneral extends JPanel {
 
 		double progress = 0;
 		if (torrent != null) {
-			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA)
 				progress = torrent.getProgress();
 		}
 		g.setColor(Color.GRAY);
 		g.drawRect(10, 10, getWidth() - 20, 10);
+		if(torrent != null) {
+			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+				g.setColor(Color.ORANGE);
+			else
+				g.setColor(Color.GREEN);
+		} else
 		g.setColor(Color.GREEN);
-		g.drawRect(11, 11, (int) (progress * ((getWidth() - 22) / 100)), 8);
+		g.fillRect(11, 11, (int) (progress * 0.01 * (getWidth() - 21)), 9);
 
 		g.setColor(Color.BLACK);
 		g.drawString(name, 10, 50);

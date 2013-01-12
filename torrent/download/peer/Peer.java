@@ -70,8 +70,6 @@ public class Peer extends Thread implements Logable, ISortable {
 		messageQueue = new ArrayList<>();
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
-		downloadRate = 0;
-		uploadRate = 0;
 		passedHandshake = false;
 	}
 
@@ -317,8 +315,14 @@ public class Peer extends Thread implements Logable, ISortable {
 	}
 
 	public void pollRates() {
-		downloadRate = (inStream == null) ? 0 : inStream.getSpeedAndReset();
-		uploadRate = (outStream == null) ? 0 : outStream.getSpeedAndReset();
+		if(inStream != null) {
+			downloadRate = inStream.getSpeed();
+			inStream.reset(downloadRate);
+		}
+		if(outStream != null) {
+			uploadRate = outStream.getSpeed();
+			outStream.reset(uploadRate);
+		}
 	}
 
 	public int getDownloadRate() {
@@ -338,7 +342,6 @@ public class Peer extends Thread implements Logable, ISortable {
 			for (int i = 0; i < keys.length; i++) {
 				Job job = (Job) keys[i];
 				torrent.getFiles().getPiece(job.getPieceIndex()).reset(job.getBlockIndex());
-				log("Reseting Piece: " + job.getPieceIndex() + "-" + job.getBlockIndex());
 			}
 			myClient.clearJobs();
 		}

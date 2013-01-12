@@ -150,7 +150,7 @@ public class Torrent extends Thread implements Logable {
 					if(!t.isAlive()) {
 						t.start();
 					}
-				} catch (IllegalStateException e) {}
+				} catch (IllegalThreadStateException e) {}
 			}
 		}
 		while(!files.isDone() || collectingPiece > 0) {
@@ -317,7 +317,7 @@ public class Torrent extends Thread implements Logable {
 		double progress = 0D;
 		for(int i = 0; i < files.getPieceCount(); i++) {
 			Piece p = files.getPiece(i);
-			progress += 100 * (p.getDoneCount() / p.getBlockCount());
+			progress += 100 * (p.getDoneCount() / (double)p.getBlockCount());
 		}
 		return 100D * (progress / (files.getPieceCount() * 100));
 	}
@@ -346,7 +346,6 @@ public class Torrent extends Thread implements Logable {
 			}
 		} catch (TorrentException e) {
 			log(e.getMessage(), true);
-			log("Resetting Block: " + index + "-" + blockIndex);
 			files.getPiece(index).reset(blockIndex);
 		}
 		synchronized(this) {
@@ -379,10 +378,8 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void pollRates() {
-		synchronized (this) {
-			for (int i = 0; i < peers.size(); i++) {
-				peers.get(i).pollRates();
-			}
+		for (int i = 0; i < peers.size(); i++) {
+			peers.get(i).pollRates();
 		}
 	}
 
@@ -392,20 +389,16 @@ public class Torrent extends Thread implements Logable {
 
 	public int getDownloadRate() {
 		int dlRate = 0;
-		synchronized (this) {
-			for (int i = 0; i < peers.size(); i++) {
-				dlRate += peers.get(i).getDownloadRate();
-			}
+		for (int i = 0; i < peers.size(); i++) {
+			dlRate += peers.get(i).getDownloadRate();
 		}
 		return dlRate;
 	}
 
 	public int getUploadRate() {
 		int ulRate = 0;
-		synchronized (this) {
-			for (int i = 0; i < peers.size(); i++) {
-				ulRate += peers.get(i).getUploadRate();
-			}
+		for (int i = 0; i < peers.size(); i++) {
+			ulRate += peers.get(i).getUploadRate();
 		}
 		return ulRate;
 	}

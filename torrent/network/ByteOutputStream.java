@@ -13,7 +13,7 @@ public class ByteOutputStream extends DataOutputStream {
 		speed = 0;
 	}
 
-	public synchronized void write(int i) throws IOException {
+	public void write(int i) throws IOException {
 		speed++;
 		super.write(i);
 	}
@@ -24,10 +24,12 @@ public class ByteOutputStream extends DataOutputStream {
 		}
 	}
 
-	public synchronized int getSpeedAndReset() {
-		int speed = this.speed;
-		this.speed = 0;
+	public int getSpeed() {
 		return speed;
+	}
+	
+	public void reset(int uploadRate) {
+		speed -= uploadRate;
 	}
 
 }

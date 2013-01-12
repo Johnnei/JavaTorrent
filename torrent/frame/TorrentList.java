@@ -64,11 +64,14 @@ public class TorrentList extends JPanel implements MouseListener {
 			g.setColor(getForegroundColor());
 			g.drawString(torrent.getDisplayName(), 5, 16 + y);
 			//Progress Bar
-			double p = (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) ? (int)torrent.getProgress() * 2 : 0;
-			g.drawRect(400, y, 200, 24);
+			double p = (int)torrent.getProgress() * 2;
+			g.drawRect(400, y, 201, 24);
 			g.setColor(Color.RED);
-			g.fillRect(401 + (int)p, y + 1, 199 - (int)p, 23);
-			g.setColor(Color.GREEN);
+			g.fillRect(401 + (int)p, y + 1, 200 - (int)p, 23);
+			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+				g.setColor(Color.ORANGE);
+			else
+				g.setColor(Color.GREEN);
 			g.fillRect(401, y + 1, (int)p, 23);
 			g.setColor(getForegroundColor());
 			drawCenteredString(g, (p / 2) + "%", 500, y + 16);

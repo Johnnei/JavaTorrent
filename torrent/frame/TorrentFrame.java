@@ -57,5 +57,9 @@ public class TorrentFrame extends JFrame {
 		torrentList.setSelectedIndex(index);
 		details.setTorrent(torrents.get(index));
 	}
+	
+	public void repaint() {
+		super.repaint();
+	}
 
 }
