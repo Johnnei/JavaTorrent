@@ -15,6 +15,7 @@ import torrent.download.files.Block;
 import torrent.download.files.Piece;
 import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
+import torrent.download.tracker.PeerConnectorThread;
 import torrent.download.tracker.Tracker;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
@@ -81,6 +82,18 @@ public class Torrent extends Thread implements Logable {
 	 * Remembers if the torrent is collecting a piece so we can wait until all pieces are written to the hdd before continueing
 	 */
 	private int collectingPiece;
+	/**
+	 * The thread which connects new peers
+	 */
+	private PeerConnectorThread connectorThread;
+	/**
+	 * The thread which reads all information from the peers
+	 */
+	private PeersReadThread readThread;
+	/**
+	 * The thread which writes all information to the peers
+	 */
+	private PeersWriteThread writeThread;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
@@ -100,7 +113,7 @@ public class Torrent extends Thread implements Logable {
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(500, 1.5F);
+		peerManager = new BurstPeerManager(100, 1.5F);
 		System.setOut(new Logger(System.out));
 		System.setErr(new Logger(System.err));
 	}
@@ -119,16 +132,12 @@ public class Torrent extends Thread implements Logable {
 
 	public void addPeer(Peer p) {
 		if (hasPeer(p)) {
+			p.close();
 			log("Filtered duplicate Peer: " + p, true);
 			return;
 		}
-		if (peersWanted() > 0) {
-			p.start();
-			synchronized (this) {
-				peers.add(p);
-			}
-		} else {
-			p.close();
+		synchronized (this) {
+			peers.add(p);
 		}
 	}
 
@@ -141,18 +150,24 @@ public class Torrent extends Thread implements Logable {
 		}
 		System.err.println("Failed to add tracker to " + getDisplayName());
 	}
-
-	public void run() {
+	
+	public void initialise() {
+		connectorThread = new PeerConnectorThread(this, 50);
+		readThread = new PeersReadThread(this);
+		writeThread = new PeersWriteThread(this);
+		readThread.start();
+		writeThread.start();
+		connectorThread.start();
 		for(int i = 0; i < trackers.length; i++) {
 			Tracker t = trackers[i];
 			if(t != null) {
-				try {
-					if(!t.isAlive()) {
-						t.start();
-					}
-				} catch (IllegalThreadStateException e) {}
+				t.start();
 			}
 		}
+	}
+
+	public void run() {
+		
 		while(!files.isDone() || collectingPiece > 0) {
 			processPeers();
 			Piece piece = downloadRegulator.getPiece();
@@ -335,7 +350,8 @@ public class Torrent extends Thread implements Logable {
 			}
 			if (files.getPiece(index).isDone()) {
 				if (files.getPiece(index).checkHash()) {
-					broadcastMessage(new MessageHave(index));
+					if(torrentStatus == STATE_DOWNLOAD_DATA)
+						broadcastMessage(new MessageHave(index));
 					log("Recieved and verified piece: " + index);
 					String p = Double.toString(getProgress());
 					log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
@@ -366,7 +382,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public boolean needAnnounce() {
-		return peersWanted() > 0 && peers.size() < peerManager.getMaxPendingPeers(torrentStatus);
+		return peersWanted() > 10 && peers.size() < peerManager.getMaxPendingPeers(torrentStatus) && connectorThread.getConnectingCount() < connectorThread.getMaxCapacity();
 	}
 
 	public int getMaxPeers() {
@@ -374,7 +390,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public int peersWanted() {
-		return peerManager.getAnnounceWantAmount(torrentStatus, getSeedCount() + getLeecherCount());
+		return (int)Math.min(peerManager.getAnnounceWantAmount(torrentStatus, getSeedCount() + getLeecherCount()), connectorThread.getMaxCapacity()- connectorThread.getConnectingCount());
 	}
 
 	public void pollRates() {
@@ -385,6 +401,10 @@ public class Torrent extends Thread implements Logable {
 
 	public Files getFiles() {
 		return files;
+	}
+	
+	public PeerConnectorThread getConnectorThread() {
+		return connectorThread;
 	}
 
 	public int getDownloadRate() {
@@ -401,10 +421,6 @@ public class Torrent extends Thread implements Logable {
 			ulRate += peers.get(i).getUploadRate();
 		}
 		return ulRate;
-	}
-	
-	public int getConnectingCount() {
-		return peers.size() - getSeedCount() - getLeecherCount();
 	}
 
 	public int getSeedCount() {
@@ -431,7 +447,7 @@ public class Torrent extends Thread implements Logable {
 				Peer peer = peers.get(i);
 				if (peer != null) {
 					if (peer.getPassedHandshake())
-					leechers++;
+						leechers++;
 				}
 			}
 		}

@@ -3,6 +3,7 @@ package torrent;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.download.MagnetLink;
+import torrent.download.Torrent;
 import torrent.frame.TorrentFrame;
 
 public class JavaTorrent extends Thread {
@@ -19,7 +20,9 @@ public class JavaTorrent extends Thread {
 		}
 		MagnetLink magnet = new MagnetLink(args[0]);
 		if (magnet.isDownloadable()) {
-			magnet.getTorrent().start();
+			Torrent torrent = magnet.getTorrent();
+			torrent.initialise();
+			torrent.start();
 		} else {
 			System.err.println("Magnet link error occured");
 		}
@@ -37,6 +40,7 @@ public class JavaTorrent extends Thread {
 			long startTime = System.currentTimeMillis();
 			frame.updateData();
 			frame.repaint();
+			System.gc();
 			int duration = 1000 - (int)(System.currentTimeMillis() - startTime);
 			ThreadUtils.sleep(duration);
 		}

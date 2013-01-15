@@ -10,8 +10,22 @@ import torrent.download.peer.Peer;
 
 public class ByteInputStream extends DataInputStream {
 
+	/**
+	 * The peer associated with this inputStream
+	 */
 	private Peer peer;
+	/**
+	 * The speed in bytes that this inputStream is being read
+	 */
 	private int speed;
+	/**
+	 * A buffer to store data in before we make it be processed
+	 */
+	private Stream buffer;
+	/**
+	 * The last time a buffer was created
+	 */
+	private long lastBufferCreate;
 
 	public ByteInputStream(Peer peer, InputStream in) {
 		super(in);
@@ -60,6 +74,33 @@ public class ByteInputStream extends DataInputStream {
 	
 	public void reset(int downloadRate) {
 		speed -= downloadRate;
+	}
+	
+	public Stream getBuffer() {
+		return buffer;
+	}
+	
+	/**
+	 * Resets the temporary stream which is used for peeking
+	 */
+	public void resetBuffer() {
+		buffer = null;
+	}
+	
+	/**
+	 * Creates an empty buffer to hold the data
+	 */
+	public void initialiseBuffer() {
+		buffer = new Stream(0);
+		lastBufferCreate = System.currentTimeMillis();
+	}
+	
+	/**
+	 * The time in milliseconds that this buffer has existed
+	 * @return
+	 */
+	public int getBufferLifetime() {
+		return (int)(System.currentTimeMillis() - lastBufferCreate);
 	}
 
 }

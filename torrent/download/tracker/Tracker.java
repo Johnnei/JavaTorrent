@@ -177,7 +177,7 @@ public class Tracker extends Thread implements Logable {
 		}
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
-		stream.writeInt(-1); // Use defaults num_want (-1) Use the max our buffer can hold
+		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
 		stream.writeInt(socket.getLocalPort());
 		try {
 			socket.send(stream.write(address, port));
@@ -205,7 +205,7 @@ public class Tracker extends Thread implements Logable {
 					continue;
 				Peer p = new Peer(torrent);
 				p.setSocket(InetAddress.getByAddress(address), port);
-				torrent.addPeer(p);
+				torrent.getConnectorThread().addPeer(p);
 			}
 			setStatus("Announced");
 		} catch (IOException e) {

@@ -48,27 +48,46 @@ public class MessageUtils {
 	
 	private HashMap<Integer, IMessage> idToMessage;
 	
+	public boolean canReadMessage(ByteInputStream inStream, Peer p) throws IOException {
+		if(inStream.getBuffer() == null) {
+			if(inStream.available() >= 4) {
+				inStream.initialiseBuffer();
+				inStream.getBuffer().fill(inStream.readByteArray(4));
+				inStream.getBuffer().resetOffsetPointer();
+				int length = inStream.getBuffer().readInt();
+				inStream.getBuffer().expand(length);
+			}
+		}
+		Stream buffer = inStream.getBuffer();
+		if(buffer != null) {
+			if(inStream.available() > 0) {
+				int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getOffsetPointer());
+				buffer.writeByte(inStream.readByteArray(readAmount));
+			}
+			p.setStatus("Receiving Message of length: " + (buffer.getOffsetPointer() - 4) + "/" + (buffer.getBuffer().length - 4));
+			return buffer.getOffsetPointer() == buffer.getBuffer().length;
+		}
+		return false;
+	}
+	
 	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
-		p.setStatus("Receiving Message: ...");
-		long readStart = System.currentTimeMillis();
-		Stream stream = new Stream(4);
-		stream.fill(inStream.readByteArray(4)); //Read Length
+		Stream stream = inStream.getBuffer();
+		int duration = inStream.getBufferLifetime();
+		stream.resetOffsetPointer();
 		int length = stream.readInt();
 		if(length == 0) {
 			p.setStatus("Receiving Message: KeepAlive");
 			return new MessageKeepAlive();
 		} else {
-			stream.fill(inStream.readByteArray(1)); //Read ID
 			int id = stream.readByte();
 			try {
 				if(!idToMessage.containsKey(id))
 					throw new IOException("Unhandled Message: " + id);
 				IMessage message = idToMessage.get(id).getClass().newInstance();
-				p.setStatus("Receiving Message: " + message.toString());
-				stream.fill(inStream.readByteArray(length - 1));
-				message.setReadDuration((int)(System.currentTimeMillis() - readStart));
-				message.read(stream);
 				p.setStatus("Received Message: " + message.toString());
+				message.setReadDuration(duration);
+				message.read(stream);
+				inStream.resetBuffer();
 				return message;
 			} catch (IllegalAccessException | InstantiationException ex ) {
 				throw new IOException("Message Read Error", ex);

@@ -22,7 +22,7 @@ import torrent.protocol.messages.extention.MessageHandshake;
 import torrent.util.ISortable;
 import torrent.util.StringUtil;
 
-public class Peer extends Thread implements Logable, ISortable {
+public class Peer implements Logable, ISortable {
 
 	private byte[] RESERVED_EXTENTION_BYTES = new byte[8];
 
@@ -61,7 +61,6 @@ public class Peer extends Thread implements Logable, ISortable {
 	private boolean passedHandshake;
 
 	public Peer(Torrent torrent) {
-		super("Peer Thread");
 		this.torrent = torrent;
 		crashed = false;
 		peerClient = new Client();
@@ -81,18 +80,10 @@ public class Peer extends Thread implements Logable, ISortable {
 				return;
 			}
 			socket = new Socket();
-			socket.connect(new InetSocketAddress(address, port), 4000);
-			setName(toString());
+			socket.connect(new InetSocketAddress(address, port), 1000);
 			inStream = new ByteInputStream(this, socket.getInputStream());
 			outStream = new ByteOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
-			crashed = true;
-			return;
-		}
-		try {
-			processHandshake();
-		} catch (IOException e) {
-			log("Connection crashed: " + e.getMessage(), true);
 			crashed = true;
 			return;
 		}
@@ -107,10 +98,9 @@ public class Peer extends Thread implements Logable, ISortable {
 	public void setSocket(InetAddress address, int port) {
 		this.address = address;
 		this.port = port;
-		super.setName("Peer " + address.getHostAddress() + ":" + port + " ");
 	}
-
-	public void processHandshake() throws IOException {
+	
+	public void sendHandshake() throws IOException {
 		setStatus("Sending Handshake"); //Not making this more OO because it's not within the message-flow
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
@@ -118,21 +108,9 @@ public class Peer extends Thread implements Logable, ISortable {
 		outStream.write(torrent.getHashArray());
 		outStream.write(Manager.getPeerId());
 		setStatus("Awaiting Handshake response");
-		long handShakeSentTime = System.currentTimeMillis();
-		while (inStream.available() < 68) {
-			ThreadUtils.sleep(10);
-			if (System.currentTimeMillis() - handShakeSentTime > 5000) {
-				if(inStream.available() == 0) {
-					socket.close();
-					return;
-				}
-			}
-			if (System.currentTimeMillis() - handShakeSentTime > 30000) {
-				log("Handshake error: " + inStream.available() + " bytes in 30 seconds", true);
-				socket.close();
-				return;
-			}
-		}
+	}
+
+	public void processHandshake() throws IOException {
 		status = "Verifying handshake";
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
@@ -164,12 +142,12 @@ public class Peer extends Thread implements Logable, ISortable {
 		}
 		sendExtentionMessage();
 	}
-
-	@Override
+	
 	public void run() {
-		connect();
 		while (torrent.keepDownloading() && !closed()) {
 			try {
+				if(!passedHandshake)
+					processHandshake();
 				readMessage();
 				sendMessage();
 			} catch (IOException e) {
@@ -181,15 +159,24 @@ public class Peer extends Thread implements Logable, ISortable {
 		setStatus("Connection closed");
 	}
 	
-	private void readMessage() throws IOException {
-		if (inStream.available() > 0) {
-			IMessage message = MessageUtils.getUtils().readMessage(inStream, this);
-			message.process(this);
-			lastActivity = System.currentTimeMillis();
+	public boolean canReadMessage() throws IOException {
+		if(!passedHandshake) {
+			return inStream.available() >= 68; 
 		}
+		return MessageUtils.getUtils().canReadMessage(inStream, this);
 	}
 	
-	private void sendMessage() throws IOException {
+	public void readMessage() throws IOException {
+		if(!passedHandshake) {
+			processHandshake();
+			return;
+		}
+		IMessage message = MessageUtils.getUtils().readMessage(inStream, this);
+		message.process(this);
+		lastActivity = System.currentTimeMillis();
+	}
+	
+	public void sendMessage() throws IOException {
 		if (messageQueue.size() > 0) {
 			IMessage message = messageQueue.remove(0);
 			setStatus("Sending Message: " + message);
@@ -376,5 +363,4 @@ public class Peer extends Thread implements Logable, ISortable {
 	public int getValue() {
 		return (getWorkQueueSize() * 5000) + peerClient.hasPieceCount() + downloadRate;
 	}
-
 }
