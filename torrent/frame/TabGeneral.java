@@ -43,7 +43,7 @@ public class TabGeneral extends JPanel {
 				pieces += torrent.getFiles().getPieceCount();
 				leftSize += torrent.getFiles().getRemainingBytes() + " bytes";
 			}
-			pending += torrent.getConnectorThread().getConnectingCount();
+			pending += torrent.getConnectingCount();
 			peers += torrent.getSeedCount();
 			leechers += torrent.getLeecherCount();
 			download += StringUtil.speedToString(torrent.getDownloadRate());

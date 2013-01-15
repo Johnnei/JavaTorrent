@@ -71,6 +71,10 @@ public class PeerConnectorThread extends Thread {
 		}
 	}
 	
+	public int getFreeCapacity() {
+		return peer.length - peerCount;
+	}
+	
 	public int getConnectingCount() {
 		return peerCount;
 	}

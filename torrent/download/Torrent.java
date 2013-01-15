@@ -83,9 +83,9 @@ public class Torrent extends Thread implements Logable {
 	 */
 	private int collectingPiece;
 	/**
-	 * The thread which connects new peers
+	 * The threads which connects new peers
 	 */
-	private PeerConnectorThread connectorThread;
+	private PeerConnectorThread[] connectorThreads;
 	/**
 	 * The thread which reads all information from the peers
 	 */
@@ -152,12 +152,15 @@ public class Torrent extends Thread implements Logable {
 	}
 	
 	public void initialise() {
-		connectorThread = new PeerConnectorThread(this, 50);
+		connectorThreads = new PeerConnectorThread[2];
+		for(int i = 0; i <connectorThreads.length; i++) {
+			connectorThreads[i] = new PeerConnectorThread(this, 50);
+			connectorThreads[i].start();
+		}
 		readThread = new PeersReadThread(this);
 		writeThread = new PeersWriteThread(this);
 		readThread.start();
 		writeThread.start();
-		connectorThread.start();
 		for(int i = 0; i < trackers.length; i++) {
 			Tracker t = trackers[i];
 			if(t != null) {
@@ -380,9 +383,17 @@ public class Torrent extends Thread implements Logable {
 	public String toString() {
 		return StringUtil.byteArrayToString(btihHash);
 	}
+	
+	private int getFreeConnectingCapacity() {
+		int capacity = 0;
+		for(int i = 0; i < connectorThreads.length; i++) {
+			capacity += connectorThreads[i].getFreeCapacity();
+		}
+		return capacity;
+	}
 
 	public boolean needAnnounce() {
-		return peersWanted() > 10 && peers.size() < peerManager.getMaxPendingPeers(torrentStatus) && connectorThread.getConnectingCount() < connectorThread.getMaxCapacity();
+		return peersWanted() > 10 && peers.size() < peerManager.getMaxPendingPeers(torrentStatus) && getFreeConnectingCapacity() > 0;
 	}
 
 	public int getMaxPeers() {
@@ -390,7 +401,8 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public int peersWanted() {
-		return (int)Math.min(peerManager.getAnnounceWantAmount(torrentStatus, getSeedCount() + getLeecherCount()), connectorThread.getMaxCapacity()- connectorThread.getConnectingCount());
+		
+		return (int)Math.min(peerManager.getAnnounceWantAmount(torrentStatus, getSeedCount() + getLeecherCount()), getFreeConnectingCapacity());
 	}
 
 	public void pollRates() {
@@ -404,7 +416,11 @@ public class Torrent extends Thread implements Logable {
 	}
 	
 	public PeerConnectorThread getConnectorThread() {
-		return connectorThread;
+		for(int i = 0; i < connectorThreads.length; i++) {
+			if(connectorThreads[i].getFreeCapacity() > 0)
+				return connectorThreads[i];
+		}
+		return null;
 	}
 
 	public int getDownloadRate() {
@@ -489,6 +505,14 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 		return leechers;
+	}
+
+	public int getConnectingCount() {
+		int connecting = 0;
+		for(int i = 0; i < connectorThreads.length; i++) {
+			connecting += connectorThreads[i].getConnectingCount();
+		}
+		return connecting;
 	}
 
 }
