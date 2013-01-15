@@ -227,7 +227,7 @@ public class Files {
 	 * @return The FileInfo for the given data
 	 */
 	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
-		long pieceOffset = (index * pieceSize) + (blockIndex * blockSize) + blockDataOffset;
+		long pieceOffset = (index * getPieceSize()) + (blockIndex * blockSize) + blockDataOffset;
 		if(pieceOffset <= 0) {
 			return fileInfo[0];
 		} else {
