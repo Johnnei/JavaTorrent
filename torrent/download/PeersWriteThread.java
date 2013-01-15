@@ -22,6 +22,8 @@ public class PeersWriteThread extends Thread {
 			ArrayList<Peer> peers = torrent.getPeers();
 			for (int i = 0; i < peers.size(); i++) {
 				Peer p = peers.get(i);
+				if (p == null)
+					continue;
 				if (!p.closed()) {
 					try {
 						p.sendMessage();

@@ -60,6 +60,10 @@ public class MessageHandshake implements IMessage {
 			if(reqq != null) {
 				peer.getClient().setMaxRequests((int)reqq);
 			}
+			Object v = dictionary.get("v");
+			if(v != null) {
+				peer.setClientName((String)v);
+			}
 		} catch (Exception e) {
 			peer.log("Extension handshake error: " + e.getMessage());
 			peer.close();

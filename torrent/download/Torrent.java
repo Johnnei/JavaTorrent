@@ -233,6 +233,7 @@ public class Torrent extends Thread implements Logable {
 			if (p == null)
 				continue;
 			if (p.closed()) {
+				p.cancelAllPieces();
 				peers.remove(i--);
 				continue;
 			} else {

@@ -7,6 +7,7 @@ import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.util.ISortable;
 import torrent.util.Mergesort;
+import torrent.util.StringUtil;
 
 public class TabPeers extends TableBase {
 
@@ -23,13 +24,13 @@ public class TabPeers extends TableBase {
 
 	protected void paintHeader(Graphics g) {
 		g.drawString("IP", 5, getHeaderTextY());
-		g.drawString("Download Speed", 160, getHeaderTextY());
-		g.drawString("Upload Speed", 270, getHeaderTextY());
-		g.drawString("Time idle", 370, getHeaderTextY());
-		g.drawString("Having Pieces", 440, getHeaderTextY());
-		g.drawString("Requests", 540, getHeaderTextY());
-		g.drawString("C | I", 610, getHeaderTextY());
-		g.drawString("State", 700, getHeaderTextY());
+		g.drawString("Client", 160, getHeaderTextY());
+		g.drawString("Down Speed", 290, getHeaderTextY());
+		g.drawString("Up Speed", 370, getHeaderTextY());
+		g.drawString("Time idle", 440, getHeaderTextY());
+		g.drawString("Pieces", 510, getHeaderTextY());
+		g.drawString("Requests", 570, getHeaderTextY());
+		g.drawString("State", 640, getHeaderTextY());
 	}
 	
 	protected void paintData(Graphics g) {
@@ -50,13 +51,13 @@ public class TabPeers extends TableBase {
 					Peer peer = (Peer) peerList.getItem(i);
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
 					g.drawString(peer.toString(), 5, getTextY());
-					g.drawString(peer.getDownloadRate() + " b/s", 160, getTextY());
-					g.drawString(peer.getUploadRate() + " b/s", 270, getTextY());
-					g.drawString(duration + " s", 370, getTextY());
-					g.drawString("" + peer.getClient().hasPieceCount(), 440, getTextY());
-					g.drawString(peer.getWorkQueueSize() + "/" + peer.getMaxWorkLoad() + " | 0", 540, getTextY());
-					g.drawString(peer.getMyClient().isChoked() + " | " + peer.getClient().isInterested(), 610, getTextY());
-					g.drawString(peer.getStatus(), 700, getTextY());
+					g.drawString(peer.getClientName(), 160, getTextY());
+					g.drawString(StringUtil.speedToString(peer.getDownloadRate()), 290, getTextY());
+					g.drawString(StringUtil.speedToString(peer.getUploadRate()), 370, getTextY());
+					g.drawString(duration + " s", 440, getTextY());
+					g.drawString("" + peer.getClient().hasPieceCount(), 510, getTextY());
+					g.drawString(peer.getWorkQueueSize() + "/" + peer.getMaxWorkLoad() + " | 0", 570, getTextY());
+					g.drawString(peer.getStatus(), 640, getTextY());
 				}
 				advanceLine();
 			}

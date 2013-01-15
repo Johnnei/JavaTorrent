@@ -59,6 +59,16 @@ public class Peer implements Logable, ISortable {
 	private int downloadRate;
 	private int uploadRate;
 	private boolean passedHandshake;
+	
+	private String clientName;
+
+	public String getClientName() {
+		return clientName;
+	}
+
+	public void setClientName(String clientName) {
+		this.clientName = clientName;
+	}
 
 	public Peer(Torrent torrent) {
 		this.torrent = torrent;
@@ -66,6 +76,7 @@ public class Peer implements Logable, ISortable {
 		peerClient = new Client();
 		myClient = new Client();
 		status = "";
+		clientName = "pending";
 		messageQueue = new ArrayList<>();
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
@@ -344,7 +355,6 @@ public class Peer implements Logable, ISortable {
 			}
 		} catch (IOException e) {
 		}
-		cancelAllPieces();
 	}
 
 	public boolean getPassedHandshake() {
