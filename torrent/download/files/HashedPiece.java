@@ -22,7 +22,7 @@ public class HashedPiece extends Piece {
 	public boolean checkHash() throws TorrentException {
 		byte[] pieceData = new byte[getSize()];
 		int bytesCollected = 0;
-		int pieceOffset = getIndex() * files.getPieceSize();
+		long pieceOffset = getIndex() * files.getPieceSize();
 		while(bytesCollected < pieceData.length) {
 			int blockIndex = bytesCollected / files.getBlockSize();
 			int blockDataOffset = bytesCollected % files.getBlockSize();

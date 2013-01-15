@@ -199,10 +199,12 @@ public class Peer implements Logable, ISortable {
 	
 	public void checkDisconnect() {
 		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
-		if (inactiveSeconds > 10) {
+		if (inactiveSeconds > 30) {
 			if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
 				close();
 				return;
+			} else if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+				lastActivity = System.currentTimeMillis();
 			}
 		}
 		if (inactiveSeconds > 30 && torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
@@ -213,19 +215,13 @@ public class Peer implements Logable, ISortable {
 				}
 			}
 		}
-		if (inactiveSeconds > 60) { //We are waiting for something to happen by now
-			if(myClient.isInterested() && myClient.isChoked()) { //They are not unchoking us
-				close();
-				return;
-			}
-		}
 		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to timeout D:
 			if(myClient.isInterested()) {
 				addToQueue(new MessageKeepAlive());
 				return;
 			}
 		} 
-		if (inactiveSeconds > 120) {// 2 Minutes, We've hit the timeout mark
+		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark
 			close();
 		}
 	}

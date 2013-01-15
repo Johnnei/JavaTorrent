@@ -161,7 +161,7 @@ public class Files {
 	 * Gets the default piece size
 	 * @return The default piece size
 	 */
-	public int getPieceSize() {
+	public long getPieceSize() {
 		return pieceSize;
 	}
 
