@@ -56,7 +56,7 @@ public class Files {
 	 * @param torrentFile
 	 */
 	public Files(File torrentFile) {
-		blockSize = 1 << 15;
+		blockSize = 1 << 14;
 		parseTorrentFileData(torrentFile);
 	}
 

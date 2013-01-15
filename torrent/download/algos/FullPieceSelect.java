@@ -71,7 +71,7 @@ public class FullPieceSelect implements IDownloadRegulator {
 				started.add(info);
 			}
 		}
-		if (started.size() < 2)
+		if (started.size() < 20)
 			return getMostAvailable();
 		else
 			return started.get(rand.nextInt(started.size()));
