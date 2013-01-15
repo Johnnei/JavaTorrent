@@ -15,14 +15,15 @@ public class Manager {
 
 	private Manager() {
 		transactionId = new Random().nextInt();
+		char[] version = JavaTorrent.BUILD.split(" ")[1].replace(".", "").toCharArray();
 		peerId = new byte[20];
 		peerId[0] = '-';
 		peerId[1] = 'J';
 		peerId[2] = 'T';
-		peerId[3] = '0';
-		peerId[4] = '0';
-		peerId[5] = '1';
-		peerId[6] = '0';
+		peerId[3] = (byte)version[0];
+		peerId[4] = (byte)version[1];
+		peerId[5] = (byte)version[2];
+		peerId[6] = (byte)version[3];
 		peerId[7] = '-';
 		for (int i = 8; i < peerId.length; i++) {
 			peerId[i] = (byte) (new Random().nextInt() & 0xFF);
