@@ -32,6 +32,13 @@ public class Tracker extends Thread implements Logable {
 	private int port;
 	private DatagramSocket socket;
 	private Stream stream;
+	
+	/**
+	 * The tracker score<br/>
+	 * On each error the errorCount will increase<br/>
+	 * On each succesfull scrape/announce the errorCount will drop by 1 to a min. of 0
+	 */
+	private int errorCount;
 
 	private long connectionId;
 	private int transactionId;
@@ -107,7 +114,7 @@ public class Tracker extends Thread implements Logable {
 	public void run() {
 		lastAnnounce = System.currentTimeMillis();
 
-		while (torrent.keepDownloading()) {
+		while (torrent.keepDownloading() && errorCount < 3) {
 			if (connectionId == 0x41727101980L) {
 				setStatus("Connecting");
 				if (!attemptConnect())
@@ -123,7 +130,10 @@ public class Tracker extends Thread implements Logable {
 			}
 			ThreadUtils.sleep(1000);
 		}
-		setStatus("Unable to connect");
+		if(errorCount < 3)
+			setStatus("Unable to connect");
+		else
+			setStatus("Error cap reached");
 	}
 	
 	public boolean isConnected() {
@@ -149,6 +159,7 @@ public class Tracker extends Thread implements Logable {
 			if (action != ACTION_CONNECT) {
 				String error = stream.readString(stream.available());
 				log("Tracker Error: " + action + ", Message: " + error, true);
+				errorCount++;
 			} else {
 				connectionId = stream.readLong();
 			}
@@ -246,6 +257,7 @@ public class Tracker extends Thread implements Logable {
 	}
 
 	private void handleError(String error) {
+		errorCount++;
 		if (error.startsWith(ERROR_CONNECTION_ID)) {
 			connectionId = 0x41727101980L;
 		}
