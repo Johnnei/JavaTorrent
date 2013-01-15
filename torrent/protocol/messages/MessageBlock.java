@@ -41,8 +41,15 @@ public class MessageBlock implements IMessage {
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece(index, offset, data);
 		peer.getMyClient().removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)));
-		if(readDuration > 0) {
-			peer.getMyClient().setMaxRequests((int)Math.ceil((data.length / readDuration) * 0.1));
+		if(data.length > 0) {
+			peer.log("readDuration: " + readDuration);
+			if(readDuration > 0 && readDuration < 1000) { //Set by extreme speed
+				peer.log("setMaxRequest(read < 1000) = " + (int)Math.ceil((data.length / readDuration) * 0.1));
+				peer.getMyClient().setMaxRequests((int)Math.ceil((data.length / readDuration) * 0.1));
+			} else { //Set by trust
+				peer.log("setMaxRequest++");
+				peer.getMyClient().setMaxRequests(peer.getMyClient().getMaxRequests() + 1);
+			}
 		}
 	}
 

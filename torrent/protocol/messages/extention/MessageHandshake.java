@@ -58,7 +58,7 @@ public class MessageHandshake implements IMessage {
 			}
 			Object reqq = dictionary.get("reqq");
 			if(reqq != null) {
-				peer.getClient().setMaxRequests((int)reqq);
+				peer.getClient().setAbsoluteMaxRequests((int)reqq);
 			}
 			Object v = dictionary.get("v");
 			if(v != null) {

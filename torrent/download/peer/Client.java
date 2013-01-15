@@ -26,6 +26,7 @@ public class Client {
 	 * Extension Protocol item: dictionary["reqq"]
 	 */
 	private int maxRequests;
+	private int maxWorkQueue;
 
 	public Client() {
 		isChoked = true;
@@ -34,6 +35,7 @@ public class Client {
 		requestedPieces = new ArrayList<PieceRequest>();
 		extentionIds = new HashMap<>();
 		maxRequests = 1;
+		maxWorkQueue = 1;
 		workingQueue = new HashMap<>();
 	}
 
@@ -82,12 +84,17 @@ public class Client {
 		requestedPieces.add(pr);
 	}
 	
+	public void setAbsoluteMaxRequests(int reqq) {
+		maxRequests = reqq;
+	}
+	
 	public void setMaxRequests(int i) {
-		maxRequests = i;
+		if(i > 0 && i <= maxRequests)
+			maxWorkQueue = i;
 	}
 	
 	public int getMaxRequests() {
-		return maxRequests;
+		return maxWorkQueue;
 	}
 
 	public void addExtentionID(String key, int id) {

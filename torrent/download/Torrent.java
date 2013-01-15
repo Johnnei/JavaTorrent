@@ -113,7 +113,7 @@ public class Torrent extends Thread implements Logable {
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(100, 1.5F);
+		peerManager = new BurstPeerManager(500, 1.5F);
 		System.setOut(new Logger(System.out));
 		System.setErr(new Logger(System.err));
 	}
@@ -152,7 +152,7 @@ public class Torrent extends Thread implements Logable {
 	}
 	
 	public void initialise() {
-		connectorThreads = new PeerConnectorThread[2];
+		connectorThreads = new PeerConnectorThread[4];
 		for(int i = 0; i <connectorThreads.length; i++) {
 			connectorThreads[i] = new PeerConnectorThread(this, 50);
 			connectorThreads[i].start();
@@ -214,7 +214,7 @@ public class Torrent extends Thread implements Logable {
 	 * Manages all states about peers
 	 */
 	private void processPeers() {
-		if (System.currentTimeMillis() - lastPeerUpdate > 10000) {
+		if (System.currentTimeMillis() - lastPeerUpdate > 20000) {
 			updatePeers();
 			lastPeerUpdate = System.currentTimeMillis();
 		}

@@ -76,7 +76,8 @@ public class MessageUtils {
 		stream.resetOffsetPointer();
 		int length = stream.readInt();
 		if(length == 0) {
-			p.setStatus("Receiving Message: KeepAlive");
+			p.setStatus("Received Message: KeepAlive");
+			inStream.resetBuffer();
 			return new MessageKeepAlive();
 		} else {
 			int id = stream.readByte();
