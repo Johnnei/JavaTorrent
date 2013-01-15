@@ -34,8 +34,8 @@ public class TabPieces extends TableBase {
 	protected void paintHeader(Graphics g) {
 		g.drawString("Piece #", 5, getHeaderTextY());
 		g.drawString("Size", 100, getHeaderTextY());
-		g.drawString("Progress", 200, getHeaderTextY());
-		g.drawString("Subpieces (Remaining | Requested)", 300, getHeaderTextY());
+		g.drawString("Blocks (Need | Req)", 200, getHeaderTextY());
+		g.drawString("Progress", 325, getHeaderTextY());
 	}
 
 	@Override
@@ -56,13 +56,22 @@ public class TabPieces extends TableBase {
 		for(int i = pieceList.size() - 1; i >= 0 ; i--) {
 			if(isVisible()) {
 				Piece p = (Piece)sortedPieces.getItem(i);
-				int doneCount = p.getDoneCount();
-				int progress = (int)(100 * (doneCount / (double)p.getBlockCount()));
-				
+				g.setColor(Color.BLACK);
 				g.drawString("" + p.getIndex(), 5, getTextY());
 				g.drawString("" + p.getSize(), 100, getTextY());
-				g.drawString(progress + "%", 200, getTextY());
-				g.drawString((p.getBlockCount() - doneCount) + " | " + p.getRequestedCount(), 300, getTextY());
+				g.drawString((p.getBlockCount() - p.getDoneCount()) + " | " + p.getRequestedCount(), 200, getTextY());
+				for(int j = 0; j < p.getBlockCount(); j++) {
+					if(p.isDone(j)) {
+						g.setColor(Color.GREEN);
+					} else if(p.isRequested(j)) {
+						g.setColor(Color.ORANGE);
+					} else {
+						g.setColor(Color.RED);
+					}
+					g.fillRect(326 + j, getDrawY(), 2, 15);
+					g.setColor(Color.BLACK);
+					g.drawRect(325, getDrawY(), p.getBlockCount() + 2, 15);
+				}
 			}
 			advanceLine();
 		}

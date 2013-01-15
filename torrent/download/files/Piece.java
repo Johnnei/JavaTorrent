@@ -24,6 +24,10 @@ public class Piece implements ISortable {
 	 * All the blocks in this piece
 	 */
 	private Block[] blocks;
+	/**
+	 * The next piece which will be dropped on hash fail
+	 */
+	private int hashFailCheck;
 	
 	public Piece(Files files, int index, int pieceSize, int blockSize) {
 		this.index = index;
@@ -38,12 +42,12 @@ public class Piece implements ISortable {
 	}
 	
 	/**
-	 * Reset the entire piece as unstarted
+	 * Drop a single block in order to find the incorrect block in hopefully less redownloading than the full piece
 	 */
-	public void reset() {
-		for(int i = 0; i < blocks.length; i++) {
-			blocks[i].setDone(false);
-			blocks[i].setRequested(false);
+	public void hashFail() {
+		reset(hashFailCheck++);
+		if(hashFailCheck >= blocks.length) {
+			hashFailCheck = 0;
 		}
 	}
 	
@@ -110,6 +114,14 @@ public class Piece implements ISortable {
 			}
 		}
 		return remaining;
+	}
+	
+	public boolean isRequested(int blockIndex) {
+		return blocks[blockIndex].isRequested();
+	}
+	
+	public boolean isDone(int blockIndex) {
+		return blocks[blockIndex].isDone();
 	}
 	
 	/**

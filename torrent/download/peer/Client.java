@@ -34,7 +34,7 @@ public class Client {
 		pieces = new HashMap<Integer, Boolean>();
 		requestedPieces = new ArrayList<PieceRequest>();
 		extentionIds = new HashMap<>();
-		maxRequests = 1;
+		maxRequests = 20;
 		maxWorkQueue = 1;
 		workingQueue = new HashMap<>();
 	}

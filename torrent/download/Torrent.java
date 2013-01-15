@@ -361,7 +361,7 @@ public class Torrent extends Thread implements Logable {
 					log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
 				} else {
 					log("Hash check failed on piece: " + index, true);
-					files.getPiece(index).reset();
+					files.getPiece(index).hashFail();
 				}
 			}
 		} catch (TorrentException e) {
