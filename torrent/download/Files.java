@@ -118,7 +118,11 @@ public class Files {
 		for (int index = 0; index < pieceAmount; index++) {
 			int hashOffset = index * 20;
 			int size = (remainingSize >= pieceSize) ? pieceSize : (int) remainingSize;
-			byte[] sha1Hash = pieceHashes.substring(hashOffset, hashOffset + 20).getBytes();
+			byte[] sha1Hash = new byte[20];
+			char[] hashBytes = pieceHashes.substring(hashOffset, hashOffset + 20).toCharArray();
+			for(int i = 0; i < sha1Hash.length; i++) {
+				sha1Hash[i] = (byte)hashBytes[i];
+			}
 			pieces[index] = new HashedPiece(sha1Hash, this, index, size, blockSize);
 			remainingSize -= size;
 		}
