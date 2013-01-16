@@ -19,8 +19,10 @@ import torrent.download.tracker.PeerConnectorThread;
 import torrent.download.tracker.Tracker;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
+import torrent.protocol.messages.MessageChoke;
 import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
+import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
 import torrent.protocol.messages.extention.MessageExtension;
 import torrent.protocol.messages.ut_metadata.MessageRequest;
@@ -219,7 +221,7 @@ public class Torrent extends Thread implements Logable {
 			lastPeerUpdate = System.currentTimeMillis();
 		}
 		if (System.currentTimeMillis() - lastPeerCheck > 5000) {
-			checkPeers();
+			cleanPeerList();
 			lastPeerCheck = System.currentTimeMillis();
 		}
 	}
@@ -227,7 +229,7 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * Checks if the peers are still connected
 	 */
-	private void checkPeers() {
+	private void cleanPeerList() {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p == null)
@@ -267,6 +269,13 @@ public class Torrent extends Thread implements Logable {
 			if (hasNoPieces && p.getClient().isInterested()) {
 				p.addToQueue(new MessageUninterested());
 				p.getClient().uninterested();
+			}
+			if (p.getMyClient().isInterested() && p.getClient().isChoked()) {
+				p.addToQueue(new MessageUnchoke());
+				p.getClient().unchoke();
+			} else if (!p.getMyClient().isInterested() && !p.getClient().isChoked()) {
+				p.addToQueue(new MessageChoke());
+				p.getClient().choke();
 			}
 		}
 	}
