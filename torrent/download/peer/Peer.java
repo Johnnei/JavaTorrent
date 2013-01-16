@@ -223,14 +223,6 @@ public class Peer implements Logable, ISortable {
 				lastActivity = System.currentTimeMillis();
 			}
 		}
-		if (inactiveSeconds > 30 && torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
-			if (peerClient.hasPieceCount() == 0) { //They don't have anything
-				if(torrent.getFiles().getPieceCount() == torrent.getFiles().getNeededPieces().size()) { //We can't send them anything
-					close(); //We are of no use to eachother
-					return;
-				}
-			}
-		}
 		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to timeout D:
 			if(myClient.isInterested()) {
 				addToQueue(new MessageKeepAlive());
