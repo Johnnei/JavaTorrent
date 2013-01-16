@@ -47,7 +47,7 @@ public class TabPieces extends TableBase {
 		ArrayList<ISortable> pieceList = new ArrayList<>();
 		Files tf = torrent.getFiles();
 		for(int i = 0; i < tf.getPieceCount(); i++) {
-			if(tf.getPiece(i).isStarted()) {
+			if(tf.getPiece(i).isStarted() && !tf.getPiece(i).isDone()) {
 				pieceList.add(torrent.getFiles().getPiece(i));
 			}
 		}
