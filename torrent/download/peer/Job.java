@@ -7,24 +7,44 @@ package torrent.download.peer;
  */
 public class Job {
 	
+	/**
+	 * The piece index
+	 */
 	private int pieceIndex;
-	private int subPiece;
+	/**
+	 * The block index
+	 */
+	private int block;
+	/**
+	 * The length of the block<br/>
+	 * <b>Optional</b>, Only used with requests from other peers
+	 */
+	private int length;
 	
 	public Job(int pieceIndex) {
 		this(pieceIndex, 0);
 	}
 	
-	public Job(int pieceIndex, int subPiece) {
+	public Job(int pieceIndex, int block) {
 		this.pieceIndex = pieceIndex;
-		this.subPiece = subPiece;
+		this.block = block;
 	}
 	
+	public Job(int index, int blockIndex, int length) {
+		this(index, blockIndex);
+		this.length = length;
+	}
+
 	public int getPieceIndex() {
 		return pieceIndex;
 	}
 	
 	public int getBlockIndex() {
-		return subPiece;
+		return block;
+	}
+	
+	public int getLength() {
+		return length;
 	}
 
 	@Override
@@ -32,7 +52,7 @@ public class Job {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + pieceIndex;
-		result = prime * result + subPiece;
+		result = prime * result + block;
 		return result;
 	}
 
@@ -51,7 +71,7 @@ public class Job {
 		if (pieceIndex != other.pieceIndex) {
 			return false;
 		}
-		if (subPiece != other.subPiece) {
+		if (block != other.block) {
 			return false;
 		}
 		return true;

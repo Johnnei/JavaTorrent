@@ -39,8 +39,7 @@ public class MessageRequest implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		if(peer.getClient().hasPiece(index)) {
-			peer.getClient().addJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(length)));
-			//TODO Add actual file load and sending, Delaying it until I can finally receive a piece at a proper speed
+			peer.getClient().addJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset), length));
 		} else {
 			peer.log("Requested a piece which I don't have", true);
 			peer.close();

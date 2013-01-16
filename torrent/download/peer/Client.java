@@ -1,10 +1,7 @@
 package torrent.download.peer;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-
-import torrent.network.PieceRequest;
 
 public class Client {
 
@@ -14,7 +11,6 @@ public class Client {
 	private HashMap<Integer, Boolean> pieces;
 	private boolean isChoked;
 	private boolean isInterested;
-	private ArrayList<PieceRequest> requestedPieces;
 	private byte[] reserved_bytes;
 	private HashMap<String, Integer> extentionIds;
 	/**
@@ -32,7 +28,6 @@ public class Client {
 		isChoked = true;
 		isInterested = false;
 		pieces = new HashMap<Integer, Boolean>();
-		requestedPieces = new ArrayList<PieceRequest>();
 		extentionIds = new HashMap<>();
 		maxRequests = 20;
 		maxWorkQueue = 1;
@@ -79,10 +74,6 @@ public class Client {
 	public int hasPieceCount() {
 		return pieces.size();
 	}
-
-	public void requesting(PieceRequest pr) {
-		requestedPieces.add(pr);
-	}
 	
 	public void setAbsoluteMaxRequests(int reqq) {
 		maxRequests = reqq;
@@ -91,6 +82,15 @@ public class Client {
 	public void setMaxRequests(int i) {
 		if(i > 0 && i <= maxRequests)
 			maxWorkQueue = i;
+	}
+	
+	/**
+	 * Grabs the first job on the workingQueue
+	 * @return
+	 * The next job available
+	 */
+	public Job getNextJob() {
+		return workingQueue.entrySet().iterator().next().getKey();
 	}
 	
 	public int getMaxRequests() {
