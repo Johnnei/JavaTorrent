@@ -104,7 +104,10 @@ public class Peer implements Logable, ISortable {
 
 	private void sendExtentionMessage() throws IOException {
 		if (peerClient.supportsExtention(5, 0x10)) { // EXTENDED_MESSAGE
-			addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake()));
+			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake()));
+			else
+				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(torrent.getFiles().getMetadataSize())));
 		}
 	}
 

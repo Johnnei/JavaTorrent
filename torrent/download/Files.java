@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -32,6 +33,7 @@ public class Files {
 	 * Contains all needed file info to download all files
 	 */
 	private FileInfo[] fileInfo;
+	private FileInfo metadata;
 	private long totalSize;
 	private boolean isMetadata;
 	/**
@@ -57,6 +59,7 @@ public class Files {
 	 */
 	public Files(File torrentFile) {
 		blockSize = 1 << 14;
+		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile);
 		parseTorrentFileData(torrentFile);
 	}
 
@@ -262,6 +265,37 @@ public class Files {
 	 */
 	public boolean isMetadata() {
 		return isMetadata;
+	}
+
+	/**
+	 * Gets a block from the metadata file
+	 * @param piece The block
+	 * @return
+	 * The 16384 bytes needed to answer the request
+	 */
+	public byte[] getMetadataBlock(int piece) {
+		long blockSize = 16384L;
+		byte[] data = new byte[(int)blockSize];
+		synchronized (metadata.FILE_LOCK) {
+			RandomAccessFile fileAccess = metadata.getFileAcces();
+			try {
+				int bytesRead = 0;
+				while(bytesRead < data.length) {
+					fileAccess.seek(piece * blockSize + bytesRead);
+					bytesRead += fileAccess.read(data, piece * (int)blockSize + bytesRead, data.length - bytesRead);
+				}
+			} catch (IOException e) {
+			}
+		}
+		return data;
+	}
+
+	/**
+	 * Gets the size of the metadata file
+	 * @return
+	 */
+	public long getMetadataSize() {
+		return metadata.getSize();
 	}
 
 }

@@ -15,7 +15,7 @@ public class MessageHandshake implements IMessage {
 	
 	private String bencodedHandshake;
 	
-	public MessageHandshake() {
+	public MessageHandshake(long metadataSize) {
 		Bencoder encoder = new Bencoder();
 		encoder.dictionaryStart();
 		encoder.string("m");
@@ -25,8 +25,16 @@ public class MessageHandshake implements IMessage {
 		encoder.dictionaryEnd();
 		encoder.string("v");
 		encoder.string(JavaTorrent.BUILD);
+		if(metadataSize > 0) {
+			encoder.string("metadata_size");
+			encoder.integer(metadataSize);
+		}
 		encoder.dictionaryEnd();
 		bencodedHandshake = encoder.getBencodedData();
+	}
+
+	public MessageHandshake() {
+		this(0);
 	}
 
 	@Override
