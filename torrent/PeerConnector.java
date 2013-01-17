@@ -24,7 +24,7 @@ public class PeerConnector extends Thread {
 				Socket peerSocket = serverSocket.accept();
 				peer.setSocket(peerSocket);
 				long handshakeStart = System.currentTimeMillis();
-				while(!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 10) {
+				while(!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
 					ThreadUtils.sleep(10);
 				}
 				if(peer.canReadMessage()) {
