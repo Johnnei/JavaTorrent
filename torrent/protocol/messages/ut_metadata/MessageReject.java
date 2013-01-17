@@ -20,6 +20,7 @@ public class MessageReject extends Message {
 		peer.log("Piece Request got rejected: " + blockIndex , true);
 		peer.getTorrent().getFiles().getPiece(0).reset(blockIndex);
 		peer.getMyClient().removeJob(new Job(0, blockIndex));
+		peer.close();
 	}
 
 	@Override

@@ -172,28 +172,28 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void run() {
-		
 		while(!files.isDone() || collectingPiece > 0) {
 			processPeers();
-			Piece piece = downloadRegulator.getPiece();
-			if(piece != null) {
-				ArrayList<Peer> downloadPeers = downloadRegulator.getPeerForPiece(piece);
-				while(piece.getRequestedCount() < piece.getBlockCount() && downloadPeers.size() > 0) {
-					Peer p = downloadPeers.get(0);
+			ArrayList<Peer> downloadPeers = getDownloadablePeers();
+			while(downloadPeers.size() > 0) {
+				Peer peer = downloadPeers.remove(0);
+				Piece piece = downloadRegulator.getPieceForPeer(peer);
+				if(piece == null) {
+					continue;
+				}
+				while(piece.getRequestedCount() < piece.getBlockCount() && peer.getFreeWorkTime() > 0) {
 					Block block = piece.getRequestBlock();
 					if(block == null) {
 						break;
 					} else {
 						IMessage message = null;
 						if(files.isMetadata()) {
-							message = new MessageExtension(p.getClient().getExtentionID(UTMetadata.NAME), new MessageRequest(block.getIndex()));
+							message = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), new MessageRequest(block.getIndex()));
 						} else {
 							message = new torrent.protocol.messages.MessageRequest(piece.getIndex(), block.getIndex() * files.getBlockSize(), block.getSize());
 						}
-						p.getMyClient().addJob(new Job(piece.getIndex(), block.getIndex()));
-						p.addToQueue(message);
-						if(p.getFreeWorkTime() == 0)
-							downloadPeers.remove(0);
+						peer.getMyClient().addJob(new Job(piece.getIndex(), block.getIndex()));
+						peer.addToQueue(message);
 					}
 				}
 			}
@@ -512,7 +512,7 @@ public class Torrent extends Thread implements Logable {
 				if(p.getClient().hasExtentionID(UTMetadata.NAME))
 					leechers.add(p);
 			} else {
-				if(p.getClient().hasPieceCount() > 0 && !p.getMyClient().isChoked())
+				if(p.getClient().hasPieceCount() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)
 					leechers.add(p);
 			}
 		}

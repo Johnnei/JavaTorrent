@@ -249,6 +249,19 @@ public class Piece implements ISortable {
 		}
 		return requestedCount;
 	}
+	
+	/**
+	 * Gets the amount of block requested including those who are done
+	 * @return
+	 */
+	public int getTotalRequestedCount() {
+		int requestedCount = 0;
+		for(int i = 0; i < blocks.length; i++) {
+			if(blocks[i].isRequested())
+				++requestedCount;
+		}
+		return requestedCount;
+	}
 
 	/**
 	 * Gets a new block to be requested

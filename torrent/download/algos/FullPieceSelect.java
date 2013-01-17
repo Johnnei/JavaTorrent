@@ -1,7 +1,6 @@
 package torrent.download.algos;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
@@ -17,64 +16,86 @@ import torrent.download.peer.Peer;
  */
 public class FullPieceSelect implements IDownloadRegulator {
 
-	private RandomSelect randSelect;
-	private Random rand;
 	private Torrent torrent;
 
 	public FullPieceSelect(Torrent torrent) {
 		this.torrent = torrent;
-		rand = new Random();
-		randSelect = new RandomSelect(torrent);
 	}
 
 	@Override
 	public String getName() {
 		return "Full Pieces first pass";
 	}
-
-	@Override
-	public ArrayList<Peer> getPeerForPiece(Piece p) {
-		return randSelect.getPeerForPiece(p);
-	}
 	
+	/**
+	 * Gets the most available not started piece
+	 * @return
+	 */
 	private Piece getMostAvailable() {
 		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
 		int[] availability = new int[torrent.getFiles().getPieceCount()];
-		int max = 0;
-		Piece info = null;
-		for(Piece pieceInfo : undownloaded) {
+		int max = -1;
+		Piece mostAvailable = null;
+		for(Piece piece : undownloaded) {
 			ArrayList<Peer> peers = torrent.getDownloadablePeers();
 			for(Peer p : peers) {
-				if(p.getClient().hasPiece(pieceInfo.getIndex()))
-					availability[pieceInfo.getIndex()]++;
-				if(availability[pieceInfo.getIndex()] > max) {
-					max = availability[pieceInfo.getIndex()];
-					info = pieceInfo;
+				if(p.getClient().hasPiece(piece.getIndex()))
+					availability[piece.getIndex()]++;
+				if(availability[piece.getIndex()] > max) {
+					if(piece.getRequestedCount() == 0) {
+						max = availability[piece.getIndex()];
+						mostAvailable = piece;
+					}
 				}
 			}
 		}
-		if(info == null)
+		if(mostAvailable == null)
 			return null;
 		else {
-			return info;
+			return mostAvailable;
 		}
 	}
 
 	@Override
-	public Piece getPiece() {
+	public Piece getPieceForPeer(Peer peer) {
 		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
 		ArrayList<Piece> started = new ArrayList<Piece>();
 		for (int i = 0; i < undownloaded.size(); i++) {
-			Piece info = undownloaded.get(i);
-			Piece piece = torrent.getFiles().getPiece(info.getIndex());
-			if (piece.isStarted() && piece.getRequestedCount() < piece.getBlockCount()) {
-				started.add(info);
+			Piece piece = undownloaded.get(i);
+			if (piece.isStarted() && piece.getTotalRequestedCount() < piece.getBlockCount()) {
+				started.add(piece);
 			}
 		}
-		if (started.size() < 20)
-			return getMostAvailable();
-		else
-			return started.get(rand.nextInt(started.size()));
+		//Check if peer has any of the started pieces
+		for (int i = 0; i < started.size(); i++) {
+			Piece piece = started.get(i);
+			if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+				return piece;
+			}
+			if(peer.getClient().hasPiece(piece.getIndex())) {
+				return piece;
+			}
+		}
+		//Peer doesn't have any of the started pieces (or there are no started pieces)
+		Piece mostAvailable = getMostAvailable();
+		if(mostAvailable != null && peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+				return mostAvailable;
+		if(mostAvailable != null && peer.getClient().hasPiece(mostAvailable.getIndex())) { //Try most available piece
+			return mostAvailable;
+		} else { //Nope, just request the first piece they have
+			for(int i = 0; i < undownloaded.size(); i++) {
+				Piece piece = undownloaded.get(i);
+				if(piece.getTotalRequestedCount() < piece.getBlockCount()) {
+					if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+						return piece;
+					if(peer.getClient().hasPiece(piece.getIndex())) {
+						return piece;
+					}
+				}
+			}
+			//This peer can't serve us any piece ):
+			return null;
+		}
 	}
 
 }
