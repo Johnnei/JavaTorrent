@@ -31,10 +31,11 @@ public class HashedPiece extends Piece {
 			if(file.getSize() < pieceOffset + bytesToRead) {
 				bytesToRead = (int)(file.getSize() - pieceOffset);
 			}
+			long offsetInFile = pieceOffset + bytesCollected - file.getFirstByteOffset();
 			synchronized (file.FILE_LOCK) {
 				try {
 					RandomAccessFile fileAccess = file.getFileAcces();
-					fileAccess.seek(pieceOffset + bytesCollected); 
+					fileAccess.seek(offsetInFile); 
 					int read = fileAccess.read(pieceData, bytesCollected, bytesToRead);
 					if(read >= 0)
 						bytesCollected += read;
