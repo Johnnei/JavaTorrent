@@ -189,7 +189,8 @@ public class Tracker extends Thread implements Logable {
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
 		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
-		stream.writeInt(27960);
+		stream.writeShort(27960);
+		stream.writeShort(0); //No extensions
 		try {
 			socket.send(stream.write(address, port));
 			stream.read(socket);
@@ -220,6 +221,7 @@ public class Tracker extends Thread implements Logable {
 			}
 			setStatus("Announced");
 		} catch (IOException e) {
+			setStatus("Announce failed");
 			log("Announce IOException: " + e.getMessage(), true);
 		}
 	}

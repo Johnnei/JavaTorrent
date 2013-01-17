@@ -20,10 +20,9 @@ public class PeerConnector extends Thread {
 	public void run() {
 		while(true) {
 			try {
-				Socket peerSocket = serverSocket.accept();
 				Peer peer = new Peer();
+				Socket peerSocket = serverSocket.accept();
 				peer.setSocket(peerSocket);
-				peer.log("Connected from outside");
 				long handshakeStart = System.currentTimeMillis();
 				while(!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 10) {
 					ThreadUtils.sleep(10);
@@ -33,9 +32,12 @@ public class PeerConnector extends Thread {
 					if(peer.getPassedHandshake()) {
 						peer.sendHandshake();
 						peer.getTorrent().addPeer(peer);
+					} else {
+						peer.close();
 					}
 				} else {
 					peer.close();
+					peer.log("Handshake timed-out");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

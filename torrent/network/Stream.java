@@ -33,6 +33,11 @@ public class Stream {
 			writeByte(array[i]);
 		}
 	}
+	
+	public void writeShort(int i) {
+		writeByte(i >> 8);
+		writeByte(i);
+	}
 
 	public void writeInt(int i) {
 		writeByte(i >> 24);

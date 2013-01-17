@@ -117,6 +117,13 @@ public class Peer implements Logable, ISortable {
 	
 	public void setSocket(Socket socket) {
 		this.socket = socket;
+		setSocket(socket.getInetAddress(), socket.getPort());
+		try {
+			inStream = new ByteInputStream(this, socket.getInputStream());
+			outStream = new ByteOutputStream(socket.getOutputStream());
+		} catch (IOException e) {
+			log(e.getMessage(), true);
+		}
 	}
 
 	public void setSocket(InetAddress address, int port) {
