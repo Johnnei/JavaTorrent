@@ -379,11 +379,17 @@ public class Peer implements Logable, ISortable {
 		}
 	}
 
+	/**
+	 * Gracefully close the connection with this peer
+	 */
 	public void close() {
 		try {
 			if (socket != null) {
-				if(!socket.isClosed())
+				if(!socket.isClosed()) {
+					socket.shutdownInput();
+					socket.shutdownOutput();
 					socket.close();
+				}
 			}
 		} catch (IOException e) {
 		}

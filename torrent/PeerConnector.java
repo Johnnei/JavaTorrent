@@ -37,7 +37,6 @@ public class PeerConnector extends Thread {
 					}
 				} else {
 					peer.close();
-					peer.log("Handshake timed-out");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
