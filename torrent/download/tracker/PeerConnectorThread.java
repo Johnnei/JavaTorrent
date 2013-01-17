@@ -48,15 +48,17 @@ public class PeerConnectorThread extends Thread {
 			for(int i = 0; i < peer.length; i++) {
 				if(peer[i] != null) {
 					Peer p = peer[i];
-					try {
-						p.connect();
-						if(!p.closed()) {
-							p.sendHandshake();
-							torrent.addPeer(p);
+					if(1 != 1) {
+						try {
+							p.connect();
+							if(!p.closed()) {
+								p.sendHandshake();
+								torrent.addPeer(p);
+							}
+						} catch (IOException e) {
+							p.close();
+							p.log(e.getMessage(), true);
 						}
-					} catch (IOException e) {
-						p.close();
-						p.log(e.getMessage(), true);
 					}
 					peer[i] = null;
 					addToPeerCount(-1);

@@ -71,9 +71,8 @@ public class Peer implements Logable, ISortable {
 	public void setClientName(String clientName) {
 		this.clientName = clientName;
 	}
-
-	public Peer(Torrent torrent) {
-		this.torrent = torrent;
+	
+	public Peer() {
 		crashed = false;
 		peerClient = new Client();
 		myClient = new Client();
@@ -83,6 +82,11 @@ public class Peer implements Logable, ISortable {
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
 		passedHandshake = false;
+	}
+
+	public Peer(Torrent torrent) {
+		this();
+		this.torrent = torrent;
 	}
 
 	public void connect() {
@@ -109,6 +113,10 @@ public class Peer implements Logable, ISortable {
 			else
 				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(torrent.getFiles().getMetadataSize())));
 		}
+	}
+	
+	public void setSocket(Socket socket) {
+		this.socket = socket;
 	}
 
 	public void setSocket(InetAddress address, int port) {
@@ -139,6 +147,14 @@ public class Peer implements Logable, ISortable {
 			if ("BitTorrent protocol".equals(protocol)) {
 				peerClient.setReservedBytes(inStream.readByteArray(8));
 				byte[] torrentHash = inStream.readByteArray(20);
+				if (torrent == null) {
+					Torrent torrent = Manager.getManager().getTorrent(StringUtil.byteArrayToString(torrentHash));
+					if(torrent == null) {
+						log("No Torrent with Hash: " + StringUtil.byteArrayToString(torrentHash), true);
+						return;
+					}
+					this.torrent = torrent;
+				}
 				if (torrentHash != torrent.getHashArray()) {
 					inStream.readByteArray(20);
 					setStatus("Awaiting Orders");

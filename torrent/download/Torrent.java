@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.Logable;
+import torrent.Manager;
 import torrent.TorrentException;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
@@ -154,6 +155,7 @@ public class Torrent extends Thread implements Logable {
 	}
 	
 	public void initialise() {
+		Manager.getManager().addTorrent(this);
 		connectorThreads = new PeerConnectorThread[4];
 		for(int i = 0; i <connectorThreads.length; i++) {
 			connectorThreads[i] = new PeerConnectorThread(this, 50);
@@ -311,11 +313,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public String getHash() {
-		String s = "";
-		for (int i = 0; i < btihHash.length; i++) {
-			s += Integer.toHexString(btihHash[i] & 0xff);
-		}
-		return s;
+		return StringUtil.byteArrayToString(btihHash);
 	}
 
 	public void log(String s, boolean error) {
@@ -358,7 +356,6 @@ public class Torrent extends Thread implements Logable {
 		}
 		int blockIndex = offset / files.getBlockSize();
 		try {
-			log("Received Block: " + index + "-" + blockIndex);
 			files.getPiece(index).storeBlock(blockIndex, data);
 			if(!files.isMetadata()) {
 				downloadedBytes += data.length;

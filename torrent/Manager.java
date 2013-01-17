@@ -1,6 +1,10 @@
 package torrent;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
+
+import torrent.download.Torrent;
 
 public class Manager {
 
@@ -10,10 +14,19 @@ public class Manager {
 		return manager;
 	}
 
+	private PeerConnector connectorThread;
 	private int transactionId;
 	private byte[] peerId;
+	private ArrayList<Torrent> activeTorrents;
 
 	private Manager() {
+		activeTorrents = new ArrayList<>();
+		try {
+			connectorThread = new PeerConnector();
+			connectorThread.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		transactionId = new Random().nextInt();
 		char[] version = JavaTorrent.BUILD.split(" ")[1].replace(".", "").toCharArray();
 		peerId = new byte[20];
@@ -32,6 +45,19 @@ public class Manager {
 
 	public synchronized int getNextTransactionId() {
 		return transactionId++;
+	}
+	
+	public void addTorrent(Torrent torrent) {
+		activeTorrents.add(torrent);
+	}
+	
+	public Torrent getTorrent(String hash) {
+		for(int i = 0; i < activeTorrents.size(); i++) {
+			Torrent t = activeTorrents.get(i);
+			if(t.getHash().equals(hash)) 
+				return t;
+		}
+		return null;
 	}
 
 	public byte[] getPeer() {
