@@ -237,7 +237,7 @@ public class Files {
 			long fileTotal = 0L;
 			for(int i = 0; i < fileInfo.length; i++) {
 				fileTotal += fileInfo[i].getSize();
-				if(pieceOffset <= fileTotal) {
+				if(pieceOffset < fileTotal) {
 					return fileInfo[i];
 				}
 			}

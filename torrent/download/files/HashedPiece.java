@@ -28,10 +28,10 @@ public class HashedPiece extends Piece {
 			int blockDataOffset = bytesCollected % files.getBlockSize();
 			int bytesToRead = getSize() - bytesCollected;
 			FileInfo file = files.getFileForBlock(getIndex(), blockIndex, blockDataOffset);
-			if(file.getSize() < pieceOffset + bytesToRead) {
+			long offsetInFile = pieceOffset + bytesCollected - file.getFirstByteOffset();
+			if(file.getSize() < offsetInFile + bytesToRead) {
 				bytesToRead = (int)(file.getSize() - pieceOffset);
 			}
-			long offsetInFile = pieceOffset + bytesCollected - file.getFirstByteOffset();
 			synchronized (file.FILE_LOCK) {
 				try {
 					RandomAccessFile fileAccess = file.getFileAcces();
