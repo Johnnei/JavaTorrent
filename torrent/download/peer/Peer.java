@@ -195,6 +195,8 @@ public class Peer implements Logable, ISortable {
 	public void sendMessage() throws IOException {
 		if (messageQueue.size() > 0) {
 			IMessage message = messageQueue.remove(0);
+			if(message == null)
+				return;
 			setStatus("Sending Message: " + message);
 			MessageUtils.getUtils().writeMessage(outStream, message);
 			setStatus("Sended Message: " + message);
