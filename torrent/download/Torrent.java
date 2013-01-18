@@ -363,7 +363,7 @@ public class Torrent extends Thread implements Logable {
 			if (files.getPiece(index).isDone()) {
 				if (files.getPiece(index).checkHash()) {
 					if(torrentStatus == STATE_DOWNLOAD_DATA)
-						broadcastMessage(new MessageHave(index));
+						broadcastHave(index);
 					log("Recieved and verified piece: " + index);
 					String p = Double.toString(getProgress());
 					log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
@@ -378,6 +378,21 @@ public class Torrent extends Thread implements Logable {
 		}
 		synchronized(this) {
 			--collectingPiece;
+		}
+	}
+	
+	/**
+	 * Broadcasts a have message to all peers and updates the have states for myClient
+	 * @param pieceIndex The index of the piece to be broadcasted
+	 */
+	public void broadcastHave(int pieceIndex) {
+		MessageHave have = new MessageHave(pieceIndex);
+		for (int i = 0; i < peers.size(); i++) {
+			Peer p = peers.get(i);
+			if(!p.closed()) {
+				p.getMyClient().addPiece(pieceIndex);
+				p.addToQueue(have);
+			}
 		}
 	}
 

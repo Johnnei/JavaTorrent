@@ -19,16 +19,22 @@ public class HashedPiece extends Piece {
 		this.shaHash = shaHash;
 	}
 	
+	/**
+	 * Checks if the received bytes hash matches with the hash which was given in the metadata
+	 * @return hashMatched ? true : false
+	 * @throws TorrentException If the piece is not within any of the files in this torrent (Shouldn't occur)
+	 */
 	public boolean checkHash() throws TorrentException {
 		byte[] pieceData = new byte[getSize()];
 		int bytesCollected = 0;
 		long pieceOffset = getIndex() * files.getPieceSize();
 		while(bytesCollected < pieceData.length) {
 			int blockIndex = bytesCollected / files.getBlockSize();
+			int blockOffset = blockIndex * files.getBlockSize();
 			int blockDataOffset = bytesCollected % files.getBlockSize();
 			int bytesToRead = getSize() - bytesCollected;
 			FileInfo file = files.getFileForBlock(getIndex(), blockIndex, blockDataOffset);
-			long offsetInFile = pieceOffset + bytesCollected - file.getFirstByteOffset();
+			long offsetInFile = pieceOffset + blockOffset + bytesCollected - file.getFirstByteOffset();
 			if(file.getSize() < offsetInFile + bytesToRead) {
 				bytesToRead = (int)(file.getSize() - pieceOffset);
 			}

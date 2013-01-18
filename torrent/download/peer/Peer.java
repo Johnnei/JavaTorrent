@@ -145,7 +145,6 @@ public class Peer implements Logable, ISortable {
 		status = "Verifying handshake";
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
-			log("Protocol Length Mismatch: " + protocolLength);
 			socket.close();
 			crashed = true;
 			return;
@@ -157,7 +156,6 @@ public class Peer implements Logable, ISortable {
 				if (torrent == null) {
 					Torrent torrent = Manager.getManager().getTorrent(StringUtil.byteArrayToString(torrentHash));
 					if(torrent == null) {
-						log("No Torrent with Hash: " + StringUtil.byteArrayToString(torrentHash), true);
 						return;
 					}
 					this.torrent = torrent;
@@ -167,13 +165,11 @@ public class Peer implements Logable, ISortable {
 					setStatus("Awaiting Orders");
 					passedHandshake = true;
 				} else {
-					log("Torrent Hash Mismatch: " + StringUtil.byteArrayToString(torrentHash), true);
 					socket.close();
 					crashed = true;
 					return;
 				}
 			} else {
-				log("Protocol Mismatch: " + protocol, true);
 				crashed = true;
 				socket.close();
 				return;
@@ -232,10 +228,12 @@ public class Peer implements Logable, ISortable {
 				byte[] data = new byte[0];
 				try {
 					data = torrent.getFiles().getPiece(index).loadPiece(request.getBlockIndex(), request.getLength());
+					peerClient.removeJob(request);
 				} catch (TorrentException te) {
 					te.printStackTrace();
 				}
 				MessageBlock block = new MessageBlock(index, offset, data);
+				log("Uploading piece " + index);
 				addToQueue(block);
 			}
 		}

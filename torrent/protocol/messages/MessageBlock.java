@@ -54,7 +54,7 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public int getLength() {
-		return 13 + data.length;
+		return 9 + data.length;
 	}
 
 	@Override
