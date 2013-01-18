@@ -276,9 +276,12 @@ public class Files {
 	public byte[] getMetadataBlock(int piece) {
 		long blockSize = 16384L;
 		byte[] data = new byte[(int)blockSize];
+		long blockOffset = piece * blockSize;
 		synchronized (metadata.FILE_LOCK) {
 			RandomAccessFile fileAccess = metadata.getFileAcces();
 			try {
+				if(fileAccess.length() < blockOffset + data.length)
+					data = new byte[(int)(fileAccess.length() - blockOffset)];
 				int bytesRead = 0;
 				while(bytesRead < data.length) {
 					fileAccess.seek(piece * blockSize + bytesRead);
