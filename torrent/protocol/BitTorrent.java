@@ -32,8 +32,6 @@ public final class BitTorrent {
 	 * Notify the peer that we have a piece<br/>
 	 * Payload:<br/>
 	 * 1x: (u)int - Piece Index<br/>
-	 * -<br/>
-	 * Don't need to send to seeds I assume as they already got all pieces <br/>
 	 */
 	public static final int MESSAGE_HAVE = 4;
 	/**
@@ -51,7 +49,7 @@ public final class BitTorrent {
 	 * Payload:<br/>
 	 * uint index - Piece index<br/>
 	 * uint offset - Offset within the piece<br/>
-	 * uint length - The amount of data (Commenly 2^14/2^15), I use 2^15
+	 * uint length - The amount of data (Commenly 2^14/2^15), I use 2^14
 	 */
 	public static final int MESSAGE_REQUEST = 6;
 	/**
@@ -69,7 +67,6 @@ public final class BitTorrent {
 	 * uint offset<br/>
 	 * uint length<br/>
 	 * <br/>
-	 * <b>This is not yet implemented in this client</b>
 	 */
 	public static final int MESSAGE_CANCEL = 8;
 	/**

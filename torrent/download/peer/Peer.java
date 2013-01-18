@@ -233,7 +233,6 @@ public class Peer implements Logable, ISortable {
 					te.printStackTrace();
 				}
 				MessageBlock block = new MessageBlock(index, offset, data);
-				log("Uploading piece " + index);
 				addToQueue(block);
 			}
 		}

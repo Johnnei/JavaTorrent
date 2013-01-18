@@ -17,6 +17,12 @@ public class ByteOutputStream extends DataOutputStream {
 		speed++;
 		super.write(i);
 	}
+	
+	public void write(byte[] bytes, int offset, int length) throws IOException {
+		for(int i = 0; i < length; i++) {
+			write(bytes[offset + i]);
+		}
+	}
 
 	public void writeString(String s) throws IOException {
 		for (int i = 0; i < s.length(); i++) {
