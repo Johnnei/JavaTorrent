@@ -50,7 +50,10 @@ public class StringUtil {
 	public static String byteArrayToString(byte[] array) {
 		String s = "";
 		for (byte b : array) {
-			s += Integer.toHexString(b & 0xFF).toUpperCase();
+			String hex = Integer.toHexString(b & 0xFF).toUpperCase();
+			if(hex.length() == 1)
+				hex = "0" + hex;
+			s += hex;
 		}
 		return s;
 	}

@@ -39,7 +39,6 @@ public class PeerConnector extends Thread {
 					peer.close();
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
 			}
 		}
 	}

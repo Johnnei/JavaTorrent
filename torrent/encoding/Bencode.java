@@ -81,10 +81,8 @@ public class Bencode {
 		int totalLength = data[0].length() + 1;
 		if (isInt(data[0])) {
 			int length = Integer.parseInt(data[0]);
+			String string = bencoded.substring(totalLength, totalLength + length);
 			totalLength += length;
-			while (data[1].length() < length)
-				data[1] += ":";
-			String string = data[1].substring(0, length);
 			bencoded = bencoded.substring(totalLength);
 			return string;
 		} else {

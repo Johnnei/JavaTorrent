@@ -28,7 +28,6 @@ public class PeersWriteThread extends Thread {
 					try {
 						p.sendMessage();
 					} catch (IOException e) {
-						p.log(e.getMessage(), true);
 						p.close();
 					}
 				}
