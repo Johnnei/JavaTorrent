@@ -66,6 +66,11 @@ public class Peer implements Logable, ISortable {
 	 * The count of messages which are still being processed by the IOManager
 	 */
 	private int pendingMessages;
+	/**
+	 * The amount of errors the client made<br/>
+	 * If the amount reaches 5 the client will be disconnected on the next peerCheck
+	 */
+	private int strikes;
 	
 	public Peer() {
 		crashed = false;
@@ -226,6 +231,10 @@ public class Peer implements Logable, ISortable {
 	}
 	
 	public void checkDisconnect() {
+		if (strikes >= 5) {
+			close();
+			return;
+		}
 		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
 		if (inactiveSeconds > 30) {
 			if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
@@ -410,5 +419,17 @@ public class Peer implements Logable, ISortable {
 	@Override
 	public int getValue() {
 		return (getWorkQueueSize() * 5000) + peerClient.hasPieceCount() + downloadRate;
+	}
+
+	/**
+	 * Adds an amount of strikes to the peer
+	 * @param i
+	 */
+	public synchronized void addStrike(int i) {
+		if(strikes + i < 0) {
+			strikes = 0;
+		} else {
+			strikes += i;
+		}
 	}
 }
