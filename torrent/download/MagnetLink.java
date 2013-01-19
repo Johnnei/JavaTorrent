@@ -25,7 +25,6 @@ public class MagnetLink {
 				case "dn":
 					linkData[i] = StringUtil.spaceFix(data[1]);
 					torrent.setDisplayName(linkData[1]);
-					System.out.println("Torrent Name: " + torrent.getDisplayName());
 					break;
 
 				case "tr":
@@ -53,7 +52,6 @@ public class MagnetLink {
 							hash[j] = (byte) Integer.parseInt(subdata[2].substring(j * 2, j * 2 + 2), 16);
 						}
 						torrent.setHash(hash);
-						System.out.println("Torrent Hash: " + subdata[2].toUpperCase());
 					}
 					break;
 
@@ -63,7 +61,6 @@ public class MagnetLink {
 				downloadable = (torrent.hasHash() && torrent.hasTracker() && succeed);
 			}
 		} else {
-			System.err.println("Invalid Resource");
 			downloadable = false;
 		}
 	}

@@ -17,6 +17,7 @@ public class TorrentFrame extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private TorrentDetails details;
 	private TorrentList torrentList;
+	private MenubarPanel menubar;
 	private ArrayList<Torrent> torrents;
 
 	public TorrentFrame() {
@@ -31,7 +32,9 @@ public class TorrentFrame extends JFrame {
 		details.setPreferredSize(new Dimension(getWidth(), 400));
 
 		torrentList = new TorrentList();
+		menubar = new MenubarPanel(this);
 
+		add(menubar, BorderLayout.NORTH);
 		add(torrentList, BorderLayout.CENTER);
 		add(details, BorderLayout.SOUTH);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
