@@ -9,8 +9,8 @@ import torrent.protocol.IMessage;
 public class MessageCancel implements IMessage {
 
 	private int index;
-	private int begin;
 	private int offset;
+	private int length;
 	
 	public MessageCancel() {
 		
@@ -18,27 +18,27 @@ public class MessageCancel implements IMessage {
 	
 	public MessageCancel(int index, int begin, int offset) {
 		this.index = index;
-		this.begin = begin;
-		this.offset = offset;
+		this.offset = begin;
+		this.length = offset;
 	}
 
 	@Override
 	public void write(Stream outStream) {
 		outStream.writeInt(index);
-		outStream.writeInt(begin);
 		outStream.writeInt(offset);
+		outStream.writeInt(length);
 	}
 
 	@Override
 	public void read(Stream inStream) {
 		index = inStream.readInt();
-		begin = inStream.readInt();
 		offset = inStream.readInt();
+		length = inStream.readInt();
 	}
 
 	@Override
 	public void process(Peer peer) {
-		peer.getClient().removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)));
+		peer.getClient().removeJob(new Job(index, offset));
 	}
 
 	@Override

@@ -238,7 +238,10 @@ public class Peer implements Logable, ISortable {
 		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
 		if (inactiveSeconds > 30) {
 			if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
-				close();
+				//Let's try (max twice) if we can wake'm up by sending them a keepalive
+				addStrike(2);
+				addToQueue(new MessageKeepAlive());
+				updateLastActivity();
 				return;
 			} else if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 				lastActivity = System.currentTimeMillis();

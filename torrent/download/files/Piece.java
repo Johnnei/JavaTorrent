@@ -284,5 +284,14 @@ public class Piece implements ISortable {
 		}
 		return null;
 	}
+	
+	/**
+	 * Gets the size of the specified block
+	 * @param blockIndex The index of the block to get the size of
+	 * @return Size of the block in bytes
+	 */
+	public int getBlockSize(int blockIndex) {
+		return blocks[blockIndex].getSize();
+	}
 
 }
