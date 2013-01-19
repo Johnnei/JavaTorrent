@@ -7,13 +7,15 @@ import org.johnnei.utils.ThreadUtils;
 
 import torrent.Logable;
 import torrent.Manager;
-import torrent.TorrentException;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
 import torrent.download.algos.IDownloadRegulator;
 import torrent.download.algos.IPeerManager;
 import torrent.download.files.Block;
 import torrent.download.files.Piece;
+import torrent.download.files.disk.DiskJob;
+import torrent.download.files.disk.DiskJobStoreBlock;
+import torrent.download.files.disk.IOManager;
 import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.PeerConnectorThread;
@@ -82,9 +84,9 @@ public class Torrent extends Thread implements Logable {
 	 */
 	private long lastPeerUpdate = System.currentTimeMillis();
 	/**
-	 * Remembers if the torrent is collecting a piece so we can wait until all pieces are written to the hdd before continueing
+	 * Remembers if the torrent is collecting a piece or checking the hash so we can wait until all pieces are written to the hdd before continueing
 	 */
-	private int collectingPiece;
+	private int torrentHaltingOperations;
 	/**
 	 * The threads which connects new peers
 	 */
@@ -97,6 +99,10 @@ public class Torrent extends Thread implements Logable {
 	 * The thread which writes all information to the peers
 	 */
 	private PeersWriteThread writeThread;
+	/**
+	 * IOManager to manage the transaction between the hdd and the programs so none of the actual network thread need to get block for that
+	 */
+	private IOManager ioManager;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
@@ -115,6 +121,7 @@ public class Torrent extends Thread implements Logable {
 		peers = new ArrayList<Peer>();
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
+		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(500, 1.5F);
 		System.setOut(new Logger(System.out));
@@ -174,7 +181,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void run() {
-		while(!files.isDone() || collectingPiece > 0) {
+		while(!files.isDone() || torrentHaltingOperations > 0) {
 			processPeers();
 			ArrayList<Peer> downloadPeers = getDownloadablePeers();
 			while(downloadPeers.size() > 0) {
@@ -199,6 +206,7 @@ public class Torrent extends Thread implements Logable {
 					}
 				}
 			}
+			ioManager.processTask(this);
 			ThreadUtils.sleep(25);
 		}
 		if(files.isMetadata()) {
@@ -350,35 +358,36 @@ public class Torrent extends Thread implements Logable {
 		return 100D * (progress / (files.getPieceCount() * 100));
 	}
 
+	/**
+	 * Tells the torrent to save a block of data
+	 * @param index
+	 * The piece index
+	 * @param offset
+	 * The offset within the piece
+	 * @param data
+	 * The bytes to be stored
+	 */
 	public void collectPiece(int index, int offset, byte[] data) {
-		synchronized(this) {
-			++collectingPiece;
-		}
+		addToHaltingOperations(1);
 		int blockIndex = offset / files.getBlockSize();
-		try {
-			files.getPiece(index).storeBlock(blockIndex, data);
-			if(!files.isMetadata()) {
-				downloadedBytes += data.length;
-			}
-			if (files.getPiece(index).isDone()) {
-				if (files.getPiece(index).checkHash()) {
-					if(torrentStatus == STATE_DOWNLOAD_DATA)
-						broadcastHave(index);
-					log("Recieved and verified piece: " + index);
-					String p = Double.toString(getProgress());
-					log("Torrent Progress: " + p.substring(0, (p.length() < 4) ? p.length() : 4) + "%");
-				} else {
-					log("Hash check failed on piece: " + index, true);
-					files.getPiece(index).hashFail();
-				}
-			}
-		} catch (TorrentException e) {
-			log(e.getMessage(), true);
-			files.getPiece(index).reset(blockIndex);
-		}
+		addDiskJob(new DiskJobStoreBlock(index, blockIndex, data));
+	}
+	
+	/**
+	 * Called by IOManager to notify the torrent that we processed the collectingPiece
+	 */
+	public void addToHaltingOperations(int i) {
 		synchronized(this) {
-			--collectingPiece;
+			torrentHaltingOperations += i;
 		}
+	}
+	
+	/**
+	 * Adds a task to the IOManager of this torrent
+	 * @param task The task to add
+	 */
+	public void addDiskJob(DiskJob task) {
+		ioManager.addTask(task);
 	}
 	
 	/**
@@ -387,6 +396,7 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public void broadcastHave(int pieceIndex) {
 		MessageHave have = new MessageHave(pieceIndex);
+		downloadedBytes -= files.getPiece(pieceIndex).getSize();
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if(!p.closed()) {

@@ -10,14 +10,13 @@ import org.johnnei.utils.ThreadUtils;
 
 import torrent.Logable;
 import torrent.Manager;
-import torrent.TorrentException;
 import torrent.download.Torrent;
+import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
-import torrent.protocol.messages.MessageBlock;
 import torrent.protocol.messages.MessageKeepAlive;
 import torrent.protocol.messages.extention.MessageExtension;
 import torrent.protocol.messages.extention.MessageHandshake;
@@ -63,14 +62,10 @@ public class Peer implements Logable, ISortable {
 	private boolean passedHandshake;
 	
 	private String clientName;
-
-	public String getClientName() {
-		return clientName;
-	}
-
-	public void setClientName(String clientName) {
-		this.clientName = clientName;
-	}
+	/**
+	 * The count of messages which are still being processed by the IOManager
+	 */
+	private int pendingMessages;
 	
 	public Peer() {
 		crashed = false;
@@ -221,19 +216,11 @@ public class Peer implements Logable, ISortable {
 			setStatus("Sended Message: " + message);
 			lastActivity = System.currentTimeMillis();
 		} else {
-			if(peerClient.getQueueSize() > 0) {
+			if(peerClient.getQueueSize() > 0 && pendingMessages == 0) {
 				Job request = peerClient.getNextJob();
-				int index = request.getPieceIndex();
-				int offset = (int)(request.getBlockIndex() * torrent.getFiles().getPieceSize());
-				byte[] data = new byte[0];
-				try {
-					data = torrent.getFiles().getPiece(index).loadPiece(request.getBlockIndex(), request.getLength());
-					peerClient.removeJob(request);
-				} catch (TorrentException te) {
-					te.printStackTrace();
-				}
-				MessageBlock block = new MessageBlock(index, offset, data);
-				addToQueue(block);
+				peerClient.removeJob(request);
+				addToPendingMessages(1);
+				torrent.addDiskJob(new DiskJobSendBlock(this, request.getPieceIndex(), request.getBlockIndex(), request.getLength()));
 			}
 		}
 	}
@@ -257,6 +244,14 @@ public class Peer implements Logable, ISortable {
 		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark
 			close();
 		}
+	}
+	
+	/**
+	 * Add a value to the pending Messages count
+	 * @param i The count to add
+	 */
+	public synchronized void addToPendingMessages(int i) {
+		pendingMessages += i;
 	}
 
 	/**
@@ -297,6 +292,14 @@ public class Peer implements Logable, ISortable {
 
 	public void setStatus(String s) {
 		status = s;
+	}
+	
+	public void setClientName(String clientName) {
+		this.clientName = clientName;
+	}
+	
+	public String getClientName() {
+		return clientName;
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package torrent.protocol.messages.ut_metadata;
 
 import torrent.download.Torrent;
+import torrent.download.files.disk.DiskJobSendMetadataBlock;
 import torrent.download.peer.Peer;
 import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.extention.MessageExtension;
@@ -16,17 +17,14 @@ public class MessageRequest extends Message {
 
 	@Override
 	public void process(Peer peer) {
-		MessageExtension extendedMessage;
 		if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 			MessageReject mr = new MessageReject((int)dictionary.get("piece"));
-			extendedMessage = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), mr);
+			MessageExtension extendedMessage = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), mr);
 			peer.addToQueue(extendedMessage);
 		} else {
 			int piece = (int)dictionary.get("piece");
-			MessageData mData = new MessageData(piece, peer.getTorrent().getFiles().getMetadataBlock(piece));
-			extendedMessage = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), mData);
+			peer.getTorrent().addDiskJob(new DiskJobSendMetadataBlock(peer, piece));
 		}
-		peer.addToQueue(extendedMessage);
 	}
 
 	@Override

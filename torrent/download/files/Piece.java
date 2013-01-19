@@ -60,15 +60,23 @@ public class Piece implements ISortable {
 		blocks[blockIndex].setRequested(false);
 	}
 	
-	public byte[] loadPiece(int blockIndex, int remainingBytes) throws TorrentException {
+	/**
+	 * Loads a bit of data from the file but it is not strictly a block as I use it
+	 * @param offset The offset in the piece
+	 * @param remainingBytes The amount of bytes to read
+	 * @return
+	 * The read bytes or an excpetion
+	 * @throws TorrentException
+	 */
+	public byte[] loadPiece(int offset, int remainingBytes) throws TorrentException {
 		byte[] blockData = new byte[remainingBytes];
 		//Write Block
 		while(remainingBytes > 0) {
-			int dataOffset = (blocks[blockIndex].getSize() - remainingBytes);
+			int dataOffset = offset - remainingBytes;
 			//Retrieve fileinfo
-			FileInfo outputFile = files.getFileForBlock(index, blockIndex, dataOffset);
+			FileInfo outputFile = files.getFileForBlock(index, 0, dataOffset);
 			long indexOffset = (index * files.getPieceSize());
-			int blockOffset = (blockIndex * files.getBlockSize());
+			int blockOffset = (offset * files.getBlockSize());
 			long totalOffset = indexOffset + blockOffset + dataOffset;
 			long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
 			int bytesToWrite = remainingBytes;
