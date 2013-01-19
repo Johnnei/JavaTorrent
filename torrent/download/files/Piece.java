@@ -72,16 +72,15 @@ public class Piece implements ISortable {
 		byte[] blockData = new byte[remainingBytes];
 		//Write Block
 		while(remainingBytes > 0) {
-			int dataOffset = offset - remainingBytes;
+			int dataOffset = offset + (blockData.length - remainingBytes);
 			//Retrieve fileinfo
 			FileInfo outputFile = files.getFileForBlock(index, 0, dataOffset);
 			long indexOffset = (index * files.getPieceSize());
-			int blockOffset = (offset * files.getBlockSize());
-			long totalOffset = indexOffset + blockOffset + dataOffset;
+			long totalOffset = indexOffset + dataOffset;
 			long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
-			int bytesToWrite = remainingBytes;
+			int bytesToRead = remainingBytes;
 			if(offsetInFile + remainingBytes > outputFile.getSize()) {
-				bytesToWrite = (int)(outputFile.getSize() - offsetInFile);
+				bytesToRead = (int)(outputFile.getSize() - offsetInFile);
 			}
 			if(offsetInFile < 0)
 				throw new TorrentException("Cannot seek to position: " + offsetInFile);
@@ -90,8 +89,9 @@ public class Piece implements ISortable {
 				RandomAccessFile file = outputFile.getFileAcces();
 				try {
 					file.seek(offsetInFile);
-					file.read(blockData, dataOffset, bytesToWrite);
-					remainingBytes -= bytesToWrite;
+					int read = file.read(blockData, (blockData.length - remainingBytes), bytesToRead);
+					if(read >= 0)
+						remainingBytes -= read;
 				} catch (IOException e) {
 				}
 			}
