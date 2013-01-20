@@ -40,7 +40,7 @@ public class Client {
 	public void setBitfieldSize(int size) {
 		if(size != bitfield.length) {
 			byte[] newBitfield = new byte[size];
-			int maxSize = JMath.max(size, bitfield.length);
+			int maxSize = JMath.min(size, bitfield.length);
 			for(int i = 0; i < maxSize; i++) {
 				newBitfield[i] = bitfield[i];
 			}
@@ -92,7 +92,11 @@ public class Client {
 	public boolean hasPiece(int pieceIndex) {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
-		return ((bitfield[byteIndex] >> bit) & 1) == 1;
+		if(byteIndex < bitfield.length) {
+			return ((bitfield[byteIndex] >> bit) & 1) == 1;
+		} else {
+			return false;
+		}
 	}
 	/**
 	 * Notify that we have the given piece<br/>
