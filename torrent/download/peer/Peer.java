@@ -163,7 +163,7 @@ public class Peer implements Logable, ISortable {
 				if (torrentHash != torrent.getHashArray()) {
 					inStream.readByteArray(20);
 					if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA)
-						peerClient.setBitfieldSize(torrent.getFiles().getBitfieldSize());
+						peerClient.getBitfield().setBitfieldSize(torrent.getFiles().getBitfieldSize());
 					setStatus("Awaiting Orders");
 					passedHandshake = true;
 				} else {
@@ -423,7 +423,7 @@ public class Peer implements Logable, ISortable {
 
 	@Override
 	public int getValue() {
-		return (getWorkQueueSize() * 5000) + peerClient.hasPieceCount() + downloadRate;
+		return (getWorkQueueSize() * 5000) + peerClient.getBitfield().hasPieceCount() + downloadRate;
 	}
 
 	/**

@@ -187,7 +187,7 @@ public class Torrent extends Thread implements Logable {
 		for(int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if(p != null) {
-				p.getClient().setBitfieldSize(files.getBitfieldSize());
+				p.getClient().getBitfield().setBitfieldSize(files.getBitfieldSize());
 			}
 		}
 	}
@@ -280,7 +280,7 @@ public class Torrent extends Thread implements Logable {
 			Peer p = peers.get(i);
 			boolean hasNoPieces = true;
 			for (int j = 0; j < neededPieces.size(); j++) {
-				if (p.getClient().hasPiece(neededPieces.get(j).getIndex())) {
+				if (p.getClient().getBitfield().hasPiece(neededPieces.get(j).getIndex())) {
 					hasNoPieces = false;
 					if (!p.getClient().isInterested()) {
 						p.addToQueue(new MessageInterested());
@@ -410,7 +410,7 @@ public class Torrent extends Thread implements Logable {
 	public void broadcastHave(int pieceIndex) {
 		MessageHave have = new MessageHave(pieceIndex);
 		downloadedBytes -= files.getPiece(pieceIndex).getSize();
-		files.havePiece(pieceIndex);
+		files.getBitfield().havePiece(pieceIndex);
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if(!p.closed()) {
@@ -496,7 +496,7 @@ public class Torrent extends Thread implements Logable {
 			Peer p = peers.get(i);
 			if (p == null)
 				continue;
-			if (p.getClient().hasPieceCount() == files.getPieceCount())
+			if (p.getClient().getBitfield().hasPieceCount() == files.getPieceCount())
 				++seeds;
 		}
 		
@@ -547,7 +547,7 @@ public class Torrent extends Thread implements Logable {
 				if(p.getClient().hasExtentionID(UTMetadata.NAME))
 					leechers.add(p);
 			} else {
-				if(p.getClient().hasPieceCount() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)
+				if(p.getClient().getBitfield().hasPieceCount() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)
 					leechers.add(p);
 			}
 		}

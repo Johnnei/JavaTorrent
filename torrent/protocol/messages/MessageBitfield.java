@@ -34,7 +34,7 @@ public class MessageBitfield implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.getClient().setBitfield(bitfield);
+		peer.getClient().getBitfield().setBitfield(bitfield);
 	}
 
 	@Override

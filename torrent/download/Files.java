@@ -13,6 +13,7 @@ import org.johnnei.utils.ThreadUtils;
 import torrent.TorrentException;
 import torrent.download.files.HashedPiece;
 import torrent.download.files.Piece;
+import torrent.download.peer.Bitfield;
 import torrent.encoding.Bencode;
 
 public class Files {
@@ -43,7 +44,7 @@ public class Files {
 	/**
 	 * Centralised storage of have pieces
 	 */
-	private byte[] bitfield;
+	private Bitfield bitfield;
 	
 	/**
 	 * Creates a Files instance based upon a magnet-link
@@ -55,7 +56,7 @@ public class Files {
 		fileInfo = new FileInfo[1];
 		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(filename));
 		pieces = new HashedPiece[0];
-		bitfield = new byte[getBitfieldSize()];
+		bitfield = new Bitfield(getBitfieldSize());
 	}
 
 	/**
@@ -66,7 +67,7 @@ public class Files {
 		blockSize = 1 << 14;
 		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile);
 		parseTorrentFileData(torrentFile);
-		bitfield = new byte[getBitfieldSize()];
+		bitfield = new Bitfield(getBitfieldSize());
 	}
 
 	private void parseTorrentFileData(File torrentFile) {
@@ -149,28 +150,6 @@ public class Files {
 		return getNeededPieces().size() == 0;
 	}
 	
-	/**
-	 * Checks the bitfield if we have the given piece
-	 * @param pieceIndex the piece to check
-	 * @return True if we verified the hash of that piece, else false
-	 */
-	public boolean hasPiece(int pieceIndex) {
-		int byteIndex = pieceIndex / 8;
-		int bit = pieceIndex % 8;
-		return ((bitfield[byteIndex] >> bit) & 1) == 1;
-	}
-	
-	/**
-	 * Notify that we have the given piece<br/>
-	 * This will update the bitfield to bitwise OR the bit to 1
-	 * @param pieceIndex The piece to add
-	 */
-	public void havePiece(int pieceIndex) {
-		int byteIndex = pieceIndex / 8;
-		int bit = pieceIndex % 8;
-		bitfield[byteIndex] |= (1 << bit);
-	}
-	
 	public int getBitfieldSize() {
 		return (int)Math.ceil(pieces.length / 8);
 	}
@@ -190,6 +169,10 @@ public class Files {
 
 	public File getFolderName() {
 		return new File(folderName);
+	}
+	
+	public Bitfield getBitfield() {
+		return bitfield;
 	}
 
 	/**

@@ -30,7 +30,7 @@ public class MessageHave implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-			peer.getClient().havePiece(pieceIndex, true);
+			peer.getClient().getBitfield().havePiece(pieceIndex, true);
 	}
 
 	@Override
