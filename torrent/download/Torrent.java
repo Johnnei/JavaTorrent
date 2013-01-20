@@ -179,8 +179,21 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 	}
+	
+	/**
+	 * Updates the bitfield size for all peers
+	 */
+	private void updateBitfield() {
+		for(int i = 0; i < peers.size(); i++) {
+			Peer p = peers.get(i);
+			if(p != null) {
+				p.getClient().setBitfieldSize(files.getBitfieldSize());
+			}
+		}
+	}
 
 	public void run() {
+		updateBitfield();
 		while(!files.isDone() || torrentHaltingOperations > 0) {
 			processPeers();
 			ArrayList<Peer> downloadPeers = getDownloadablePeers();
@@ -401,7 +414,7 @@ public class Torrent extends Thread implements Logable {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if(!p.closed()) {
-				p.getMyClient().addPiece(pieceIndex);
+				p.getMyClient().havePiece(pieceIndex);
 				p.addToQueue(have);
 			}
 		}

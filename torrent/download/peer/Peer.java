@@ -162,6 +162,8 @@ public class Peer implements Logable, ISortable {
 				}
 				if (torrentHash != torrent.getHashArray()) {
 					inStream.readByteArray(20);
+					if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA)
+						peerClient.setBitfieldSize(torrent.getFiles().getBitfieldSize());
 					setStatus("Awaiting Orders");
 					passedHandshake = true;
 				} else {

@@ -55,7 +55,7 @@ public class Files {
 		fileInfo = new FileInfo[1];
 		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(filename));
 		pieces = new HashedPiece[0];
-		bitfield = new byte[(int)Math.ceil(pieces.length / 8)];
+		bitfield = new byte[getBitfieldSize()];
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class Files {
 		blockSize = 1 << 14;
 		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile);
 		parseTorrentFileData(torrentFile);
-		bitfield = new byte[(int)Math.ceil(pieces.length / 8)];
+		bitfield = new byte[getBitfieldSize()];
 	}
 
 	private void parseTorrentFileData(File torrentFile) {
@@ -169,6 +169,10 @@ public class Files {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
 		bitfield[byteIndex] |= (1 << bit);
+	}
+	
+	public int getBitfieldSize() {
+		return (int)Math.ceil(pieces.length / 8);
 	}
 
 	/**
