@@ -18,7 +18,7 @@ import torrent.protocol.messages.MessageKeepAlive;
 import torrent.protocol.messages.MessageRequest;
 import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
-import torrent.protocol.messages.extention.MessageExtension;
+import torrent.protocol.messages.extension.MessageExtension;
 
 public class MessageUtils {
 	

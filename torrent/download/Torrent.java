@@ -27,7 +27,7 @@ import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
 import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
-import torrent.protocol.messages.extention.MessageExtension;
+import torrent.protocol.messages.extension.MessageExtension;
 import torrent.protocol.messages.ut_metadata.MessageRequest;
 import torrent.util.Logger;
 import torrent.util.StringUtil;

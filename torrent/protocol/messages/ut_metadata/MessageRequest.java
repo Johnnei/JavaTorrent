@@ -4,7 +4,7 @@ import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendMetadataBlock;
 import torrent.download.peer.Peer;
 import torrent.protocol.UTMetadata;
-import torrent.protocol.messages.extention.MessageExtension;
+import torrent.protocol.messages.extension.MessageExtension;
 
 public class MessageRequest extends Message {
 	

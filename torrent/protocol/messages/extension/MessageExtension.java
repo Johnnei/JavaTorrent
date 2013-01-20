@@ -1,4 +1,4 @@
-package torrent.protocol.messages.extention;
+package torrent.protocol.messages.extension;
 
 import torrent.download.peer.Peer;
 import torrent.network.Stream;

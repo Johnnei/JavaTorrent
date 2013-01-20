@@ -18,8 +18,8 @@ import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
 import torrent.protocol.messages.MessageKeepAlive;
-import torrent.protocol.messages.extention.MessageExtension;
-import torrent.protocol.messages.extention.MessageHandshake;
+import torrent.protocol.messages.extension.MessageExtension;
+import torrent.protocol.messages.extension.MessageHandshake;
 import torrent.util.ISortable;
 import torrent.util.StringUtil;
 
@@ -106,12 +106,25 @@ public class Peer implements Logable, ISortable {
 		}
 	}
 
-	private void sendExtentionMessage() throws IOException {
+	/**
+	 * Send all extension handshakes
+	 */
+	private void sendExtensionMessage() {
 		if (peerClient.supportsExtention(5, 0x10)) { // EXTENDED_MESSAGE
 			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake()));
 			else
 				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(torrent.getFiles().getMetadataSize())));
+		}
+	}
+	
+	/**
+	 * Send have messages or bitfield
+	 */
+	private void sendHaveMessages() {
+		ArrayList<IMessage> messages = torrent.getFiles().getBitfield().getBitfieldMessage();
+		for(int i = 0; i < messages.size(); i++) {
+			addToQueue(messages.get(i));
 		}
 	}
 	
@@ -177,7 +190,8 @@ public class Peer implements Logable, ISortable {
 				return;
 			}
 		}
-		sendExtentionMessage();
+		sendExtensionMessage();
+		sendHaveMessages();
 	}
 	
 	public void run() {
