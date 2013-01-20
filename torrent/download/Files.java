@@ -40,6 +40,10 @@ public class Files {
 	 * The default size for a block
 	 */
 	private int blockSize;
+	/**
+	 * Centralised storage of have pieces
+	 */
+	private byte[] bitfield;
 	
 	/**
 	 * Creates a Files instance based upon a magnet-link
@@ -51,6 +55,7 @@ public class Files {
 		fileInfo = new FileInfo[1];
 		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(filename));
 		pieces = new HashedPiece[0];
+		bitfield = new byte[(int)Math.ceil(pieces.length / 8)];
 	}
 
 	/**
@@ -61,6 +66,7 @@ public class Files {
 		blockSize = 1 << 14;
 		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile);
 		parseTorrentFileData(torrentFile);
+		bitfield = new byte[(int)Math.ceil(pieces.length / 8)];
 	}
 
 	private void parseTorrentFileData(File torrentFile) {
@@ -141,6 +147,28 @@ public class Files {
 				return false;
 		}
 		return getNeededPieces().size() == 0;
+	}
+	
+	/**
+	 * Checks the bitfield if we have the given piece
+	 * @param pieceIndex the piece to check
+	 * @return True if we verified the hash of that piece, else false
+	 */
+	public boolean hasPiece(int pieceIndex) {
+		int byteIndex = pieceIndex / 8;
+		int bit = pieceIndex % 8;
+		return ((bitfield[byteIndex] >> bit) & 1) == 1;
+	}
+	
+	/**
+	 * Notify that we have the given piece<br/>
+	 * This will update the bitfield to bitwise OR the bit to 1
+	 * @param pieceIndex The piece to add
+	 */
+	public void havePiece(int pieceIndex) {
+		int byteIndex = pieceIndex / 8;
+		int bit = pieceIndex % 8;
+		bitfield[byteIndex] |= (1 << bit);
 	}
 
 	/**
