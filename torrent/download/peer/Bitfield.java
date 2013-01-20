@@ -52,7 +52,8 @@ public class Bitfield {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
 		if(byteIndex < bitfield.length) {
-			return ((bitfield[byteIndex] >> bit) & 1) == 1;
+			int bitVal = (0x80 >> bit);
+			return (bitfield[byteIndex] & bitVal) > 0;
 		} else {
 			return false;
 		}
@@ -73,7 +74,6 @@ public class Bitfield {
 	 * @param mayExpand If the bitfield may grow to fit the new have data
 	 */
 	public void havePiece(int pieceIndex, boolean mayExpand) {
-		pieceIndex += 1;
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
 		if(bitfield.length < byteIndex) {
@@ -87,7 +87,7 @@ public class Bitfield {
 				return; //Prevent IndexOutOfRange
 			}
 		}
-		bitfield[byteIndex] |= (1 << bit);
+		bitfield[byteIndex] |= (0x80 >> bit);
 	}
 
 	/**
@@ -115,17 +115,18 @@ public class Bitfield {
 	 */
 	public ArrayList<IMessage> getBitfieldMessage() {
 		ArrayList<IMessage> messages = new ArrayList<>();
-		if(bitfield.length + 1 < 5 * hasPieceCount()) {
-			messages.add(new MessageBitfield(bitfield));
-		} else {
-			int pieceIndex = 0;
-			for(int i = 0; i < bitfield.length; i++) {
-				byte b = bitfield[i];
-				for (int bit = 7; bit > 0; bit--) {
-					if (((b >> bit) & 1) == 1) {
-						messages.add(new MessageHave(pieceIndex));
+		if(hasPieceCount() > 0) {
+			if(bitfield.length + 1 < 5 * hasPieceCount()) {
+				messages.add(new MessageBitfield(bitfield));
+			} else {
+				int pieceIndex = 0;
+				for(int i = 0; i < bitfield.length; i++) {
+					for (int j = 0; j < 8; j++) {
+						if (hasPiece(pieceIndex)) {
+							messages.add(new MessageHave(pieceIndex));
+						}
+						++pieceIndex;
 					}
-					++pieceIndex;
 				}
 			}
 		}

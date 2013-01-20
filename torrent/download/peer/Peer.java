@@ -122,9 +122,11 @@ public class Peer implements Logable, ISortable {
 	 * Send have messages or bitfield
 	 */
 	private void sendHaveMessages() {
-		ArrayList<IMessage> messages = torrent.getFiles().getBitfield().getBitfieldMessage();
-		for(int i = 0; i < messages.size(); i++) {
-			addToQueue(messages.get(i));
+		if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+			ArrayList<IMessage> messages = torrent.getFiles().getBitfield().getBitfieldMessage();
+			for(int i = 0; i < messages.size(); i++) {
+				addToQueue(messages.get(i));
+			}
 		}
 	}
 	
