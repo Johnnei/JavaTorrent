@@ -414,7 +414,6 @@ public class Torrent extends Thread implements Logable {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if(!p.closed()) {
-				p.getMyClient().havePiece(pieceIndex);
 				p.addToQueue(have);
 			}
 		}
