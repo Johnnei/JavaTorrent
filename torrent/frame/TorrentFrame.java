@@ -3,13 +3,15 @@ package torrent.frame;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
 
 import javax.swing.JFrame;
 
 import torrent.JavaTorrent;
 import torrent.download.Torrent;
 
-public class TorrentFrame extends JFrame {
+public class TorrentFrame extends JFrame implements Observer {
 
 	/**
 	 * 
@@ -32,6 +34,7 @@ public class TorrentFrame extends JFrame {
 		details.setPreferredSize(new Dimension(getWidth(), 350));
 
 		torrentList = new TorrentList();
+		torrentList.getObservable().addObserver(this);
 		menubar = new MenubarPanel(this);
 
 		add(menubar, BorderLayout.NORTH);
@@ -47,22 +50,21 @@ public class TorrentFrame extends JFrame {
 		for (int i = 0; i < torrents.size(); i++) {
 			torrents.get(i).pollRates();
 		}
-		details.updateData();
 	}
 
 	public void addTorrent(Torrent torrent) {
 		torrents.add(torrent);
 		torrentList.add(torrent);
-		changeSelectedTorrent(torrents.size() - 1);
 	}
 
 	public void changeSelectedTorrent(int index) {
-		torrentList.setSelectedIndex(index);
 		details.setTorrent(torrents.get(index));
 	}
-	
-	public void repaint() {
-		super.repaint();
+
+	@Override
+	public void update(Observable o, Object arg) {
+		changeSelectedTorrent((int)arg);
+		repaint();
 	}
 
 }

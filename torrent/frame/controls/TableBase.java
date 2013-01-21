@@ -8,6 +8,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.util.Observable;
 
 import javax.swing.JPanel;
 
@@ -49,11 +50,17 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 * Index of the selected row, note that this will not "stick" to the selected row values
 	 */
 	private int selectedIndex;
+	/**
+	 * The observable for this object
+	 */
+	private ObservablePanel observable;
 	
 	public TableBase(int rowSize) {
 		addMouseWheelListener(this);
 		addMouseListener(this);
+		observable = new ObservablePanel();
 		rowHeight = rowSize;
+		selectedIndex = -1;
 	}
 	
 	public void advanceLine() {
@@ -237,6 +244,14 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		if(selectedIndex > itemCount)
 			selectedIndex = itemCount;
 	}
+	
+	/**
+	 * Gets the observable object for this table
+	 * @return
+	 */
+	public Observable getObservable() {
+		return observable;
+	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
@@ -252,8 +267,10 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 			selectedIndex = (rowY / rowHeight) + 1;
 			if(selectedIndex > itemCount)
 				selectedIndex = 0;
-			if(selectedIndex != oldSelectedIndex)
+			if(selectedIndex != oldSelectedIndex) {
 				repaint();
+				observable.notifyObservers(selectedIndex);
+			}
 		}
 	}
 
