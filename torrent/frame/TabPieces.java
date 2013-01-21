@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import torrent.download.Torrent;
 import torrent.download.Files;
 import torrent.download.files.Piece;
+import torrent.frame.controls.TableBase;
 import torrent.util.ISortable;
 import torrent.util.Mergesort;
 

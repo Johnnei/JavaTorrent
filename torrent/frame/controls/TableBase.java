@@ -1,4 +1,4 @@
-package torrent.frame;
+package torrent.frame.controls;
 
 import java.awt.Color;
 import java.awt.Graphics;

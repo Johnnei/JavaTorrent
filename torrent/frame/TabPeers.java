@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
+import torrent.frame.controls.TableBase;
 import torrent.util.ISortable;
 import torrent.util.Mergesort;
 import torrent.util.StringUtil;

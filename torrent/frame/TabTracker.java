@@ -4,6 +4,7 @@ import java.awt.Graphics;
 
 import torrent.download.Torrent;
 import torrent.download.tracker.Tracker;
+import torrent.frame.controls.TableBase;
 
 public class TabTracker extends TableBase {
 
