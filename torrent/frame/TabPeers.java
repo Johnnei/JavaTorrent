@@ -50,6 +50,9 @@ public class TabPeers extends TableBase {
 			//Draw
 			for (int i = toSort.size() - 1; i >= 0 ; i--) {
 				if (rowIsVisible()) {
+					if(getSelectedIndex() == toSort.size() - i) {
+						drawSelectedBackground(g);
+					}
 					Peer peer = (Peer) peerList.getItem(i);
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
 					g.drawString(peer.toString(), 5, getTextY());

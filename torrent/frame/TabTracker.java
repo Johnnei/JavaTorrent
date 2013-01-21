@@ -37,6 +37,9 @@ public class TabTracker extends TableBase {
 				if(trackers[i] != null) {
 					++count;
 					if(isVisible()) {
+						if(count == getSelectedIndex()) {
+							drawSelectedBackground(g);
+						}
 						g.drawString(trackers[i].getTrackerName(), 5, getTextY());
 						g.drawString(trackers[i].getStatus(), 200, getTextY());
 						g.drawString(trackers[i].getSeeders() + " (" + trackers[i].getSeedersInSwarm() + ")", 350, getTextY());

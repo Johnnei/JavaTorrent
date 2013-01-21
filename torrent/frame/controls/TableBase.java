@@ -13,6 +13,12 @@ import javax.swing.JPanel;
 
 import org.johnnei.utils.JMath;
 
+/**
+ * Table base, Note that this is not an actual table.<Br/>
+ * This is a base to help you draw a table without any restrictions
+ * @author Johnnei
+ *
+ */
 public abstract class TableBase extends JPanel implements MouseListener, MouseWheelListener {
 	
 	/**
@@ -39,6 +45,10 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 * The amount of visible items
 	 */
 	private int visibleItemCount;
+	/**
+	 * Index of the selected row, note that this will not "stick" to the selected row values
+	 */
+	private int selectedIndex;
 	
 	public TableBase(int rowSize) {
 		addMouseWheelListener(this);
@@ -161,6 +171,16 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	}
 	
 	/**
+	 * Draws the row with a selected background color
+	 * @param g The graphics canvas
+	 */
+	public void drawSelectedBackground(Graphics g) {
+		g.setColor(getSelectedBackgroundColor());
+		g.fillRect(0, getDrawY(), getWidth(), rowHeight);
+		g.setColor(getForegroundColor());
+	}
+	
+	/**
 	 * Checks if the current row is visible after scrolling
 	 * @return
 	 */
@@ -173,7 +193,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 * @return
 	 */
 	public int getDrawY() {
-		return drawY - getScrollY() + 3;
+		return drawY - getScrollY();
 	}
 	
 	/**
@@ -181,7 +201,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 * @return
 	 */
 	public int getTextY() {
-		return getDrawY() + (rowHeight / 2);
+		return getDrawY() + 4 + (rowHeight / 2);
 	}
 	
 	/**
@@ -201,11 +221,21 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	}
 	
 	/**
+	 * The selected row
+	 * @return
+	 */
+	public int getSelectedIndex() {
+		return selectedIndex;
+	}
+	
+	/**
 	 * Sets the amount of items in the table
 	 * @param i Count
 	 */
 	public void setItemCount(int i) {
 		itemCount = i;
+		if(selectedIndex > itemCount)
+			selectedIndex = itemCount;
 	}
 
 	@Override
@@ -216,6 +246,14 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 			mouseWheelMoved(new MouseWheelEvent(this, 0, System.currentTimeMillis(), 0, e.getX(), e.getY(), 0, false, 0, 0, -1));
 		} else if (scrollDownHitbox.contains(e.getPoint())) {
 			mouseWheelMoved(new MouseWheelEvent(this, 0, System.currentTimeMillis(), 0, e.getX(), e.getY(), 0, false, 0, 0, 1));
+		} else if (e.getY() > rowHeight) {
+			int rowY = (scrollY * rowHeight) + e.getY() - rowHeight;
+			int oldSelectedIndex = selectedIndex;
+			selectedIndex = (rowY / rowHeight) + 1;
+			if(selectedIndex > itemCount)
+				selectedIndex = 0;
+			if(selectedIndex != oldSelectedIndex)
+				repaint();
 		}
 	}
 
