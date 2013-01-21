@@ -50,7 +50,7 @@ public class TabPeers extends TableBase {
 			//Draw
 			for (int i = toSort.size() - 1; i >= 0 ; i--) {
 				if (rowIsVisible()) {
-					if(getSelectedIndex() == toSort.size() - i) {
+					if(getSelectedIndex() == toSort.size() - i - 1) {
 						drawSelectedBackground(g);
 					}
 					Peer peer = (Peer) peerList.getItem(i);

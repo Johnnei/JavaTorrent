@@ -4,7 +4,6 @@ import java.awt.Graphics;
 
 import torrent.download.FileInfo;
 import torrent.download.Torrent;
-import torrent.download.files.Piece;
 import torrent.frame.controls.TableBase;
 import torrent.util.StringUtil;
 

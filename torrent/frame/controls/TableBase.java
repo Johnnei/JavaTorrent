@@ -264,7 +264,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		} else if (e.getY() > rowHeight) {
 			int rowY = (scrollY * rowHeight) + e.getY() - rowHeight;
 			int oldSelectedIndex = selectedIndex;
-			selectedIndex = (rowY / rowHeight) + 1;
+			selectedIndex = (rowY / rowHeight);
 			if(selectedIndex > itemCount)
 				selectedIndex = 0;
 			if(selectedIndex != oldSelectedIndex) {
