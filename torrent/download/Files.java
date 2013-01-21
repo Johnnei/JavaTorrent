@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.johnnei.utils.ThreadUtils;
+import org.johnnei.utils.config.Config;
 
 import torrent.TorrentException;
 import torrent.download.files.HashedPiece;
@@ -54,7 +55,7 @@ public class Files {
 		isMetadata = true;
 		blockSize = 16384;
 		fileInfo = new FileInfo[1];
-		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(filename));
+		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(Config.getConfig().getTempFolder() + filename));
 		pieces = new HashedPiece[0];
 		bitfield = new Bitfield(getBitfieldSize());
 	}
@@ -87,8 +88,8 @@ public class Files {
 	}
 
 	private void parseDictionary(HashMap<String, Object> dictionary) throws IOException {
-		folderName = (String) dictionary.get("name");
-		new File("./" + folderName + "/").mkdirs();
+		folderName = Config.getConfig().getString("download-output_folder", "./") + dictionary.get("name");
+		new File(folderName + "/").mkdirs();
 
 		pieceSize = (int) dictionary.get("piece length");
 		long remainingSize = 0L;
@@ -160,7 +161,7 @@ public class Files {
 	 * @return The file within the download folder
 	 */
 	private File getFile(String name) {
-		return new File("./" + folderName + "/" + name);
+		return new File(folderName + "/" + name);
 	}
 
 	public HashedPiece getPiece(int index) {
@@ -270,7 +271,7 @@ public class Files {
 			pieceSize = size;
 			pieces = new HashedPiece[] { new HashedPiece(torrentHash, this, 0, size, blockSize) };
 			FileInfo f = fileInfo[0];
-			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(f.getFilename()));
+			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(Config.getConfig().getTempFolder() + f.getFilename()));
 		}
 	}
 

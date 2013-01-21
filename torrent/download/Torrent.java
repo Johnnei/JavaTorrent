@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import org.johnnei.utils.ThreadUtils;
+import org.johnnei.utils.config.Config;
 
 import torrent.Logable;
 import torrent.Manager;
@@ -29,7 +30,6 @@ import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
 import torrent.protocol.messages.extension.MessageExtension;
 import torrent.protocol.messages.ut_metadata.MessageRequest;
-import torrent.util.Logger;
 import torrent.util.StringUtil;
 
 public class Torrent extends Thread implements Logable {
@@ -123,9 +123,7 @@ public class Torrent extends Thread implements Logable {
 		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(500, 1.5F);
-		System.setOut(new Logger(System.out));
-		System.setErr(new Logger(System.err));
+		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max", 500), Config.getConfig().getFloat("peer-max_burst_ratio", 1.5F));
 	}
 
 	private boolean hasPeer(Peer p) {
@@ -163,9 +161,9 @@ public class Torrent extends Thread implements Logable {
 	
 	public void initialise() {
 		Manager.getManager().addTorrent(this);
-		connectorThreads = new PeerConnectorThread[4];
+		connectorThreads = new PeerConnectorThread[Config.getConfig().getInt("peer-max_concurrent_connecting", 2)];
 		for(int i = 0; i <connectorThreads.length; i++) {
-			connectorThreads[i] = new PeerConnectorThread(this, 50);
+			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting", 50));
 			connectorThreads[i].start();
 		}
 		readThread = new PeersReadThread(this);
@@ -225,7 +223,7 @@ public class Torrent extends Thread implements Logable {
 		if(files.isMetadata()) {
 			FileInfo f = files.getFiles()[0];
 			log("Metadata download completed, Starting phase 2");
-			files = new Files(new File(f.getFilename()));
+			files = new Files(new File(Config.getConfig().getTempFolder() + f.getFilename()));
 			torrentStatus = STATE_DOWNLOAD_DATA;
 			run();
 		} else {

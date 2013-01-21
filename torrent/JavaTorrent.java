@@ -6,6 +6,7 @@ import org.johnnei.utils.config.Config;
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
 import torrent.frame.TorrentFrame;
+import torrent.util.Logger;
 
 public class JavaTorrent extends Thread {
 
@@ -14,6 +15,8 @@ public class JavaTorrent extends Thread {
 	private TorrentFrame frame;
 
 	public static void main(String[] args) {
+		System.setOut(new Logger(System.out));
+		System.setErr(new Logger(System.err));
 		Config.getConfig().load();
 		if (args.length == 0) {
 			System.err.println("Magnet Link not found");

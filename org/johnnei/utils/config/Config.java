@@ -33,6 +33,10 @@ public class Config {
 	 */
 	private File configFile;
 	/**
+	 * The application data folder in which we store config/temp data
+	 */
+	private String folder;
+	/**
 	 * All configs which are located in the config file
 	 */
 	private HashMap<String, String> config;
@@ -43,13 +47,13 @@ public class Config {
 	}
 	
 	private void getFile(String filename) {
-		String absolutePath = System.getProperty("user.home") + "\\";
+		folder = System.getProperty("user.home") + "\\";
 		String os = System.getProperty("os.name");
 		if(os.equals("Windows 7") || os.equals("Windows Vista")) {
-			absolutePath += "AppData\\Roaming\\JavaTorrent\\";
-			new File(absolutePath).mkdirs();
+			folder += "AppData\\Roaming\\JavaTorrent\\";
+			new File(folder).mkdirs();
 		}
-		configFile = new File(absolutePath + filename);
+		configFile = new File(folder + filename);
 		if(!configFile.exists()) {
 			try {
 				configFile.createNewFile();
@@ -153,6 +157,30 @@ public class Config {
 	 */
 	public int getInt(String key, int defaultValue) {
 		return Integer.parseInt(get(key, defaultValue));
+	}
+	
+	/**
+	 * Gets an float config value
+	 * @param key The key of the pair
+	 * @param defaultValue The default value for the pair if it doesn't exist
+	 * @return The value by the given key
+	 */
+	public float getFloat(String key, float defaultValue) {
+		return Float.parseFloat(get(key, defaultValue));
+	}
+	
+	/**
+	 * Gets an String config value
+	 * @param key The key of the pair
+	 * @param defaultValue The default value for the pair if it doesn't exist
+	 * @return The value by the given key
+	 */
+	public String getString(String key, String defaultValue) {
+		return get(key, defaultValue);
+	}
+
+	public String getTempFolder() {
+		return folder;
 	}
 
 }
