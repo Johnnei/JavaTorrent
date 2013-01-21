@@ -63,7 +63,8 @@ public class TabGeneral extends JPanel {
 				g.setColor(Color.GREEN);
 		} else
 		g.setColor(Color.GREEN);
-		g.fillRect(11, 11, (int) (progress * 0.01 * (getWidth() - 21)), 9);
+		double pixelsPerPercentage = (getWidth() - 21) * 0.01;
+		g.fillRect(11, 11, (int) (progress * pixelsPerPercentage), 9);
 
 		g.setColor(Color.BLACK);
 		g.drawString(name, 10, 50);

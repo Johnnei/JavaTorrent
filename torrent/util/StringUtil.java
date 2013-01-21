@@ -1,5 +1,7 @@
 package torrent.util;
 
+import org.johnnei.utils.JMath;
+
 public class StringUtil {
 
 	/**
@@ -24,6 +26,17 @@ public class StringUtil {
 			}
 		}
 		return stringSpeed + " " + names[pointer];
+	}
+	
+	public static String progressToString(double d) {
+		String progressString = Double.toString(d);
+		if(progressString.equals("NaN"))
+			progressString = "0.0";
+		if(progressString.contains(".")) {
+			int pointIndex = progressString.indexOf(".");
+			progressString = progressString.substring(0, JMath.min(pointIndex + 3, progressString.length()));
+		}
+		return progressString;
 	}
 
 	/**

@@ -52,17 +52,17 @@ public class TorrentList extends TableBase {
 			}
 			g.drawString(torrent.getDisplayName(), 5, getTextY());
 			//Progress Bar
-			double p = (int)torrent.getProgress() * 2;
-			g.drawRect(400, getDrawY(), 201, 24);
+			double p = torrent.getProgress() * 2;
+			g.drawRect(400, getDrawY() + 2, 201, 19);
 			g.setColor(Color.RED);
-			g.fillRect(401 + (int)p, getDrawY() + 1, 200 - (int)p, 23);
+			g.fillRect(401 + (int)p, getDrawY() + 3, 200 - (int)p, 18);
 			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 				g.setColor(Color.ORANGE);
 			else
 				g.setColor(Color.GREEN);
 			g.fillRect(401, getDrawY() + 1, (int)p, 23);
 			g.setColor(getForegroundColor());
-			drawCenteredString(g, (p / 2) + "%", 500, getDrawY() + 16);
+			drawCenteredString(g, StringUtil.progressToString(p / 2) + "%", 500, getDrawY() + 16);
 			//Speeds
 			drawStringRightToLeft(g, StringUtil.compactByteSize(torrent.getDownloadRate()) + "/s", 700, getTextY());
 			drawStringRightToLeft(g, StringUtil.compactByteSize(torrent.getUploadRate()) + "/s", 800, getTextY());
