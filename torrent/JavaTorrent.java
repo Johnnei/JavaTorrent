@@ -8,7 +8,7 @@ import torrent.frame.TorrentFrame;
 
 public class JavaTorrent extends Thread {
 
-	public static final String BUILD = "JavaTorrent 0.03.1";
+	public static final String BUILD = "JavaTorrent 0.04.0";
 
 	private TorrentFrame frame;
 

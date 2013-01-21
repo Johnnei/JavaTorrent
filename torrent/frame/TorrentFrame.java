@@ -29,7 +29,7 @@ public class TorrentFrame extends JFrame {
 		setPreferredSize(new Dimension(getWidth() + getInsets().left + getInsets().right, getHeight() + getInsets().top + getInsets().bottom));
 
 		details = new TorrentDetails();
-		details.setPreferredSize(new Dimension(getWidth(), 400));
+		details.setPreferredSize(new Dimension(getWidth(), 350));
 
 		torrentList = new TorrentList();
 		menubar = new MenubarPanel(this);
