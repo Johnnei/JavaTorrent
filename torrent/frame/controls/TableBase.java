@@ -3,6 +3,7 @@ package torrent.frame.controls;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
@@ -209,31 +210,28 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
+		Rectangle scrollUpHitbox = new Rectangle(getWidth() - 20, 0, 20, 20);
+		Rectangle scrollDownHitbox = new Rectangle(getWidth() - 20, getHeight() - 20, 20, 20);
+		if(scrollUpHitbox.contains(e.getPoint())) {
+			mouseWheelMoved(new MouseWheelEvent(this, 0, System.currentTimeMillis(), 0, e.getX(), e.getY(), 0, false, 0, 0, -1));
+		} else if (scrollDownHitbox.contains(e.getPoint())) {
+			mouseWheelMoved(new MouseWheelEvent(this, 0, System.currentTimeMillis(), 0, e.getX(), e.getY(), 0, false, 0, 0, 1));
+		}
 	}
 
 	@Override
 	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 }
