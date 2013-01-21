@@ -10,6 +10,7 @@ import torrent.download.files.Piece;
 import torrent.frame.controls.TableBase;
 import torrent.util.ISortable;
 import torrent.util.Mergesort;
+import torrent.util.StringUtil;
 
 public class TabPieces extends TableBase {
 
@@ -60,7 +61,7 @@ public class TabPieces extends TableBase {
 				Piece p = (Piece)sortedPieces.getItem(i);
 				g.setColor(Color.BLACK);
 				g.drawString("" + p.getIndex(), 5, getTextY());
-				g.drawString("" + p.getSize(), 100, getTextY());
+				g.drawString(StringUtil.compactByteSize(p.getSize()), 100, getTextY());
 				g.drawString((p.getBlockCount() - p.getDoneCount()) + " | " + p.getRequestedCount(), 200, getTextY());
 				for(int j = 0; j < p.getBlockCount(); j++) {
 					if(p.isDone(j)) {

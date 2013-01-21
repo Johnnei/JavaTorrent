@@ -2,14 +2,19 @@ package torrent.util;
 
 public class StringUtil {
 
-	public static String speedToString(double speed) {
-		String[] names = { " b/s", " Kb/s", " Mb/s" };
+	/**
+	 * Compacts a size of a file/speed in bytes to their smaller notations (kb, mb, etc) upto (including) TB
+	 * @param size The size in bytes
+	 * @return The string which equals the size in the smallest notation
+	 */
+	public static String compactByteSize(double size) {
+		String[] names = { "B", "KB", "MB", "GB", "TB" };
 		int pointer = 0;
-		while (pointer < names.length && speed >= 1000) {
-			speed /= 1000;
+		while (pointer < names.length && size >= 1000) {
+			size /= 1000;
 			++pointer;
 		}
-		String stringSpeed = Double.toString(speed);
+		String stringSpeed = Double.toString(size);
 		if (stringSpeed.contains(".")) {
 			String[] parts = stringSpeed.split("\\.");
 			if (parts[1].length() == 1 && parts[1].equals("0")) {
@@ -18,7 +23,7 @@ public class StringUtil {
 				stringSpeed = parts[0] + "." + parts[1].substring(0, 1);
 			}
 		}
-		return stringSpeed + names[pointer];
+		return stringSpeed + " " + names[pointer];
 	}
 
 	/**

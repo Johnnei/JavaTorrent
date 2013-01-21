@@ -39,15 +39,15 @@ public class TabGeneral extends JPanel {
 				pieces += "Retrieving metadata";
 				leftSize += "Retrieving metadata";
 			} else {
-				totalSize += torrent.getFiles().getTotalSize() + " bytes";
-				pieces += torrent.getFiles().getPieceCount();
-				leftSize += torrent.getFiles().getRemainingBytes() + " bytes";
+				totalSize += StringUtil.compactByteSize(torrent.getFiles().getTotalSize());
+				pieces += torrent.getFiles().getBitfield().hasPieceCount() + "/" + torrent.getFiles().getPieceCount();
+				leftSize += StringUtil.compactByteSize(torrent.getFiles().getRemainingBytes());
 			}
 			pending += torrent.getConnectingCount();
 			peers += torrent.getSeedCount();
 			leechers += torrent.getLeecherCount();
-			download += StringUtil.speedToString(torrent.getDownloadRate());
-			upload += StringUtil.speedToString(torrent.getUploadRate());
+			download += StringUtil.compactByteSize(torrent.getDownloadRate()) + "/s";
+			upload += StringUtil.compactByteSize(torrent.getUploadRate()) + "/s";
 		}
 
 		double progress = 0;

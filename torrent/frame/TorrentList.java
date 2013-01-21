@@ -76,8 +76,8 @@ public class TorrentList extends JPanel implements MouseListener {
 			g.setColor(getForegroundColor());
 			drawCenteredString(g, (p / 2) + "%", 500, y + 16);
 			//Speeds
-			drawStringRightToLeft(g, StringUtil.speedToString(torrent.getDownloadRate()), 700, y + 16);
-			drawStringRightToLeft(g, StringUtil.speedToString(torrent.getUploadRate()), 800, y + 16);
+			drawStringRightToLeft(g, StringUtil.compactByteSize(torrent.getDownloadRate()) + "/s", 700, y + 16);
+			drawStringRightToLeft(g, StringUtil.compactByteSize(torrent.getUploadRate()) + "/s", 800, y + 16);
 			//Leechers and Seeders
 			g.drawString("" + torrent.getSeedCount(), 825, y + 16);
 			g.drawString("" + torrent.getLeecherCount(), 890, y + 16);
