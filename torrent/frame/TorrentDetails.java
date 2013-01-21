@@ -50,8 +50,4 @@ public class TorrentDetails extends JTabbedPane {
 		tabPeers.setTorrent(torrent);
 	}
 
-	public void updateData() {
-		tabFiles.updateData();
-	}
-
 }

@@ -1,59 +1,54 @@
 package torrent.frame;
 
-import java.awt.BorderLayout;
-
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.SwingUtilities;
-import javax.swing.table.DefaultTableModel;
+import java.awt.Graphics;
 
 import torrent.download.FileInfo;
 import torrent.download.Torrent;
+import torrent.download.files.Piece;
+import torrent.frame.controls.TableBase;
+import torrent.util.StringUtil;
 
-public class TabFiles extends JPanel {
+public class TabFiles extends TableBase {
 
 	public static final long serialVersionUID = 1L;
-
-	private final Object[] HEADER = { "Filename", "Size", "Pieces", "Pieces have" };
-	private JTable table;
-	private DefaultTableModel tableModel;
-	private JScrollPane scrollPane;
 	private Torrent torrent;
 
 	public TabFiles() {
-		tableModel = new DefaultTableModel(new Object[][] {}, HEADER);
-		table = new JTable(tableModel);
-		table.setFillsViewportHeight(true);
-		scrollPane = new JScrollPane(table);
-		setLayout(new BorderLayout());
-		add(scrollPane, BorderLayout.CENTER);
+		super(25);
 	}
 
 	public void setTorrent(Torrent torrent) {
 		this.torrent = torrent;
 	}
 
-	public void updateData() {
+	@Override
+	protected void paintHeader(Graphics g) {
+		g.drawString("Filename", 5, getHeaderTextY());
+		g.drawString("Size", getWidth() - 200, getHeaderTextY());
+		g.drawString("Pieces", getWidth() - 100, getHeaderTextY());
+	}
+
+	@Override
+	protected void paintData(Graphics g) {
 		if (torrent == null)
 			return;
 		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 			return;
 		FileInfo[] f = torrent.getFiles().getFiles();
-		Object[][] data = new Object[f.length][HEADER.length];
+		setItemCount(f.length);
 		for (int i = 0; i < f.length; i++) {
-			data[i][0] = f[i].getFilename();
-			data[i][1] = f[i].getSize();
-			data[i][2] = "" + (int) Math.ceil(f[i].getSize() / (double) torrent.getFiles().getPieceSize());
-			data[i][3] = "" + f[i].getPieceHaveCount();
-		}
-		final Object[][] invokeData = data;
-		SwingUtilities.invokeLater(new Runnable() {
-
-			@Override
-			public void run() {
-				tableModel.setDataVector(invokeData, HEADER);
+			if(isVisible()) {
+				if(i == getSelectedIndex()) {
+					drawSelectedBackground(g);
+				}
+				Graphics name = g.create();
+				name.clipRect(0, getDrawY(), getWidth() - 210, 25);
+				name.drawString(f[i].getFilename(), 5, getTextY());
+				g.drawString(StringUtil.compactByteSize(f[i].getSize()), getWidth() - 200, getTextY());
+				int pieceCount = (int) Math.ceil(f[i].getSize() / (double) torrent.getFiles().getPieceSize());
+				g.drawString(f[i].getPieceHaveCount() + "/" + pieceCount, getWidth() - 100, getTextY());
 			}
-		});
+			advanceLine();
+		}
 	}
 }
