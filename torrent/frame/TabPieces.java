@@ -54,6 +54,7 @@ public class TabPieces extends TableBase {
 		}
 		Mergesort sortedPieces = new Mergesort(pieceList);
 		sortedPieces.sort();
+		setItemCount(pieceList.size());
 		for(int i = pieceList.size() - 1; i >= 0 ; i--) {
 			if(isVisible()) {
 				Piece p = (Piece)sortedPieces.getItem(i);

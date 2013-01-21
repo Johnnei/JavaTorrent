@@ -2,12 +2,15 @@ package torrent.frame.controls;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Polygon;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
 import javax.swing.JPanel;
+
+import org.johnnei.utils.JMath;
 
 public abstract class TableBase extends JPanel implements MouseListener, MouseWheelListener {
 	
@@ -27,6 +30,14 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 * The size of a single row
 	 */
 	private int rowHeight;
+	/**
+	 * The amount of items
+	 */
+	private int itemCount;
+	/**
+	 * The amount of visible items
+	 */
+	private int visibleItemCount;
 	
 	public TableBase(int rowSize) {
 		addMouseWheelListener(this);
@@ -59,14 +70,81 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		g.setColor(getForegroundColor());
 		//Header
 		paintHeader(g);
+		visibleItemCount = (getHeight() - rowHeight) / rowHeight;
+		paintScrollbar(g);
+	}
+	
+	/**
+	 * Draw a triangle
+	 * @param g The Graphics canvas
+	 * @param x The bottom left position
+	 * @param y The bottom position
+	 * @param width The width of the triangle
+	 * @param height The height of the triangle
+	 */
+	private void drawTriangle(Graphics g, int x, int y, int width, int height, boolean facingUp) {
+		int topX = x + width / 2;
+		Polygon triangle = new Polygon();
+		if(facingUp) {
+			triangle.addPoint(x, y);
+			triangle.addPoint(topX, y - height);
+			triangle.addPoint(x + width, y);
+		} else {
+			triangle.addPoint(x, y - height);
+			triangle.addPoint(topX, y);
+			triangle.addPoint(x + width, y - height);
+		}
+		g.fillPolygon(triangle);
+	}
+	
+	public void paintScrollbar(Graphics g) {
+		Color buttonColor = new Color(0x88, 0x88, 0x88);
+		Color buttonArrowColor = new Color(0xAA, 0xAA, 0xAA);
+		int x = getWidth() - 20;
+		if(itemCount > visibleItemCount) {
+			//Top Button
+			g.setColor(buttonColor);
+			g.fillRect(x, 0, 20, 20);
+			g.setColor(buttonArrowColor);
+			drawTriangle(g, x + 3, 17, 14, 14, true);
+			
+			//Bar Background
+			g.setColor(new Color(0xDD, 0xDD, 0xDD));
+			g.fillRect(x, 20, 20, getHeight() - 40);
+			
+			//Slide Button
+			int maxSliderSize = getHeight() - 40;
+			int hiddenItems = itemCount - visibleItemCount;
+			double sliderSize = (double)maxSliderSize / hiddenItems;
+			double scrollItemIndex = scrollY + 1D;
+			int drawSliderSize = JMath.max((int)sliderSize, 5);
+			int scrollBarOffset = 19 + (int)(scrollItemIndex * (sliderSize - ((double)drawSliderSize / hiddenItems)));
+			g.setColor(new Color(0xAA, 0xAA, 0xAA));
+			g.fillRect(x, scrollBarOffset, 20, drawSliderSize);
+			
+			//Bottom Button
+			g.setColor(buttonColor);
+			g.fillRect(x, getHeight() - 20, 20, 20);
+			g.setColor(buttonArrowColor);
+			drawTriangle(g, x + 3, getHeight() - 3, 14, 14, false);
+		}
 	}
 	
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
+		int oldScrollY = scrollY;
 		scrollY += e.getWheelRotation();
 		if (scrollY < 0)
 			scrollY = 0;
-		repaint();
+		int hiddenItemCount = itemCount - visibleItemCount;
+		if (hiddenItemCount > 0) {
+			if (scrollY > hiddenItemCount)
+				scrollY = hiddenItemCount;
+		} else {
+			scrollY = oldScrollY;
+		}
+		if(scrollY != oldScrollY)
+			repaint();
 	}
 	
 	public Color getForegroundColor() {
@@ -119,6 +197,14 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 */
 	public int getScrollY() {
 		return scrollY * rowHeight;
+	}
+	
+	/**
+	 * Sets the amount of items in the table
+	 * @param i Count
+	 */
+	public void setItemCount(int i) {
+		itemCount = i;
 	}
 
 	@Override

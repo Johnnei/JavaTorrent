@@ -32,9 +32,11 @@ public class TabTracker extends TableBase {
 	protected void paintData(Graphics g) {
 		if(torrent != null) {
 			Tracker[] trackers = torrent.getTrackers();
+			int count = 0;
 			for(int i = 0; i < trackers.length; i++) {
-				if(isVisible()) {
-					if(trackers[i] != null) {
+				if(trackers[i] != null) {
+					++count;
+					if(isVisible()) {
 						g.drawString(trackers[i].getTrackerName(), 5, getTextY());
 						g.drawString(trackers[i].getStatus(), 200, getTextY());
 						g.drawString(trackers[i].getSeeders() + " (" + trackers[i].getSeedersInSwarm() + ")", 350, getTextY());
@@ -44,6 +46,7 @@ public class TabTracker extends TableBase {
 				}
 				advanceLine();
 			}
+			setItemCount(count);
 		}
 	}
 }
