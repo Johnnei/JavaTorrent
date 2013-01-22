@@ -174,7 +174,7 @@ public class Files {
 	}
 	
 	public int getBitfieldSize() {
-		return (int)Math.ceil(pieces.length / 8);
+		return (int)Math.ceil(pieces.length / 8D);
 	}
 
 	/**
