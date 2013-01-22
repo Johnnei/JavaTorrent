@@ -12,6 +12,7 @@ import torrent.download.MagnetLink;
 import torrent.download.Torrent;
 import torrent.frame.controls.ImageButton;
 import torrent.frame.popup.AddTorrentFrame;
+import torrent.frame.popup.ConfigPopup;
 
 public class MenubarPanel extends JPanel implements ActionListener {
 
@@ -61,6 +62,8 @@ public class MenubarPanel extends JPanel implements ActionListener {
 				torrent.start();
 				owner.addTorrent(torrent);
 			}
+		} else if (e.getSource().equals(configButton)) {
+			new ConfigPopup(owner);
 		}
 	}
 }
