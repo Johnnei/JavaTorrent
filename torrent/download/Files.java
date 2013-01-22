@@ -139,6 +139,22 @@ public class Files {
 			remainingSize -= size;
 		}
 	}
+	
+	/**
+	 * Adds the have to the bitfield and updates the correct fileInfo have counts
+	 * @param pieceIndex
+	 */
+	public void havePiece(int pieceIndex) {
+		bitfield.havePiece(pieceIndex);
+		long pieceOffset = pieceIndex * getPieceSize();
+		long pieceEndOffset = pieceOffset + getPieceSize();
+		for(int i = 0; i < fileInfo.length; i++) {
+			FileInfo f = fileInfo[i];
+			if(f.getFirstByteOffset() + f.getSize() >= pieceOffset && f.getFirstByteOffset() < pieceEndOffset) {
+				f.addPiece();
+			}
+		}
+	}
 
 	/**
 	 * Checks if all files are downloaded
@@ -317,5 +333,4 @@ public class Files {
 	public long getMetadataSize() {
 		return metadata.getSize();
 	}
-
 }
