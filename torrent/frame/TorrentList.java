@@ -60,7 +60,7 @@ public class TorrentList extends TableBase {
 				g.setColor(Color.ORANGE);
 			else
 				g.setColor(Color.GREEN);
-			g.fillRect(401, getDrawY() + 1, (int)p, 23);
+			g.fillRect(401, getDrawY() + 3, (int)p, 18);
 			g.setColor(getForegroundColor());
 			drawCenteredString(g, StringUtil.progressToString(p / 2) + "%", 500, getDrawY() + 16);
 			//Speeds
