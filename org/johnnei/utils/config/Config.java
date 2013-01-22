@@ -156,7 +156,13 @@ public class Config {
 	 * @return The value by the given key
 	 */
 	public int getInt(String key, int defaultValue) {
-		return Integer.parseInt(get(key, defaultValue));
+		String val = get(key, defaultValue);
+		if(isInt(val)) {
+			return Integer.parseInt(val);
+		} else {
+			set(key, defaultValue);
+			return defaultValue;
+		}
 	}
 	
 	/**
@@ -166,7 +172,13 @@ public class Config {
 	 * @return The value by the given key
 	 */
 	public float getFloat(String key, float defaultValue) {
-		return Float.parseFloat(get(key, defaultValue));
+		String val = get(key, defaultValue);
+		if(isFloat(val)) {
+			return Float.parseFloat(val); 
+		} else {
+			set(key, defaultValue);
+			return defaultValue;
+		}
 	}
 	
 	/**
@@ -181,6 +193,24 @@ public class Config {
 
 	public String getTempFolder() {
 		return folder;
+	}
+	
+	public static boolean isInt(String s) {
+		try {
+			Integer.parseInt(s);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
+	}
+	
+	public static boolean isFloat(String s) {
+		try {
+			Float.parseFloat(s);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 }
