@@ -36,6 +36,8 @@ public class HashedPiece extends Piece {
 			FileInfo file = files.getFileForBlock(getIndex(), blockIndex, blockDataOffset);
 			long offsetInFile = pieceOffset + blockOffset + bytesCollected - file.getFirstByteOffset();
 			if(file.getSize() < offsetInFile + bytesToRead) {
+				if(offsetInFile >= file.getSize())
+					return false;
 				bytesToRead = (int)(file.getSize() - offsetInFile);
 			}
 			synchronized (file.FILE_LOCK) {
@@ -45,6 +47,8 @@ public class HashedPiece extends Piece {
 					int read = fileAccess.read(pieceData, bytesCollected, bytesToRead);
 					if(read >= 0)
 						bytesCollected += read;
+					else if (read == -1) //End of File
+						return false;
 				} catch (IOException e) {
 					ThreadUtils.sleep(10);
 					return checkHash();

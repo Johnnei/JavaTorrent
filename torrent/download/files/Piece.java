@@ -159,6 +159,14 @@ public class Piece implements ISortable {
 		return remaining;
 	}
 	
+	/**
+	 * Sets the block to done
+	 * @param blockIndex
+	 */
+	public void setDone(int blockIndex) {
+		blocks[blockIndex].setDone(true);
+	}
+	
 	public boolean isRequested(int blockIndex) {
 		return blocks[blockIndex].isRequested();
 	}

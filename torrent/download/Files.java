@@ -146,6 +146,11 @@ public class Files {
 	 */
 	public void havePiece(int pieceIndex) {
 		bitfield.havePiece(pieceIndex);
+		if(!pieces[pieceIndex].isDone()) {
+			for(int i = 0; i < pieces[pieceIndex].getBlockCount(); i++) {
+				pieces[pieceIndex].setDone(i);
+			}
+		}
 		long pieceOffset = pieceIndex * getPieceSize();
 		long pieceEndOffset = pieceOffset + getPieceSize();
 		for(int i = 0; i < fileInfo.length; i++) {
@@ -289,6 +294,8 @@ public class Files {
 			pieces = new HashedPiece[] { new HashedPiece(torrentHash, this, 0, size, blockSize) };
 			FileInfo f = fileInfo[0];
 			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(Config.getConfig().getTempFolder() + f.getFilename()));
+			totalSize = size;
+			bitfield = new Bitfield(1);
 		}
 	}
 

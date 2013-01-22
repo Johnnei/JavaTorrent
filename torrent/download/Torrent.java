@@ -1,14 +1,18 @@
 package torrent.download;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
+import org.johnnei.utils.JMath;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.Logable;
 import torrent.Manager;
+import torrent.TorrentException;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
 import torrent.download.algos.IDownloadRegulator;
@@ -104,6 +108,11 @@ public class Torrent extends Thread implements Logable {
 	 * IOManager to manage the transaction between the hdd and the programs so none of the actual network thread need to get block for that
 	 */
 	private IOManager ioManager;
+	/**
+	 * Halt the downloading until further notice<br/>
+	 * Is used to prevent piece requesting during progressCheck
+	 */
+	private boolean haltDownloading;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
@@ -122,6 +131,7 @@ public class Torrent extends Thread implements Logable {
 		peers = new ArrayList<Peer>();
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
+		haltDownloading = false;
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max", DefaultConfig.PEER_MAX), Config.getConfig().getFloat("peer-max_burst_ratio", DefaultConfig.PEER_BURST_RATIO));
@@ -192,11 +202,13 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void run() {
+		if(torrentStatus == STATE_DOWNLOAD_DATA)
+			checkProgress();
 		updateBitfield();
 		while(!files.isDone() || torrentHaltingOperations > 0) {
 			processPeers();
 			ArrayList<Peer> downloadPeers = getDownloadablePeers();
-			while(downloadPeers.size() > 0) {
+			while(downloadPeers.size() > 0 && !haltDownloading) {
 				Peer peer = downloadPeers.remove(0);
 				Piece piece = downloadRegulator.getPieceForPeer(peer);
 				if(piece == null) {
@@ -418,6 +430,45 @@ public class Torrent extends Thread implements Logable {
 			if (!peers.get(i).closed())
 				peers.get(i).addToQueue(m);
 		}
+	}
+	
+	/**
+	 * Calculates the current progress based on all available files on the HDD
+	 */
+	public void checkProgress() {
+		haltDownloading = true;
+		updateBitfield();
+		log("Checking progress...");
+		FileInfo[] fileinfo = files.getFiles();
+		for(int i = 0; i < fileinfo.length; i++) {
+			FileInfo info = fileinfo[i];
+			RandomAccessFile file = info.getFileAcces();
+			try {
+				if(file.length() > 0L) {
+					int pieceIndex = (int)(info.getFirstByteOffset() / files.getPieceSize());
+					int lastPieceIndex = pieceIndex + JMath.ceil((info.getSize() / (double)files.getPieceSize()));
+					for(; pieceIndex < lastPieceIndex; pieceIndex++) {
+						try {
+							if(files.getPiece(pieceIndex).checkHash()) {
+								log("Progress Check: Have " + pieceIndex);
+								if(torrentStatus == STATE_DOWNLOAD_DATA) {
+									broadcastHave(pieceIndex);
+								} else {
+									files.havePiece(pieceIndex);
+								}
+									
+							}
+						} catch (TorrentException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		log("Checking progress done");
+		haltDownloading = false;
 	}
 
 	@Override
