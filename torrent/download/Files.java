@@ -117,12 +117,10 @@ public class Files {
 				} else {
 					fileName = (String) fileStructure.get(0);
 				}
-				System.out.println("Parsing");
 				int pieceCount = JMath.ceil(fileSize / (double)pieceSize);
 				if(remainingSize % pieceSize != 0 && fileSize >= pieceSize) {
 					pieceCount++;
 				}
-				System.out.println(fileName + " -> " + pieceCount + " pieces");
 				FileInfo info = new FileInfo(i, fileName, fileSize, remainingSize, getFile(fileName), pieceCount);
 				fileInfo[i] = info;
 				remainingSize += fileSize;

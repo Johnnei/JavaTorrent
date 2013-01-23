@@ -23,7 +23,7 @@ public class MagnetLink {
 				String[] data = linkData[i].split("=");
 				switch (data[0]) {
 				case "dn":
-					linkData[i] = StringUtil.spaceFix(data[1]);
+					linkData[i] = StringUtil.removeHex(StringUtil.spaceFix(data[1]));
 					torrent.setDisplayName(linkData[1]);
 					break;
 
