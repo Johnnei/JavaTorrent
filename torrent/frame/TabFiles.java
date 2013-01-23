@@ -44,8 +44,7 @@ public class TabFiles extends TableBase {
 				name.clipRect(0, getDrawY(), getWidth() - 210, 25);
 				name.drawString(f[i].getFilename(), 5, getTextY());
 				g.drawString(StringUtil.compactByteSize(f[i].getSize()), getWidth() - 200, getTextY());
-				int pieceCount = (int) Math.ceil(f[i].getSize() / (double) torrent.getFiles().getPieceSize());
-				g.drawString(f[i].getPieceHaveCount() + "/" + pieceCount, getWidth() - 100, getTextY());
+				g.drawString(f[i].getPieceHaveCount() + "/" + f[i].getPieceCount(), getWidth() - 100, getTextY());
 			}
 			advanceLine();
 		}

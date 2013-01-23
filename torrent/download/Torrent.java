@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
-import org.johnnei.utils.JMath;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
@@ -449,11 +448,11 @@ public class Torrent extends Thread implements Logable {
 			try {
 				if(file.length() > 0L) {
 					int pieceIndex = (int)(info.getFirstByteOffset() / files.getPieceSize());
-					int lastPieceIndex = pieceIndex + JMath.ceil((info.getSize() / (double)files.getPieceSize()));
+					int lastPieceIndex = pieceIndex + info.getPieceCount();
 					for(; pieceIndex < lastPieceIndex; pieceIndex++) {
 						try {
 							if(files.getPiece(pieceIndex).checkHash()) {
-								log("Progress Check: Have " + pieceIndex);
+								//log("Progress Check: Have " + pieceIndex);
 								if(torrentStatus == STATE_DOWNLOAD_DATA) {
 									broadcastHave(pieceIndex);
 								} else {

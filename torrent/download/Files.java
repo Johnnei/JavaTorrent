@@ -8,6 +8,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.johnnei.utils.JMath;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
@@ -56,7 +57,7 @@ public class Files {
 		isMetadata = true;
 		blockSize = 16384;
 		fileInfo = new FileInfo[1];
-		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(Config.getConfig().getTempFolder() + filename));
+		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(Config.getConfig().getTempFolder() + filename), 0);
 		pieces = new HashedPiece[0];
 		bitfield = new Bitfield(getBitfieldSize());
 	}
@@ -67,7 +68,7 @@ public class Files {
 	 */
 	public Files(File torrentFile) {
 		blockSize = 1 << 14;
-		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile);
+		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile, JMath.ceil(torrentFile.length() / 16384));
 		parseTorrentFileData(torrentFile);
 		bitfield = new Bitfield(getBitfieldSize());
 	}
@@ -116,7 +117,13 @@ public class Files {
 				} else {
 					fileName = (String) fileStructure.get(0);
 				}
-				FileInfo info = new FileInfo(i, fileName, fileSize, remainingSize, getFile(fileName));
+				System.out.println("Parsing");
+				int pieceCount = JMath.ceil(fileSize / (double)pieceSize);
+				if(remainingSize % pieceSize != 0 && fileSize >= pieceSize) {
+					pieceCount++;
+				}
+				System.out.println(fileName + " -> " + pieceCount + " pieces");
+				FileInfo info = new FileInfo(i, fileName, fileSize, remainingSize, getFile(fileName), pieceCount);
 				fileInfo[i] = info;
 				remainingSize += fileSize;
 			}
@@ -156,8 +163,6 @@ public class Files {
 		for(int i = 0; i < fileInfo.length; i++) {
 			FileInfo f = fileInfo[i];
 			if(f.getFirstByteOffset() + f.getSize() >= pieceOffset && f.getFirstByteOffset() < pieceEndOffset) {
-				System.out.println("Added Progress to " + f.getFilename());
-				System.out.println(pieceIndex + " | " + (f.getFirstByteOffset() + f.getSize()) + " >= " + pieceOffset + " && " + f.getFirstByteOffset() + " < " + pieceEndOffset);
 				f.addPiece(pieceIndex);
 			}
 		}
@@ -295,7 +300,7 @@ public class Files {
 			pieceSize = size;
 			pieces = new HashedPiece[] { new HashedPiece(torrentHash, this, 0, size, blockSize) };
 			FileInfo f = fileInfo[0];
-			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(Config.getConfig().getTempFolder() + f.getFilename()));
+			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(Config.getConfig().getTempFolder() + f.getFilename()), JMath.ceil(size / blockSize));
 			totalSize = size;
 			bitfield = new Bitfield(1);
 		}

@@ -24,6 +24,10 @@ public class FileInfo {
 	 */
 	private HashMap<Integer, Object> pieceHave;
 	/**
+	 * The amount of pieces which contain a part of data for this file
+	 */
+	private int pieceCount;
+	/**
 	 * The offset of the first byte crossed across all files
 	 */
 	private long firstByteOffset;
@@ -36,11 +40,12 @@ public class FileInfo {
 	 */
 	public final Object FILE_LOCK = new Object();
 
-	public FileInfo(int index, String filename, long filesize, long firstByteOffset, File file) {
+	public FileInfo(int index, String filename, long filesize, long firstByteOffset, File file, int pieceCount) {
 		this.index = index;
 		this.firstByteOffset = firstByteOffset;
 		this.filename = filename;
 		this.filesize = filesize;
+		this.pieceCount = pieceCount;
 		pieceHave = new HashMap<>();
 		try {
 			if(!file.exists()) {
@@ -59,6 +64,14 @@ public class FileInfo {
 
 	public int getIndex() {
 		return index;
+	}
+	
+	/**
+	 * The amount of pieces which contain a part of data for this file
+	 * @return the amount of pieces for this file
+	 */
+	public int getPieceCount() {
+		return pieceCount;
 	}
 
 	/**
