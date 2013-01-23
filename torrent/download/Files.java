@@ -128,7 +128,17 @@ public class Files {
 				remainingSize += fileSize;
 			}
 		} else { // Single file torrent
-
+			fileInfo = new FileInfo[1];
+			String filename = (String)dictionary.get("name");
+			Object o = dictionary.get("length");
+			long filesize = 0;
+			if(o instanceof Integer) {
+				filesize = (int)o;
+			} else {
+				filesize = (long)o;
+			}
+			fileInfo[0] = new FileInfo(0, filename, filesize, remainingSize, getFile(filename), JMath.ceil(filesize / (double)pieceSize));
+			remainingSize += filesize;
 		}
 		totalSize = remainingSize;
 		String pieceHashes = (String) dictionary.get("pieces");
