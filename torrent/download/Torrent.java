@@ -11,7 +11,6 @@ import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.Logable;
 import torrent.Manager;
-import torrent.TorrentException;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
 import torrent.download.algos.IDownloadRegulator;
@@ -460,13 +459,11 @@ public class Torrent extends Thread implements Logable {
 								}
 									
 							}
-						} catch (TorrentException e) {
-							e.printStackTrace();
+						} catch (Exception e) {
 						}
 					}
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
 			}
 		}
 		log("Checking progress done");
