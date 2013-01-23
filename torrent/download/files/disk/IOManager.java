@@ -23,11 +23,11 @@ public class IOManager {
 	}
 	
 	/**
-	 * Processes a single task for the given torrent
+	 * Processes all pending tasks for the given torrent
 	 * @param torrent
 	 */
 	public void processTask(Torrent torrent) {
-		if(taskQueue.size() > 0) {
+		while(taskQueue.size() > 0) {
 			DiskJob task;
 			synchronized (this) {
 				task = taskQueue.remove();
