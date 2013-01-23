@@ -156,7 +156,9 @@ public class Files {
 		for(int i = 0; i < fileInfo.length; i++) {
 			FileInfo f = fileInfo[i];
 			if(f.getFirstByteOffset() + f.getSize() >= pieceOffset && f.getFirstByteOffset() < pieceEndOffset) {
-				f.addPiece();
+				System.out.println("Added Progress to " + f.getFilename());
+				System.out.println(pieceIndex + " | " + (f.getFirstByteOffset() + f.getSize()) + " >= " + pieceOffset + " && " + f.getFirstByteOffset() + " < " + pieceEndOffset);
+				f.addPiece(pieceIndex);
 			}
 		}
 	}
