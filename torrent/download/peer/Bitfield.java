@@ -95,13 +95,11 @@ public class Bitfield {
 	 * @return The amount of pieces the client has
 	 */
 	public int hasPieceCount() {
+		int pieces = bitfield.length * 8;
 		int have = 0;
-		for(int i = 0; i < bitfield.length; i++) {
-			byte b = bitfield[i];
-			for (int bit = 7; bit > 0; bit--) {
-				if (((b >> bit) & 1) == 1) {
-					++have;
-				}
+		for(int pieceIndex = 0; pieceIndex < pieces; pieceIndex++) {
+			if(hasPiece(pieceIndex)) {
+				have++;
 			}
 		}
 		return have;

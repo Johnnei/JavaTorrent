@@ -27,8 +27,7 @@ public class DiskJobCheckHash extends DiskJob {
 				if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
 					torrent.broadcastHave(pieceIndex);
 				}
-				torrent.log("Recieved and verified piece: " + pieceIndex);
-				torrent.log("Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
+				torrent.log("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
 			} else {
 				torrent.log("Hash check failed on piece: " + pieceIndex, true);
 				torrent.getFiles().getPiece(pieceIndex).hashFail();

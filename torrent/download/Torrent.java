@@ -374,7 +374,10 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public double getProgress() {
-		return 100D * (files.getBitfield().hasPieceCount() / (files.getTotalSize() / (double)files.getPieceSize()));
+		if(files.getPieceCount() == 0) {
+			return 0D;
+		}
+		return 100D * (files.getBitfield().hasPieceCount() / (double)files.getPieceCount());
 	}
 
 	/**
