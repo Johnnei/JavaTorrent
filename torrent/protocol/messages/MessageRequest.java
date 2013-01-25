@@ -7,15 +7,15 @@ import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 
 public class MessageRequest implements IMessage {
-	
+
 	private int index;
 	private int offset;
 	private int length;
-	
+
 	public MessageRequest() {
-		
+
 	}
-	
+
 	public MessageRequest(int index, int offset, int length) {
 		this.index = index;
 		this.offset = offset;
@@ -38,7 +38,7 @@ public class MessageRequest implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		if(peer.getTorrent().getFiles().getBitfield().hasPiece(index)) {
+		if (peer.getTorrent().getFiles().getBitfield().hasPiece(index)) {
 			peer.getClient().addJob(new Job(index, offset, length));
 		} else {
 			peer.log("Requested piece " + index + " which I don't have", true);
@@ -55,11 +55,11 @@ public class MessageRequest implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_REQUEST;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Request";

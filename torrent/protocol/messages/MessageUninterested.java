@@ -29,11 +29,11 @@ public class MessageUninterested implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_UNINTERESTED;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Uninterested";

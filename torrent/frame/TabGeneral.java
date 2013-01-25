@@ -23,7 +23,7 @@ public class TabGeneral extends JPanel {
 		String name = "Name: ";
 		String hash = "Hash: ";
 		String totalSize = "Total Size: ";
-		String leftSize =  "Remaining: ";
+		String leftSize = "Remaining: ";
 		String pieces = "Pieces: ";
 		String peers = "Peers: ";
 		String leechers = "Leechers: ";
@@ -52,17 +52,17 @@ public class TabGeneral extends JPanel {
 
 		double progress = 0;
 		if (torrent != null) {
-				progress = torrent.getProgress();
+			progress = torrent.getProgress();
 		}
 		g.setColor(Color.GRAY);
 		g.drawRect(10, 10, getWidth() - 20, 10);
-		if(torrent != null) {
-			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+		if (torrent != null) {
+			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 				g.setColor(Color.ORANGE);
 			else
 				g.setColor(Color.GREEN);
 		} else
-		g.setColor(Color.GREEN);
+			g.setColor(Color.GREEN);
 		double pixelsPerPercentage = (getWidth() - 21) * 0.01;
 		g.fillRect(11, 11, (int) (progress * pixelsPerPercentage), 9);
 

@@ -7,7 +7,7 @@ public class UTMetadata {
 	 */
 	public static final int ID = 1;
 	public static final String NAME = "ut_metadata";
-	
+
 	/**
 	 * Requests a metadata piece<br/>
 	 * dictionary value: "piece" => index

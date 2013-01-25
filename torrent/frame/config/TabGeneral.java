@@ -15,7 +15,7 @@ import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
 
 public class TabGeneral extends JPanel implements ActionListener {
-	
+
 	/**
 	 * 
 	 */
@@ -29,7 +29,7 @@ public class TabGeneral extends JPanel implements ActionListener {
 		downloadFolder.setEditable(false);
 		chooseFolderButton = new JButton("Change");
 		chooseFolderButton.addActionListener(this);
-		
+
 		add(new JLabel("Download Folder"));
 		add(downloadFolder);
 		add(chooseFolderButton);
@@ -37,10 +37,10 @@ public class TabGeneral extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource().equals(chooseFolderButton)) {
+		if (e.getSource().equals(chooseFolderButton)) {
 			JFileChooser fc = new JFileChooser(new File(Config.getConfig().getString("download-output_folder", DefaultConfig.DOWNLOAD_OUTPUT_FOLDER)));
 			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			if(fc.showDialog(this, "Choose directory") == JFileChooser.APPROVE_OPTION) {
+			if (fc.showDialog(this, "Choose directory") == JFileChooser.APPROVE_OPTION) {
 				File newFolder = fc.getSelectedFile();
 				Config.getConfig().set("download-output_folder", newFolder.getAbsolutePath() + "\\");
 				downloadFolder.setText(Config.getConfig().getString("download-output_folder", DefaultConfig.DOWNLOAD_OUTPUT_FOLDER));

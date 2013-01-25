@@ -11,7 +11,7 @@ public class Bencoder {
 	public void integer(int i) {
 		bencoded += "i" + Integer.toString(i) + "e";
 	}
-	
+
 	public void integer(long l) {
 		bencoded += "i" + Long.toString(l) + "e";
 	}

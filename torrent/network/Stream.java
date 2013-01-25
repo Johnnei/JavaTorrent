@@ -33,7 +33,7 @@ public class Stream {
 			writeByte(array[i]);
 		}
 	}
-	
+
 	public void writeShort(int i) {
 		writeByte(i >> 8);
 		writeByte(i);
@@ -106,7 +106,7 @@ public class Stream {
 		offset = 0;
 		buffer = new byte[size];
 	}
-	
+
 	public void resetOffsetPointer() {
 		offset = 0;
 	}
@@ -168,14 +168,15 @@ public class Stream {
 	public void moveBack(int amount) {
 		offset -= amount;
 	}
-	
+
 	/**
 	 * Expends the buffer to hold <b>amount</b> extra bytes
+	 * 
 	 * @param amount The extra size needed
 	 */
 	public void expand(int amount) {
 		byte[] newBuffer = new byte[buffer.length + amount];
-		for(int i = 0; i < buffer.length; i++) {
+		for (int i = 0; i < buffer.length; i++) {
 			newBuffer[i] = buffer[i];
 		}
 		buffer = newBuffer;
@@ -187,14 +188,16 @@ public class Stream {
 
 	/**
 	 * The raw bytes in the stream
+	 * 
 	 * @return
 	 */
 	public byte[] getBuffer() {
 		return buffer;
 	}
-	
+
 	/**
 	 * The current offset pointer which point to the current offset in the buffer at which you can read/write
+	 * 
 	 * @return
 	 */
 	public int getOffsetPointer() {

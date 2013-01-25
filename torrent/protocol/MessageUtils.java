@@ -21,9 +21,9 @@ import torrent.protocol.messages.MessageUninterested;
 import torrent.protocol.messages.extension.MessageExtension;
 
 public class MessageUtils {
-	
+
 	private static MessageUtils instance = new MessageUtils();
-	
+
 	private MessageUtils() {
 		idToMessage = new HashMap<>();
 		registerMessage(new MessageChoke());
@@ -37,20 +37,20 @@ public class MessageUtils {
 		registerMessage(new MessageExtension());
 		registerMessage(new MessageCancel());
 	}
-	
+
 	private void registerMessage(IMessage message) {
 		idToMessage.put(message.getId(), message);
 	}
-	
+
 	public static MessageUtils getUtils() {
 		return instance;
 	}
-	
+
 	private HashMap<Integer, IMessage> idToMessage;
-	
+
 	public boolean canReadMessage(ByteInputStream inStream, Peer p) throws IOException {
-		if(inStream.getBuffer() == null) {
-			if(inStream.available() >= 4) {
+		if (inStream.getBuffer() == null) {
+			if (inStream.available() >= 4) {
 				inStream.initialiseBuffer();
 				inStream.getBuffer().fill(inStream.readByteArray(4));
 				inStream.getBuffer().resetOffsetPointer();
@@ -59,8 +59,8 @@ public class MessageUtils {
 			}
 		}
 		Stream buffer = inStream.getBuffer();
-		if(buffer != null) {
-			if(inStream.available() > 0) {
+		if (buffer != null) {
+			if (inStream.available() > 0) {
 				int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getOffsetPointer());
 				buffer.writeByte(inStream.readByteArray(readAmount));
 			}
@@ -69,20 +69,20 @@ public class MessageUtils {
 		}
 		return false;
 	}
-	
+
 	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
 		Stream stream = inStream.getBuffer();
 		int duration = inStream.getBufferLifetime();
 		stream.resetOffsetPointer();
 		int length = stream.readInt();
-		if(length == 0) {
+		if (length == 0) {
 			p.setStatus("Received Message: KeepAlive");
 			inStream.resetBuffer();
 			return new MessageKeepAlive();
 		} else {
 			int id = stream.readByte();
 			try {
-				if(!idToMessage.containsKey(id))
+				if (!idToMessage.containsKey(id))
 					throw new IOException("Unhandled Message: " + id);
 				IMessage message = idToMessage.get(id).getClass().newInstance();
 				p.setStatus("Received Message: " + message.toString());
@@ -90,15 +90,15 @@ public class MessageUtils {
 				message.read(stream);
 				inStream.resetBuffer();
 				return message;
-			} catch (IllegalAccessException | InstantiationException ex ) {
+			} catch (IllegalAccessException | InstantiationException ex) {
 				throw new IOException("Message Read Error", ex);
 			}
 		}
 	}
-	
+
 	public void writeMessage(ByteOutputStream outStream, IMessage message) throws IOException {
 		Message messageStream = new Message(message.getLength());
-		if(message.getLength() > 0) {
+		if (message.getLength() > 0) {
 			messageStream.getStream().writeByte(message.getId());
 			message.write(messageStream.getStream());
 		}

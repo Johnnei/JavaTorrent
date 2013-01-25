@@ -19,7 +19,7 @@ public class AddTorrentFrame extends JPopup {
 	private static final long serialVersionUID = 1L;
 	private JTextArea magnetLink;
 	private JButton okButton;
-	
+
 	public AddTorrentFrame(JFrame owner) {
 		super(owner);
 		magnetLink = new JTextArea();
@@ -38,7 +38,7 @@ public class AddTorrentFrame extends JPopup {
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(okButton)) {
 			MagnetLink mlink = new MagnetLink(magnetLink.getText());
-			if(mlink.isDownloadable()) {
+			if (mlink.isDownloadable()) {
 				setOk(true);
 				setVisible(false);
 			} else {
@@ -46,7 +46,7 @@ public class AddTorrentFrame extends JPopup {
 			}
 		}
 	}
-	
+
 	public MagnetLink getMagnetLink() {
 		return new MagnetLink(magnetLink.getText());
 	}

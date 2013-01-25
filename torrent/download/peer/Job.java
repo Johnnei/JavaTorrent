@@ -2,11 +2,12 @@ package torrent.download.peer;
 
 /**
  * A handler to manage the peer their work queue
+ * 
  * @author Johnnei
- *
+ * 
  */
 public class Job {
-	
+
 	/**
 	 * The piece index
 	 */
@@ -20,16 +21,16 @@ public class Job {
 	 * <b>Optional</b>, Only used with requests from other peers
 	 */
 	private int length;
-	
+
 	public Job(int pieceIndex) {
 		this(pieceIndex, 0);
 	}
-	
+
 	public Job(int pieceIndex, int block) {
 		this.pieceIndex = pieceIndex;
 		this.block = block;
 	}
-	
+
 	public Job(int index, int blockIndex, int length) {
 		this(index, blockIndex);
 		this.length = length;
@@ -38,11 +39,11 @@ public class Job {
 	public int getPieceIndex() {
 		return pieceIndex;
 	}
-	
+
 	public int getBlockIndex() {
 		return block;
 	}
-	
+
 	public int getLength() {
 		return length;
 	}

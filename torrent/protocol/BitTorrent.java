@@ -1,11 +1,9 @@
 package torrent.protocol;
 
 public final class BitTorrent {
-	
+
 	/*
-	 * There is a message without ID.
-	 * This message only contains a length integer.
-	 * The message is used as keep-alive
+	 * There is a message without ID. This message only contains a length integer. The message is used as keep-alive
 	 */
 
 	/**

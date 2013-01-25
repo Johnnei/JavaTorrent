@@ -21,10 +21,8 @@ public interface IPeerManager {
 	/**
 	 * Returns the amount of peers we want to recieve from the tracker
 	 * 
-	 * @param torrentState
-	 *            The current torrent state
-	 * @param connected
-	 *            The current amount of connected peers
+	 * @param torrentState The current torrent state
+	 * @param connected The current amount of connected peers
 	 * @return
 	 */
 	public int getAnnounceWantAmount(byte torrentState, int connected);

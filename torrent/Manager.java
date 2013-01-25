@@ -33,10 +33,10 @@ public class Manager {
 		peerId[0] = '-';
 		peerId[1] = 'J';
 		peerId[2] = 'T';
-		peerId[3] = (byte)version[0];
-		peerId[4] = (byte)version[1];
-		peerId[5] = (byte)version[2];
-		peerId[6] = (byte)version[3];
+		peerId[3] = (byte) version[0];
+		peerId[4] = (byte) version[1];
+		peerId[5] = (byte) version[2];
+		peerId[6] = (byte) version[3];
 		peerId[7] = '-';
 		for (int i = 8; i < peerId.length; i++) {
 			peerId[i] = (byte) (new Random().nextInt() & 0xFF);
@@ -46,15 +46,15 @@ public class Manager {
 	public synchronized int getNextTransactionId() {
 		return transactionId++;
 	}
-	
+
 	public void addTorrent(Torrent torrent) {
 		activeTorrents.add(torrent);
 	}
-	
+
 	public Torrent getTorrent(String hash) {
-		for(int i = 0; i < activeTorrents.size(); i++) {
+		for (int i = 0; i < activeTorrents.size(); i++) {
 			Torrent t = activeTorrents.get(i);
-			if(t.getHash().equals(hash)) 
+			if (t.getHash().equals(hash))
 				return t;
 		}
 		return null;

@@ -18,7 +18,7 @@ public class ConfigPopup extends JPopup {
 	private static final long serialVersionUID = 1L;
 
 	private JTabbedPane tabControl;
-	
+
 	public ConfigPopup(JFrame owner) {
 		super(owner);
 		setLayout(new BorderLayout());

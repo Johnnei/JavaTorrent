@@ -7,12 +7,12 @@ import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 
 public class MessageHave implements IMessage {
-	
+
 	private int pieceIndex;
-	
+
 	public MessageHave() {
 	}
-	
+
 	public MessageHave(int pieceIndex) {
 		this.pieceIndex = pieceIndex;
 	}
@@ -29,7 +29,7 @@ public class MessageHave implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 			peer.getClient().getBitfield().havePiece(pieceIndex, true);
 	}
 
@@ -37,7 +37,7 @@ public class MessageHave implements IMessage {
 	public int getLength() {
 		return 5;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
@@ -46,7 +46,7 @@ public class MessageHave implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_HAVE;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Have";

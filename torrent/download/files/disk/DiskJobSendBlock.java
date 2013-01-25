@@ -6,7 +6,7 @@ import torrent.download.peer.Peer;
 import torrent.protocol.messages.MessageBlock;
 
 public class DiskJobSendBlock extends DiskJob {
-	
+
 	/**
 	 * The peer to send the block to
 	 */
@@ -14,7 +14,7 @@ public class DiskJobSendBlock extends DiskJob {
 	private int pieceIndex;
 	private int offset;
 	private int length;
-	
+
 	public DiskJobSendBlock(Peer peer, int pieceIndex, int offset, int length) {
 		this.pieceIndex = pieceIndex;
 		this.offset = offset;

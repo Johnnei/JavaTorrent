@@ -8,13 +8,13 @@ public class DiskJobStoreBlock extends DiskJob {
 	private int pieceIndex;
 	private int blockIndex;
 	private byte[] data;
-	
+
 	public DiskJobStoreBlock(int pieceIndex, int blockIndex, byte[] data) {
 		this.pieceIndex = pieceIndex;
 		this.blockIndex = blockIndex;
 		this.data = data;
 	}
-	
+
 	@Override
 	public void process(Torrent torrent) {
 		try {

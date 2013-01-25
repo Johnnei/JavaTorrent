@@ -28,11 +28,11 @@ public class MessageKeepAlive implements IMessage {
 	public int getId() {
 		return 0;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Keep alive";

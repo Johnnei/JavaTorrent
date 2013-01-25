@@ -8,17 +8,17 @@ import torrent.protocol.IExtension;
 import torrent.protocol.IMessage;
 
 public class MessageExtension implements IMessage {
-	
+
 	private int extensionId;
 	private IMessage message;
-	
+
 	public MessageExtension(int extensionId, IMessage message) {
 		this.extensionId = extensionId;
 		this.message = message;
 	}
-	
+
 	public MessageExtension() {
-		
+
 	}
 
 	@Override
@@ -30,7 +30,7 @@ public class MessageExtension implements IMessage {
 	@Override
 	public void read(Stream inStream) {
 		extensionId = inStream.readByte();
-		if(extensionId == BitTorrent.EXTENDED_MESSAGE_HANDSHAKE) {
+		if (extensionId == BitTorrent.EXTENDED_MESSAGE_HANDSHAKE) {
 			message = new MessageHandshake();
 		} else {
 			IExtension extension = ExtensionUtils.getUtils().getExtension(extensionId);
@@ -61,14 +61,14 @@ public class MessageExtension implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_EXTENDED_MESSAGE;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
-		if(message != null)
+		if (message != null)
 			return "Extension " + message.toString();
 		else
 			return "Extension";

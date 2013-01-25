@@ -58,25 +58,25 @@ public class Client {
 	public boolean isInterested() {
 		return isInterested;
 	}
-	
+
 	public void setAbsoluteMaxRequests(int reqq) {
 		maxRequests = reqq;
 	}
-	
+
 	public void setMaxRequests(int i) {
-		if(i > 0 && i <= maxRequests)
+		if (i > 0 && i <= maxRequests)
 			maxWorkQueue = i;
 	}
-	
+
 	/**
 	 * Grabs the first job on the workingQueue
-	 * @return
-	 * The next job available
+	 * 
+	 * @return The next job available
 	 */
 	public Job getNextJob() {
 		return workingQueue.entrySet().iterator().next().getKey();
 	}
-	
+
 	public int getMaxRequests() {
 		return maxWorkQueue;
 	}
@@ -96,31 +96,33 @@ public class Client {
 	public boolean hasExtentionID(String extention) {
 		return extentionIds.containsKey(extention);
 	}
-	
+
 	public Set<Job> getKeySet() {
 		return workingQueue.keySet();
 	}
-	
+
 	/**
 	 * Removes a job from the working queue if it was listed
+	 * 
 	 * @param job
 	 */
 	public void removeJob(Job job) {
 		workingQueue.remove(job);
 	}
-	
+
 	/**
 	 * Adds a job to the working queue
+	 * 
 	 * @param job
 	 */
 	public void addJob(Job job) {
 		workingQueue.put(job, 0);
 	}
-	
+
 	/**
 	 * The amount of jobs on the working queue
-	 * @return
-	 * the amount
+	 * 
+	 * @return the amount
 	 */
 	public int getQueueSize() {
 		return workingQueue.size();
@@ -129,7 +131,7 @@ public class Client {
 	public void clearJobs() {
 		workingQueue.clear();
 	}
-	
+
 	public Bitfield getBitfield() {
 		return bitfield;
 	}

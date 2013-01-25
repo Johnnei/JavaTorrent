@@ -17,21 +17,21 @@ public abstract class JPopup extends JDialog implements ActionListener {
 	 * True if the user pressed the normal close button
 	 */
 	private boolean isOk;
-	
+
 	public JPopup(JFrame owner) {
 		super(owner, true);
 		setLayout(new FlowLayout());
 		isOk = false;
 	}
-	
+
 	public void setOk(boolean b) {
 		isOk = b;
 	}
-	
+
 	public boolean isOk() {
 		return isOk;
 	}
-	
+
 	protected JButton createButton(String text) {
 		JButton button = new JButton(text);
 		button.addActionListener(this);

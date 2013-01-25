@@ -32,7 +32,7 @@ public class Tracker extends Thread implements Logable {
 	private int port;
 	private DatagramSocket socket;
 	private Stream stream;
-	
+
 	/**
 	 * The tracker score<br/>
 	 * On each error the errorCount will increase<br/>
@@ -52,7 +52,7 @@ public class Tracker extends Thread implements Logable {
 	 * The amount of total downloaders
 	 */
 	private int leechersInSwarm;
-	
+
 	/**
 	 * The amount of connected seeders
 	 */
@@ -130,12 +130,12 @@ public class Tracker extends Thread implements Logable {
 			}
 			ThreadUtils.sleep(1000);
 		}
-		if(errorCount < 3)
+		if (errorCount < 3)
 			setStatus("Unable to connect");
 		else
 			setStatus("Error cap reached");
 	}
-	
+
 	public boolean isConnected() {
 		return connectionId != 0x41727101980L;
 	}
@@ -180,7 +180,7 @@ public class Tracker extends Thread implements Logable {
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
 		stream.writeLong(0); // Uploaded bytes
-		if(firstAnnounce) {
+		if (firstAnnounce) {
 			stream.writeInt(2); // EVENT: None = 0, Completed = 1, Started = 2, Stopped = 3
 			firstAnnounce = false;
 		} else {
@@ -190,7 +190,7 @@ public class Tracker extends Thread implements Logable {
 		stream.writeInt(new Random().nextInt());
 		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
 		stream.writeShort(27960);
-		stream.writeShort(0); //No extensions
+		stream.writeShort(0); // No extensions
 		try {
 			socket.send(stream.write(address, port));
 			stream.read(socket);
@@ -225,7 +225,7 @@ public class Tracker extends Thread implements Logable {
 			log("Announce IOException: " + e.getMessage(), true);
 		}
 	}
-	
+
 	public void scrape() {
 		setStatus("Scraping");
 		stream.reset(36);
@@ -239,7 +239,7 @@ public class Tracker extends Thread implements Logable {
 			action = stream.readInt();
 			if (stream.readInt() != transactionId)
 				action = ACTION_TRANSACTION_ID_ERROR;
-			if(action == ACTION_SCRAPE) {
+			if (action == ACTION_SCRAPE) {
 				seeders = stream.readInt();
 				downloaded = stream.readInt();
 				leechers = stream.readInt();
@@ -296,11 +296,11 @@ public class Tracker extends Thread implements Logable {
 		status = s;
 		setName(name + " " + status);
 	}
-	
+
 	public int getSeeders() {
 		return seeders;
 	}
-	
+
 	public int getLeechers() {
 		return leechers;
 	}
@@ -312,7 +312,7 @@ public class Tracker extends Thread implements Logable {
 	public int getSeedersInSwarm() {
 		return seedersInSwarm;
 	}
-	
+
 	public int getDownloadedCount() {
 		return downloaded;
 	}

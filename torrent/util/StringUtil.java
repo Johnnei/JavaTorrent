@@ -6,6 +6,7 @@ public class StringUtil {
 
 	/**
 	 * Compacts a size of a file/speed in bytes to their smaller notations (kb, mb, etc) upto (including) TB
+	 * 
 	 * @param size The size in bytes
 	 * @return The string which equals the size in the smallest notation
 	 */
@@ -27,12 +28,12 @@ public class StringUtil {
 		}
 		return stringSpeed + " " + names[pointer];
 	}
-	
+
 	public static String progressToString(double d) {
 		String progressString = Double.toString(d);
-		if(progressString.equals("NaN"))
+		if (progressString.equals("NaN"))
 			progressString = "0.0";
-		if(progressString.contains(".")) {
+		if (progressString.contains(".")) {
 			int pointIndex = progressString.indexOf(".");
 			progressString = progressString.substring(0, JMath.min(pointIndex + 3, progressString.length()));
 		}
@@ -69,7 +70,7 @@ public class StringUtil {
 		String s = "";
 		for (byte b : array) {
 			String hex = Integer.toHexString(b & 0xFF).toUpperCase();
-			if(hex.length() == 1)
+			if (hex.length() == 1)
 				hex = "0" + hex;
 			s += hex;
 		}

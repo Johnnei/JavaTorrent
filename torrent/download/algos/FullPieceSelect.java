@@ -26,9 +26,10 @@ public class FullPieceSelect implements IDownloadRegulator {
 	public String getName() {
 		return "Full Pieces first pass";
 	}
-	
+
 	/**
 	 * Gets the most available not started piece
+	 * 
 	 * @return
 	 */
 	private Piece getMostAvailable() {
@@ -36,20 +37,20 @@ public class FullPieceSelect implements IDownloadRegulator {
 		int[] availability = new int[torrent.getFiles().getPieceCount()];
 		int max = -1;
 		Piece mostAvailable = null;
-		for(Piece piece : undownloaded) {
+		for (Piece piece : undownloaded) {
 			ArrayList<Peer> peers = torrent.getDownloadablePeers();
-			for(Peer p : peers) {
-				if(p.getClient().getBitfield().hasPiece(piece.getIndex()))
+			for (Peer p : peers) {
+				if (p.getClient().getBitfield().hasPiece(piece.getIndex()))
 					availability[piece.getIndex()]++;
-				if(availability[piece.getIndex()] > max) {
-					if(piece.getRequestedCount() == 0) {
+				if (availability[piece.getIndex()] > max) {
+					if (piece.getRequestedCount() == 0) {
 						max = availability[piece.getIndex()];
 						mostAvailable = piece;
 					}
 				}
 			}
 		}
-		if(mostAvailable == null)
+		if (mostAvailable == null)
 			return null;
 		else {
 			return mostAvailable;
@@ -66,34 +67,34 @@ public class FullPieceSelect implements IDownloadRegulator {
 				started.add(piece);
 			}
 		}
-		//Check if peer has any of the started pieces
+		// Check if peer has any of the started pieces
 		for (int i = 0; i < started.size(); i++) {
 			Piece piece = started.get(i);
-			if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+			if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 				return piece;
 			}
-			if(peer.getClient().getBitfield().hasPiece(piece.getIndex())) {
+			if (peer.getClient().getBitfield().hasPiece(piece.getIndex())) {
 				return piece;
 			}
 		}
-		//Peer doesn't have any of the started pieces (or there are no started pieces)
+		// Peer doesn't have any of the started pieces (or there are no started pieces)
 		Piece mostAvailable = getMostAvailable();
-		if(mostAvailable != null && peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-				return mostAvailable;
-		if(mostAvailable != null && peer.getClient().getBitfield().hasPiece(mostAvailable.getIndex())) { //Try most available piece
+		if (mostAvailable != null && peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 			return mostAvailable;
-		} else { //Nope, just request the first piece they have
-			for(int i = 0; i < undownloaded.size(); i++) {
+		if (mostAvailable != null && peer.getClient().getBitfield().hasPiece(mostAvailable.getIndex())) { // Try most available piece
+			return mostAvailable;
+		} else { // Nope, just request the first piece they have
+			for (int i = 0; i < undownloaded.size(); i++) {
 				Piece piece = undownloaded.get(i);
-				if(piece.getTotalRequestedCount() < piece.getBlockCount()) {
-					if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+				if (piece.getTotalRequestedCount() < piece.getBlockCount()) {
+					if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 						return piece;
-					if(peer.getClient().getBitfield().hasPiece(piece.getIndex())) {
+					if (peer.getClient().getBitfield().hasPiece(piece.getIndex())) {
 						return piece;
 					}
 				}
 			}
-			//This peer can't serve us any piece ):
+			// This peer can't serve us any piece ):
 			return null;
 		}
 	}

@@ -60,7 +60,7 @@ public class Peer implements Logable, ISortable {
 	private int downloadRate;
 	private int uploadRate;
 	private boolean passedHandshake;
-	
+
 	private String clientName;
 	/**
 	 * The count of messages which are still being processed by the IOManager
@@ -71,7 +71,7 @@ public class Peer implements Logable, ISortable {
 	 * If the amount reaches 5 the client will be disconnected on the next peerCheck
 	 */
 	private int strikes;
-	
+
 	public Peer() {
 		crashed = false;
 		peerClient = new Client();
@@ -111,25 +111,25 @@ public class Peer implements Logable, ISortable {
 	 */
 	private void sendExtensionMessage() {
 		if (peerClient.supportsExtention(5, 0x10)) { // EXTENDED_MESSAGE
-			if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake()));
 			else
 				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(torrent.getFiles().getMetadataSize())));
 		}
 	}
-	
+
 	/**
 	 * Send have messages or bitfield
 	 */
 	private void sendHaveMessages() {
-		if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
 			ArrayList<IMessage> messages = torrent.getFiles().getBitfield().getBitfieldMessage();
-			for(int i = 0; i < messages.size(); i++) {
+			for (int i = 0; i < messages.size(); i++) {
 				addToQueue(messages.get(i));
 			}
 		}
 	}
-	
+
 	public void setSocket(Socket socket) {
 		this.socket = socket;
 		setSocket(socket.getInetAddress(), socket.getPort());
@@ -145,9 +145,9 @@ public class Peer implements Logable, ISortable {
 		this.address = address;
 		this.port = port;
 	}
-	
+
 	public void sendHandshake() throws IOException {
-		setStatus("Sending Handshake"); //Not making this more OO because it's not within the message-flow
+		setStatus("Sending Handshake"); // Not making this more OO because it's not within the message-flow
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
 		outStream.write(RESERVED_EXTENTION_BYTES);
@@ -170,14 +170,14 @@ public class Peer implements Logable, ISortable {
 				byte[] torrentHash = inStream.readByteArray(20);
 				if (torrent == null) {
 					Torrent torrent = Manager.getManager().getTorrent(StringUtil.byteArrayToString(torrentHash));
-					if(torrent == null) {
+					if (torrent == null) {
 						return;
 					}
 					this.torrent = torrent;
 				}
 				if (torrentHash != torrent.getHashArray()) {
 					inStream.readByteArray(20);
-					if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA)
+					if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA)
 						peerClient.getBitfield().setBitfieldSize(torrent.getFiles().getBitfieldSize());
 					setStatus("Awaiting Orders");
 					passedHandshake = true;
@@ -195,11 +195,11 @@ public class Peer implements Logable, ISortable {
 		sendExtensionMessage();
 		sendHaveMessages();
 	}
-	
+
 	public void run() {
 		while (torrent.keepDownloading() && !closed()) {
 			try {
-				if(!passedHandshake)
+				if (!passedHandshake)
 					processHandshake();
 				readMessage();
 				sendMessage();
@@ -211,16 +211,16 @@ public class Peer implements Logable, ISortable {
 		close();
 		setStatus("Connection closed");
 	}
-	
+
 	public boolean canReadMessage() throws IOException {
-		if(!passedHandshake) {
-			return inStream.available() >= 68; 
+		if (!passedHandshake) {
+			return inStream.available() >= 68;
 		}
 		return MessageUtils.getUtils().canReadMessage(inStream, this);
 	}
-	
+
 	public void readMessage() throws IOException {
-		if(!passedHandshake) {
+		if (!passedHandshake) {
 			processHandshake();
 			return;
 		}
@@ -228,18 +228,18 @@ public class Peer implements Logable, ISortable {
 		message.process(this);
 		lastActivity = System.currentTimeMillis();
 	}
-	
+
 	public void sendMessage() throws IOException {
 		if (messageQueue.size() > 0) {
 			IMessage message = messageQueue.remove(0);
-			if(message == null)
+			if (message == null)
 				return;
 			setStatus("Sending Message: " + message);
 			MessageUtils.getUtils().writeMessage(outStream, message);
 			setStatus("Sended Message: " + message);
 			lastActivity = System.currentTimeMillis();
 		} else {
-			if(peerClient.getQueueSize() > 0 && pendingMessages == 0) {
+			if (peerClient.getQueueSize() > 0 && pendingMessages == 0) {
 				Job request = peerClient.getNextJob();
 				peerClient.removeJob(request);
 				addToPendingMessages(1);
@@ -247,16 +247,16 @@ public class Peer implements Logable, ISortable {
 			}
 		}
 	}
-	
+
 	public void checkDisconnect() {
 		if (strikes >= 5) {
 			close();
 			return;
 		}
-		int inactiveSeconds = (int)((System.currentTimeMillis() - lastActivity) / 1000);
+		int inactiveSeconds = (int) ((System.currentTimeMillis() - lastActivity) / 1000);
 		if (inactiveSeconds > 30) {
-			if(myClient.getQueueSize() > 0) { //We are not receiving a single byte in the last 30(!) seconds
-				//Let's try (max twice) if we can wake'm up by sending them a keepalive
+			if (myClient.getQueueSize() > 0) { // We are not receiving a single byte in the last 30(!) seconds
+				// Let's try (max twice) if we can wake'm up by sending them a keepalive
 				addStrike(2);
 				addToQueue(new MessageKeepAlive());
 				updateLastActivity();
@@ -266,18 +266,19 @@ public class Peer implements Logable, ISortable {
 			}
 		}
 		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to timeout D:
-			if(myClient.isInterested()) {
+			if (myClient.isInterested()) {
 				addToQueue(new MessageKeepAlive());
 				return;
 			}
-		} 
+		}
 		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark
 			close();
 		}
 	}
-	
+
 	/**
 	 * Add a value to the pending Messages count
+	 * 
 	 * @param i The count to add
 	 */
 	public synchronized void addToPendingMessages(int i) {
@@ -286,8 +287,8 @@ public class Peer implements Logable, ISortable {
 
 	/**
 	 * Checks if the connection is/should be closed
-	 * @return
-	 * If the connection should be/is closed
+	 * 
+	 * @return If the connection should be/is closed
 	 */
 	public boolean closed() {
 		if (crashed)
@@ -323,11 +324,11 @@ public class Peer implements Logable, ISortable {
 	public void setStatus(String s) {
 		status = s;
 	}
-	
+
 	public void setClientName(String clientName) {
 		this.clientName = clientName;
 	}
-	
+
 	public String getClientName() {
 		return clientName;
 	}
@@ -349,15 +350,15 @@ public class Peer implements Logable, ISortable {
 	public boolean isWorking() {
 		return getWorkQueueSize() > 0;
 	}
-	
+
 	public int getFreeWorkTime() {
-		return (getWorkQueueSize() >= myClient.getMaxRequests()) ?  0 : myClient.getMaxRequests() - getWorkQueueSize();
+		return (getWorkQueueSize() >= myClient.getMaxRequests()) ? 0 : myClient.getMaxRequests() - getWorkQueueSize();
 	}
 
 	public int getWorkQueueSize() {
 		return myClient.getQueueSize();
 	}
-	
+
 	public int getMaxWorkLoad() {
 		return myClient.getMaxRequests();
 	}
@@ -375,11 +376,11 @@ public class Peer implements Logable, ISortable {
 	}
 
 	public void pollRates() {
-		if(inStream != null) {
+		if (inStream != null) {
 			downloadRate = inStream.getSpeed();
 			inStream.reset(downloadRate);
 		}
-		if(outStream != null) {
+		if (outStream != null) {
 			uploadRate = outStream.getSpeed();
 			outStream.reset(uploadRate);
 		}
@@ -392,7 +393,7 @@ public class Peer implements Logable, ISortable {
 	public int getUploadRate() {
 		return uploadRate;
 	}
-	
+
 	/**
 	 * Cancels all pieces
 	 */
@@ -415,7 +416,7 @@ public class Peer implements Logable, ISortable {
 	public void close() {
 		try {
 			if (socket != null) {
-				if(!socket.isClosed()) {
+				if (!socket.isClosed()) {
 					socket.shutdownInput();
 					socket.shutdownOutput();
 					socket.close();
@@ -432,7 +433,7 @@ public class Peer implements Logable, ISortable {
 	public long getLastActivity() {
 		return lastActivity;
 	}
-	
+
 	public Torrent getTorrent() {
 		return torrent;
 	}
@@ -444,10 +445,11 @@ public class Peer implements Logable, ISortable {
 
 	/**
 	 * Adds an amount of strikes to the peer
+	 * 
 	 * @param i
 	 */
 	public synchronized void addStrike(int i) {
-		if(strikes + i < 0) {
+		if (strikes + i < 0) {
 			strikes = 0;
 		} else {
 			strikes += i;

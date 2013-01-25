@@ -2,8 +2,9 @@ package torrent;
 
 /**
  * Extra exception class to filter torrent logic expections from actual exceptions
+ * 
  * @author Johnnei
- *
+ * 
  */
 public class TorrentException extends Exception {
 

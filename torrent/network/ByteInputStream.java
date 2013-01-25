@@ -71,22 +71,22 @@ public class ByteInputStream extends DataInputStream {
 	public int getSpeed() {
 		return speed;
 	}
-	
+
 	public void reset(int downloadRate) {
 		speed -= downloadRate;
 	}
-	
+
 	public Stream getBuffer() {
 		return buffer;
 	}
-	
+
 	/**
 	 * Resets the temporary stream which is used for peeking
 	 */
 	public void resetBuffer() {
 		buffer = null;
 	}
-	
+
 	/**
 	 * Creates an empty buffer to hold the data
 	 */
@@ -94,13 +94,14 @@ public class ByteInputStream extends DataInputStream {
 		buffer = new Stream(0);
 		lastBufferCreate = System.currentTimeMillis();
 	}
-	
+
 	/**
 	 * The time in milliseconds that this buffer has existed
+	 * 
 	 * @return
 	 */
 	public int getBufferLifetime() {
-		return (int)(System.currentTimeMillis() - lastBufferCreate);
+		return (int) (System.currentTimeMillis() - lastBufferCreate);
 	}
 
 }

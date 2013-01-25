@@ -6,13 +6,13 @@ import torrent.network.Stream;
 import torrent.protocol.UTMetadata;
 
 public class MessageData extends Message {
-	
+
 	private byte[] data;
-	
+
 	public MessageData() {
-		
+
 	}
-	
+
 	public MessageData(int piece, byte[] data) {
 		super(piece);
 		this.data = data;
@@ -46,7 +46,7 @@ public class MessageData extends Message {
 	public int getId() {
 		return UTMetadata.DATA;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "UT_Metadata Data";

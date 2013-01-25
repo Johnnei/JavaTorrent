@@ -7,22 +7,22 @@ import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.extension.MessageExtension;
 
 public class MessageRequest extends Message {
-	
+
 	public MessageRequest() {
 	}
-	
+
 	public MessageRequest(int piece) {
 		super(piece);
 	}
 
 	@Override
 	public void process(Peer peer) {
-		if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
-			MessageReject mr = new MessageReject((int)dictionary.get("piece"));
+		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
 			MessageExtension extendedMessage = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), mr);
 			peer.addToQueue(extendedMessage);
 		} else {
-			int piece = (int)dictionary.get("piece");
+			int piece = (int) dictionary.get("piece");
 			peer.getTorrent().addDiskJob(new DiskJobSendMetadataBlock(peer, piece));
 		}
 	}
@@ -36,7 +36,7 @@ public class MessageRequest extends Message {
 	public int getId() {
 		return UTMetadata.REQUEST;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "UT_Metadata Request";

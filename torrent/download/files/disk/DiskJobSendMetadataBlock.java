@@ -7,13 +7,13 @@ import torrent.protocol.messages.extension.MessageExtension;
 import torrent.protocol.messages.ut_metadata.MessageData;
 
 public class DiskJobSendMetadataBlock extends DiskJob {
-	
+
 	/**
 	 * The peer to send the block to
 	 */
 	private Peer peer;
 	private int blockIndex;
-	
+
 	public DiskJobSendMetadataBlock(Peer peer, int blockIndex) {
 		this.blockIndex = blockIndex;
 		this.peer = peer;

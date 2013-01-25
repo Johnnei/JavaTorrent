@@ -14,17 +14,17 @@ public class ImageButton extends JButton {
 	 * The image to be displayed
 	 */
 	private BufferedImage image;
-	
+
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	
+
 	public ImageButton(String text, String file) throws IOException {
 		setText(text);
 		setContentAreaFilled(false);
 		File imageFile = new File(file);
-		if(!imageFile.exists()) {
+		if (!imageFile.exists()) {
 			imageFile = new File("src/" + file);
 		}
 		image = ImageIO.read(imageFile);

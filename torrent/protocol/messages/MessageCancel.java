@@ -11,11 +11,11 @@ public class MessageCancel implements IMessage {
 	private int index;
 	private int offset;
 	private int length;
-	
+
 	public MessageCancel() {
-		
+
 	}
-	
+
 	public MessageCancel(int index, int begin, int offset) {
 		this.index = index;
 		this.offset = begin;
@@ -50,11 +50,11 @@ public class MessageCancel implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_CANCEL;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Cancel";

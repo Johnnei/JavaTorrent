@@ -45,7 +45,7 @@ public class JavaTorrent extends Thread {
 			frame.updateData();
 			frame.repaint();
 			System.gc();
-			int duration = 1000 - (int)(System.currentTimeMillis() - startTime);
+			int duration = 1000 - (int) (System.currentTimeMillis() - startTime);
 			ThreadUtils.sleep(duration);
 		}
 	}

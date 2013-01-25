@@ -20,30 +20,30 @@ public class MenubarPanel extends JPanel implements ActionListener {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	
+
 	private JButton addTorrentButton;
 	private JButton configButton;
 	private TorrentFrame owner;
-	
+
 	public MenubarPanel(TorrentFrame owner) {
 		this.owner = owner;
 		setPreferredSize(new Dimension(1280, 52));
 		setLayout(null);
 		try {
-			addTorrentButton = createButton(5, 1, 125, "Add Torrent","res/download.png");
+			addTorrentButton = createButton(5, 1, 125, "Add Torrent", "res/download.png");
 			configButton = createButton(135, 1, 150, "Change Settings", "res/settings.png");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		add(addTorrentButton);
 		add(configButton);
 	}
-	
+
 	private JButton createButton(int x, int y, int width, String text, String img) throws IOException {
 		return createButton(x, y, width, 50, text, img);
 	}
-	
+
 	private JButton createButton(int x, int y, int width, int height, String text, String img) throws IOException {
 		ImageButton button = new ImageButton(text, img);
 		button.addActionListener(this);
@@ -53,9 +53,9 @@ public class MenubarPanel extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource().equals(addTorrentButton)) {
+		if (e.getSource().equals(addTorrentButton)) {
 			AddTorrentFrame addTorrent = new AddTorrentFrame(owner);
-			if(addTorrent.isOk()) {
+			if (addTorrent.isOk()) {
 				MagnetLink link = addTorrent.getMagnetLink();
 				Torrent torrent = link.getTorrent();
 				torrent.initialise();

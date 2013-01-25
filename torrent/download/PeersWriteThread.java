@@ -8,7 +8,7 @@ import org.johnnei.utils.ThreadUtils;
 import torrent.download.peer.Peer;
 
 public class PeersWriteThread extends Thread {
-	
+
 	private Torrent torrent;
 
 	public PeersWriteThread(Torrent torrent) {
@@ -18,7 +18,7 @@ public class PeersWriteThread extends Thread {
 
 	@Override
 	public void run() {
-		while(true) {
+		while (true) {
 			ArrayList<Peer> peers = torrent.getPeers();
 			for (int i = 0; i < peers.size(); i++) {
 				Peer p = peers.get(i);

@@ -48,7 +48,7 @@ public class FileInfo {
 		this.pieceCount = pieceCount;
 		pieceHave = new HashMap<>();
 		try {
-			if(!file.exists()) {
+			if (!file.exists()) {
 				file.getParentFile().mkdirs();
 				file.createNewFile();
 			}
@@ -65,9 +65,10 @@ public class FileInfo {
 	public int getIndex() {
 		return index;
 	}
-	
+
 	/**
 	 * The amount of pieces which contain a part of data for this file
+	 * 
 	 * @return the amount of pieces for this file
 	 */
 	public int getPieceCount() {
@@ -76,6 +77,7 @@ public class FileInfo {
 
 	/**
 	 * Gets the size of this file
+	 * 
 	 * @return
 	 */
 	public long getSize() {
@@ -85,9 +87,10 @@ public class FileInfo {
 	public int getPieceHaveCount() {
 		return pieceHave.size();
 	}
-	
+
 	/**
 	 * The offset of the first byte as if the entire torrent is a single file
+	 * 
 	 * @return the first byte offset
 	 */
 	public long getFirstByteOffset() {

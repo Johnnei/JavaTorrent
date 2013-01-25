@@ -30,11 +30,11 @@ public class MessageChoke implements IMessage {
 	public int getId() {
 		return BitTorrent.MESSAGE_CHOKE;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Choke";

@@ -17,9 +17,9 @@ public class ByteOutputStream extends DataOutputStream {
 		speed++;
 		super.write(i);
 	}
-	
+
 	public void write(byte[] bytes, int offset, int length) throws IOException {
-		for(int i = 0; i < length; i++) {
+		for (int i = 0; i < length; i++) {
 			write(bytes[offset + i]);
 		}
 	}
@@ -33,7 +33,7 @@ public class ByteOutputStream extends DataOutputStream {
 	public int getSpeed() {
 		return speed;
 	}
-	
+
 	public void reset(int uploadRate) {
 		speed -= uploadRate;
 	}

@@ -36,8 +36,8 @@ public class TabFiles extends TableBase {
 		FileInfo[] f = torrent.getFiles().getFiles();
 		setItemCount(f.length);
 		for (int i = 0; i < f.length; i++) {
-			if(isVisible()) {
-				if(i == getSelectedIndex()) {
+			if (isVisible()) {
+				if (i == getSelectedIndex()) {
 					drawSelectedBackground(g);
 				}
 				Graphics name = g.create();

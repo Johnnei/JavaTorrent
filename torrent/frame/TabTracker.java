@@ -12,7 +12,7 @@ public class TabTracker extends TableBase {
 	private Torrent torrent;
 
 	public TabTracker() {
-		super(25);	
+		super(25);
 	}
 
 	public void setTorrent(Torrent torrent) {
@@ -30,14 +30,14 @@ public class TabTracker extends TableBase {
 
 	@Override
 	protected void paintData(Graphics g) {
-		if(torrent != null) {
+		if (torrent != null) {
 			Tracker[] trackers = torrent.getTrackers();
 			int count = 0;
-			for(int i = 0; i < trackers.length; i++) {
-				if(trackers[i] != null) {
+			for (int i = 0; i < trackers.length; i++) {
+				if (trackers[i] != null) {
 					++count;
-					if(isVisible()) {
-						if((count - 1) == getSelectedIndex()) {
+					if (isVisible()) {
+						if ((count - 1) == getSelectedIndex()) {
 							drawSelectedBackground(g);
 						}
 						g.drawString(trackers[i].getTrackerName(), 5, getTextY());

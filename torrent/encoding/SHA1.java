@@ -6,10 +6,9 @@ public class SHA1 {
 
 	/**
 	 * Hashes the given data into SHA-1 Hashing
-	 * @param data
-	 * The bytes to hash
-	 * @return
-	 * The 20-byte hash
+	 * 
+	 * @param data The bytes to hash
+	 * @return The 20-byte hash
 	 */
 	public static byte[] hash(byte[] data) {
 		try {

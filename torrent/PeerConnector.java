@@ -9,27 +9,27 @@ import org.johnnei.utils.ThreadUtils;
 import torrent.download.peer.Peer;
 
 public class PeerConnector extends Thread {
-	
+
 	private ServerSocket serverSocket;
-	
+
 	public PeerConnector() throws IOException {
 		super("PeerConnector");
 		serverSocket = new ServerSocket(27960);
 	}
-	
+
 	public void run() {
-		while(true) {
+		while (true) {
 			try {
 				Peer peer = new Peer();
 				Socket peerSocket = serverSocket.accept();
 				peer.setSocket(peerSocket);
 				long handshakeStart = System.currentTimeMillis();
-				while(!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
+				while (!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
 					ThreadUtils.sleep(10);
 				}
-				if(peer.canReadMessage()) {
+				if (peer.canReadMessage()) {
 					peer.processHandshake();
-					if(peer.getPassedHandshake()) {
+					if (peer.getPassedHandshake()) {
 						peer.sendHandshake();
 						peer.getTorrent().addPeer(peer);
 					} else {

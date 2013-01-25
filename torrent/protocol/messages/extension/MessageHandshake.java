@@ -13,9 +13,9 @@ import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
 
 public class MessageHandshake implements IMessage {
-	
+
 	private String bencodedHandshake;
-	
+
 	public MessageHandshake(long metadataSize) {
 		Bencoder encoder = new Bencoder();
 		encoder.dictionaryStart();
@@ -26,7 +26,7 @@ public class MessageHandshake implements IMessage {
 		encoder.dictionaryEnd();
 		encoder.string("v");
 		encoder.string(JavaTorrent.BUILD);
-		if(metadataSize > 0) {
+		if (metadataSize > 0) {
 			encoder.string("metadata_size");
 			encoder.integer(metadataSize);
 		}
@@ -52,17 +52,17 @@ public class MessageHandshake implements IMessage {
 	public void process(Peer peer) {
 		Bencode decoder = new Bencode(bencodedHandshake);
 		try {
-			HashMap<String, Object> dictionary = (HashMap<String, Object>)decoder.decodeDictionary();
+			HashMap<String, Object> dictionary = (HashMap<String, Object>) decoder.decodeDictionary();
 			Object m = dictionary.get("m");
-			if(m != null) {
-				if(m instanceof HashMap<?, ?>) {
-					HashMap<?, ?> extensionData = (HashMap<?, ?>)m;
-					if(extensionData.containsKey(UTMetadata.NAME)) {
-						peer.getClient().addExtentionID(UTMetadata.NAME, (Integer)extensionData.get(UTMetadata.NAME));
-						if(dictionary.containsKey("metadata_size")) {
-							if(peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
-								if(peer.getTorrent().getFiles().getTotalSize() == 0) {
-									peer.getTorrent().getFiles().setFilesize(peer.getTorrent().getHashArray(), (int)dictionary.get("metadata_size"));
+			if (m != null) {
+				if (m instanceof HashMap<?, ?>) {
+					HashMap<?, ?> extensionData = (HashMap<?, ?>) m;
+					if (extensionData.containsKey(UTMetadata.NAME)) {
+						peer.getClient().addExtentionID(UTMetadata.NAME, (Integer) extensionData.get(UTMetadata.NAME));
+						if (dictionary.containsKey("metadata_size")) {
+							if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+								if (peer.getTorrent().getFiles().getTotalSize() == 0) {
+									peer.getTorrent().getFiles().setFilesize(peer.getTorrent().getHashArray(), (int) dictionary.get("metadata_size"));
 									peer.getTorrent().checkProgress();
 								}
 							}
@@ -71,12 +71,12 @@ public class MessageHandshake implements IMessage {
 				}
 			}
 			Object reqq = dictionary.get("reqq");
-			if(reqq != null) {
-				peer.getClient().setAbsoluteMaxRequests((int)reqq);
+			if (reqq != null) {
+				peer.getClient().setAbsoluteMaxRequests((int) reqq);
 			}
 			Object v = dictionary.get("v");
-			if(v != null) {
-				peer.setClientName((String)v);
+			if (v != null) {
+				peer.setClientName((String) v);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -94,11 +94,11 @@ public class MessageHandshake implements IMessage {
 	public int getId() {
 		return BitTorrent.EXTENDED_MESSAGE_HANDSHAKE;
 	}
-	
+
 	@Override
 	public void setReadDuration(int duration) {
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Handshake";

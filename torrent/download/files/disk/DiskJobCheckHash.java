@@ -6,16 +6,17 @@ import torrent.util.StringUtil;
 
 /**
  * A job to check the hash of a piece for a given torrent
+ * 
  * @author Johnnei
- *
+ * 
  */
 public class DiskJobCheckHash extends DiskJob {
-	
+
 	/**
 	 * The piece to check the has for
 	 */
 	private int pieceIndex;
-	
+
 	public DiskJobCheckHash(int pieceIndex) {
 		this.pieceIndex = pieceIndex;
 	}
@@ -24,7 +25,7 @@ public class DiskJobCheckHash extends DiskJob {
 	public void process(Torrent torrent) {
 		try {
 			if (torrent.getFiles().getPiece(pieceIndex).checkHash()) {
-				if(torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+				if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
 					torrent.broadcastHave(pieceIndex);
 				}
 				torrent.log("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");

@@ -29,8 +29,7 @@ public class PeerConnectorThread extends Thread {
 	/**
 	 * Adds a pending connection peer to the connection cycle
 	 * 
-	 * @param p
-	 *            The peer to connect
+	 * @param p The peer to connect
 	 */
 	public void addPeer(Peer p) {
 		for (int i = 0; i < peer.length; i++) {

@@ -17,11 +17,12 @@ import org.johnnei.utils.JMath;
 /**
  * Table base, Note that this is not an actual table.<Br/>
  * This is a base to help you draw a table without any restrictions
+ * 
  * @author Johnnei
- *
+ * 
  */
 public abstract class TableBase extends JPanel implements MouseListener, MouseWheelListener {
-	
+
 	/**
 	 * 
 	 */
@@ -54,7 +55,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	 * The observable for this object
 	 */
 	private ObservablePanel observable;
-	
+
 	public TableBase(int rowSize) {
 		addMouseWheelListener(this);
 		addMouseListener(this);
@@ -62,38 +63,40 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		rowHeight = rowSize;
 		selectedIndex = -1;
 	}
-	
+
 	public void advanceLine() {
 		drawY += rowHeight;
 	}
-	
+
 	protected abstract void paintHeader(Graphics g);
+
 	protected abstract void paintData(Graphics g);
-	
+
 	@Override
 	public void paintComponent(Graphics g) {
-		//Background
+		// Background
 		drawY = 0;
 		g.setColor(getBackgroundColor());
 		g.fillRect(0, 0, getWidth(), getHeight());
 		g.setColor(getForegroundColor());
-		
-		//Content
+
+		// Content
 		drawY = rowHeight;
 		paintData(g);
-		
-		//Pre-header
+
+		// Pre-header
 		g.setColor(new Color(0xC8, 0xDD, 0xF2));
 		g.fillRect(0, 0, getWidth(), rowHeight);
 		g.setColor(getForegroundColor());
-		//Header
+		// Header
 		paintHeader(g);
 		visibleItemCount = (getHeight() - rowHeight) / rowHeight;
 		paintScrollbar(g);
 	}
-	
+
 	/**
 	 * Draw a triangle
+	 * 
 	 * @param g The Graphics canvas
 	 * @param x The bottom left position
 	 * @param y The bottom position
@@ -103,7 +106,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	private void drawTriangle(Graphics g, int x, int y, int width, int height, boolean facingUp) {
 		int topX = x + width / 2;
 		Polygon triangle = new Polygon();
-		if(facingUp) {
+		if (facingUp) {
 			triangle.addPoint(x, y);
 			triangle.addPoint(topX, y - height);
 			triangle.addPoint(x + width, y);
@@ -114,40 +117,40 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		}
 		g.fillPolygon(triangle);
 	}
-	
+
 	public void paintScrollbar(Graphics g) {
 		Color buttonColor = new Color(0x88, 0x88, 0x88);
 		Color buttonArrowColor = new Color(0xAA, 0xAA, 0xAA);
 		int x = getWidth() - 20;
-		if(itemCount > visibleItemCount) {
-			//Top Button
+		if (itemCount > visibleItemCount) {
+			// Top Button
 			g.setColor(buttonColor);
 			g.fillRect(x, 0, 20, 20);
 			g.setColor(buttonArrowColor);
 			drawTriangle(g, x + 3, 17, 14, 14, true);
-			
-			//Bar Background
+
+			// Bar Background
 			g.setColor(new Color(0xDD, 0xDD, 0xDD));
 			g.fillRect(x, 20, 20, getHeight() - 40);
-			
-			//Slide Button
+
+			// Slide Button
 			int maxSliderSize = getHeight() - 40;
 			int hiddenItems = itemCount - visibleItemCount;
-			double sliderSize = (double)maxSliderSize / hiddenItems;
+			double sliderSize = (double) maxSliderSize / hiddenItems;
 			double scrollItemIndex = scrollY + 1D;
-			int drawSliderSize = JMath.max((int)sliderSize, 5);
-			int scrollBarOffset = 19 + (int)(scrollItemIndex * (sliderSize - ((double)drawSliderSize / hiddenItems)));
+			int drawSliderSize = JMath.max((int) sliderSize, 5);
+			int scrollBarOffset = 19 + (int) (scrollItemIndex * (sliderSize - ((double) drawSliderSize / hiddenItems)));
 			g.setColor(new Color(0xAA, 0xAA, 0xAA));
 			g.fillRect(x, scrollBarOffset, 20, drawSliderSize);
-			
-			//Bottom Button
+
+			// Bottom Button
 			g.setColor(buttonColor);
 			g.fillRect(x, getHeight() - 20, 20, 20);
 			g.setColor(buttonArrowColor);
 			drawTriangle(g, x + 3, getHeight() - 3, 14, 14, false);
 		}
 	}
-	
+
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
 		int oldScrollY = scrollY;
@@ -161,10 +164,10 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		} else {
 			scrollY = oldScrollY;
 		}
-		if(scrollY != oldScrollY)
+		if (scrollY != oldScrollY)
 			repaint();
 	}
-	
+
 	public Color getForegroundColor() {
 		return Color.BLACK;
 	}
@@ -176,9 +179,10 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	public Color getSelectedBackgroundColor() {
 		return new Color(0x00, 0xC0, 0xFF);
 	}
-	
+
 	/**
 	 * Draws the row with a selected background color
+	 * 
 	 * @param g The graphics canvas
 	 */
 	public void drawSelectedBackground(Graphics g) {
@@ -186,33 +190,37 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 		g.fillRect(0, getDrawY(), getWidth(), rowHeight);
 		g.setColor(getForegroundColor());
 	}
-	
+
 	/**
 	 * Checks if the current row is visible after scrolling
+	 * 
 	 * @return
 	 */
 	public boolean rowIsVisible() {
 		return drawY + (rowHeight / 2) > getScrollY();
 	}
-	
+
 	/**
 	 * Gets the position to draw at
+	 * 
 	 * @return
 	 */
 	public int getDrawY() {
 		return drawY - getScrollY();
 	}
-	
+
 	/**
 	 * Gets the position to drawString at
+	 * 
 	 * @return
 	 */
 	public int getTextY() {
 		return getDrawY() + 4 + (rowHeight / 2);
 	}
-	
+
 	/**
 	 * Gets the header text height for drawString
+	 * 
 	 * @return
 	 */
 	public int getHeaderTextY() {
@@ -221,32 +229,36 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 
 	/**
 	 * Gets the current Scroll Y offset
+	 * 
 	 * @return
 	 */
 	public int getScrollY() {
 		return scrollY * rowHeight;
 	}
-	
+
 	/**
 	 * The selected row
+	 * 
 	 * @return
 	 */
 	public int getSelectedIndex() {
 		return selectedIndex;
 	}
-	
+
 	/**
 	 * Sets the amount of items in the table
+	 * 
 	 * @param i Count
 	 */
 	public void setItemCount(int i) {
 		itemCount = i;
-		if(selectedIndex > itemCount)
+		if (selectedIndex > itemCount)
 			selectedIndex = itemCount;
 	}
-	
+
 	/**
 	 * Gets the observable object for this table
+	 * 
 	 * @return
 	 */
 	public Observable getObservable() {
@@ -257,7 +269,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 	public void mouseClicked(MouseEvent e) {
 		Rectangle scrollUpHitbox = new Rectangle(getWidth() - 20, 0, 20, 20);
 		Rectangle scrollDownHitbox = new Rectangle(getWidth() - 20, getHeight() - 20, 20, 20);
-		if(scrollUpHitbox.contains(e.getPoint())) {
+		if (scrollUpHitbox.contains(e.getPoint())) {
 			mouseWheelMoved(new MouseWheelEvent(this, 0, System.currentTimeMillis(), 0, e.getX(), e.getY(), 0, false, 0, 0, -1));
 		} else if (scrollDownHitbox.contains(e.getPoint())) {
 			mouseWheelMoved(new MouseWheelEvent(this, 0, System.currentTimeMillis(), 0, e.getX(), e.getY(), 0, false, 0, 0, 1));
@@ -265,9 +277,9 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 			int rowY = (scrollY * rowHeight) + e.getY() - rowHeight;
 			int oldSelectedIndex = selectedIndex;
 			selectedIndex = (rowY / rowHeight);
-			if(selectedIndex > itemCount)
+			if (selectedIndex > itemCount)
 				selectedIndex = 0;
-			if(selectedIndex != oldSelectedIndex) {
+			if (selectedIndex != oldSelectedIndex) {
 				repaint();
 				observable.notifyObservers(selectedIndex);
 			}
