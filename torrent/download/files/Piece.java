@@ -42,12 +42,15 @@ public class Piece implements ISortable {
 	}
 
 	/**
-	 * Drop a single block in order to find the incorrect block in hopefully less redownloading than the full piece
+	 * Drops ceil(10%) of the blocks in order to maintain speed and still try to *not* redownload the entire piece
 	 */
 	public void hashFail() {
-		reset(hashFailCheck++);
-		if (hashFailCheck >= blocks.length) {
-			hashFailCheck = 0;
+		int tenPercent = JMath.ceil(blocks.length * 0.1D);
+		for (int i = 0; i < tenPercent; i++) {
+			reset(hashFailCheck++);
+			if (hashFailCheck >= blocks.length) {
+				hashFailCheck = 0;
+			}
 		}
 	}
 
