@@ -47,7 +47,7 @@ public class MessageBlock implements IMessage {
 				peer.getMyClient().setMaxRequests((int)Math.ceil(1000 / readDuration));
 			} else { //Set by trust
 				if(peer.getMyClient().getMaxRequests() < 5) {
-					peer.getMyClient().setMaxRequests(peer.getMyClient().getMaxRequests() + 1);
+					peer.getMyClient().setMaxRequests(2 * (peer.getMyClient().getMaxRequests() + 1));
 				}
 			}
 		} else {

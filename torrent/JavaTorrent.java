@@ -10,7 +10,7 @@ import torrent.util.Logger;
 
 public class JavaTorrent extends Thread {
 
-	public static final String BUILD = "JavaTorrent 0.04.0";
+	public static final String BUILD = "JavaTorrent 0.05.0";
 
 	private TorrentFrame frame;
 
