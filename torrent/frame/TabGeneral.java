@@ -25,6 +25,7 @@ public class TabGeneral extends JPanel {
 		String totalSize = "Total Size: ";
 		String leftSize = "Remaining: ";
 		String pieces = "Pieces: ";
+		String uploaded = "Uploaded: ";
 		String peers = "Peers: ";
 		String leechers = "Leechers: ";
 		String pending = "Pending Connections: ";
@@ -38,10 +39,12 @@ public class TabGeneral extends JPanel {
 				totalSize += "Retrieving metadata";
 				pieces += "Retrieving metadata";
 				leftSize += "Retrieving metadata";
+				uploaded += "Retrieving metadata";
 			} else {
 				totalSize += StringUtil.compactByteSize(torrent.getFiles().getTotalSize());
 				pieces += torrent.getFiles().getBitfield().hasPieceCount() + "/" + torrent.getFiles().getPieceCount();
 				leftSize += StringUtil.compactByteSize(torrent.getFiles().getRemainingBytes());
+				uploaded += StringUtil.compactByteSize(torrent.getUploadedBytes());
 			}
 			pending += torrent.getConnectingCount();
 			peers += torrent.getSeedCount();
@@ -68,17 +71,18 @@ public class TabGeneral extends JPanel {
 
 		g.setColor(Color.BLACK);
 		g.drawString(name, 10, 50);
-		g.drawString(hash, 10, 75);
-		g.drawString(totalSize, 10, 100);
-		g.drawString(leftSize, 10, 125);
-		g.drawString(pieces, 10, 150);
+		g.drawString(hash, 10, 70);
+		g.drawString(totalSize, 10, 90);
+		g.drawString(leftSize, 10, 110);
+		g.drawString(pieces, 10, 130);
+		g.drawString(uploaded, 10, 150);
 
 		int x = getWidth() / 2;
 		g.drawString(peers, x, 50);
-		g.drawString(leechers, x, 75);
-		g.drawString(pending, x, 100);
-		g.drawString(download, x, 125);
-		g.drawString(upload, x, 150);
+		g.drawString(leechers, x, 70);
+		g.drawString(pending, x, 90);
+		g.drawString(download, x, 110);
+		g.drawString(upload, x, 130);
 	}
 
 }
