@@ -20,6 +20,11 @@ public class Tracker extends Thread implements Logable {
 	public static final int ACTION_SCRAPE = 2;
 	public static final int ACTION_ERROR = 3;
 	public static final int ACTION_TRANSACTION_ID_ERROR = 256;
+	
+	public static final int EVENT_NONE = 0; 
+	public static final int EVENT_COMPLETED = 1;
+	public static final int EVENT_STARTED = 2;
+	public static final int EVENT_STOPPED = 3;
 
 	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
 
@@ -70,7 +75,10 @@ public class Tracker extends Thread implements Logable {
 	// Announce Data
 	private long lastAnnounce;
 	private int announceInterval;
-	private boolean firstAnnounce;
+	/**
+	 * The current event
+	 */
+	private int event;
 
 	private String status;
 
@@ -79,8 +87,8 @@ public class Tracker extends Thread implements Logable {
 		this.torrent = torrent;
 		stream = new Stream();
 		connectionId = 0x41727101980L;
-		firstAnnounce = true;
 		transactionId = Manager.getTransactionId();
+		event = EVENT_STARTED;
 		String[] urlData = url.split(":");
 		if (!urlData[0].equals("udp")) {
 			System.err.println("Only UDP trackers are supported: " + url);
@@ -180,12 +188,9 @@ public class Tracker extends Thread implements Logable {
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
 		stream.writeLong(0); // Uploaded bytes
-		if (firstAnnounce) {
-			stream.writeInt(2); // EVENT: None = 0, Completed = 1, Started = 2, Stopped = 3
-			firstAnnounce = false;
-		} else {
-			stream.writeInt(0);
-		}
+		stream.writeInt(event);
+		if(event != EVENT_NONE)
+			event = EVENT_NONE;
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
 		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
@@ -263,6 +268,14 @@ public class Tracker extends Thread implements Logable {
 		if (error.startsWith(ERROR_CONNECTION_ID)) {
 			connectionId = 0x41727101980L;
 		}
+	}
+	
+	/**
+	 * Sets the event code for the next announce
+	 * @param event The code to send on the next announce
+	 */
+	public void setEvent(int event) {
+		this.event = event;
 	}
 
 	private boolean isEmptyIP(byte[] address) {

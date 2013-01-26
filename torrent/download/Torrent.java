@@ -238,6 +238,11 @@ public class Torrent extends Thread implements Logable {
 			torrentStatus = STATE_DOWNLOAD_DATA;
 			run();
 		} else {
+			for (int i = 0; i < trackers.length; i++) {
+				if(trackers[i] != null) {
+					trackers[i].setEvent(Tracker.EVENT_COMPLETED);
+				}
+			}
 			log("Completed download, Switching to upload mode!");
 			// TODO Upload Mode
 		}
