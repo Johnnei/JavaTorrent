@@ -237,7 +237,6 @@ public class Peer implements Logable, ISortable {
 			setStatus("Sending Message: " + message);
 			MessageUtils.getUtils().writeMessage(outStream, message);
 			setStatus("Sended Message: " + message);
-			lastActivity = System.currentTimeMillis();
 		} else {
 			if (peerClient.getQueueSize() > 0 && pendingMessages == 0) {
 				Job request = peerClient.getNextJob();
@@ -262,13 +261,18 @@ public class Peer implements Logable, ISortable {
 				updateLastActivity();
 				return;
 			} else if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
-				lastActivity = System.currentTimeMillis();
+				updateLastActivity();
+			}
+		}
+		if (inactiveSeconds > 60) {
+			if(myClient.isInterested() && myClient.isChoked()) {
+				addStrike(2);
+				updateLastActivity();
 			}
 		}
 		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to timeout D:
 			if (myClient.isInterested()) {
 				addToQueue(new MessageKeepAlive());
-				return;
 			}
 		}
 		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark
