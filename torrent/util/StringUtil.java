@@ -29,6 +29,42 @@ public class StringUtil {
 		return stringSpeed + " " + names[pointer];
 	}
 
+	/**
+	 * Converts seconds into the HH:MM:SS string
+	 * @param seconds The amount of seconds
+	 * @return The string which formats the time
+	 */
+	public static String timeToString(long seconds) {
+		if (seconds < 10) {
+			return "0:0" + seconds;
+		} else if (seconds < 60) {
+			return "0:" + seconds;
+		} else {
+			int hours = 0;
+			int minutes = 0;
+			while (seconds >= 3600) {
+				++hours;
+				seconds -= 3600;
+			}
+			while (seconds >= 60) {
+				++minutes;
+				seconds -= 60;
+			}
+			String sHours = Integer.toString(hours);
+			String sMinutes = Integer.toString(minutes);
+			String sSeconds = Long.toString(seconds);
+			if (sSeconds.length() < 2)
+				sSeconds = "0" + sSeconds;
+			if (hours > 0) {
+				if (sMinutes.length() < 2)
+					sMinutes = "0" + sMinutes;
+				return sHours + ":" + sMinutes + ":" + sSeconds;
+			} else {
+				return sMinutes + ":" + sSeconds;
+			}
+		}
+	}
+
 	public static String progressToString(double d) {
 		String progressString = Double.toString(d);
 		if (progressString.equals("NaN"))

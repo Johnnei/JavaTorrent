@@ -59,7 +59,7 @@ public class TabPeers extends TableBase {
 					g.drawString(peer.getClientName(), 160, getTextY());
 					g.drawString(StringUtil.compactByteSize(peer.getDownloadRate()) + "/s", 290, getTextY());
 					g.drawString(StringUtil.compactByteSize(peer.getUploadRate()) + "/s", 370, getTextY());
-					g.drawString(duration + " s", 440, getTextY());
+					g.drawString(StringUtil.timeToString(duration), 440, getTextY());
 					g.drawString("" + peer.getClient().getBitfield().hasPieceCount(), 510, getTextY());
 					g.drawString(peer.getWorkQueueSize() + "/" + peer.getMaxWorkLoad() + " | " + peer.getClient().getQueueSize(), 570, getTextY());
 					g.drawString(peer.getStatus(), 640, getTextY());
