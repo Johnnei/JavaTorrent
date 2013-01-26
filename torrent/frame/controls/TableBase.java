@@ -137,9 +137,9 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 			int maxSliderSize = getHeight() - 40;
 			int hiddenItems = itemCount - visibleItemCount;
 			double sliderSize = (double) maxSliderSize / hiddenItems;
-			double scrollItemIndex = scrollY + 1D;
+			double scrollItemIndex = scrollY;
 			int drawSliderSize = JMath.max((int) sliderSize, 5);
-			int scrollBarOffset = 19 + (int) (scrollItemIndex * (sliderSize - ((double) drawSliderSize / hiddenItems)));
+			int scrollBarOffset = 20 + (int) (scrollItemIndex * (sliderSize - ((double) drawSliderSize / hiddenItems)));
 			g.setColor(new Color(0xAA, 0xAA, 0xAA));
 			g.fillRect(x, scrollBarOffset, 20, drawSliderSize);
 
