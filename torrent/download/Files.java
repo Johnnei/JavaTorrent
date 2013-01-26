@@ -353,7 +353,10 @@ public class Files {
 				int bytesRead = 0;
 				while (bytesRead < data.length) {
 					fileAccess.seek(piece * blockSize + bytesRead);
-					bytesRead += fileAccess.read(data, piece * (int) blockSize + bytesRead, data.length - bytesRead);
+					int read = fileAccess.read(data, piece * (int) blockSize + bytesRead, data.length - bytesRead);
+					if(read >= 0) {
+						bytesRead += read;
+					}
 				}
 			} catch (IOException e) {
 			}
