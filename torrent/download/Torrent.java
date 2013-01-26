@@ -79,6 +79,10 @@ public class Torrent extends Thread implements Logable {
 	 */
 	private long downloadedBytes;
 	/**
+	 * The amount of uploaded bytes
+	 */
+	private long uploadedBytes;
+	/**
 	 * The last time all peer has been checked for disconnects
 	 */
 	private long lastPeerCheck = System.currentTimeMillis();
@@ -474,6 +478,15 @@ public class Torrent extends Thread implements Logable {
 		log("Checking progress done");
 		haltDownloading = false;
 	}
+	
+	/**
+	 * Adds the amount of bytes to the uploaded count
+	 * 
+	 * @param l The amount of bytes to add
+	 */
+	public void addUploadedBytes(long l) {
+		uploadedBytes += l;
+	}
 
 	@Override
 	public String toString() {
@@ -504,7 +517,7 @@ public class Torrent extends Thread implements Logable {
 
 	public int peersWanted() {
 
-		return (int) Math.min(peerManager.getAnnounceWantAmount(torrentStatus, getSeedCount() + getLeecherCount()), getFreeConnectingCapacity());
+		return (int) Math.min(peerManager.getAnnounceWantAmount(torrentStatus, peers.size()), getFreeConnectingCapacity());
 	}
 
 	public void pollRates() {
@@ -587,6 +600,15 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public long getDownloadedBytes() {
 		return downloadedBytes;
+	}
+	
+	/**
+	 * The amount of bytes we have uploaded this session
+	 * 
+	 * @return
+	 */
+	public long getUploadedBytes() {
+		return uploadedBytes;
 	}
 
 	/**

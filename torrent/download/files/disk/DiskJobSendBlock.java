@@ -32,6 +32,7 @@ public class DiskJobSendBlock extends DiskJob {
 		}
 		peer.addToQueue(new MessageBlock(pieceIndex, offset, data));
 		peer.addToPendingMessages(-1);
+		torrent.addUploadedBytes(data.length);
 	}
 
 	@Override

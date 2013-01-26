@@ -21,7 +21,7 @@ public class BurstPeerManager implements IPeerManager {
 
 	@Override
 	public int getAnnounceWantAmount(byte torrentState, int connected) {
-		return (int) (maxPeers * burstRate) - connected;
+		return (int) ((maxPeers - connected) * burstRate);
 	}
 
 	@Override

@@ -187,7 +187,7 @@ public class Tracker extends Thread implements Logable {
 		stream.writeByte(Manager.getPeerId());
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
-		stream.writeLong(0); // Uploaded bytes
+		stream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
 		stream.writeInt(event);
 		if(event != EVENT_NONE)
 			event = EVENT_NONE;
