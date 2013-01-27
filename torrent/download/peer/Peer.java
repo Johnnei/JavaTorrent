@@ -270,6 +270,7 @@ public class Peer implements Logable, ISortable {
 				updateLastActivity();
 			}
 		}
+		
 		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to timeout D:
 			if (myClient.isInterested()) {
 				addToQueue(new MessageKeepAlive());

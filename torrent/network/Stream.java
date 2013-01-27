@@ -185,7 +185,7 @@ public class Stream {
 	 * @param amount
 	 */
 	public void moveBack(int amount) {
-		writeOffset -= amount;
+		readOffset -= amount;
 	}
 
 	/**
