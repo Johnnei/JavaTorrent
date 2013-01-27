@@ -5,6 +5,7 @@ import java.util.Set;
 
 public class Client {
 
+	private final Object JOB_LOCK = new Object();
 	private Bitfield bitfield;
 	private boolean isChoked;
 	private boolean isInterested;
@@ -74,7 +75,9 @@ public class Client {
 	 * @return The next job available
 	 */
 	public Job getNextJob() {
-		return workingQueue.entrySet().iterator().next().getKey();
+		synchronized (JOB_LOCK) {
+			return workingQueue.entrySet().iterator().next().getKey();
+		}
 	}
 
 	public int getMaxRequests() {
@@ -116,7 +119,9 @@ public class Client {
 	 * @param job
 	 */
 	public void addJob(Job job) {
-		workingQueue.put(job, 0);
+		synchronized (JOB_LOCK) {
+			workingQueue.put(job, 0);
+		}
 	}
 
 	/**
