@@ -59,6 +59,10 @@ public class Manager {
 		}
 		return null;
 	}
+	
+	public ArrayList<Torrent> getTorrents() {
+		return activeTorrents;
+	}
 
 	public byte[] getPeer() {
 		return peerId;

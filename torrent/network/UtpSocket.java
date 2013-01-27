@@ -167,13 +167,24 @@ public class UtpSocket extends Socket {
 		super.connect(address, timeout);
 		socket = new DatagramSocket(getPort());
 	}
-
+	
 	/**
-	 * Processes the socket for the available data
+	 * Accept a UDP Packet from the UDP Multiplexer
+	 * 
+	 * @param dataBuffer The data buffer used in the packet
+	 * @param length The amount of bytes received in the packet
 	 */
-	public void poll() {
-		if (utpEnabled) {
-			// socket.re
+	public void receive(byte[] dataBuffer, int length) {
+		if(udpBuffer.writeableSpace() >= length) {
+			for(int i = 0; i < length; i++) {
+				udpBuffer.writeByte(dataBuffer[i]);
+			}
+		} else {
+			udpBuffer.refit(); //Try to reshape the buffer so we can append the data
+			if(udpBuffer.writeableSpace() < length) { //Still not enough so we expand the buffer
+				udpBuffer.expand(length - udpBuffer.writeableSpace());
+			}
+			receive(dataBuffer, length);
 		}
 	}
 
@@ -190,7 +201,7 @@ public class UtpSocket extends Socket {
 			// TODO Implement
 		}
 	}
-	
+
 	public boolean isClosed() {
 		if (utpEnabled) {
 			return utpConnectionState == STATE_DISCONNECTED;
@@ -213,9 +224,10 @@ public class UtpSocket extends Socket {
 	public ByteOutputStream getOutputStream() throws IOException {
 		return new ByteOutputStream(this, super.getOutputStream());
 	}
-	
+
 	/**
 	 * Gets the available data on the stream
+	 * 
 	 * @return The stream containing the available data
 	 */
 	public Stream getStream() {
@@ -230,5 +242,4 @@ public class UtpSocket extends Socket {
 	public boolean isUTP() {
 		return utpEnabled;
 	}
-
 }
