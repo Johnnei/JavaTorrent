@@ -190,6 +190,14 @@ public class UtpSocket extends Socket {
 			// TODO Implement
 		}
 	}
+	
+	public boolean isClosed() {
+		if (utpEnabled) {
+			return utpConnectionState == STATE_DISCONNECTED;
+		} else {
+			return socket.isClosed();
+		}
+	}
 
 	/**
 	 * Creates a new ByteInputStream for this socket
