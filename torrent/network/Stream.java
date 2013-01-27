@@ -13,7 +13,8 @@ import java.net.InetAddress;
  */
 public class Stream {
 	protected byte[] buffer;
-	protected int offset;
+	protected int writeOffset;
+	protected int readOffset;
 
 	public Stream() {
 		this(5000);
@@ -21,11 +22,11 @@ public class Stream {
 
 	public Stream(int size) {
 		buffer = new byte[size];
-		offset = 0;
+		writeOffset = 0;
 	}
 
 	public void writeByte(int b) {
-		buffer[offset++] = (byte) b;
+		buffer[writeOffset++] = (byte) b;
 	}
 
 	public void writeByte(byte[] array) {
@@ -66,7 +67,7 @@ public class Stream {
 	}
 
 	public int readByte() {
-		return buffer[offset++] & 0xFF;
+		return buffer[readOffset++] & 0xFF;
 	}
 
 	public int readInt() {
@@ -103,16 +104,17 @@ public class Stream {
 	 * @param size
 	 */
 	public void reset(int size) {
-		offset = 0;
+		writeOffset = 0;
 		buffer = new byte[size];
 	}
 
 	public void resetOffsetPointer() {
-		offset = 0;
+		writeOffset = 0;
+		readOffset = 0;
 	}
 
 	public DatagramPacket write(InetAddress address, int port) {
-		return new DatagramPacket(buffer, 0, offset, address, port);
+		return new DatagramPacket(buffer, 0, writeOffset, address, port);
 	}
 
 	public void read(DatagramSocket socket) throws IOException {
@@ -128,7 +130,7 @@ public class Stream {
 			newBuffer[i] = buffer[i];
 		}
 		buffer = newBuffer;
-		offset = 0;
+		writeOffset = 0;
 	}
 
 	/**
@@ -137,7 +139,7 @@ public class Stream {
 	 * @param buffer
 	 */
 	public void fill(byte[] buffer) {
-		offset = 0;
+		writeOffset = buffer.length;
 		this.buffer = buffer;
 	}
 
@@ -153,11 +155,25 @@ public class Stream {
 	 * Resizes the buffer to the size on which the offset currently is
 	 */
 	public void fit() {
-		byte[] b = new byte[offset];
+		byte[] b = new byte[writeOffset];
 		for (int i = 0; i < b.length; i++) {
 			b[i] = buffer[i];
 		}
 		buffer = b;
+	}
+	
+	/**
+	 * Drop the read bytes and shift the unread bytes to the left<br/>
+	 */
+	public void refit() {
+		if(readOffset > 0) {
+			int available = available();
+			for(int i = 0; i < available; i++) {
+				buffer[i] = buffer[readOffset + i];
+			}
+			readOffset -= available;
+			writeOffset -= available;
+		}
 	}
 
 	/**
@@ -166,7 +182,7 @@ public class Stream {
 	 * @param amount
 	 */
 	public void moveBack(int amount) {
-		offset -= amount;
+		writeOffset -= amount;
 	}
 
 	/**
@@ -181,9 +197,21 @@ public class Stream {
 		}
 		buffer = newBuffer;
 	}
+	
+	/**
+	 * Gets the amount of bytes which can still be written before the buffer is full
+	 * @return
+	 */
+	public int writeableSpace() {
+		return buffer.length - writeOffset;
+	}
 
+	/**
+	 * Gets the amount of bytes which have not yet been read
+	 * @return
+	 */
 	public int available() {
-		return buffer.length - offset;
+		return writeOffset - readOffset;
 	}
 
 	/**
@@ -201,6 +229,6 @@ public class Stream {
 	 * @return
 	 */
 	public int getOffsetPointer() {
-		return offset;
+		return writeOffset;
 	}
 }
