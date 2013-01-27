@@ -14,7 +14,7 @@ public class PeerConnector extends Thread {
 
 	public PeerConnector() throws IOException {
 		super("PeerConnector");
-		serverSocket = new ServerSocket(27960);
+		serverSocket = new UtpServerSocket(27960);
 	}
 
 	public void run() {
