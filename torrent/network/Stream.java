@@ -107,9 +107,11 @@ public class Stream {
 		writeOffset = 0;
 		buffer = new byte[size];
 	}
-
-	public void resetOffsetPointer() {
-		writeOffset = 0;
+	
+	/**
+	 * Resets the readpointer to the beginning of the buffer
+	 */
+	public void resetReadPointer() {
 		readOffset = 0;
 	}
 
@@ -229,7 +231,7 @@ public class Stream {
 	 * 
 	 * @return
 	 */
-	public int getOffsetPointer() {
+	public int getWritePointer() {
 		return writeOffset;
 	}
 }

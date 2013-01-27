@@ -53,7 +53,7 @@ public class MessageUtils {
 			if (inStream.available() >= 4) {
 				inStream.initialiseBuffer();
 				inStream.getBuffer().fill(inStream.readByteArray(4));
-				inStream.getBuffer().resetOffsetPointer();
+				inStream.getBuffer().resetReadPointer();
 				int length = inStream.getBuffer().readInt();
 				inStream.getBuffer().expand(length);
 			}
@@ -61,11 +61,11 @@ public class MessageUtils {
 		Stream buffer = inStream.getBuffer();
 		if (buffer != null) {
 			if (inStream.available() > 0) {
-				int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getOffsetPointer());
+				int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getWritePointer());
 				buffer.writeByte(inStream.readByteArray(readAmount));
 			}
-			p.setStatus("Receiving Message of length: " + (buffer.getOffsetPointer() - 4) + "/" + (buffer.getBuffer().length - 4));
-			return buffer.getOffsetPointer() == buffer.getBuffer().length;
+			p.setStatus("Receiving Message of length: " + (buffer.getWritePointer() - 4) + "/" + (buffer.getBuffer().length - 4));
+			return buffer.getWritePointer() == buffer.getBuffer().length;
 		}
 		return false;
 	}
@@ -73,7 +73,7 @@ public class MessageUtils {
 	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
 		Stream stream = inStream.getBuffer();
 		int duration = inStream.getBufferLifetime();
-		stream.resetOffsetPointer();
+		stream.resetReadPointer();
 		int length = stream.readInt();
 		if (length == 0) {
 			p.setStatus("Received Message: KeepAlive");
