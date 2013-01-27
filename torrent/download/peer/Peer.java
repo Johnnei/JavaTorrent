@@ -301,6 +301,14 @@ public class Peer implements Logable, ISortable {
 			return false;
 		return socket.isClosed();
 	}
+	
+	/**
+	 * Get this peer's socket
+	 * @return The socket of this peer
+	 */
+	public UtpSocket getSocket() {
+		return socket;
+	}
 
 	@Override
 	public String toString() {
