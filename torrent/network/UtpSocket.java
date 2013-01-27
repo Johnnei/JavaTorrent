@@ -205,6 +205,14 @@ public class UtpSocket extends Socket {
 	public ByteOutputStream getOutputStream() throws IOException {
 		return new ByteOutputStream(this, super.getOutputStream());
 	}
+	
+	/**
+	 * Gets the available data on the stream
+	 * @return The stream containing the available data
+	 */
+	public Stream getStream() {
+		return utpBuffer;
+	}
 
 	/**
 	 * Checks if the stream has switched to uTP Mode

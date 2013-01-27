@@ -4,8 +4,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.johnnei.utils.ThreadUtils;
-
 import torrent.download.peer.Peer;
 
 public class ByteInputStream extends DataInputStream {
@@ -38,12 +36,8 @@ public class ByteInputStream extends DataInputStream {
 		speed = 0;
 	}
 
+	@Override
 	public int read() throws IOException {
-		while (available() == 0) {
-			if (System.currentTimeMillis() - peer.getLastActivity() > 30000) // 30 Second Read time-out
-				throw new IOException("Read timed out");
-			ThreadUtils.sleep(1);
-		}
 		int b = readData();
 		if (b != -1) {
 			++speed;
@@ -52,10 +46,18 @@ public class ByteInputStream extends DataInputStream {
 		return b;
 	}
 	
+	@Override
+	public int available() throws IOException {
+		if(socket.isUTP()) {
+			return socket.getStream().available();
+		} else {
+			return super.available();
+		}
+	}
+	
 	private int readData() throws IOException {
 		if(socket.isUTP()) {
-			//TODO uTP Reading
-			return -1;
+			return socket.getStream().readByte();
 		} else {
 			return super.read();
 		}
