@@ -1,7 +1,11 @@
 package torrent.network;
 
+import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
+
+import torrent.download.peer.Peer;
 
 /**
  * The uTorrent Transport Protocol Socket.<br/>
@@ -26,7 +30,7 @@ public class UtpSocket extends Socket {
 	 * Finalize Packet<br/>
 	 * Closes the socket in a formal manner<br/>
 	 * The seq_nr of this packet will be the eof_pkt and no seq_nr will become higher.<br/>
-	 * The other end may wait for missing/ out of order packets which are still pending and lower than eof_pkt 
+	 * The other end may wait for missing/ out of order packets which are still pending and lower than eof_pkt
 	 */
 	public static final byte ST_FIN = 1;
 	/**
@@ -102,7 +106,11 @@ public class UtpSocket extends Socket {
 	 * The state of the uTP Connection.<br/>
 	 * For {@link #ST_RESET} is (as specified) no state
 	 */
-	private int utpConnected;
+	private int utpConnectionState;
+	/**
+	 * The size of each packet which send on the stream
+	 */
+	private int packetSize;
 	/**
 	 * The current state of the Socket<br/>
 	 * If true: uTP is being used<br/>
@@ -110,17 +118,24 @@ public class UtpSocket extends Socket {
 	 */
 	private boolean utpEnabled;
 	/**
-	 * A buffer to store UDP data blocks in
+	 * A buffer to store data blocks in
 	 */
 	private Stream utpBuffer;
+	/**
+	 * A buffer to store packets in<br/>
+	 * Only used for packets which did not get fully received
+	 */
+	private Stream udpBuffer;
 
 	/**
 	 * Creates a new uTP socket
 	 */
 	public UtpSocket() {
 		utpEnabled = false;
-		utpConnected = STATE_CONNECTING;
+		utpConnectionState = STATE_CONNECTING;
+		packetSize = 150;
 		utpBuffer = new Stream(5000);
+		udpBuffer = new Stream(packetSize + 20);
 	}
 
 	/**
@@ -132,14 +147,72 @@ public class UtpSocket extends Socket {
 	private long getCurrentMicroseconds() {
 		return System.currentTimeMillis() * 1000;
 	}
-	
+
+	/**
+	 * Connects to the TCP Socket and prepares the UDP Socket
+	 * 
+	 * @param address The address to connect to
+	 */
+	public void connect(SocketAddress address) throws IOException {
+		connect(address, 30000);
+	}
+
+	/**
+	 * Connects to the TCP Socket and prepares the UDP Socket
+	 * 
+	 * @param address The address to connect to
+	 * @param timeout The maximum amount of miliseconds this connect attempt may take
+	 */
+	public void connect(SocketAddress address, int timeout) throws IOException {
+		super.connect(address, timeout);
+		socket = new DatagramSocket(getPort());
+	}
+
 	/**
 	 * Processes the socket for the available data
 	 */
 	public void poll() {
-		if(utpEnabled) {
-			//TODO Socket Logic
+		if (utpEnabled) {
+			// socket.re
 		}
+	}
+
+	/**
+	 * Switches the stream to uTP<br/>
+	 * This will close the TCP Connection
+	 * 
+	 * @param initiator Set to true if we are the initializing side and therefore we are allowed to define the ID's
+	 */
+	public void enableUTP(boolean initiator) throws IOException {
+		super.close();
+		utpEnabled = true;
+		if (initiator) {
+			// TODO Implement
+		}
+	}
+
+	/**
+	 * Creates a new ByteInputStream for this socket
+	 * 
+	 * @param peer The associated peer
+	 * @return The inputStream for this socket
+	 * @throws IOException
+	 */
+	public ByteInputStream getInputStream(Peer peer) throws IOException {
+		return new ByteInputStream(this, peer, getInputStream());
+	}
+
+	public ByteOutputStream getOutputStream() throws IOException {
+		return new ByteOutputStream(this, super.getOutputStream());
+	}
+
+	/**
+	 * Checks if the stream has switched to uTP Mode
+	 * 
+	 * @return true if the uTP mode has been enabled
+	 */
+	public boolean isUTP() {
+		return utpEnabled;
 	}
 
 }

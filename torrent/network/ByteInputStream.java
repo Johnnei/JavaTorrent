@@ -26,9 +26,14 @@ public class ByteInputStream extends DataInputStream {
 	 * The last time a buffer was created
 	 */
 	private long lastBufferCreate;
+	/**
+	 * The associated utpSocket to check from which inputstream we need to read
+	 */
+	private UtpSocket socket;
 
-	public ByteInputStream(Peer peer, InputStream in) {
+	public ByteInputStream(UtpSocket socket, Peer peer, InputStream in) {
 		super(in);
+		this.socket = socket;
 		this.peer = peer;
 		speed = 0;
 	}
@@ -39,12 +44,21 @@ public class ByteInputStream extends DataInputStream {
 				throw new IOException("Read timed out");
 			ThreadUtils.sleep(1);
 		}
-		int b = super.read();
+		int b = readData();
 		if (b != -1) {
 			++speed;
 			peer.updateLastActivity();
 		}
 		return b;
+	}
+	
+	private int readData() throws IOException {
+		if(socket.isUTP()) {
+			//TODO uTP Reading
+			return -1;
+		} else {
+			return super.read();
+		}
 	}
 
 	public String readString(int length) throws IOException {

@@ -7,9 +7,11 @@ import java.io.OutputStream;
 public class ByteOutputStream extends DataOutputStream {
 
 	private int speed;
+	private UtpSocket socket;
 
-	public ByteOutputStream(OutputStream outStream) {
+	public ByteOutputStream(UtpSocket socket, OutputStream outStream) {
 		super(outStream);
+		this.socket = socket;
 		speed = 0;
 	}
 

@@ -2,11 +2,11 @@ package torrent;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.download.peer.Peer;
+import torrent.network.UtpSocket;
 
 public class PeerConnector extends Thread {
 
@@ -21,7 +21,7 @@ public class PeerConnector extends Thread {
 		while (true) {
 			try {
 				Peer peer = new Peer();
-				Socket peerSocket = serverSocket.accept();
+				UtpSocket peerSocket = (UtpSocket) serverSocket.accept();
 				peer.setSocket(peerSocket);
 				long handshakeStart = System.currentTimeMillis();
 				while (!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {

@@ -14,6 +14,7 @@ import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
+import torrent.network.UtpSocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -31,7 +32,7 @@ public class Peer implements Logable, ISortable {
 	private int port;
 
 	private Torrent torrent;
-	private Socket socket;
+	private UtpSocket socket;
 	private ByteOutputStream outStream;
 	private ByteInputStream inStream;
 	private boolean crashed;
@@ -96,10 +97,10 @@ public class Peer implements Logable, ISortable {
 				setStatus("Connected (Outside request)");
 				return;
 			}
-			socket = new Socket();
+			socket = new UtpSocket();
 			socket.connect(new InetSocketAddress(address, port), 1000);
-			inStream = new ByteInputStream(this, socket.getInputStream());
-			outStream = new ByteOutputStream(socket.getOutputStream());
+			inStream = socket.getInputStream(this);
+			outStream = socket.getOutputStream();
 		} catch (IOException e) {
 			crashed = true;
 			return;
@@ -130,12 +131,12 @@ public class Peer implements Logable, ISortable {
 		}
 	}
 
-	public void setSocket(Socket socket) {
+	public void setSocket(UtpSocket socket) {
 		this.socket = socket;
 		setSocket(socket.getInetAddress(), socket.getPort());
 		try {
-			inStream = new ByteInputStream(this, socket.getInputStream());
-			outStream = new ByteOutputStream(socket.getOutputStream());
+			inStream = socket.getInputStream(this);
+			outStream = socket.getOutputStream();
 		} catch (IOException e) {
 			log(e.getMessage(), true);
 		}
