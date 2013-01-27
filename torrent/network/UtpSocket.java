@@ -206,6 +206,8 @@ public class UtpSocket extends Socket {
 		if (utpEnabled) {
 			return utpConnectionState == STATE_DISCONNECTED;
 		} else {
+			if(socket == null)
+				return false; //Else it won't even connect
 			return socket.isClosed();
 		}
 	}

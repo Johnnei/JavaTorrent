@@ -130,7 +130,8 @@ public class Stream {
 			newBuffer[i] = buffer[i];
 		}
 		buffer = newBuffer;
-		writeOffset = 0;
+		writeOffset = buffer.length;
+		readOffset = 0;
 	}
 
 	/**

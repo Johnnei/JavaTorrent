@@ -35,10 +35,10 @@ public class PeerConnectorThread extends Thread {
 		for (int i = 0; i < peer.length; i++) {
 			if (peer[i] == null) {
 				peer[i] = p;
+				addToPeerCount(1);
 				break;
 			}
 		}
-		addToPeerCount(1);
 	}
 
 	public void run() {
