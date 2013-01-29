@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import torrent.network.UtpSocket;
+import torrent.network.utp.UtpSocket;
 
 public class UtpServerSocket extends ServerSocket {
 

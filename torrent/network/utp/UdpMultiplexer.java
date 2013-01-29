@@ -1,4 +1,4 @@
-package torrent.network;
+package torrent.network.utp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -6,11 +6,12 @@ import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
+import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 
-public class UdpMultiplexer extends Thread {
+public class UdpMultiplexer extends Thread implements Logable {
 	
 	private DatagramSocket socket;
 	
@@ -24,11 +25,13 @@ public class UdpMultiplexer extends Thread {
 	
 	@Override
 	public void run() {
+		log("Initialised UDP Multiplexer");
 		while(true) {
 			byte[] dataBuffer = new byte[1024];
 			DatagramPacket packet = new DatagramPacket(dataBuffer, dataBuffer.length);
 			try {
 				socket.receive(packet);
+				log("Received Message of length: " + packet.getLength());
 			} catch (SocketTimeoutException e) {
 				//Ignore
 			} catch (IOException e) {
@@ -48,6 +51,30 @@ public class UdpMultiplexer extends Thread {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void log(String s) {
+		log(s, false);
+	}
+
+	@Override
+	public void log(String s, boolean isError) {
+		s = "[" + toString() + "] " + s;
+		if (isError)
+			System.err.println(s);
+		else
+			System.out.println(s);
+	}
+
+	@Override
+	public String getStatus() {
+		return "";
+	}
+	
+	@Override
+	public String toString() {
+		return "UDPMultiplexer";
 	}
 
 }

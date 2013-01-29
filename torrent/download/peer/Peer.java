@@ -13,7 +13,7 @@ import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
-import torrent.network.UtpSocket;
+import torrent.network.utp.UtpSocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;

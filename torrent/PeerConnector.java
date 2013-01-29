@@ -6,7 +6,7 @@ import java.net.ServerSocket;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.download.peer.Peer;
-import torrent.network.UtpSocket;
+import torrent.network.utp.UtpSocket;
 
 public class PeerConnector extends Thread {
 

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import torrent.download.peer.Peer;
+import torrent.network.utp.UtpSocket;
 
 public class ByteInputStream extends DataInputStream {
 

@@ -4,6 +4,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import torrent.network.utp.UtpSocket;
+
 public class ByteOutputStream extends DataOutputStream {
 
 	private int speed;

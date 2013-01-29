@@ -1,4 +1,4 @@
-package torrent.network;
+package torrent.network.utp;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -6,6 +6,9 @@ import java.net.Socket;
 import java.net.SocketAddress;
 
 import torrent.download.peer.Peer;
+import torrent.network.ByteInputStream;
+import torrent.network.ByteOutputStream;
+import torrent.network.Stream;
 
 /**
  * The uTorrent Transport Protocol Socket.<br/>
@@ -57,16 +60,6 @@ public class UtpSocket extends Socket {
 	 * This is the default state for either:<br/>
 	 * TCP Connection or uTP is being initialized
 	 */
-	public static final byte STATE_CONNECTING = 0;
-	/**
-	 * This state will be set as soon as {@link #ST_SYN} has been acked with {@link #ST_STATE}
-	 */
-	public static final byte STATE_CONNECTED = 1;
-	/**
-	 * This state will be set on receive of {@link #ST_FIN}
-	 */
-	public static final byte STATE_DISCONNECTED = 2;
-
 	/**
 	 * UDP Socket
 	 */
@@ -106,7 +99,7 @@ public class UtpSocket extends Socket {
 	 * The state of the uTP Connection.<br/>
 	 * For {@link #ST_RESET} is (as specified) no state
 	 */
-	private int utpConnectionState;
+	private ConnectionState utpConnectionState;
 	/**
 	 * The size of each packet which send on the stream
 	 */
@@ -132,7 +125,7 @@ public class UtpSocket extends Socket {
 	 */
 	public UtpSocket() {
 		utpEnabled = false;
-		utpConnectionState = STATE_CONNECTING;
+		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
 		utpBuffer = new Stream(5000);
 		udpBuffer = new Stream(packetSize + 20);
@@ -204,7 +197,7 @@ public class UtpSocket extends Socket {
 
 	public boolean isClosed() {
 		if (utpEnabled) {
-			return utpConnectionState == STATE_DISCONNECTED;
+			return utpConnectionState == ConnectionState.DISCONNECTED;
 		} else {
 			if(socket == null)
 				return false; //Else it won't even connect
