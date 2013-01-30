@@ -96,6 +96,10 @@ public class UtpSocket extends Socket {
 	 */
 	private int ack_nr;
 	/**
+	 * The last measured delay on this socket
+	 */
+	private long measured_delay;
+	/**
 	 * The state of the uTP Connection.<br/>
 	 * For {@link #ST_RESET} is (as specified) no state
 	 */
@@ -129,16 +133,6 @@ public class UtpSocket extends Socket {
 		packetSize = 150;
 		utpBuffer = new Stream(5000);
 		udpBuffer = new Stream(packetSize + 20);
-	}
-
-	/**
-	 * Gets the current microseconds<br/>
-	 * The problem is that java does not have a precise enough system so it's just the currentMillis * 1000<br/>
-	 * 
-	 * @return
-	 */
-	private long getCurrentMicroseconds() {
-		return System.currentTimeMillis() * 1000;
 	}
 
 	/**
@@ -218,6 +212,30 @@ public class UtpSocket extends Socket {
 
 	public ByteOutputStream getOutputStream() throws IOException {
 		return new ByteOutputStream(this, super.getOutputStream());
+	}
+	
+	/**
+	 * Gets the last measured delay on the socket
+	 * @return The delay on this socket in microseconds
+	 */
+	public long getDelay() {
+		return measured_delay;
+	}
+	
+	/**
+	 * Gets the connection ID which we use to sign messages with
+	 * @return
+	 */
+	public int getConnectionId() {
+		return connection_id_send;
+	}
+	
+	/**
+	 * Gets the current window size which we want to advertise
+	 * @return
+	 */
+	public int getWindowSize() {
+		return wnd_size;
 	}
 
 	/**

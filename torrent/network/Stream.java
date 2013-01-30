@@ -178,6 +178,16 @@ public class Stream {
 			writeOffset -= available;
 		}
 	}
+	
+	/**
+	 * Moves the write pointer<br/>
+	 * This allows to write at specific points on the stream
+	 * 
+	 * @param i The amount of bytes to skip over
+	 */
+	public void skipWrite(int i) {
+		writeOffset += i;
+	}
 
 	/**
 	 * Moves the pointer back
