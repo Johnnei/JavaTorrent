@@ -42,20 +42,17 @@ public class UtpMessage {
 		dataStream.fill(data);
 		dataStream.skipWrite(-data.length); //New offset: 0
 		dataStream.skipWrite(4);
-		dataStream.writeLong(getCurrentMicroseconds());
+		dataStream.writeLong(socket.getCurrentMicroseconds());
 		dataStream.writeLong(socket.getDelay());
 		data = dataStream.getBuffer();
 	}
 	
 	/**
-	 * Gets the current microseconds<br/>
-	 * The problem is that java does not have a precise enough system so it's just the currentMillis * 1000<br/>
-	 * But there is nanoSeconds bla bla, Read the javadocs please
-	 * 
-	 * @return
+	 * Gets the size of the message in bytes
+	 * @return The amount of bytes used for this message
 	 */
-	private long getCurrentMicroseconds() {
-		return System.currentTimeMillis() * 1000;
+	public int getSize() {
+		return data.length;
 	}
 	
 	@Override

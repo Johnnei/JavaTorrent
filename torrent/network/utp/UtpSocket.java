@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 
 import torrent.download.peer.Peer;
 import torrent.network.ByteInputStream;
@@ -119,10 +120,9 @@ public class UtpSocket extends Socket {
 	 */
 	private Stream utpBuffer;
 	/**
-	 * A buffer to store packets in<br/>
-	 * Only used for packets which did not get fully received
+	 * The messages which have not yet been acked
 	 */
-	private Stream udpBuffer;
+	private ArrayList<UtpMessage> messagesInFlight;
 
 	/**
 	 * Creates a new uTP socket
@@ -132,7 +132,6 @@ public class UtpSocket extends Socket {
 		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
 		utpBuffer = new Stream(5000);
-		udpBuffer = new Stream(packetSize + 20);
 	}
 
 	/**
@@ -162,17 +161,60 @@ public class UtpSocket extends Socket {
 	 * @param length The amount of bytes received in the packet
 	 */
 	public void receive(byte[] dataBuffer, int length) {
-		if(udpBuffer.writeableSpace() >= length) {
+		if(length < 20) {
+			System.err.println("UDP Packet to small for header: " + length + " bytes");
+			return;
+		}
+		Stream data = new Stream(dataBuffer);
+		int versionAndType = data.readByte();
+		int version = versionAndType & 0x7;
+		int type = versionAndType >>> 4;
+		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length);
+		int extension = 0;
+		while((extension = data.readByte()) > 0) {
+			int extensionLength = data.readShort();
+			System.out.println("Extension: " + extension + " (Length: " + extensionLength + ")");
+			data.skipWrite(extensionLength);
+		}
+		int connection_id = data.readShort();
+		long timestamp = data.readLong();
+		long timestampDiff = data.readLong();
+		long windowSize = data.readLong();
+		int sequenceNumber = data.readShort();
+		int ackNumber = data.readShort();
+	}
+	
+	/**
+	 * Store the filtered data in the output buffer<br/>
+	 * This data will be available for the client to read
+	 * @param dataBuffer The buffer containing all data
+	 * @param offset The start offset to start reading
+	 * @param length The amount of bytes to be read
+	 */
+	private void storeData(byte[] dataBuffer, int offset, int length) {
+		if(utpBuffer.writeableSpace() >= length) {
 			for(int i = 0; i < length; i++) {
-				udpBuffer.writeByte(dataBuffer[i]);
+				utpBuffer.writeByte(dataBuffer[offset + i]);
 			}
 		} else {
-			udpBuffer.refit(); //Try to reshape the buffer so we can append the data
-			if(udpBuffer.writeableSpace() < length) { //Still not enough so we expand the buffer
-				udpBuffer.expand(length - udpBuffer.writeableSpace());
+			utpBuffer.refit(); //Try to reshape the buffer so we can append the data
+			if(utpBuffer.writeableSpace() < length) { //Still not enough so we expand the buffer
+				utpBuffer.expand(length - utpBuffer.writeableSpace());
 			}
-			receive(dataBuffer, length);
+			storeData(dataBuffer, offset, length);
 		}
+	}
+	
+
+	/**
+	 * Gets the current microseconds<br/>
+	 * The problem is that java does not have a precise enough system so it's just the currentMillis * 1000<br/>
+	 * But there is nanoSeconds bla bla, Read the javadocs please
+	 * 
+	 * @return
+	 */
+	public long getCurrentMicroseconds() {
+		return System.currentTimeMillis() * 1000;
 	}
 
 	/**

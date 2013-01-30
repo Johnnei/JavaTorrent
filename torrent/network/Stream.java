@@ -22,7 +22,10 @@ public class Stream {
 
 	public Stream(int size) {
 		buffer = new byte[size];
-		writeOffset = 0;
+	}
+
+	public Stream(byte[] dataBuffer) {
+		buffer = dataBuffer;
 	}
 
 	public void writeByte(int b) {
