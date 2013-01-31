@@ -72,36 +72,59 @@ public class TabPeer extends JPanel implements ActionListener {
 		if (newValue == null)
 			return;
 		String key = "";
-		boolean error = false;
+		String error = null;
 		if (button.equals(maxPeerButton)) {
 			key = "peer-max";
-			error = !Config.isInt(newValue);
-			if (!error) {
-				maxPeer.setText(newValue);
+			if(Config.isInt(newValue)) {
+				int i = Integer.parseInt(newValue);
+				if(i < 10) {
+					error = "This has to be a number of atleast 10";
+				} else {
+					maxPeer.setText(newValue);
+				}
+			} else {
+				error = "This has to be a number of atleast 10";
 			}
 		} else if (button.equals(maxPeerBurstRatioButton)) {
 			key = "peer-max-burst-ratio";
-			error = !Config.isFloat(newValue);
-			if (!error) {
-				maxPeerBurstRatio.setText(newValue);
+			if(Config.isFloat(newValue)) {
+				float f = Float.parseFloat(newValue);
+				if(f < 1 || f > 2) {
+					error = "This has to be a number between 1.0 and 2.0 (including)";
+				} else {
+					maxPeerBurstRatio.setText(newValue);
+				}
+			} else {
+				error = "This has to be a number between 1.0 and 2.0 (including)";
 			}
 		} else if (button.equals(maxConcurrentConnectingButton)) {
 			key = "peer-max-concurrent-connecting";
-			error = !Config.isInt(newValue);
-			if (!error) {
-				maxConcurrentConnecting.setText(newValue);
+			if(Config.isInt(newValue)) {
+				int i = Integer.parseInt(newValue);
+				if(i < 1 || i > 10) {
+					error = "This has to be a number between 1 and 10 (including).";
+				} else {
+					maxConcurrentConnecting.setText(newValue);
+				}
+			} else {
+				error = "This has to be a number between 1 and 10 (including).";
 			}
 		} else if (button.equals(maxConnectingButton)) {
 			key = "peer-max_connecting";
-			error = !Config.isInt(newValue);
-			if (!error) {
+			if(Config.isInt(newValue)) {
+				int i = Integer.parseInt(newValue);
+				if(i < 1 || i > 200) {
+					error = "This has to be a number between 1 and 200 (including).";
+				}
 				maxConnecting.setText(newValue);
+			} else {
+				error = "This has to be a number between 1 and 200 (including).";
 			}
 		} else {
-			error = true;
+			error = "Unkown button";
 		}
-		if (error) {
-			JOptionPane.showMessageDialog(this, "\"" + newValue + "\" is not a valid value for " + button.getToolTipText(), "Error", JOptionPane.ERROR_MESSAGE);
+		if (error != null) {
+			JOptionPane.showMessageDialog(this, error, "Error", JOptionPane.ERROR_MESSAGE);
 		} else {
 			Config.getConfig().set(key, newValue);
 		}
