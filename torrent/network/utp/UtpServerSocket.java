@@ -1,10 +1,9 @@
-package torrent;
+package torrent.network.utp;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import torrent.network.utp.UtpSocket;
 
 public class UtpServerSocket extends ServerSocket {
 
@@ -17,7 +16,7 @@ public class UtpServerSocket extends ServerSocket {
 	 * Accepts a connection based on a uTP Socket
 	 */
 	public Socket accept() throws IOException {
-		Socket s = new UtpSocket();
+		Socket s = new UtpSocket(false);
 		implAccept(s);
 		return s;
 	}

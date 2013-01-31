@@ -123,12 +123,22 @@ public class UtpSocket extends Socket {
 	 * The messages which have not yet been acked
 	 */
 	private ArrayList<UtpMessage> messagesInFlight;
-
+	
 	/**
 	 * Creates a new uTP socket
 	 */
 	public UtpSocket() {
-		utpEnabled = false;
+		utpEnabled = true;
+		utpConnectionState = ConnectionState.PENDING;
+		packetSize = 150;
+		utpBuffer = new Stream(5000);
+	}
+
+	/**
+	 * Creates a new uTP socket
+	 */
+	public UtpSocket(boolean utpEnabled) {
+		this.utpEnabled = utpEnabled;
 		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
 		utpBuffer = new Stream(5000);
@@ -182,6 +192,12 @@ public class UtpSocket extends Socket {
 		long windowSize = data.readLong();
 		int sequenceNumber = data.readShort();
 		int ackNumber = data.readShort();
+		System.out.println("Connection ID: " + connection_id);
+		System.out.println("timestamp: " + timestamp);
+		System.out.println("timestampDiff: " + timestampDiff);
+		System.out.println("windowSize: " + windowSize);
+		System.out.println("sequenceNumber: " + sequenceNumber);
+		System.out.println("ackNumber: " + ackNumber);
 	}
 	
 	/**
@@ -218,17 +234,12 @@ public class UtpSocket extends Socket {
 	}
 
 	/**
-	 * Switches the stream to uTP<br/>
-	 * This will close the TCP Connection
+	 * Switches the stream to TCP<br/>
 	 * 
-	 * @param initiator Set to true if we are the initializing side and therefore we are allowed to define the ID's
 	 */
-	public void enableUTP(boolean initiator) throws IOException {
-		super.close();
-		utpEnabled = true;
-		if (initiator) {
-			// TODO Implement
-		}
+	public void disableUTP() throws IOException {
+		utpEnabled = false;
+		utpConnectionState = ConnectionState.CONNECTING;
 	}
 
 	public boolean isClosed() {
