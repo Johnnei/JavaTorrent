@@ -6,6 +6,8 @@ import java.net.InetAddress;
 import java.util.Random;
 
 import org.johnnei.utils.ThreadUtils;
+import org.johnnei.utils.config.Config;
+import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.Logable;
 import torrent.Manager;
@@ -194,7 +196,7 @@ public class Tracker extends Thread implements Logable {
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
 		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
-		stream.writeShort(27960);
+		stream.writeShort(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
 		stream.writeShort(0); // No extensions
 		try {
 			socket.send(stream.write(address, port));

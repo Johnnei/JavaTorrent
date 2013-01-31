@@ -6,6 +6,9 @@ import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
+import org.johnnei.utils.config.Config;
+import org.johnnei.utils.config.DefaultConfig;
+
 import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
@@ -18,7 +21,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 	public UdpMultiplexer() {
 		super("UDP Manager");
 		try {
-			socket = new DatagramSocket(27960);
+			socket = new DatagramSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
 			socket.setSoTimeout(2500);
 		} catch (IOException e) {}
 	}

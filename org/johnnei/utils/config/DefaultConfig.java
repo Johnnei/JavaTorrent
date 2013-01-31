@@ -7,5 +7,6 @@ public class DefaultConfig {
 	public static int PEER_MAX_CONCURRENT_CONNECTING = 2;
 	public static int PEER_MAX_CONNECTING = 50;
 	public static String DOWNLOAD_OUTPUT_FOLDER = ".\\";
+	public static int DOWNLOAD_PORT = 6881;
 
 }
