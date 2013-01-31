@@ -18,18 +18,22 @@ public class UtpMessage {
 	 */
 	private int seq_nr;
 	
-	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr) {
+	public UtpMessage(int connectionId, int windowSize, int type, int seq_nr, int ack_nr) {
 		this.seq_nr = seq_nr;
 		Stream dataStream = new Stream(20);
 		dataStream.writeByte((byte)(type << 4 | UtpSocket.VERSION)); //Type and Version
 		dataStream.writeByte(0); //No Extension
-		dataStream.writeShort(socket.getConnectionId());
+		dataStream.writeShort(connectionId);
 		dataStream.writeLong(0L); //timestamp, Will be set as close to the actual send time
 		dataStream.writeLong(0L); //timestamp_diff, Will be set to the value we know once it will be send
-		dataStream.writeLong(socket.getWindowSize());
+		dataStream.writeLong(windowSize);
 		dataStream.writeInt(seq_nr);
 		dataStream.writeInt(ack_nr);
 		data = dataStream.getBuffer();
+	}
+	
+	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr) {
+		this(socket.getConnectionId(), socket.getWindowSize(), type, seq_nr, ack_nr);
 	}
 	
 	/**
@@ -38,9 +42,7 @@ public class UtpMessage {
 	 * @param socket The socket to copy the timestamp_diff from
 	 */
 	public void setTimestamp(UtpSocket socket) {
-		Stream dataStream = new Stream(0);
-		dataStream.fill(data);
-		dataStream.skipWrite(-data.length); //New offset: 0
+		Stream dataStream = new Stream(data);
 		dataStream.skipWrite(4);
 		dataStream.writeLong(socket.getCurrentMicroseconds());
 		dataStream.writeLong(socket.getDelay());
@@ -53,6 +55,25 @@ public class UtpMessage {
 	 */
 	public int getSize() {
 		return data.length;
+	}
+	
+	/**
+	 * Gets the send time in miliseconds
+	 * @return the time this mesasge has been send
+	 */
+	public long getSendTime() {
+		Stream dataStream = new Stream(data);
+		dataStream.readInt(); //Skip 4 bytes
+		long microseconds_delay = dataStream.readLong();
+		return microseconds_delay / 1000;
+	}
+	
+	/**
+	 * The data to send for this message
+	 * @return
+	 */
+	public byte[] getData() {
+		return data;
 	}
 	
 	@Override

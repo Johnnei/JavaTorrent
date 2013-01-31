@@ -1,10 +1,13 @@
 package torrent.network.utp;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Random;
 
 import torrent.download.peer.Peer;
 import torrent.network.ByteInputStream;
@@ -123,45 +126,89 @@ public class UtpSocket extends Socket {
 	 * The messages which have not yet been acked
 	 */
 	private ArrayList<UtpMessage> messagesInFlight;
+	/**
+	 * The messages which have not yet been send by limitations
+	 */
+	private ArrayList<UtpMessage> messageQueue;
+	/**
+	 * The window in which messages have to arrive before being "lost"
+	 */
+	private int timeout;
 	
 	/**
 	 * Creates a new uTP socket
 	 */
 	public UtpSocket() {
 		utpEnabled = true;
+		cur_window = 100;
 		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
+		seq_nr = 1;
 		utpBuffer = new Stream(5000);
+		messagesInFlight = new ArrayList<>();
+		messageQueue = new ArrayList<>();
 	}
 
 	/**
 	 * Creates a new uTP socket
 	 */
 	public UtpSocket(boolean utpEnabled) {
+		this();
 		this.utpEnabled = utpEnabled;
-		utpConnectionState = ConnectionState.PENDING;
-		packetSize = 150;
-		utpBuffer = new Stream(5000);
 	}
 
 	/**
-	 * Connects to the TCP Socket and prepares the UDP Socket
+	 * Connects to the uTP Socket and prepares the UDP Socket
 	 * 
 	 * @param address The address to connect to
 	 */
 	public void connect(SocketAddress address) throws IOException {
-		connect(address, 30000);
+		connect(address, 1000);
 	}
 
 	/**
-	 * Connects to the TCP Socket and prepares the UDP Socket
+	 * Connects to the uTP Socket and prepares the UDP Socket
 	 * 
 	 * @param address The address to connect to
 	 * @param timeout The maximum amount of miliseconds this connect attempt may take
 	 */
 	public void connect(SocketAddress address, int timeout) throws IOException {
-		super.connect(address, timeout);
+		bind(address);
 		socket = new DatagramSocket(getPort());
+		this.timeout = timeout;
+		
+		utpConnectionState = ConnectionState.CONNECTING;
+		connection_id_recv = new Random().nextInt();
+		connection_id_send = connection_id_recv + 1;
+		UtpMessage synMessage = new UtpMessage(connection_id_recv, cur_window, ST_SYN, seq_nr++, 0);
+		write(synMessage);
+	}
+	
+	/**
+	 * Tries to send a uTP Message, If the window is to small it will get queued
+	 * @param message
+	 */
+	public void send(UtpMessage message) {
+		if(getBytesInFlight() + message.getSize() < wnd_size) {
+			write(message);
+		} else {
+			messageQueue.add(message);
+		}
+	}
+	
+	/**
+	 * Sends a UDP Message
+	 */
+	private void write(UtpMessage message) {
+		message.setTimestamp(this);
+		messagesInFlight.add(message);
+		byte[] data = message.getData();
+		try {
+			DatagramPacket packet = new DatagramPacket(data, data.length, new InetSocketAddress(getInetAddress(), getPort()));
+			socket.send(packet);
+		} catch (IOException e) {
+			System.err.println("[uTP] Failed to send message: " + e.getMessage());
+		}
 	}
 	
 	/**
@@ -219,6 +266,18 @@ public class UtpSocket extends Socket {
 			}
 			storeData(dataBuffer, offset, length);
 		}
+	}
+	
+	/**
+	 * Calculates the amount of bytes which have not yet been acked
+	 * @return
+	 */
+	private int getBytesInFlight() {
+		int bytes = 0;
+		for(int i = 0; i < messagesInFlight.size(); i++) {
+			bytes += messagesInFlight.get(i).getSize();
+		}
+		return bytes;
 	}
 	
 
