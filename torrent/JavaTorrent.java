@@ -18,20 +18,18 @@ public class JavaTorrent extends Thread {
 		System.setOut(new Logger(System.out));
 		System.setErr(new Logger(System.err));
 		Config.getConfig().load();
-		if (args.length == 0) {
-			System.err.println("Magnet Link not found");
-			System.exit(1);
-		}
-		MagnetLink magnet = new MagnetLink(args[0]);
-		if (magnet.isDownloadable()) {
-			Torrent torrent = magnet.getTorrent();
-			torrent.initialise();
-			torrent.start();
-		} else {
-			System.err.println("Magnet link error occured");
-		}
 		TorrentFrame frame = new TorrentFrame();
-		frame.addTorrent(magnet.getTorrent());
+		if (args.length > 0) {
+			MagnetLink magnet = new MagnetLink(args[0]);
+			if (magnet.isDownloadable()) {
+				Torrent torrent = magnet.getTorrent();
+				torrent.initialise();
+				torrent.start();
+			} else {
+				System.err.println("Magnet link error occured");
+			}
+			frame.addTorrent(magnet.getTorrent());
+		}
 		new JavaTorrent(frame).start();
 	}
 
