@@ -26,6 +26,7 @@ public class Stream {
 
 	public Stream(byte[] dataBuffer) {
 		buffer = dataBuffer;
+		writeOffset = buffer.length;
 	}
 
 	public void writeByte(int b) {

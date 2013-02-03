@@ -59,16 +59,14 @@ public class UdpMultiplexer extends Thread implements Logable {
 	public byte[] accept(SocketAddress ip, int connectionId) {
 		for(int packetIndex = 0; packetIndex < packetList.size(); packetIndex++) {
 			DatagramPacket packet = packetList.get(packetIndex);
-			if(packet.getSocketAddress().equals(ip)) { //If the IP matches we will start deeper checks
+			String packetIp = packet.getSocketAddress().toString().split(":")[0];
+			String expectedIp = ip.toString().split(":")[0];
+			if(packetIp.equals(expectedIp)) { //If the IP matches we will start deeper checks
 				Stream data = new Stream(packet.getData());
 				data.skipWrite(packet.getOffset());
-				data.readByte(); //Version and Type byte
-				while(data.readByte() > 0) { //Skip extensions
-					int extensionLength = data.readShort();
-					data.skipWrite(extensionLength);
-				}
+				data.readShort(); //Version and Type byte and the extension byte
 				int connId = data.readShort();
-				if(connId == connectionId) {
+				if(connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
 					synchronized (PACKETLIST_LOCK) {
 						packetList.remove(packetIndex);
 					}

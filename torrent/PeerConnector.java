@@ -26,7 +26,6 @@ public class PeerConnector extends Thread {
 				Peer peer = new Peer();
 				UtpSocket peerSocket = (UtpSocket) serverSocket.accept();
 				peer.setSocket(peerSocket);
-				System.out.println("Incoming connection from " + peerSocket);
 				long handshakeStart = System.currentTimeMillis();
 				while (!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
 					ThreadUtils.sleep(10);

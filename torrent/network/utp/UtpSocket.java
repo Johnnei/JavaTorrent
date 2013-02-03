@@ -64,6 +64,10 @@ public class UtpSocket extends Socket {
 	 */
 	public static final byte ST_SYN = 4;
 	/**
+	 * The connectionId for sockets which have not yet been initialised
+	 */
+	public static final int NO_CONNECTION = Integer.MAX_VALUE;
+	/**
 	 * This is the default state for either:<br/>
 	 * TCP Connection or uTP is being initialized
 	 */
@@ -149,6 +153,8 @@ public class UtpSocket extends Socket {
 		packetSize = 150;
 		seq_nr = 1;
 		utpBuffer = new Stream(5000);
+		connection_id_recv = NO_CONNECTION;
+		connection_id_send = NO_CONNECTION;
 		messagesInFlight = new ArrayList<>();
 		messageQueue = new ArrayList<>();
 	}
@@ -159,6 +165,13 @@ public class UtpSocket extends Socket {
 	public UtpSocket(boolean utpEnabled) {
 		this();
 		this.utpEnabled = utpEnabled;
+	}
+	
+	/**
+	 * Gets called if the socket got accepted from outside the client to set the remoteAddress correctly
+	 */
+	public void accepted() {
+		remoteAddress = getRemoteSocketAddress();
 	}
 	
 	/**
@@ -278,24 +291,31 @@ public class UtpSocket extends Socket {
 		int version = versionAndType & 0x7;
 		int type = versionAndType >>> 4;
 		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length);
-		int extension = 0;
-		while((extension = data.readByte()) > 0) {
-			int extensionLength = data.readShort();
-			System.out.println("Extension: " + extension + " (Length: " + extensionLength + ")");
-			data.skipWrite(extensionLength);
-		}
+		int extension = data.readByte();
 		int connection_id = data.readShort();
-		long timestamp = data.readLong();
-		long timestampDiff = data.readLong();
-		long windowSize = data.readLong();
+		long timestamp = (long)data.readInt();
+		long timestampDiff = (long)data.readInt();
+		long windowSize = data.readInt();
 		int sequenceNumber = data.readShort();
 		int ackNumber = data.readShort();
+		System.out.println("Extension: " + extension);
 		System.out.println("Connection ID: " + connection_id);
+		System.out.println("timestampc " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
 		System.out.println("timestamp: " + timestamp);
 		System.out.println("timestampDiff: " + timestampDiff);
 		System.out.println("windowSize: " + windowSize);
 		System.out.println("sequenceNumber: " + sequenceNumber);
 		System.out.println("ackNumber: " + ackNumber);
+		System.out.println("Unparsed bytes: " + data.available());
+		if(extension != 0) {
+			while(data.available() > 0) {
+				extension = data.readByte();
+				int extensionLength = data.readByte();
+				System.out.println("Extension " + extension + " of length " + extensionLength);
+				data.moveBack(-extensionLength);
+			}
+		}
+		System.out.println("Unparsed bytes: " + data.available());
 	}
 	
 	/**

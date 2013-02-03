@@ -16,8 +16,9 @@ public class UtpServerSocket extends ServerSocket {
 	 * Accepts a connection based on a uTP Socket
 	 */
 	public Socket accept() throws IOException {
-		Socket s = new UtpSocket(false);
+		UtpSocket s = new UtpSocket(false);
 		implAccept(s);
+		s.accepted();
 		return s;
 	}
 
