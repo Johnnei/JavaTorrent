@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import torrent.download.Torrent;
+import torrent.network.utp.UdpMultiplexer;
 
 public class Manager {
 
@@ -18,9 +19,16 @@ public class Manager {
 	private int transactionId;
 	private byte[] peerId;
 	private ArrayList<Torrent> activeTorrents;
+	private UdpMultiplexer udpMultiplexer;
 
 	private Manager() {
 		activeTorrents = new ArrayList<>();
+		try {
+			udpMultiplexer = new UdpMultiplexer();
+			udpMultiplexer.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		try {
 			connectorThread = new PeerConnector();
 			connectorThread.start();
@@ -50,6 +58,10 @@ public class Manager {
 	public void addTorrent(Torrent torrent) {
 		activeTorrents.add(torrent);
 	}
+	
+	public UdpMultiplexer getUdpMultiplexer() {
+		return udpMultiplexer;
+	}
 
 	public Torrent getTorrent(String hash) {
 		for (int i = 0; i < activeTorrents.size(); i++) {
@@ -58,10 +70,6 @@ public class Manager {
 				return t;
 		}
 		return null;
-	}
-	
-	public ArrayList<Torrent> getTorrents() {
-		return activeTorrents;
 	}
 
 	public byte[] getPeer() {

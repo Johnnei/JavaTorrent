@@ -3,6 +3,7 @@ package torrent.network.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
@@ -10,50 +11,78 @@ import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.Logable;
-import torrent.Manager;
-import torrent.download.Torrent;
-import torrent.download.peer.Peer;
+import torrent.network.Stream;
 
 public class UdpMultiplexer extends Thread implements Logable {
 	
+	private final Object PACKETLIST_LOCK = new Object();
 	private DatagramSocket socket;
+	/**
+	 * The packets which have not yet been accepted by any of the connections
+	 */
+	private ArrayList<DatagramPacket> packetList;
 	
-	public UdpMultiplexer() {
+	public UdpMultiplexer() throws IOException {
 		super("UDP Manager");
-		try {
-			socket = new DatagramSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
-			socket.setSoTimeout(2500);
-		} catch (IOException e) {}
+		packetList = new ArrayList<>();
+		socket = new DatagramSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
+		socket.setSoTimeout(2500);
 	}
 	
 	@Override
 	public void run() {
 		log("Initialised UDP Multiplexer");
 		while(true) {
-			byte[] dataBuffer = new byte[1024];
+			byte[] dataBuffer = new byte[2048];
 			DatagramPacket packet = new DatagramPacket(dataBuffer, dataBuffer.length);
 			try {
 				socket.receive(packet);
+				synchronized (PACKETLIST_LOCK) {
+					packetList.add(packet);
+				}
 				log("Received Message of length: " + packet.getLength());
 			} catch (SocketTimeoutException e) {
 				//Ignore
 			} catch (IOException e) {
 				continue;
 			}
-			ArrayList<Torrent> torrents = Manager.getManager().getTorrents();
-			for(int i = 0; i < torrents.size(); i++) {
-				Torrent torrent = torrents.get(i);
-				ArrayList<Peer> peers = torrent.getPeers();
-				for(int j = 0; j < peers.size(); j++) {
-					UtpSocket utpSocket = peers.get(i).getSocket();
-					if(utpSocket.getPort() == packet.getPort()) {
-						if(utpSocket.getInetAddress().equals(packet.getAddress())) {
-							utpSocket.receive(dataBuffer, packet.getLength());
-						}
+		}
+	}
+	
+	/**
+	 * Accepts a packet from the list which matches the ip and port
+	 * 
+	 * @param ip The Address on which we expect the packet to be send from (I don't check ports as we don't know it)
+	 * @param connectionId The connection Id in the packet header
+	 * @return the bytes from the packet or null is none is available
+	 */
+	public byte[] accept(InetAddress ip, int connectionId) {
+		for(int packetIndex = 0; packetIndex < packetList.size(); packetIndex++) {
+			DatagramPacket packet = packetList.get(packetIndex);
+			if(packet.getSocketAddress().equals(ip)) { //If the IP matches we will start deeper checks
+				Stream data = new Stream(packet.getData());
+				data.skipWrite(packet.getOffset());
+				data.readByte(); //Version and Type byte
+				while(data.readByte() > 0) { //Skip extensions
+					int extensionLength = data.readShort();
+					data.skipWrite(extensionLength);
+				}
+				int connId = data.readShort();
+				if(connId == connectionId) {
+					synchronized (PACKETLIST_LOCK) {
+						packetList.remove(packetIndex);
 					}
+					byte[] rawData = packet.getData();
+					byte[] packetData = new byte[packet.getLength()];
+					int offset = packet.getOffset();
+					for(int i = 0; i < packetData.length; i++) {
+						packetData[i] = rawData[offset + i];
+					}
+					return packetData;
 				}
 			}
 		}
+		return null;
 	}
 
 	@Override

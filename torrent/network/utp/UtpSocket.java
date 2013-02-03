@@ -156,6 +156,15 @@ public class UtpSocket extends Socket {
 		this();
 		this.utpEnabled = utpEnabled;
 	}
+	
+	/**
+	 * Connects to the TCP Socket
+	 * 
+	 * @throws IOException
+	 */
+	public void connect() throws IOException {
+		super.connect(getRemoteSocketAddress(), 1000);
+	}
 
 	/**
 	 * Connects to the uTP Socket and prepares the UDP Socket
