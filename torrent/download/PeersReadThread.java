@@ -24,10 +24,12 @@ public class PeersReadThread extends Thread {
 				Peer p = peers.get(i);
 				if (!p.closed()) {
 					try {
+						p.getSocket().checkForPackets();
 						if (p.canReadMessage()) {
 							p.readMessage();
 						}
 					} catch (IOException e) {
+						p.log(e.getMessage(), true);
 						p.close();
 					}
 				}

@@ -101,6 +101,7 @@ public class Peer implements Logable, ISortable {
 			inStream = socket.getInputStream(this);
 			outStream = socket.getOutputStream();
 		} catch (IOException e) {
+			//e.printStackTrace();
 			crashed = true;
 			return;
 		}
@@ -313,11 +314,15 @@ public class Peer implements Logable, ISortable {
 
 	@Override
 	public String toString() {
-		if (socket != null)
-			return address.getHostAddress() + ":" + port;
-		if (address != null && port > 0)
-			return address.getHostAddress() + ":" + port;
-		return "UNCONNECTED";
+		if (socket != null) {
+			if(socket.isUTP()) {
+				return "[uTP] " + address.getHostAddress() + ":" + port;
+			} else {
+				return address.getHostAddress() + ":" + port;
+			}
+		} else {
+			return "UNCONNECTED";
+		}
 	}
 
 	@Override

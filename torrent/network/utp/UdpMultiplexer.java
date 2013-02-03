@@ -3,7 +3,7 @@ package torrent.network.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
@@ -40,7 +40,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 				synchronized (PACKETLIST_LOCK) {
 					packetList.add(packet);
 				}
-				log("Received Message of length: " + packet.getLength());
+				log("Received Message of " + packet.getLength() + " bytes for " + packet.getAddress());
 			} catch (SocketTimeoutException e) {
 				//Ignore
 			} catch (IOException e) {
@@ -56,7 +56,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 	 * @param connectionId The connection Id in the packet header
 	 * @return the bytes from the packet or null is none is available
 	 */
-	public byte[] accept(InetAddress ip, int connectionId) {
+	public byte[] accept(SocketAddress ip, int connectionId) {
 		for(int packetIndex = 0; packetIndex < packetList.size(); packetIndex++) {
 			DatagramPacket packet = packetList.get(packetIndex);
 			if(packet.getSocketAddress().equals(ip)) { //If the IP matches we will start deeper checks

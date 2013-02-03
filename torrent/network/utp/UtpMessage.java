@@ -24,11 +24,11 @@ public class UtpMessage {
 		dataStream.writeByte((byte)(type << 4 | UtpSocket.VERSION)); //Type and Version
 		dataStream.writeByte(0); //No Extension
 		dataStream.writeShort(connectionId);
-		dataStream.writeLong(0L); //timestamp, Will be set as close to the actual send time
-		dataStream.writeLong(0L); //timestamp_diff, Will be set to the value we know once it will be send
-		dataStream.writeLong(windowSize);
-		dataStream.writeInt(seq_nr);
-		dataStream.writeInt(ack_nr);
+		dataStream.writeInt(0L); //timestamp, Will be set as close to the actual send time
+		dataStream.writeInt(0L); //timestamp_diff, Will be set to the value we know once it will be send
+		dataStream.writeInt(windowSize);
+		dataStream.writeShort(seq_nr);
+		dataStream.writeShort(ack_nr);
 		data = dataStream.getBuffer();
 	}
 	
@@ -44,8 +44,8 @@ public class UtpMessage {
 	public void setTimestamp(UtpSocket socket) {
 		Stream dataStream = new Stream(data);
 		dataStream.skipWrite(4);
-		dataStream.writeLong(socket.getCurrentMicroseconds());
-		dataStream.writeLong(socket.getDelay());
+		dataStream.writeInt(socket.getCurrentMicroseconds());
+		dataStream.writeInt(socket.getDelay());
 		data = dataStream.getBuffer();
 	}
 	

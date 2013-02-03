@@ -9,6 +9,9 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.johnnei.utils.ThreadUtils;
+
+import torrent.Manager;
 import torrent.download.peer.Peer;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
@@ -134,6 +137,7 @@ public class UtpSocket extends Socket {
 	 * The window in which messages have to arrive before being "lost"
 	 */
 	private int timeout;
+	private SocketAddress remoteAddress;
 	
 	/**
 	 * Creates a new uTP socket
@@ -163,7 +167,10 @@ public class UtpSocket extends Socket {
 	 * @throws IOException
 	 */
 	public void connect() throws IOException {
-		super.connect(getRemoteSocketAddress(), 1000);
+		System.out.println("Connecting TCP to " + remoteAddress);
+		utpConnectionState = ConnectionState.DISCONNECTED;
+		utpEnabled = false;
+		super.connect(remoteAddress, 1000);
 	}
 
 	/**
@@ -182,17 +189,43 @@ public class UtpSocket extends Socket {
 	 * @param timeout The maximum amount of miliseconds this connect attempt may take
 	 */
 	public void connect(SocketAddress address, int timeout) throws IOException {
-		bind(address);
 		socket = new DatagramSocket(getPort());
+		remoteAddress = address;
 		this.timeout = timeout;
-		
 		utpConnectionState = ConnectionState.CONNECTING;
-		connection_id_recv = new Random().nextInt();
+		connection_id_recv = new Random().nextInt() & 0xFFFF;
 		connection_id_send = connection_id_recv + 1;
+		System.out.println("Connecting uTP to " + address + " connId: " + connection_id_recv);
 		UtpMessage synMessage = new UtpMessage(connection_id_recv, cur_window, ST_SYN, seq_nr++, 0);
 		write(synMessage);
+		long sendTime = System.currentTimeMillis();
+		int tries = 1;
+		byte[] response = null;
+		while(response == null) {
+			if(System.currentTimeMillis() - sendTime >= 1000) { //Timeout
+				write(synMessage);
+				sendTime = System.currentTimeMillis();
+				if(++tries == 3) {
+					connect();
+					break;
+				}
+			}
+			response = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
+			if(response == null) {
+				ThreadUtils.sleep(100);
+			} else {
+				if(response[0] >>> 4 != ST_STATE) {//Check Type
+					System.err.println("Invalid SYN Response: " + (response[0] >>> 4));
+					connect();
+				} else {
+					System.out.println("Connected to " + address);
+					receive(response);
+					utpConnectionState = ConnectionState.CONNECTED;
+				}
+			}
+		}
 	}
-	
+
 	/**
 	 * Tries to send a uTP Message, If the window is to small it will get queued
 	 * @param message
@@ -213,11 +246,20 @@ public class UtpSocket extends Socket {
 		messagesInFlight.add(message);
 		byte[] data = message.getData();
 		try {
-			DatagramPacket packet = new DatagramPacket(data, data.length, new InetSocketAddress(getInetAddress(), getPort()));
+			DatagramPacket packet = new DatagramPacket(data, data.length, remoteAddress);
 			socket.send(packet);
 		} catch (IOException e) {
 			System.err.println("[uTP] Failed to send message: " + e.getMessage());
 		}
+	}
+	
+	/**
+	 * Accept a UDP Packet from the UDP Multiplexer
+	 * 
+	 * @param dataBuffer The data buffer used in the packet
+	 */
+	private void receive(byte[] dataBuffer) {
+		receive(dataBuffer, dataBuffer.length);
 	}
 	
 	/**
@@ -375,5 +417,12 @@ public class UtpSocket extends Socket {
 	 */
 	public boolean isUTP() {
 		return utpEnabled;
+	}
+
+	public void checkForPackets() {
+		byte[] data = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
+		if(data != null) {
+			receive(data);
+		}
 	}
 }
