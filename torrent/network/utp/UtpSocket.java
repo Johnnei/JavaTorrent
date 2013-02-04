@@ -101,11 +101,11 @@ public class UtpSocket extends Socket {
 	/**
 	 * The next packet id
 	 */
-	private int seq_nr;
+	private short seq_nr;
 	/**
 	 * The last received packet id
 	 */
-	private int ack_nr;
+	private short ack_nr;
 	/**
 	 * The last measured delay on this socket
 	 */
@@ -142,15 +142,16 @@ public class UtpSocket extends Socket {
 	 */
 	private int timeout;
 	private SocketAddress remoteAddress;
-	
+
 	/**
 	 * Creates a new uTP socket
 	 */
 	public UtpSocket() {
 		utpEnabled = true;
-		cur_window = 100;
+		cur_window = 0;
 		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
+		wnd_size = 150;
 		seq_nr = 1;
 		utpBuffer = new Stream(5000);
 		connection_id_recv = NO_CONNECTION;
@@ -166,14 +167,14 @@ public class UtpSocket extends Socket {
 		this();
 		this.utpEnabled = utpEnabled;
 	}
-	
+
 	/**
 	 * Gets called if the socket got accepted from outside the client to set the remoteAddress correctly
 	 */
 	public void accepted() {
 		remoteAddress = getRemoteSocketAddress();
 	}
-	
+
 	/**
 	 * Connects to the TCP Socket
 	 * 
@@ -214,20 +215,20 @@ public class UtpSocket extends Socket {
 		long sendTime = System.currentTimeMillis();
 		int tries = 1;
 		byte[] response = null;
-		while(response == null) {
-			if(System.currentTimeMillis() - sendTime >= 1000) { //Timeout
+		while (response == null) {
+			if (System.currentTimeMillis() - sendTime >= 1000) { // Timeout
 				write(synMessage);
 				sendTime = System.currentTimeMillis();
-				if(++tries == 3) {
+				if (++tries == 3) {
 					connect();
 					break;
 				}
 			}
 			response = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
-			if(response == null) {
+			if (response == null) {
 				ThreadUtils.sleep(100);
 			} else {
-				if(response[0] >>> 4 != ST_STATE) {//Check Type
+				if (response[0] >>> 4 != ST_STATE) {// Check Type
 					System.err.println("Invalid SYN Response: " + (response[0] >>> 4));
 					connect();
 				} else {
@@ -240,32 +241,44 @@ public class UtpSocket extends Socket {
 	}
 
 	/**
-	 * Tries to send a uTP Message, If the window is to small it will get queued
-	 * @param message
+	 * Tries to send a uTP Message, If the window is to small it will get queued<br/>
+	 * If the packet got queued it will return false<br/>
+	 * It will not requeue messages which are already in the queue
+	 * 
+	 * @param message the UtpMessage which should be attempted to write
+	 * @return true if the message has been send else false
 	 */
-	public void send(UtpMessage message) {
-		if(getBytesInFlight() + message.getSize() < wnd_size) {
-			write(message);
+	public boolean send(UtpMessage message) {
+		if (getBytesInFlight() + message.getSize() < wnd_size) {
+			return write(message);
 		} else {
-			messageQueue.add(message);
+			if(!messageQueue.contains(message)) {
+				messageQueue.add(message);
+			}
+			return false;
 		}
 	}
-	
+
 	/**
 	 * Sends a UDP Message
+	 * 
+	 * @return true if the packet got sended
 	 */
-	private void write(UtpMessage message) {
+	private boolean write(UtpMessage message) {
 		message.setTimestamp(this);
 		messagesInFlight.add(message);
 		byte[] data = message.getData();
 		try {
 			DatagramPacket packet = new DatagramPacket(data, data.length, remoteAddress);
 			socket.send(packet);
+			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4));
+			return true;
 		} catch (IOException e) {
 			System.err.println("[uTP] Failed to send message: " + e.getMessage());
+			return false;
 		}
 	}
-	
+
 	/**
 	 * Accept a UDP Packet from the UDP Multiplexer
 	 * 
@@ -274,7 +287,7 @@ public class UtpSocket extends Socket {
 	private void receive(byte[] dataBuffer) {
 		receive(dataBuffer, dataBuffer.length);
 	}
-	
+
 	/**
 	 * Accept a UDP Packet from the UDP Multiplexer
 	 * 
@@ -282,7 +295,7 @@ public class UtpSocket extends Socket {
 	 * @param length The amount of bytes received in the packet
 	 */
 	public void receive(byte[] dataBuffer, int length) {
-		if(length < 20) {
+		if (length < 20) {
 			System.err.println("UDP Packet to small for header: " + length + " bytes");
 			return;
 		}
@@ -293,11 +306,11 @@ public class UtpSocket extends Socket {
 		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length);
 		int extension = data.readByte();
 		int connection_id = data.readShort();
-		long timestamp = (long)data.readInt();
-		long timestampDiff = (long)data.readInt();
+		long timestamp = (long) data.readInt();
+		long timestampDiff = (long) data.readInt();
 		long windowSize = data.readInt();
-		int sequenceNumber = data.readShort();
-		int ackNumber = data.readShort();
+		short sequenceNumber = (short)data.readShort();
+		short ackNumber = (short)data.readShort();
 		System.out.println("Extension: " + extension);
 		System.out.println("Connection ID: " + connection_id);
 		System.out.println("timestampc " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
@@ -306,33 +319,73 @@ public class UtpSocket extends Socket {
 		System.out.println("windowSize: " + windowSize);
 		System.out.println("sequenceNumber: " + sequenceNumber);
 		System.out.println("ackNumber: " + ackNumber);
-		System.out.println("Unparsed bytes: " + data.available());
-		if(extension != 0) {
-			while(data.available() > 0) {
+		if (extension != 0) {
+			while (data.available() > 0) {
 				extension = data.readByte();
 				int extensionLength = data.readByte();
 				System.out.println("Extension " + extension + " of length " + extensionLength);
 				data.moveBack(-extensionLength);
 			}
 		}
-		System.out.println("Unparsed bytes: " + data.available());
+		measured_delay = getCurrentMicroseconds() - timestamp;
+		System.out.println("Message Delay: " + measured_delay);
+		// Process Data
+		switch (type) {
+			case ST_SYN: { // Connect
+				System.out.println("[uTP Protocol] SYN");
+				connection_id_send = connection_id;
+				connection_id_recv = connection_id + 1;
+				seq_nr = (short)(new Random().nextInt() & 0xFFFF);
+				ack_nr = ackNumber;
+				utpConnectionState = ConnectionState.CONNECTED;
+				System.out.println("[uTP] Connected");
+				messageQueue.add(new UtpMessage(this, ST_STATE, sequenceNumber, ackNumber));
+				break;
+			}
+			
+			case ST_STATE: { // ACK
+				System.out.println("[uTP Protocol] STATE");
+				break;
+			}
+			
+			case ST_DATA: { // Data
+				System.out.println("[uTP Protocol] DATA");
+				break;
+			}
+			
+			case ST_FIN: { // Disconenct
+				System.out.println("[uTP Protocol] FIN");
+				break;
+			}
+			
+			case ST_RESET: { //Crash
+				System.out.println("[uTP Protocol] RESET");
+				break;
+			}
+			
+			default: {
+				System.err.println("[uTP Protocol] Unkown type: " + type);
+				break;
+			}
+		}
 	}
-	
+
 	/**
 	 * Store the filtered data in the output buffer<br/>
 	 * This data will be available for the client to read
+	 * 
 	 * @param dataBuffer The buffer containing all data
 	 * @param offset The start offset to start reading
 	 * @param length The amount of bytes to be read
 	 */
 	private void storeData(byte[] dataBuffer, int offset, int length) {
-		if(utpBuffer.writeableSpace() >= length) {
-			for(int i = 0; i < length; i++) {
+		if (utpBuffer.writeableSpace() >= length) {
+			for (int i = 0; i < length; i++) {
 				utpBuffer.writeByte(dataBuffer[offset + i]);
 			}
 		} else {
-			utpBuffer.refit(); //Try to reshape the buffer so we can append the data
-			if(utpBuffer.writeableSpace() < length) { //Still not enough so we expand the buffer
+			utpBuffer.refit(); // Try to reshape the buffer so we can append the data
+			if (utpBuffer.writeableSpace() < length) { // Still not enough so we expand the buffer
 				utpBuffer.expand(length - utpBuffer.writeableSpace());
 			}
 			storeData(dataBuffer, offset, length);
@@ -340,17 +393,34 @@ public class UtpSocket extends Socket {
 	}
 	
 	/**
+	 * Checks if we need to try to send messages
+	 */
+	public void checkForSendingPackets() {
+		
+	}
+
+	/**
+	 * Checks the connection if there are pending messages
+	 */
+	public void checkForPackets() {
+		byte[] data = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
+		if (data != null) {
+			receive(data);
+		}
+	}
+
+	/**
 	 * Calculates the amount of bytes which have not yet been acked
+	 * 
 	 * @return
 	 */
 	private int getBytesInFlight() {
 		int bytes = 0;
-		for(int i = 0; i < messagesInFlight.size(); i++) {
+		for (int i = 0; i < messagesInFlight.size(); i++) {
 			bytes += messagesInFlight.get(i).getSize();
 		}
 		return bytes;
 	}
-	
 
 	/**
 	 * Gets the current microseconds<br/>
@@ -376,8 +446,8 @@ public class UtpSocket extends Socket {
 		if (utpEnabled) {
 			return utpConnectionState == ConnectionState.DISCONNECTED;
 		} else {
-			if(socket == null)
-				return false; //Else it won't even connect
+			if (socket == null)
+				return false; // Else it won't even connect
 			return socket.isClosed();
 		}
 	}
@@ -396,25 +466,28 @@ public class UtpSocket extends Socket {
 	public ByteOutputStream getOutputStream() throws IOException {
 		return new ByteOutputStream(this, super.getOutputStream());
 	}
-	
+
 	/**
 	 * Gets the last measured delay on the socket
+	 * 
 	 * @return The delay on this socket in microseconds
 	 */
 	public long getDelay() {
 		return measured_delay;
 	}
-	
+
 	/**
 	 * Gets the connection ID which we use to sign messages with
+	 * 
 	 * @return
 	 */
 	public int getConnectionId() {
 		return connection_id_send;
 	}
-	
+
 	/**
 	 * Gets the current window size which we want to advertise
+	 * 
 	 * @return
 	 */
 	public int getWindowSize() {
@@ -437,12 +510,5 @@ public class UtpSocket extends Socket {
 	 */
 	public boolean isUTP() {
 		return utpEnabled;
-	}
-
-	public void checkForPackets() {
-		byte[] data = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
-		if(data != null) {
-			receive(data);
-		}
 	}
 }

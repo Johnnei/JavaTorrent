@@ -41,5 +41,13 @@ public class ByteOutputStream extends DataOutputStream {
 	public void reset(int uploadRate) {
 		speed -= uploadRate;
 	}
+	
+	/**
+	 * Returns the underlying socket for this connection
+	 * @return the utpSocket on which this connection is based
+	 */
+	public UtpSocket getSocket() {
+		return socket;
+	}
 
 }

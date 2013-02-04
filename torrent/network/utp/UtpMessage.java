@@ -32,6 +32,13 @@ public class UtpMessage {
 		data = dataStream.getBuffer();
 	}
 	
+	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr, byte[] data) {
+		this(socket, type, seq_nr, ack_nr);
+		Stream dataStream = new Stream(this.data);
+		dataStream.writeByte(data);
+		this.data = dataStream.getBuffer();
+	}
+	
 	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr) {
 		this(socket.getConnectionId(), socket.getWindowSize(), type, seq_nr, ack_nr);
 	}

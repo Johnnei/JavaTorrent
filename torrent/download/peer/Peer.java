@@ -246,6 +246,7 @@ public class Peer implements Logable, ISortable {
 				torrent.addDiskJob(new DiskJobSendBlock(this, request.getPieceIndex(), request.getBlockIndex(), request.getLength()));
 			}
 		}
+		outStream.getSocket().checkForSendingPackets();
 	}
 
 	public void checkDisconnect() {
