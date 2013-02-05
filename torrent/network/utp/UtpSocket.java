@@ -166,6 +166,11 @@ public class UtpSocket extends Socket {
 		this();
 		this.utpEnabled = utpEnabled;
 	}
+	
+	public UtpSocket(SocketAddress address, boolean utpEnabled) {
+		this(utpEnabled);
+		remoteAddress = address;
+	}
 
 	/**
 	 * Gets called if the socket got accepted from outside the client to set the remoteAddress correctly
@@ -333,6 +338,10 @@ public class UtpSocket extends Socket {
 		switch (type) {
 			case ST_SYN: { // Connect
 				System.out.println("[uTP Protocol] SYN");
+				if(utpConnectionState == ConnectionState.CONNECTED) {
+					System.out.println("[uTP Protocol] Ignored SYN on uTP Connected Socket");
+					return;
+				}
 				connection_id_send = connection_id;
 				connection_id_recv = connection_id + 1;
 				seq_nr = (short)(new Random().nextInt() & 0xFFFF);
@@ -469,11 +478,19 @@ public class UtpSocket extends Socket {
 	 * @throws IOException
 	 */
 	public ByteInputStream getInputStream(Peer peer) throws IOException {
-		return new ByteInputStream(this, peer, getInputStream());
+		if(super.isClosed()) {
+			return new ByteInputStream(this, peer, null);
+		} else {
+			return new ByteInputStream(this, peer, getInputStream());
+		}
 	}
 
 	public ByteOutputStream getOutputStream() throws IOException {
-		return new ByteOutputStream(this, super.getOutputStream());
+		if(super.isClosed()) {
+			return new ByteOutputStream(this, null);
+		} else {
+			return new ByteOutputStream(this, super.getOutputStream());
+		}
 	}
 
 	/**

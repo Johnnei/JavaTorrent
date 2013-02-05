@@ -11,11 +11,13 @@ import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.Logable;
+import torrent.download.peer.Peer;
 import torrent.network.Stream;
 
 public class UdpMultiplexer extends Thread implements Logable {
 	
 	private final Object PACKETLIST_LOCK = new Object();
+	private UdpPeerConnector peerConnector;
 	private DatagramSocket socket;
 	/**
 	 * The packets which have not yet been accepted by any of the connections
@@ -24,6 +26,8 @@ public class UdpMultiplexer extends Thread implements Logable {
 	
 	public UdpMultiplexer() throws IOException {
 		super("UDP Manager");
+		peerConnector = new UdpPeerConnector();
+		peerConnector.start();
 		packetList = new ArrayList<>();
 		socket = new DatagramSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
 		socket.setSoTimeout(2500);
@@ -50,11 +54,21 @@ public class UdpMultiplexer extends Thread implements Logable {
 				UdpPacket udpPacket = packetList.get(i);
 				long lifetime = udpPacket.getLifetime();
 				if(lifetime > 5000) { //5 Seconds, The system should be able to loop through all peers per torrent within 5 seconds
-					packetList.remove(i--);
 					byte[] data = udpPacket.getPacket().getData();
 					if(data[udpPacket.getPacket().getOffset()] >>> 4 == UtpSocket.ST_SYN) {
-						log("Unhandled uTP Connection Detected");
+						log("Unhandled uTP Connection Detected from " + udpPacket.getPacket().getSocketAddress());
+						UtpSocket socket = new UtpSocket(udpPacket.getPacket().getSocketAddress(), true);
+						Peer p = new Peer();
+						p.setSocket(socket);
+						synchronized (PACKETLIST_LOCK) {
+							packetList.remove(i--);
+							packetList.add(new UdpPacket(udpPacket.getPacket()));
+						}
+						peerConnector.addPeer(p);
 					} else {
+						synchronized (PACKETLIST_LOCK) {
+							packetList.remove(i--);
+						}
 						log("Dropped Message of " + udpPacket.getPacket().getLength() + " for " + udpPacket.getPacket().getAddress());
 					}
 				}
