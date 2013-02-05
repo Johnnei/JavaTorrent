@@ -18,6 +18,14 @@ public class UtpMessage {
 	 */
 	private int seq_nr;
 	
+	/**
+	 * Creates a full uTP Message which can be used for all non-data messages
+	 * @param connectionId The connectionId we want to send along
+	 * @param windowSize The window_size which we wan't to advertise
+	 * @param type The type of this message
+	 * @param seq_nr The sequence number of this message
+	 * @param ack_nr The sequence number which we want to acknowledge
+	 */
 	public UtpMessage(int connectionId, int windowSize, int type, int seq_nr, int ack_nr) {
 		this.seq_nr = seq_nr;
 		Stream dataStream = new Stream(20);
@@ -32,6 +40,14 @@ public class UtpMessage {
 		data = dataStream.getBuffer();
 	}
 	
+	/**
+	 * Creates a full uTP Message which can be used for a data messages
+	 * @param socket The socket to read the connectionId and Windowsize from
+	 * @param type The type of this message
+	 * @param seq_nr The sequence number of this message
+	 * @param ack_nr The sequence number which we want to acknowledge
+	 * @param data The data which will be put after the header
+	 */
 	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr, byte[] data) {
 		this(socket, type, seq_nr, ack_nr);
 		Stream dataStream = new Stream(this.data);
@@ -39,8 +55,23 @@ public class UtpMessage {
 		this.data = dataStream.getBuffer();
 	}
 	
+	/**
+	 * Creates a full uTP Message which can be used for all non-data messages
+	 * @param socket The socket to read the connectionId and Windowsize from
+	 * @param type The type of this message
+	 * @param seq_nr The sequence number of this message
+	 * @param ack_nr The sequence number which we want to acknowledge
+	 */
 	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr) {
 		this(socket.getConnectionId(), socket.getWindowSize(), type, seq_nr, ack_nr);
+	}
+	
+	/**
+	 * Creates a sample message used to manage the lists of Messages
+	 * @param seq_nr The sequence number of this message
+	 */
+	public UtpMessage(int seq_nr) {
+		this.seq_nr = seq_nr;
 	}
 	
 	/**
@@ -50,6 +81,7 @@ public class UtpMessage {
 	 */
 	public void setTimestamp(UtpSocket socket) {
 		Stream dataStream = new Stream(data);
+		dataStream.resetWritePointer();
 		dataStream.skipWrite(4);
 		dataStream.writeInt(socket.getCurrentMicroseconds());
 		dataStream.writeInt(socket.getDelay());

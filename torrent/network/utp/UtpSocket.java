@@ -3,7 +3,6 @@ package torrent.network.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -171,8 +170,9 @@ public class UtpSocket extends Socket {
 	/**
 	 * Gets called if the socket got accepted from outside the client to set the remoteAddress correctly
 	 */
-	public void accepted() {
+	public void accepted() throws IOException {
 		remoteAddress = getRemoteSocketAddress();
+		socket = new DatagramSocket(remoteAddress);
 	}
 
 	/**
@@ -266,11 +266,11 @@ public class UtpSocket extends Socket {
 	 */
 	private boolean write(UtpMessage message) {
 		message.setTimestamp(this);
-		messagesInFlight.add(message);
 		byte[] data = message.getData();
 		try {
 			DatagramPacket packet = new DatagramPacket(data, data.length, remoteAddress);
 			socket.send(packet);
+			messagesInFlight.add(message);
 			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4));
 			return true;
 		} catch (IOException e) {
@@ -338,6 +338,7 @@ public class UtpSocket extends Socket {
 				seq_nr = (short)(new Random().nextInt() & 0xFFFF);
 				ack_nr = ackNumber;
 				utpConnectionState = ConnectionState.CONNECTED;
+				utpEnabled = true;
 				System.out.println("[uTP] Connected");
 				messageQueue.add(new UtpMessage(this, ST_STATE, sequenceNumber, ackNumber));
 				break;
@@ -345,6 +346,7 @@ public class UtpSocket extends Socket {
 			
 			case ST_STATE: { // ACK
 				System.out.println("[uTP Protocol] STATE");
+				messagesInFlight.remove(new UtpMessage(sequenceNumber));
 				break;
 			}
 			
@@ -396,7 +398,14 @@ public class UtpSocket extends Socket {
 	 * Checks if we need to try to send messages
 	 */
 	public void checkForSendingPackets() {
-		
+		while(messageQueue.size() > 0) {
+			UtpMessage message = messageQueue.get(0);
+			if(send(messageQueue.get(0))) {
+				messageQueue.remove(message);
+			} else {
+				break;
+			}
+		}
 	}
 
 	/**

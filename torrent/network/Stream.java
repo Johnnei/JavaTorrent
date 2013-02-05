@@ -118,6 +118,13 @@ public class Stream {
 	public void resetReadPointer() {
 		readOffset = 0;
 	}
+	
+	/**
+	 * Resets the writepointer to the beginning of the buffer
+	 */
+	public void resetWritePointer() {
+		writeOffset = 0;
+	}
 
 	public DatagramPacket write(InetAddress address, int port) {
 		return new DatagramPacket(buffer, 0, writeOffset, address, port);
