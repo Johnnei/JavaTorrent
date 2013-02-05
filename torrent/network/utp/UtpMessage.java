@@ -83,7 +83,8 @@ public class UtpMessage {
 		Stream dataStream = new Stream(data);
 		dataStream.resetWritePointer();
 		dataStream.skipWrite(4);
-		dataStream.writeInt(socket.getCurrentMicroseconds());
+		long time = socket.getCurrentMicroseconds();
+		dataStream.writeInt(time);
 		dataStream.writeInt(socket.getDelay());
 		data = dataStream.getBuffer();
 	}
@@ -103,8 +104,7 @@ public class UtpMessage {
 	public long getSendTime() {
 		Stream dataStream = new Stream(data);
 		dataStream.readInt(); //Skip 4 bytes
-		long microseconds_delay = dataStream.readLong();
-		return microseconds_delay / 1000;
+		return dataStream.readInt() & 0xFFFFFFFFL;
 	}
 	
 	/**

@@ -3,6 +3,8 @@ package torrent.network.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -152,6 +154,7 @@ public class UtpSocket extends Socket {
 		packetSize = 150;
 		wnd_size = 150;
 		seq_nr = 1;
+		timeout = 1000;
 		utpBuffer = new Stream(5000);
 		connection_id_recv = NO_CONNECTION;
 		connection_id_send = NO_CONNECTION;
@@ -167,9 +170,10 @@ public class UtpSocket extends Socket {
 		this.utpEnabled = utpEnabled;
 	}
 	
-	public UtpSocket(SocketAddress address, boolean utpEnabled) {
+	public UtpSocket(SocketAddress address, boolean utpEnabled) throws IOException {
 		this(utpEnabled);
 		remoteAddress = address;
+		socket = new DatagramSocket();
 	}
 
 	/**
@@ -415,6 +419,31 @@ public class UtpSocket extends Socket {
 				break;
 			}
 		}
+		//Resend ack
+		for(int i = 0; i < messagesInFlight.size(); i++) {
+			UtpMessage message = messagesInFlight.get(i);
+			long delay = getDelay(message, false);
+			if(delay > timeout) {
+				write(message);
+				System.out.println("[uTP] Resending Message (SendTime: " + message.getSendTime() + ", Timeout: " + delay +")");
+			}
+		}
+	}
+	
+	/**
+	 * Calculates the delay from a message
+	 * 
+	 * @param message The message to compare with
+	 * @param usPrecision If it should be microsecond precision instead of milisecond
+	 * @return the delay 
+	 */
+	private long getDelay(UtpMessage message, boolean msPrecision) {
+		long cTime = (int)getCurrentMicroseconds() & 0xFFFFFFFFL;
+		long messageTime = message.getSendTime();
+		if(msPrecision)
+			return cTime - messageTime;
+		else
+			return (cTime - messageTime) / 1000;
 	}
 
 	/**
@@ -448,7 +477,7 @@ public class UtpSocket extends Socket {
 	 * @return
 	 */
 	public long getCurrentMicroseconds() {
-		return System.currentTimeMillis() * 1000;
+		return (System.currentTimeMillis() & 0xFFFFFFFFL) * 1000L;//Strip to 32-bit precision
 	}
 
 	/**
@@ -478,7 +507,7 @@ public class UtpSocket extends Socket {
 	 * @throws IOException
 	 */
 	public ByteInputStream getInputStream(Peer peer) throws IOException {
-		if(super.isClosed()) {
+		if(!super.isConnected()) {
 			return new ByteInputStream(this, peer, null);
 		} else {
 			return new ByteInputStream(this, peer, getInputStream());
@@ -486,10 +515,28 @@ public class UtpSocket extends Socket {
 	}
 
 	public ByteOutputStream getOutputStream() throws IOException {
-		if(super.isClosed()) {
+		if(!super.isConnected()) {
 			return new ByteOutputStream(this, null);
 		} else {
 			return new ByteOutputStream(this, super.getOutputStream());
+		}
+	}
+	
+	@Override
+	public String toString() {
+		if(!super.isConnected()) {
+			return remoteAddress.toString();
+		} else {
+			return super.getInetAddress().toString();
+		}
+	}
+	
+	@Override
+	public int getPort() {
+		if(!super.isConnected()) {
+			return 0;
+		} else {
+			return super.getPort();
 		}
 	}
 

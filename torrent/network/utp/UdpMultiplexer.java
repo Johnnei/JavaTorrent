@@ -15,7 +15,7 @@ import torrent.download.peer.Peer;
 import torrent.network.Stream;
 
 public class UdpMultiplexer extends Thread implements Logable {
-	
+
 	private final Object PACKETLIST_LOCK = new Object();
 	private UdpPeerConnector peerConnector;
 	private DatagramSocket socket;
@@ -23,7 +23,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 	 * The packets which have not yet been accepted by any of the connections
 	 */
 	private ArrayList<UdpPacket> packetList;
-	
+
 	public UdpMultiplexer() throws IOException {
 		super("UDP Manager");
 		peerConnector = new UdpPeerConnector();
@@ -32,11 +32,11 @@ public class UdpMultiplexer extends Thread implements Logable {
 		socket = new DatagramSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
 		socket.setSoTimeout(2500);
 	}
-	
+
 	@Override
 	public void run() {
 		log("Initialised UDP Multiplexer");
-		while(true) {
+		while (true) {
 			byte[] dataBuffer = new byte[2048];
 			DatagramPacket packet = new DatagramPacket(dataBuffer, dataBuffer.length);
 			try {
@@ -46,25 +46,30 @@ public class UdpMultiplexer extends Thread implements Logable {
 				}
 				log("Received Message of " + packet.getLength() + " bytes for " + packet.getAddress());
 			} catch (SocketTimeoutException e) {
-				//Ignore
+				// Ignore
 			} catch (IOException e) {
 				continue;
 			}
-			for(int i = 0; i < packetList.size(); i++) {
+			for (int i = 0; i < packetList.size(); i++) {
 				UdpPacket udpPacket = packetList.get(i);
 				long lifetime = udpPacket.getLifetime();
-				if(lifetime > 5000) { //5 Seconds, The system should be able to loop through all peers per torrent within 5 seconds
+				if (lifetime > 5000) { // 5 Seconds, The system should be able to loop through all peers per torrent within 5 seconds
 					byte[] data = udpPacket.getPacket().getData();
-					if(data[udpPacket.getPacket().getOffset()] >>> 4 == UtpSocket.ST_SYN) {
-						log("Unhandled uTP Connection Detected from " + udpPacket.getPacket().getSocketAddress());
-						UtpSocket socket = new UtpSocket(udpPacket.getPacket().getSocketAddress(), true);
-						Peer p = new Peer();
-						p.setSocket(socket);
-						synchronized (PACKETLIST_LOCK) {
-							packetList.remove(i--);
-							packetList.add(new UdpPacket(udpPacket.getPacket()));
+					if (data[udpPacket.getPacket().getOffset()] >>> 4 == UtpSocket.ST_SYN) {
+						try {
+							log("Unhandled uTP Connection Detected from " + udpPacket.getPacket().getSocketAddress());
+							UtpSocket socket = new UtpSocket(udpPacket.getPacket().getSocketAddress(), true);
+							Peer p = new Peer();
+							p.setSocket(socket);
+							synchronized (PACKETLIST_LOCK) {
+								packetList.remove(i--);
+								if(peerConnector.addPeer(p)) {
+									packetList.add(new UdpPacket(udpPacket.getPacket()));
+								}
+							}
+						} catch (IOException e) {
+							log(e.getMessage(), true);
 						}
-						peerConnector.addPeer(p);
 					} else {
 						synchronized (PACKETLIST_LOCK) {
 							packetList.remove(i--);
@@ -75,7 +80,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 			}
 		}
 	}
-	
+
 	/**
 	 * Accepts a packet from the list which matches the ip and port
 	 * 
@@ -84,23 +89,27 @@ public class UdpMultiplexer extends Thread implements Logable {
 	 * @return the bytes from the packet or null is none is available
 	 */
 	public byte[] accept(SocketAddress ip, int connectionId) {
-		for(int packetIndex = 0; packetIndex < packetList.size(); packetIndex++) {
+		for (int packetIndex = 0; packetIndex < packetList.size(); packetIndex++) {
 			DatagramPacket packet = packetList.get(packetIndex).getPacket();
 			String packetIp = packet.getSocketAddress().toString().split(":")[0];
 			String expectedIp = ip.toString().split(":")[0];
-			if(packetIp.equals(expectedIp)) { //If the IP matches we will start deeper checks
+			if (packetIp.equals(expectedIp)) { // If the IP matches we will start deeper checks
 				Stream data = new Stream(packet.getData());
 				data.skipWrite(packet.getOffset());
-				data.readShort(); //Version and Type byte and the extension byte
+				int type = data.readByte() >>> 4;
+				data.readByte(); // Version and Type byte and the extension byte
 				int connId = data.readShort();
-				if(connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
+				if(type == UtpSocket.ST_SYN) {
+					connId++;
+				}
+				if (connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
 					synchronized (PACKETLIST_LOCK) {
 						packetList.remove(packetIndex);
 					}
 					byte[] rawData = packet.getData();
 					byte[] packetData = new byte[packet.getLength()];
 					int offset = packet.getOffset();
-					for(int i = 0; i < packetData.length; i++) {
+					for (int i = 0; i < packetData.length; i++) {
 						packetData[i] = rawData[offset + i];
 					}
 					return packetData;
@@ -128,7 +137,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 	public String getStatus() {
 		return "";
 	}
-	
+
 	@Override
 	public String toString() {
 		return "UDPMultiplexer";
