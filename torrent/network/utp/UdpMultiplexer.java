@@ -20,7 +20,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 	/**
 	 * The packets which have not yet been accepted by any of the connections
 	 */
-	private ArrayList<DatagramPacket> packetList;
+	private ArrayList<UdpPacket> packetList;
 	
 	public UdpMultiplexer() throws IOException {
 		super("UDP Manager");
@@ -38,13 +38,26 @@ public class UdpMultiplexer extends Thread implements Logable {
 			try {
 				socket.receive(packet);
 				synchronized (PACKETLIST_LOCK) {
-					packetList.add(packet);
+					packetList.add(new UdpPacket(packet));
 				}
 				log("Received Message of " + packet.getLength() + " bytes for " + packet.getAddress());
 			} catch (SocketTimeoutException e) {
 				//Ignore
 			} catch (IOException e) {
 				continue;
+			}
+			for(int i = 0; i < packetList.size(); i++) {
+				UdpPacket udpPacket = packetList.get(i);
+				long lifetime = udpPacket.getLifetime();
+				if(lifetime > 5000) { //5 Seconds, The system should be able to loop through all peers per torrent within 5 seconds
+					packetList.remove(i--);
+					byte[] data = udpPacket.getPacket().getData();
+					if(data[udpPacket.getPacket().getOffset()] >>> 4 == UtpSocket.ST_SYN) {
+						log("Unhandled uTP Connection Detected");
+					} else {
+						log("Dropped Message of " + udpPacket.getPacket().getLength() + " for " + udpPacket.getPacket().getAddress());
+					}
+				}
 			}
 		}
 	}
@@ -58,7 +71,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 	 */
 	public byte[] accept(SocketAddress ip, int connectionId) {
 		for(int packetIndex = 0; packetIndex < packetList.size(); packetIndex++) {
-			DatagramPacket packet = packetList.get(packetIndex);
+			DatagramPacket packet = packetList.get(packetIndex).getPacket();
 			String packetIp = packet.getSocketAddress().toString().split(":")[0];
 			String expectedIp = ip.toString().split(":")[0];
 			if(packetIp.equals(expectedIp)) { //If the IP matches we will start deeper checks
