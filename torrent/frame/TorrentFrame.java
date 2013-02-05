@@ -42,7 +42,6 @@ public class TorrentFrame extends JFrame implements Observer {
 		add(details, BorderLayout.SOUTH);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		pack();
-		setVisible(true);
 		torrents = new ArrayList<Torrent>();
 	}
 
