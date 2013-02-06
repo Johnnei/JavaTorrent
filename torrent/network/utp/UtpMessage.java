@@ -107,6 +107,10 @@ public class UtpMessage {
 		return dataStream.readInt() & 0xFFFFFFFFL;
 	}
 	
+	public int getType() {
+		return data[0] >>> 4;
+	}
+	
 	/**
 	 * The data to send for this message
 	 * @return

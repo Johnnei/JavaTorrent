@@ -279,7 +279,9 @@ public class UtpSocket extends Socket {
 		try {
 			DatagramPacket packet = new DatagramPacket(data, data.length, remoteAddress);
 			socket.send(packet);
-			messagesInFlight.add(message);
+			if(message.getType() != ST_STATE) { //We don't expect ACK's on STATE messages
+				messagesInFlight.add(message);
+			}
 			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4));
 			return true;
 		} catch (IOException e) {
@@ -315,8 +317,8 @@ public class UtpSocket extends Socket {
 		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length);
 		int extension = data.readByte();
 		int connection_id = data.readShort();
-		long timestamp = (long) data.readInt();
-		long timestampDiff = (long) data.readInt();
+		long timestamp = (long)(data.readInt() & 0xFFFFFFFFL);
+		long timestampDiff = (long)(data.readInt() & 0xFFFFFFFFL);
 		long windowSize = data.readInt();
 		short sequenceNumber = (short)data.readShort();
 		short ackNumber = (short)data.readShort();
@@ -353,7 +355,7 @@ public class UtpSocket extends Socket {
 				utpConnectionState = ConnectionState.CONNECTED;
 				utpEnabled = true;
 				System.out.println("[uTP] Connected");
-				messageQueue.add(new UtpMessage(this, ST_STATE, sequenceNumber, ackNumber));
+				messageQueue.add(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
 				break;
 			}
 			
