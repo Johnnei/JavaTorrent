@@ -10,6 +10,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.johnnei.utils.JMath;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.Manager;
@@ -386,6 +387,22 @@ public class UtpSocket extends Socket {
 			}
 		}
 	}
+	
+	/**
+	 * Sets the max_window in bytes to the larger of <tt>window</tt> or 150
+	 * @param window The new max_window
+	 */
+	private void setMaxWindow(int window) {
+		max_window = JMath.max(window, 150);
+	}
+	
+	/**
+	 * Sets the timeout in milliseconds to the larger of <tt>timeout</tt> or 500
+	 * @param timeout The new timeout
+	 */
+	private void setTimeout(int timeout) {
+		timeout = JMath.max(timeout, 500);
+	}
 
 	/**
 	 * Store the filtered data in the output buffer<br/>
@@ -566,7 +583,7 @@ public class UtpSocket extends Socket {
 	 * @return
 	 */
 	public int getWindowSize() {
-		return wnd_size;
+		return max_window;
 	}
 
 	/**
