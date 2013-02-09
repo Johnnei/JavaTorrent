@@ -32,6 +32,23 @@ public class UdpMultiplexer extends Thread implements Logable {
 		socket = new DatagramSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
 		socket.setSoTimeout(2500);
 	}
+	
+	/**
+	 * Checks if the received data does match to a packet which might be uTP
+	 * @param data The data to check
+	 * @return true if the packet type >= 0 && type < 5 && version == 1
+	 */
+	private boolean isValid(byte[] data) {
+		int version = data[0] & 0x7;
+		int type = data[0] >>> 4; 
+		if(version != 1) {
+			return false;
+		} else if (type < 0 || type > 4) {
+			return false;
+		} else {
+			return true;
+		}
+	}
 
 	@Override
 	public void run() {
@@ -41,10 +58,14 @@ public class UdpMultiplexer extends Thread implements Logable {
 			DatagramPacket packet = new DatagramPacket(dataBuffer, dataBuffer.length);
 			try {
 				socket.receive(packet);
-				synchronized (PACKETLIST_LOCK) {
-					packetList.add(new UdpPacket(packet));
+				if(isValid(dataBuffer)) {
+					synchronized (PACKETLIST_LOCK) {
+						packetList.add(new UdpPacket(packet));
+					}
+					log("Received Message of " + packet.getLength() + " bytes for " + packet.getAddress());
+				} else {
+					log("Received Invalid Message of " + packet.getLength() + " bytes for " + packet.getAddress() + ", Type/Version: 0x" + Integer.toHexString(dataBuffer[0]));
 				}
-				log("Received Message of " + packet.getLength() + " bytes for " + packet.getAddress());
 			} catch (SocketTimeoutException e) {
 				// Ignore
 			} catch (IOException e) {
@@ -74,7 +95,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 						synchronized (PACKETLIST_LOCK) {
 							packetList.remove(i--);
 						}
-						log("Dropped Message of " + udpPacket.getPacket().getLength() + " for " + udpPacket.getPacket().getAddress());
+						log("Dropped Message of " + udpPacket.getPacket().getLength() + " bytes for " + udpPacket.getPacket().getAddress());
 					}
 				}
 			}
@@ -99,6 +120,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 				int type = data.readByte() >>> 4;
 				data.readByte(); // Version and Type byte and the extension byte
 				int connId = data.readShort();
+				System.out.println("Packet for " + ip + " detected, Checking ID's: " + connId + " =?= " + connectionId + ", Packet: " + type);
 				if(type == UtpSocket.ST_SYN) {
 					connId++;
 				}
