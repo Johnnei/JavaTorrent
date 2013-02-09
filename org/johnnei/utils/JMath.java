@@ -13,5 +13,9 @@ public class JMath {
 	public static int ceil(double d) {
 		return (int) Math.ceil(d);
 	}
+	
+	public static long abs(long l) {
+		return l < 0 ? -l : l;
+	}
 
 }

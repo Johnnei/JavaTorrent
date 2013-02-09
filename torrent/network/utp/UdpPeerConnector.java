@@ -46,8 +46,6 @@ public class UdpPeerConnector extends Thread {
 						} else {
 							peer.close();
 						}
-					} else {
-						peer.close();
 					}
 					ThreadUtils.sleep(1);
 				} catch (IOException e) {

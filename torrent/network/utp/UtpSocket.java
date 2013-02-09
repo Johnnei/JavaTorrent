@@ -83,10 +83,6 @@ public class UtpSocket extends Socket {
 	 */
 	private int max_window;
 	/**
-	 * The number of bytes which have not yet been acked
-	 */
-	private int cur_window;
-	/**
 	 * The {@link #max_window} as received from the other end.<br/>
 	 * This sets the upper limit for the bytes which have not yet been acked
 	 */
@@ -143,6 +139,14 @@ public class UtpSocket extends Socket {
 	 * The window in which messages have to arrive before being "lost"
 	 */
 	private int timeout;
+	/**
+	 * The RTT measured on this socket
+	 */
+	private int roundTripTime;
+	/**
+	 * The RTT Variance measured on this socket
+	 */
+	private int roundTripTimeVariance;
 	private SocketAddress remoteAddress;
 
 	/**
@@ -150,10 +154,9 @@ public class UtpSocket extends Socket {
 	 */
 	public UtpSocket() {
 		utpEnabled = true;
-		cur_window = 0;
 		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
-		wnd_size = 150;
+		max_window = wnd_size = 150;
 		seq_nr = 1;
 		timeout = 1000;
 		utpBuffer = new Stream(5000);
@@ -220,7 +223,7 @@ public class UtpSocket extends Socket {
 		connection_id_recv = new Random().nextInt() & 0xFFFF;
 		connection_id_send = connection_id_recv + 1;
 		System.out.println("Connecting uTP to " + address + " connId: " + connection_id_recv);
-		UtpMessage synMessage = new UtpMessage(connection_id_recv, cur_window, ST_SYN, seq_nr++, 0);
+		UtpMessage synMessage = new UtpMessage(connection_id_recv, max_window, ST_SYN, seq_nr++, 0);
 		write(synMessage);
 		long sendTime = System.currentTimeMillis();
 		int tries = 1;
@@ -283,7 +286,7 @@ public class UtpSocket extends Socket {
 			if(message.getType() != ST_STATE) { //We don't expect ACK's on STATE messages
 				messagesInFlight.add(message);
 			}
-			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4));
+			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " to " + remoteAddress);
 			return true;
 		} catch (IOException e) {
 			System.err.println("[uTP] Failed to send message: " + e.getMessage());
@@ -325,12 +328,10 @@ public class UtpSocket extends Socket {
 		short ackNumber = (short)data.readShort();
 		System.out.println("Extension: " + extension);
 		System.out.println("Connection ID: " + connection_id);
-		System.out.println("timestampc " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
-		System.out.println("timestamp: " + timestamp);
+		System.out.println("timestamp: " + timestamp + " (CNano: " + System.nanoTime() + "), CMicro: " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
 		System.out.println("timestampDiff: " + timestampDiff);
 		System.out.println("windowSize: " + windowSize);
-		System.out.println("sequenceNumber: " + sequenceNumber);
-		System.out.println("ackNumber: " + ackNumber);
+		System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + ackNumber);
 		if (extension != 0) {
 			while (data.available() > 0) {
 				extension = data.readByte();
@@ -339,14 +340,15 @@ public class UtpSocket extends Socket {
 				data.moveBack(-extensionLength);
 			}
 		}
-		measured_delay = getCurrentMicroseconds() - timestamp;
+		measured_delay = (getCurrentMicroseconds() & 0xFFFFFFFFL) - timestamp;
 		System.out.println("Message Delay: " + measured_delay);
 		// Process Data
 		switch (type) {
 			case ST_SYN: { // Connect
 				System.out.println("[uTP Protocol] SYN");
 				if(utpConnectionState == ConnectionState.CONNECTED) {
-					System.out.println("[uTP Protocol] Ignored SYN on uTP Connected Socket");
+					messageQueue.add(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
+					System.out.println("[uTP Protocol] Ignored SYN on uTP Connected Socket. Resending SYN ACK");
 					return;
 				}
 				connection_id_send = connection_id;
@@ -362,7 +364,22 @@ public class UtpSocket extends Socket {
 			
 			case ST_STATE: { // ACK
 				System.out.println("[uTP Protocol] STATE");
-				messagesInFlight.remove(new UtpMessage(sequenceNumber));
+				UtpMessage message = null;
+				for(int i = 0; i < messagesInFlight.size(); i++) {
+					if(messagesInFlight.get(i).equals(new UtpMessage(ackNumber))) {
+						message = messagesInFlight.remove(i);
+						break;
+					}
+				}
+				if(message != null) { //If this message hasn't been ack'ed before
+					long rtt = getCurrentMicroseconds() - message.getSendTime();
+					long delta = roundTripTime - rtt;
+					roundTripTimeVariance += (JMath.abs(delta) - roundTripTimeVariance) / 4;
+					roundTripTime = (int)(rtt - roundTripTime) / 8;
+					setTimeout(roundTripTime + roundTripTimeVariance * 4);
+					System.out.println("RTT: " + roundTripTime + ", Packet RTT: " + rtt);
+					System.out.println("RTTVar: " + roundTripTimeVariance + ", Packet RTTV: " + delta);
+				}
 				break;
 			}
 			
