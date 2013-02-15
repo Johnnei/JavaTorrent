@@ -34,8 +34,12 @@ public class Stream {
 	}
 
 	public void writeByte(byte[] array) {
-		for (int i = 0; i < array.length; i++) {
-			writeByte(array[i]);
+		writeByte(array, 0, array.length);
+	}
+	
+	public void writeByte(byte[] array, int offset, int length) {
+		for (int i = 0; i < length; i++) {
+			writeByte(array[offset + i]);
 		}
 	}
 

@@ -31,7 +31,7 @@ public class Manager {
 		}
 		try {
 			connectorThread = new PeerConnector();
-			connectorThread.start();
+			//connectorThread.start();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

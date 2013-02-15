@@ -3,8 +3,6 @@ package torrent.network.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -128,6 +126,15 @@ public class UtpSocket extends Socket {
 	 */
 	private Stream utpBuffer;
 	/**
+	 * A buffer to store data in which will be send in a larger chunk so we can match {@link #packetSize}
+	 */
+	private Stream sendBuffer;
+	/**
+	 * The last time at which the send buffer has been altered<br/>
+	 * If the last update is larger than 10ms then the {@link #sendBuffer} will be send so nothing will get stuck
+	 */
+	private long lastSendBufferUpdate;
+	/**
 	 * The messages which have not yet been acked
 	 */
 	private ArrayList<UtpMessage> messagesInFlight;
@@ -152,7 +159,7 @@ public class UtpSocket extends Socket {
 	/**
 	 * Creates a new uTP socket
 	 */
-	public UtpSocket() {
+	public UtpSocket() throws IOException {
 		utpEnabled = true;
 		utpConnectionState = ConnectionState.PENDING;
 		packetSize = 150;
@@ -160,16 +167,18 @@ public class UtpSocket extends Socket {
 		seq_nr = 1;
 		timeout = 1000;
 		utpBuffer = new Stream(5000);
+		sendBuffer = new Stream(packetSize);
 		connection_id_recv = NO_CONNECTION;
 		connection_id_send = NO_CONNECTION;
 		messagesInFlight = new ArrayList<>();
 		messageQueue = new ArrayList<>();
+		socket = new DatagramSocket();
 	}
 
 	/**
 	 * Creates a new uTP socket
 	 */
-	public UtpSocket(boolean utpEnabled) {
+	public UtpSocket(boolean utpEnabled) throws IOException {
 		this();
 		this.utpEnabled = utpEnabled;
 	}
@@ -177,7 +186,6 @@ public class UtpSocket extends Socket {
 	public UtpSocket(SocketAddress address, boolean utpEnabled) throws IOException {
 		this(utpEnabled);
 		remoteAddress = address;
-		socket = new DatagramSocket();
 	}
 
 	/**
@@ -185,7 +193,6 @@ public class UtpSocket extends Socket {
 	 */
 	public void accepted() throws IOException {
 		remoteAddress = getRemoteSocketAddress();
-		socket = new DatagramSocket(remoteAddress);
 	}
 
 	/**
@@ -198,6 +205,7 @@ public class UtpSocket extends Socket {
 		utpConnectionState = ConnectionState.DISCONNECTED;
 		utpEnabled = false;
 		super.connect(remoteAddress, 1000);
+		System.out.println("Connected");
 	}
 
 	/**
@@ -216,7 +224,8 @@ public class UtpSocket extends Socket {
 	 * @param timeout The maximum amount of miliseconds this connect attempt may take
 	 */
 	public void connect(SocketAddress address, int timeout) throws IOException {
-		socket = new DatagramSocket(getPort());
+		System.out.println("[uTP Protocol] Connecting...");
+		socket = new DatagramSocket();
 		remoteAddress = address;
 		this.timeout = timeout;
 		utpConnectionState = ConnectionState.CONNECTING;
@@ -246,7 +255,7 @@ public class UtpSocket extends Socket {
 					connect();
 				} else {
 					System.out.println("Connected to " + address);
-					receive(response);
+					receive(response, response.length);
 					utpConnectionState = ConnectionState.CONNECTED;
 				}
 			}
@@ -281,8 +290,7 @@ public class UtpSocket extends Socket {
 		message.setTimestamp(this);
 		byte[] data = message.getData();
 		try {
-			DatagramPacket packet = new DatagramPacket(data, data.length, remoteAddress);
-			socket.send(packet);
+			Manager.getManager().getUdpMultiplexer().send(new DatagramPacket(data, data.length, remoteAddress));
 			if(message.getType() != ST_STATE) { //We don't expect ACK's on STATE messages
 				messagesInFlight.add(message);
 			}
@@ -293,16 +301,7 @@ public class UtpSocket extends Socket {
 			return false;
 		}
 	}
-
-	/**
-	 * Accept a UDP Packet from the UDP Multiplexer
-	 * 
-	 * @param dataBuffer The data buffer used in the packet
-	 */
-	private void receive(byte[] dataBuffer) {
-		receive(dataBuffer, dataBuffer.length);
-	}
-
+	
 	/**
 	 * Accept a UDP Packet from the UDP Multiplexer
 	 * 
@@ -319,19 +318,19 @@ public class UtpSocket extends Socket {
 		int version = versionAndType & 0x7;
 		int type = versionAndType >>> 4;
 		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length);
-		int extension = data.readByte();
-		int connection_id = data.readShort();
+		int extension = data.readByte() & 0xFF;
+		int connection_id = data.readShort() & 0xFFFF;
 		long timestamp = (long)(data.readInt() & 0xFFFFFFFFL);
 		long timestampDiff = (long)(data.readInt() & 0xFFFFFFFFL);
-		long windowSize = data.readInt();
-		short sequenceNumber = (short)data.readShort();
+		long windowSize = data.readInt() & 0xFFFFFFFFL;
+		int sequenceNumber = data.readShort() & 0xFFFF;
 		short ackNumber = (short)data.readShort();
 		System.out.println("Extension: " + extension);
 		System.out.println("Connection ID: " + connection_id);
 		System.out.println("timestamp: " + timestamp + " (CNano: " + System.nanoTime() + "), CMicro: " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
 		System.out.println("timestampDiff: " + timestampDiff);
 		System.out.println("windowSize: " + windowSize);
-		System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + ackNumber);
+		System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + (ackNumber & 0xFFFF));
 		if (extension != 0) {
 			while (data.available() > 0) {
 				extension = data.readByte();
@@ -340,8 +339,9 @@ public class UtpSocket extends Socket {
 				data.moveBack(-extensionLength);
 			}
 		}
-		measured_delay = (getCurrentMicroseconds() & 0xFFFFFFFFL) - timestamp;
-		System.out.println("Message Delay: " + measured_delay);
+		measured_delay = ((getCurrentMicroseconds() & 0xFFFFFFFFL) - timestamp) / 1000;
+		ack_nr = ackNumber;
+		System.out.println("Message Delay: " + measured_delay + "ms");
 		// Process Data
 		switch (type) {
 			case ST_SYN: { // Connect
@@ -354,7 +354,7 @@ public class UtpSocket extends Socket {
 				connection_id_send = connection_id;
 				connection_id_recv = connection_id + 1;
 				seq_nr = (short)(new Random().nextInt() & 0xFFFF);
-				ack_nr = ackNumber;
+				ack_nr = (short)ackNumber;
 				utpConnectionState = ConnectionState.CONNECTED;
 				utpEnabled = true;
 				System.out.println("[uTP] Connected");
@@ -385,16 +385,21 @@ public class UtpSocket extends Socket {
 			
 			case ST_DATA: { // Data
 				System.out.println("[uTP Protocol] DATA");
+				storeData(dataBuffer, data.getWritePointer(), data.available());
 				break;
 			}
 			
 			case ST_FIN: { // Disconenct
 				System.out.println("[uTP Protocol] FIN");
+				write(new UtpMessage(this, ST_FIN, seq_nr, ack_nr));
+				utpConnectionState = ConnectionState.DISCONNECTED;
 				break;
 			}
 			
 			case ST_RESET: { //Crash
 				System.out.println("[uTP Protocol] RESET");
+				utpConnectionState = ConnectionState.PENDING;
+				utpEnabled = false;
 				break;
 			}
 			
@@ -431,6 +436,7 @@ public class UtpSocket extends Socket {
 	 */
 	private void storeData(byte[] dataBuffer, int offset, int length) {
 		if (utpBuffer.writeableSpace() >= length) {
+			System.out.println("Storing " + length + " bytes");
 			for (int i = 0; i < length; i++) {
 				utpBuffer.writeByte(dataBuffer[offset + i]);
 			}
@@ -441,6 +447,45 @@ public class UtpSocket extends Socket {
 			}
 			storeData(dataBuffer, offset, length);
 		}
+	}
+	
+	/**
+	 * Writes a byte array on the uTP Stream
+	 * @param b The array of bytes to write
+	 */
+	public void write(byte b[]) {
+		int writtenBytes = 0;
+		while(writtenBytes < b.length) {
+			int bytesToWrite = JMath.min(b.length - writtenBytes, sendBuffer.writeableSpace());
+			if(bytesToWrite == 0) { //sendBuffer is full
+				sendBuffer();
+			} else {
+				sendBuffer.writeByte(b, writtenBytes, bytesToWrite);
+				writtenBytes += bytesToWrite;
+			}
+		}
+	}
+	
+	/**
+	 * Writes a byte on the uTP Stream
+	 * @param i The byte
+	 */
+	public void write(int i) {
+		if(sendBuffer.writeableSpace() > 0) {
+			sendBuffer.writeByte(i);
+		} else {
+			sendBuffer();
+			sendBuffer.writeByte(i);
+		}
+	}
+	
+	/**
+	 * Tries to send the {@link #sendBuffer}
+	 */
+	private void sendBuffer() {
+		UtpMessage message = new UtpMessage(this, ST_DATA, ++seq_nr, ack_nr, sendBuffer.getBuffer());
+		send(message);
+		sendBuffer.resetWritePointer();
 	}
 	
 	/**
@@ -488,7 +533,7 @@ public class UtpSocket extends Socket {
 	public void checkForPackets() {
 		byte[] data = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
 		if (data != null) {
-			receive(data);
+			receive(data, data.length);
 		}
 	}
 

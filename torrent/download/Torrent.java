@@ -177,7 +177,7 @@ public class Torrent extends Thread implements Logable {
 		connectorThreads = new PeerConnectorThread[Config.getConfig().getInt("peer-max_concurrent_connecting", DefaultConfig.PEER_MAX_CONCURRENT_CONNECTING)];
 		for (int i = 0; i < connectorThreads.length; i++) {
 			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting", DefaultConfig.PEER_MAX_CONNECTING) / connectorThreads.length);
-			//connectorThreads[i].start();
+			connectorThreads[i].start();
 		}
 		readThread = new PeersReadThread(this);
 		writeThread = new PeersWriteThread(this);

@@ -17,6 +17,7 @@ import torrent.network.Stream;
 public class UdpMultiplexer extends Thread implements Logable {
 
 	private final Object PACKETLIST_LOCK = new Object();
+	private final Object SEND_LOCK = new Object();
 	private UdpPeerConnector peerConnector;
 	private DatagramSocket socket;
 	/**
@@ -101,6 +102,12 @@ public class UdpMultiplexer extends Thread implements Logable {
 			}
 		}
 	}
+	
+	public void send(DatagramPacket udpPacket) throws IOException {
+		synchronized (SEND_LOCK) {
+			socket.send(udpPacket);
+		}
+	}
 
 	/**
 	 * Accepts a packet from the list which matches the ip and port
@@ -120,10 +127,10 @@ public class UdpMultiplexer extends Thread implements Logable {
 				int type = data.readByte() >>> 4;
 				data.readByte(); // Version and Type byte and the extension byte
 				int connId = data.readShort();
-				System.out.println("Packet for " + ip + " detected, Checking ID's: " + connId + " =?= " + connectionId + ", Packet: " + type);
 				if(type == UtpSocket.ST_SYN) {
 					connId++;
 				}
+				log(packetIp + " " + connectionId + " =?= " + connId);
 				if (connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
 					synchronized (PACKETLIST_LOCK) {
 						packetList.remove(packetIndex);

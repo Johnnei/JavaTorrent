@@ -5,8 +5,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 
-import org.johnnei.utils.ThreadUtils;
-
 import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
@@ -101,7 +99,7 @@ public class Peer implements Logable, ISortable {
 			inStream = socket.getInputStream(this);
 			outStream = socket.getOutputStream();
 		} catch (IOException e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 			crashed = true;
 			return;
 		}
@@ -196,22 +194,6 @@ public class Peer implements Logable, ISortable {
 		}
 		sendExtensionMessage();
 		sendHaveMessages();
-	}
-
-	public void run() {
-		while (torrent.keepDownloading() && !closed()) {
-			try {
-				if (!passedHandshake)
-					processHandshake();
-				readMessage();
-				sendMessage();
-			} catch (IOException e) {
-				close();
-			}
-			ThreadUtils.sleep(1);
-		}
-		close();
-		setStatus("Connection closed");
 	}
 
 	public boolean canReadMessage() throws IOException {
@@ -429,6 +411,10 @@ public class Peer implements Logable, ISortable {
 			}
 		}
 	}
+	
+	public void forceClose() {
+		crashed = true;
+	}
 
 	/**
 	 * Gracefully close the connection with this peer
@@ -437,12 +423,16 @@ public class Peer implements Logable, ISortable {
 		try {
 			if (socket != null) {
 				if (!socket.isClosed()) {
-					socket.shutdownInput();
-					socket.shutdownOutput();
+					if(!socket.isInputShutdown())
+						socket.shutdownInput();
+					if(!socket.isOutputShutdown())
+						socket.shutdownOutput();
 					socket.close();
 				}
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
+			forceClose();
 		}
 	}
 

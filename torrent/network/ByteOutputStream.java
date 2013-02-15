@@ -19,7 +19,10 @@ public class ByteOutputStream extends DataOutputStream {
 
 	public void write(int i) throws IOException {
 		speed++;
-		super.write(i);
+		if(socket.isUTP()) {
+			socket.write(i);
+		} else 
+			super.write(i);
 	}
 
 	public void write(byte[] bytes, int offset, int length) throws IOException {
