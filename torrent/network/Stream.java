@@ -262,11 +262,19 @@ public class Stream {
 	}
 
 	/**
-	 * The current offset pointer which point to the current offset in the buffer at which you can read/write
+	 * The current offset pointer which point to the current offset in the buffer at which you can write
 	 * 
 	 * @return
 	 */
 	public int getWritePointer() {
 		return writeOffset;
+	}
+	
+	/**
+	 * The current offset pointer which point to the current offset in the buffer at which you can read
+	 * @return
+	 */
+	public int getReadPointer() {
+		return readOffset;
 	}
 }

@@ -289,10 +289,10 @@ public class UtpSocket extends Socket {
 		byte[] data = message.getData();
 		try {
 			Manager.getManager().getUdpMultiplexer().send(new DatagramPacket(data, data.length, remoteAddress));
-			if(message.getType() != ST_STATE) { //We don't expect ACK's on STATE messages
+			if(message.getType() == ST_DATA) { //We don't expect ACK's on anything but DATA
 				messagesInFlight.add(message);
 			}
-			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " to " + remoteAddress + ", seq_nr: " + (data[2] << 8 | data[3]));
+			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " to " + remoteAddress + ", seq_nr: " + message.hashCode());
 			return true;
 		} catch (IOException e) {
 			System.err.println("[uTP] Failed to send message: " + e.getMessage());
@@ -368,7 +368,7 @@ public class UtpSocket extends Socket {
 			
 			case ST_DATA: { // Data
 				System.err.println("[uTP Protocol] DATA");
-				storeData(dataBuffer, data.getWritePointer(), data.available());
+				storeData(dataBuffer, data.getReadPointer(), data.available());
 				break;
 			}
 			
@@ -489,7 +489,6 @@ public class UtpSocket extends Socket {
 	private void sendBuffer() {
 		UtpMessage message = new UtpMessage(this, ST_DATA, seq_nr++, ack_nr, sendBuffer.getWrittenBuffer());
 		messageQueue.addLast(message);
-		System.err.println("sendBuffer() with buffer length: " + sendBuffer.getWritePointer() + ", seq_nr: " + (seq_nr - 1));
 		sendBuffer.resetWritePointer();
 	}
 	
@@ -616,9 +615,9 @@ public class UtpSocket extends Socket {
 	@Override
 	public String toString() {
 		if(!super.isConnected()) {
-			return remoteAddress.toString();
+			return remoteAddress.toString().substring(1);
 		} else {
-			return super.getInetAddress().toString();
+			return super.getInetAddress().toString().substring(1);
 		}
 	}
 	

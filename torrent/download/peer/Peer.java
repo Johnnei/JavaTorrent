@@ -300,7 +300,7 @@ public class Peer implements Logable, ISortable {
 	public String toString() {
 		if (socket != null) {
 			if(socket.isUTP()) {
-				return "[uTP] " + socket;
+				return "uTP " + socket;
 			} else {
 				return socket + ":" + port;
 			}
