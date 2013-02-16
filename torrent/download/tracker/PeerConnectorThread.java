@@ -57,7 +57,7 @@ public class PeerConnectorThread extends Thread {
 						}
 					} catch (IOException e) {
 						p.close();
-						p.log(e.getMessage(), true);
+						//p.log(e.getMessage(), true);
 					}
 					peer[i] = null;
 					addToPeerCount(-1);

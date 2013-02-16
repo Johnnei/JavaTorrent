@@ -250,6 +250,16 @@ public class Stream {
 	public byte[] getBuffer() {
 		return buffer;
 	}
+	
+	/**
+	 * The raw bytes in the stream up to the {@link #writeOffset}
+	 * @return
+	 */
+	public byte[] getWrittenBuffer() {
+		byte[] data = new byte[writeOffset];
+		System.arraycopy(buffer, 0, data, 0, writeOffset);
+		return data;
+	}
 
 	/**
 	 * The current offset pointer which point to the current offset in the buffer at which you can read/write

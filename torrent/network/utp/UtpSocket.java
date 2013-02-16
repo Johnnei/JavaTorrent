@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Random;
 
 import org.johnnei.utils.JMath;
@@ -141,7 +142,7 @@ public class UtpSocket extends Socket {
 	/**
 	 * The messages which have not yet been send by limitations
 	 */
-	private ArrayList<UtpMessage> messageQueue;
+	private LinkedList<UtpMessage> messageQueue;
 	/**
 	 * The window in which messages have to arrive before being "lost"
 	 */
@@ -171,7 +172,7 @@ public class UtpSocket extends Socket {
 		connection_id_recv = NO_CONNECTION;
 		connection_id_send = NO_CONNECTION;
 		messagesInFlight = new ArrayList<>();
-		messageQueue = new ArrayList<>();
+		messageQueue = new LinkedList<>();
 		socket = new DatagramSocket();
 	}
 
@@ -224,21 +225,19 @@ public class UtpSocket extends Socket {
 	 * @param timeout The maximum amount of miliseconds this connect attempt may take
 	 */
 	public void connect(SocketAddress address, int timeout) throws IOException {
-		System.out.println("[uTP Protocol] Connecting...");
 		socket = new DatagramSocket();
 		remoteAddress = address;
-		this.timeout = timeout;
 		utpConnectionState = ConnectionState.CONNECTING;
 		connection_id_recv = new Random().nextInt() & 0xFFFF;
 		connection_id_send = connection_id_recv + 1;
-		System.out.println("Connecting uTP to " + address + " connId: " + connection_id_recv);
+		System.out.println("[uTP Protocol] Connecting to " + address + " connId: " + connection_id_recv);
 		UtpMessage synMessage = new UtpMessage(connection_id_recv, max_window, ST_SYN, seq_nr++, 0);
 		write(synMessage);
 		long sendTime = System.currentTimeMillis();
 		int tries = 1;
 		byte[] response = null;
 		while (response == null) {
-			if (System.currentTimeMillis() - sendTime >= 1000) { // Timeout
+			if (System.currentTimeMillis() - sendTime >= timeout) { // Timeout
 				write(synMessage);
 				sendTime = System.currentTimeMillis();
 				if (++tries == 3) {
@@ -254,7 +253,7 @@ public class UtpSocket extends Socket {
 					System.err.println("Invalid SYN Response: " + (response[0] >>> 4));
 					connect();
 				} else {
-					System.out.println("Connected to " + address);
+					System.out.println("[uTP Protocol] Connected to " + address);
 					receive(response, response.length);
 					utpConnectionState = ConnectionState.CONNECTED;
 				}
@@ -271,12 +270,11 @@ public class UtpSocket extends Socket {
 	 * @return true if the message has been send else false
 	 */
 	public boolean send(UtpMessage message) {
+		System.out.println("Checking send of a " + message.getSize() + " bytes of type " + message.getType());
 		if (getBytesInFlight() + message.getSize() < wnd_size) {
 			return write(message);
 		} else {
-			if(!messageQueue.contains(message)) {
-				messageQueue.add(message);
-			}
+			messageQueue.addLast(message);
 			return false;
 		}
 	}
@@ -294,7 +292,7 @@ public class UtpSocket extends Socket {
 			if(message.getType() != ST_STATE) { //We don't expect ACK's on STATE messages
 				messagesInFlight.add(message);
 			}
-			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " to " + remoteAddress);
+			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " to " + remoteAddress + ", seq_nr: " + (data[2] << 8 | data[3]));
 			return true;
 		} catch (IOException e) {
 			System.err.println("[uTP] Failed to send message: " + e.getMessage());
@@ -317,7 +315,6 @@ public class UtpSocket extends Socket {
 		int versionAndType = data.readByte();
 		int version = versionAndType & 0x7;
 		int type = versionAndType >>> 4;
-		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length);
 		int extension = data.readByte() & 0xFF;
 		int connection_id = data.readShort() & 0xFFFF;
 		long timestamp = (long)(data.readInt() & 0xFFFFFFFFL);
@@ -325,29 +322,31 @@ public class UtpSocket extends Socket {
 		long windowSize = data.readInt() & 0xFFFFFFFFL;
 		int sequenceNumber = data.readShort() & 0xFFFF;
 		short ackNumber = (short)data.readShort();
-		System.out.println("Extension: " + extension);
-		System.out.println("Connection ID: " + connection_id);
-		System.out.println("timestamp: " + timestamp + " (CNano: " + System.nanoTime() + "), CMicro: " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
-		System.out.println("timestampDiff: " + timestampDiff);
-		System.out.println("windowSize: " + windowSize);
+		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length + ", Connection ID: " + connection_id);
+		System.out.println("Extension: " + extension + ", windowSize: " + windowSize);
+		System.out.println("timestamp: " + timestamp + ", Diff: " + timestampDiff + ", (CNano: " + System.nanoTime() + "), CMicro: " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
 		System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + (ackNumber & 0xFFFF));
 		if (extension != 0) {
 			while (data.available() > 0) {
 				extension = data.readByte();
 				int extensionLength = data.readByte();
 				System.out.println("Extension " + extension + " of length " + extensionLength);
-				data.moveBack(-extensionLength);
+				for(int i = 0; i < extensionLength; i++) {
+					System.out.print(Integer.toHexString(data.readByte()) + " ");
+				}
+				System.out.println();
 			}
 		}
 		measured_delay = ((getCurrentMicroseconds() & 0xFFFFFFFFL) - timestamp) / 1000;
 		ack_nr = ackNumber;
+		processACK(ack_nr);
 		System.out.println("Message Delay: " + measured_delay + "ms");
 		// Process Data
 		switch (type) {
 			case ST_SYN: { // Connect
 				System.out.println("[uTP Protocol] SYN");
 				if(utpConnectionState == ConnectionState.CONNECTED) {
-					messageQueue.add(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
+					messageQueue.addLast(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
 					System.out.println("[uTP Protocol] Ignored SYN on uTP Connected Socket. Resending SYN ACK");
 					return;
 				}
@@ -358,33 +357,17 @@ public class UtpSocket extends Socket {
 				utpConnectionState = ConnectionState.CONNECTED;
 				utpEnabled = true;
 				System.out.println("[uTP] Connected");
-				messageQueue.add(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
+				messageQueue.addLast(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
 				break;
 			}
 			
 			case ST_STATE: { // ACK
 				System.out.println("[uTP Protocol] STATE");
-				UtpMessage message = null;
-				for(int i = 0; i < messagesInFlight.size(); i++) {
-					if(messagesInFlight.get(i).equals(new UtpMessage(ackNumber))) {
-						message = messagesInFlight.remove(i);
-						break;
-					}
-				}
-				if(message != null) { //If this message hasn't been ack'ed before
-					long rtt = getCurrentMicroseconds() - message.getSendTime();
-					long delta = roundTripTime - rtt;
-					roundTripTimeVariance += (JMath.abs(delta) - roundTripTimeVariance) / 4;
-					roundTripTime = (int)(rtt - roundTripTime) / 8;
-					setTimeout(roundTripTime + roundTripTimeVariance * 4);
-					System.out.println("RTT: " + roundTripTime + ", Packet RTT: " + rtt);
-					System.out.println("RTTVar: " + roundTripTimeVariance + ", Packet RTTV: " + delta);
-				}
 				break;
 			}
 			
 			case ST_DATA: { // Data
-				System.out.println("[uTP Protocol] DATA");
+				System.err.println("[uTP Protocol] DATA");
 				storeData(dataBuffer, data.getWritePointer(), data.available());
 				break;
 			}
@@ -407,6 +390,25 @@ public class UtpSocket extends Socket {
 				System.err.println("[uTP Protocol] Unkown type: " + type);
 				break;
 			}
+		}
+	}
+	
+	private void processACK(int ackNumber) {
+		UtpMessage message = null;
+		for(int i = 0; i < messagesInFlight.size(); i++) {
+			if(messagesInFlight.get(i).equals(new UtpMessage(ackNumber))) {
+				message = messagesInFlight.remove(i);
+				break;
+			}
+		}
+		if(message != null) { //If this message hasn't been ack'ed before
+			long rtt = getCurrentMicroseconds() - message.getSendTime();
+			long delta = roundTripTime - rtt;
+			roundTripTimeVariance += (JMath.abs(delta) - roundTripTimeVariance) / 4;
+			roundTripTime = (int)(rtt - roundTripTime) / 8;
+			setTimeout(roundTripTime + roundTripTimeVariance * 4);
+			System.out.println("RTT: " + roundTripTime + ", Packet RTT: " + rtt);
+			System.out.println("RTTVar: " + roundTripTimeVariance + ", Packet RTTV: " + delta);
 		}
 	}
 	
@@ -436,7 +438,7 @@ public class UtpSocket extends Socket {
 	 */
 	private void storeData(byte[] dataBuffer, int offset, int length) {
 		if (utpBuffer.writeableSpace() >= length) {
-			System.out.println("Storing " + length + " bytes");
+			System.err.println("Storing " + length + " bytes");
 			for (int i = 0; i < length; i++) {
 				utpBuffer.writeByte(dataBuffer[offset + i]);
 			}
@@ -462,6 +464,7 @@ public class UtpSocket extends Socket {
 			} else {
 				sendBuffer.writeByte(b, writtenBytes, bytesToWrite);
 				writtenBytes += bytesToWrite;
+				lastSendBufferUpdate = System.currentTimeMillis();
 			}
 		}
 	}
@@ -473,6 +476,7 @@ public class UtpSocket extends Socket {
 	public void write(int i) {
 		if(sendBuffer.writeableSpace() > 0) {
 			sendBuffer.writeByte(i);
+			lastSendBufferUpdate = System.currentTimeMillis();
 		} else {
 			sendBuffer();
 			sendBuffer.writeByte(i);
@@ -483,8 +487,9 @@ public class UtpSocket extends Socket {
 	 * Tries to send the {@link #sendBuffer}
 	 */
 	private void sendBuffer() {
-		UtpMessage message = new UtpMessage(this, ST_DATA, ++seq_nr, ack_nr, sendBuffer.getBuffer());
-		send(message);
+		UtpMessage message = new UtpMessage(this, ST_DATA, seq_nr++, ack_nr, sendBuffer.getWrittenBuffer());
+		messageQueue.addLast(message);
+		System.err.println("sendBuffer() with buffer length: " + sendBuffer.getWritePointer() + ", seq_nr: " + (seq_nr - 1));
 		sendBuffer.resetWritePointer();
 	}
 	
@@ -492,10 +497,15 @@ public class UtpSocket extends Socket {
 	 * Checks if we need to try to send messages
 	 */
 	public void checkForSendingPackets() {
+		if(System.currentTimeMillis() - lastSendBufferUpdate > 10) {
+			if(sendBuffer.getWritePointer() > 0) {
+				sendBuffer();
+			}
+		}
 		while(messageQueue.size() > 0) {
-			UtpMessage message = messageQueue.get(0);
-			if(send(messageQueue.get(0))) {
-				messageQueue.remove(message);
+			UtpMessage message = messageQueue.getFirst();
+			if(send(message)) {
+				messageQueue.removeFirst();
 			} else {
 				break;
 			}

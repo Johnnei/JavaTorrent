@@ -130,7 +130,6 @@ public class UdpMultiplexer extends Thread implements Logable {
 				if(type == UtpSocket.ST_SYN) {
 					connId++;
 				}
-				log(packetIp + " " + connectionId + " =?= " + connId);
 				if (connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
 					synchronized (PACKETLIST_LOCK) {
 						packetList.remove(packetIndex);

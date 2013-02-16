@@ -51,6 +51,7 @@ public class UtpMessage {
 	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr, byte[] data) {
 		this(socket, type, seq_nr, ack_nr);
 		Stream dataStream = new Stream(this.data);
+		dataStream.expand(data.length);
 		dataStream.writeByte(data);
 		this.data = dataStream.getBuffer();
 	}

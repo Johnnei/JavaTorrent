@@ -99,7 +99,7 @@ public class Peer implements Logable, ISortable {
 			inStream = socket.getInputStream(this);
 			outStream = socket.getOutputStream();
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			crashed = true;
 			return;
 		}
