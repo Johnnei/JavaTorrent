@@ -270,7 +270,6 @@ public class UtpSocket extends Socket {
 	 * @return true if the message has been send else false
 	 */
 	public boolean send(UtpMessage message) {
-		System.out.println("Checking send of a " + message.getSize() + " bytes of type " + message.getType());
 		if (getBytesInFlight() + message.getSize() < wnd_size) {
 			return write(message);
 		} else {

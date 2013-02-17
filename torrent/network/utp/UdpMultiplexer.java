@@ -122,25 +122,25 @@ public class UdpMultiplexer extends Thread implements Logable {
 			String packetIp = packet.getSocketAddress().toString().split(":")[0];
 			String expectedIp = ip.toString().split(":")[0];
 			if (packetIp.equals(expectedIp)) { // If the IP matches we will start deeper checks
-				Stream data = new Stream(packet.getData());
-				data.skipWrite(packet.getOffset());
-				int type = data.readByte() >>> 4;
-				data.readByte(); // Version and Type byte and the extension byte
-				int connId = data.readShort();
-				if(type == UtpSocket.ST_SYN) {
-					connId++;
-				}
-				if (connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
-					synchronized (PACKETLIST_LOCK) {
+				synchronized (PACKETLIST_LOCK) {
+					Stream data = new Stream(packet.getData());
+					data.skipWrite(packet.getOffset());
+					int type = data.readByte() >>> 4;
+					data.readByte(); // Version and Type byte and the extension byte
+					int connId = data.readShort();
+					if(type == UtpSocket.ST_SYN) {
+						connId++;
+					}
+					if (connId == connectionId || connectionId == UtpSocket.NO_CONNECTION) {
 						packetList.remove(packetIndex);
-					}
-					byte[] rawData = packet.getData();
-					byte[] packetData = new byte[packet.getLength()];
-					int offset = packet.getOffset();
-					for (int i = 0; i < packetData.length; i++) {
-						packetData[i] = rawData[offset + i];
-					}
-					return packetData;
+						byte[] rawData = packet.getData();
+						byte[] packetData = new byte[packet.getLength()];
+						int offset = packet.getOffset();
+						for (int i = 0; i < packetData.length; i++) {
+							packetData[i] = rawData[offset + i];
+						}
+						return packetData;
+					}	
 				}
 			}
 		}
