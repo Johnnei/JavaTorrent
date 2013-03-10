@@ -2,7 +2,6 @@ package torrent.network.utp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -65,36 +64,19 @@ public class UtpSocket extends Socket {
 	 */
 	public static final byte ST_SYN = 4;
 	/**
-	 * The connectionId for sockets which have not yet been initialised
-	 */
-	public static final int NO_CONNECTION = Integer.MAX_VALUE;
-	/**
+	 * The connectionId for sockets which have not yet been initialised<br/>
 	 * This is the default state for either:<br/>
 	 * TCP Connection or uTP is being initialized
 	 */
+	public static final int NO_CONNECTION = Integer.MAX_VALUE;
 	/**
-	 * UDP Socket
+	 * My connection info
 	 */
-	private DatagramSocket socket;
-
+	private UtpClient myClient;
 	/**
-	 * The maximum amount of bytes which have not yet been acked
+	 * Their connection info
 	 */
-	private int max_window;
-	/**
-	 * The {@link #max_window} as received from the other end.<br/>
-	 * This sets the upper limit for the bytes which have not yet been acked
-	 */
-	private int wnd_size;
-	/**
-	 * Our 16-bit connection id
-	 */
-	private int connection_id_send;
-	/**
-	 * Their 16-bit connection id.<br/>
-	 * This should be {@link #connection_id_send} value + 1
-	 */
-	private int connection_id_recv;
+	private UtpClient peerClient;
 	/**
 	 * The next packet id
 	 */
@@ -163,17 +145,14 @@ public class UtpSocket extends Socket {
 	public UtpSocket() throws IOException {
 		utpEnabled = true;
 		utpConnectionState = ConnectionState.PENDING;
-		packetSize = 150;
-		max_window = wnd_size = 150;
+		myClient = new UtpClient();
+		peerClient = new UtpClient();
 		seq_nr = 1;
 		timeout = 1000;
 		utpBuffer = new Stream(5000);
 		sendBuffer = new Stream(packetSize);
-		connection_id_recv = NO_CONNECTION;
-		connection_id_send = NO_CONNECTION;
 		messagesInFlight = new ArrayList<>();
 		messageQueue = new LinkedList<>();
-		socket = new DatagramSocket();
 	}
 
 	/**
@@ -225,13 +204,12 @@ public class UtpSocket extends Socket {
 	 * @param timeout The maximum amount of miliseconds this connect attempt may take
 	 */
 	public void connect(SocketAddress address, int timeout) throws IOException {
-		socket = new DatagramSocket();
 		remoteAddress = address;
 		utpConnectionState = ConnectionState.CONNECTING;
-		connection_id_recv = new Random().nextInt() & 0xFFFF;
-		connection_id_send = connection_id_recv + 1;
-		System.out.println("[uTP Protocol] Connecting to " + address + " connId: " + connection_id_recv);
-		UtpMessage synMessage = new UtpMessage(connection_id_recv, max_window, ST_SYN, seq_nr++, 0);
+		peerClient.setConnectionId(new Random().nextInt() & 0xFFFF);
+		myClient.setConnectionId(peerClient.getConnectionId() + 1);
+		System.out.println("[uTP Protocol] Connecting to " + address + " connId: " + peerClient.getConnectionId());
+		UtpMessage synMessage = new UtpMessage(peerClient.getConnectionId(), myClient.getWindowSize(), ST_SYN, seq_nr++, 0);
 		write(synMessage);
 		long sendTime = System.currentTimeMillis();
 		int tries = 1;
@@ -245,7 +223,7 @@ public class UtpSocket extends Socket {
 					break;
 				}
 			}
-			response = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
+			response = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, peerClient.getConnectionId());
 			if (response == null) {
 				ThreadUtils.sleep(100);
 			} else {
@@ -270,7 +248,7 @@ public class UtpSocket extends Socket {
 	 * @return true if the message has been send else false
 	 */
 	public boolean send(UtpMessage message) {
-		if (getBytesInFlight() + message.getSize() < wnd_size) {
+		if (getBytesInFlight() + message.getSize() < peerClient.getWindowSize()) {
 			return write(message);
 		} else {
 			messageQueue.addLast(message);
@@ -323,7 +301,7 @@ public class UtpSocket extends Socket {
 		short ackNumber = (short)data.readShort();
 		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length + ", Connection ID: " + connection_id);
 		System.out.println("Extension: " + extension + ", windowSize: " + windowSize);
-		System.out.println("timestamp: " + timestamp + ", Diff: " + timestampDiff + ", (CNano: " + System.nanoTime() + "), CMicro: " + (getCurrentMicroseconds() & 0xFFFFFFFFL));
+		System.out.println("timestamp: " + timestamp + ", Diff: " + timestampDiff + ", CMicro: " + getCurrentMicroseconds());
 		System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + (ackNumber & 0xFFFF));
 		if (extension != 0) {
 			while (data.available() > 0) {
@@ -331,7 +309,7 @@ public class UtpSocket extends Socket {
 				int extensionLength = data.readByte();
 				System.out.println("Extension " + extension + " of length " + extensionLength);
 				for(int i = 0; i < extensionLength; i++) {
-					System.out.print(Integer.toHexString(data.readByte()) + " ");
+					System.out.print("0x" + Integer.toHexString(data.readByte()) + " ");
 				}
 				System.out.println();
 			}
@@ -349,8 +327,8 @@ public class UtpSocket extends Socket {
 					System.out.println("[uTP Protocol] Ignored SYN on uTP Connected Socket. Resending SYN ACK");
 					return;
 				}
-				connection_id_send = connection_id;
-				connection_id_recv = connection_id + 1;
+				myClient.setConnectionId(connection_id);
+				peerClient.setConnectionId(connection_id + 1); 
 				seq_nr = (short)(new Random().nextInt() & 0xFFFF);
 				ack_nr = (short)ackNumber;
 				utpConnectionState = ConnectionState.CONNECTED;
@@ -416,7 +394,7 @@ public class UtpSocket extends Socket {
 	 * @param window The new max_window
 	 */
 	private void setMaxWindow(int window) {
-		max_window = JMath.max(window, 150);
+		myClient.setWindowSize(JMath.max(window, 150));
 	}
 	
 	/**
@@ -539,7 +517,7 @@ public class UtpSocket extends Socket {
 	 * Checks the connection if there are pending messages
 	 */
 	public void checkForPackets() {
-		byte[] data = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, connection_id_recv);
+		byte[] data = Manager.getManager().getUdpMultiplexer().accept(remoteAddress, peerClient.getConnectionId());
 		if (data != null) {
 			receive(data, data.length);
 		}
@@ -566,7 +544,8 @@ public class UtpSocket extends Socket {
 	 * @return
 	 */
 	public long getCurrentMicroseconds() {
-		return (System.currentTimeMillis() & 0xFFFFFFFFL) * 1000L;//Strip to 32-bit precision
+		/*return (System.currentTimeMillis() * 1000L) & 0xFFFFFFFFL;//Strip to 32-bit precision*/
+		return System.currentTimeMillis();
 	}
 
 	/**
@@ -579,13 +558,7 @@ public class UtpSocket extends Socket {
 	}
 
 	public boolean isClosed() {
-		if (utpEnabled) {
-			return utpConnectionState == ConnectionState.DISCONNECTED;
-		} else {
-			if (socket == null)
-				return false; // Else it won't even connect
-			return socket.isClosed();
-		}
+		return utpConnectionState == ConnectionState.DISCONNECTED;
 	}
 
 	/**
@@ -638,22 +611,12 @@ public class UtpSocket extends Socket {
 		return measured_delay;
 	}
 
-	/**
-	 * Gets the connection ID which we use to sign messages with
-	 * 
-	 * @return
-	 */
-	public int getConnectionId() {
-		return connection_id_send;
+	public UtpClient getMyClient() {
+		return myClient;
 	}
-
-	/**
-	 * Gets the current window size which we want to advertise
-	 * 
-	 * @return
-	 */
-	public int getWindowSize() {
-		return max_window;
+	
+	public UtpClient getPeerClient() {
+		return peerClient;
 	}
 
 	/**

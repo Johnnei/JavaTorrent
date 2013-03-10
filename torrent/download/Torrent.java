@@ -508,7 +508,10 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public boolean needAnnounce() {
 		int peersPerThread = Config.getConfig().getInt("peer-max_connecting", DefaultConfig.PEER_MAX_CONNECTING) / Config.getConfig().getInt("peer-max_concurrent_connecting", DefaultConfig.PEER_MAX_CONCURRENT_CONNECTING);
-		return peersWanted() >= peersPerThread && peers.size() < peerManager.getMaxPendingPeers(torrentStatus) && getFreeConnectingCapacity() > 0;
+		boolean needEnoughPeers = peersWanted() >= peersPerThread;
+		boolean notExceedMaxPendingPeers = peers.size() < peerManager.getMaxPendingPeers(torrentStatus);
+		boolean hasConnectingSpace = getFreeConnectingCapacity() > 0;
+		return needEnoughPeers && notExceedMaxPendingPeers && hasConnectingSpace;
 	}
 
 	public int getMaxPeers() {

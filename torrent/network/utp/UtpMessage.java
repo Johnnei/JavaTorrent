@@ -64,7 +64,7 @@ public class UtpMessage {
 	 * @param ack_nr The sequence number which we want to acknowledge
 	 */
 	public UtpMessage(UtpSocket socket, int type, int seq_nr, int ack_nr) {
-		this(socket.getConnectionId(), socket.getWindowSize(), type, seq_nr, ack_nr);
+		this(socket.getMyClient().getConnectionId(), socket.getMyClient().getWindowSize(), type, seq_nr, ack_nr);
 	}
 	
 	/**
