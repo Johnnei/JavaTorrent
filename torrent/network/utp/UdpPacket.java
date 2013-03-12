@@ -6,10 +6,12 @@ public class UdpPacket {
 	
 	private DatagramPacket packet;
 	private long receiveTime;
+	private boolean processed;
 	
 	public UdpPacket(DatagramPacket packet) {
 		this.packet = packet;
 		receiveTime = System.currentTimeMillis();
+		processed = false;
 	}
 	
 	public long getLifetime() {
@@ -18,6 +20,14 @@ public class UdpPacket {
 	
 	public DatagramPacket getPacket() {
 		return packet;
+	}
+	
+	public void processed() {
+		processed = true;
+	}
+	
+	public boolean isProcessed() {
+		return processed;
 	}
 
 }
