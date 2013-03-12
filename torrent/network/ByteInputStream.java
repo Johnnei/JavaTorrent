@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import torrent.download.peer.Peer;
-import torrent.network.utp.UtpSocket;
 
 public class ByteInputStream extends DataInputStream {
 
@@ -25,43 +24,21 @@ public class ByteInputStream extends DataInputStream {
 	 * The last time a buffer was created
 	 */
 	private long lastBufferCreate;
-	/**
-	 * The associated utpSocket to check from which inputstream we need to read
-	 */
-	private UtpSocket socket;
 
-	public ByteInputStream(UtpSocket socket, Peer peer, InputStream in) {
+	public ByteInputStream(Peer peer, InputStream in) {
 		super(in);
-		this.socket = socket;
 		this.peer = peer;
 		speed = 0;
 	}
 
 	@Override
 	public int read() throws IOException {
-		int b = readData();
+		int b = super.read();
 		if (b != -1) {
 			++speed;
 			peer.updateLastActivity();
 		}
 		return b;
-	}
-	
-	@Override
-	public int available() throws IOException {
-		if(socket.isUTP()) {
-			return socket.getStream().available();
-		} else {
-			return super.available();
-		}
-	}
-	
-	private int readData() throws IOException {
-		if(socket.isUTP()) {
-			return socket.getStream().readByte();
-		} else {
-			return super.read();
-		}
 	}
 
 	public String readString(int length) throws IOException {

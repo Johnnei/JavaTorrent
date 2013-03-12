@@ -3,6 +3,7 @@ package torrent.download.peer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import torrent.Logable;
@@ -11,7 +12,6 @@ import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
-import torrent.network.utp.UtpSocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -29,7 +29,7 @@ public class Peer implements Logable, ISortable {
 	private int port;
 
 	private Torrent torrent;
-	private UtpSocket socket;
+	private Socket socket;
 	private ByteOutputStream outStream;
 	private ByteInputStream inStream;
 	private boolean crashed;
@@ -94,10 +94,10 @@ public class Peer implements Logable, ISortable {
 				setStatus("Connected (Outside request)");
 				return;
 			}
-			socket = new UtpSocket();
+			socket = new Socket();
 			socket.connect(new InetSocketAddress(address, port), 1000);
-			inStream = socket.getInputStream(this);
-			outStream = socket.getOutputStream();
+			inStream = new ByteInputStream(this, socket.getInputStream());
+			outStream = new ByteOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
 			//e.printStackTrace();
 			crashed = true;
@@ -129,12 +129,12 @@ public class Peer implements Logable, ISortable {
 		}
 	}
 
-	public void setSocket(UtpSocket socket) {
+	public void setSocket(Socket socket) {
 		this.socket = socket;
 		setSocket(socket.getInetAddress(), socket.getPort());
 		try {
-			inStream = socket.getInputStream(this);
-			outStream = socket.getOutputStream();
+			inStream = new ByteInputStream(this, socket.getInputStream());
+			outStream = new ByteOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
 			e.printStackTrace();
 			log(e.getMessage(), true);
@@ -229,7 +229,6 @@ public class Peer implements Logable, ISortable {
 				torrent.addDiskJob(new DiskJobSendBlock(this, request.getPieceIndex(), request.getBlockIndex(), request.getLength()));
 			}
 		}
-		outStream.getSocket().checkForSendingPackets();
 	}
 
 	public void checkDisconnect() {
@@ -292,18 +291,14 @@ public class Peer implements Logable, ISortable {
 	 * Get this peer's socket
 	 * @return The socket of this peer
 	 */
-	public UtpSocket getSocket() {
+	public Socket getSocket() {
 		return socket;
 	}
 
 	@Override
 	public String toString() {
 		if (socket != null) {
-			if(socket.isUTP()) {
-				return "uTP " + socket;
-			} else {
-				return socket + ":" + port;
-			}
+			return socket.getRemoteSocketAddress().toString().substring(1);
 		} else {
 			return "UNCONNECTED";
 		}
