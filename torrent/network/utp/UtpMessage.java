@@ -84,9 +84,8 @@ public class UtpMessage {
 		Stream dataStream = new Stream(data);
 		dataStream.resetWritePointer();
 		dataStream.skipWrite(4);
-		long time = socket.getCurrentMicroseconds();
-		dataStream.writeInt(time);
-		dataStream.writeInt(socket.getDelay());
+		dataStream.writeInt(socket.getCurrentMicroseconds());
+		dataStream.writeInt(socket.getPeerClient().getDelay());
 		data = dataStream.getBuffer();
 	}
 	
@@ -102,10 +101,10 @@ public class UtpMessage {
 	 * Gets the send time in miliseconds
 	 * @return the time this mesasge has been send
 	 */
-	public long getSendTime() {
+	public int getSendTime() {
 		Stream dataStream = new Stream(data);
 		dataStream.readInt(); //Skip 4 bytes
-		return dataStream.readInt() & 0xFFFFFFFFL;
+		return dataStream.readInt();
 	}
 	
 	public int getType() {

@@ -86,10 +86,6 @@ public class UtpSocket extends Socket {
 	 */
 	private short ack_nr;
 	/**
-	 * The last measured delay on this socket
-	 */
-	private long measured_delay;
-	/**
 	 * The state of the uTP Connection.<br/>
 	 * For {@link #ST_RESET} is (as specified) no state
 	 */
@@ -147,8 +143,9 @@ public class UtpSocket extends Socket {
 		utpConnectionState = ConnectionState.PENDING;
 		myClient = new UtpClient();
 		peerClient = new UtpClient();
-		seq_nr = 1;
+		seq_nr = 0;
 		timeout = 1000;
+		packetSize = 150;
 		utpBuffer = new Stream(5000);
 		sendBuffer = new Stream(packetSize);
 		messagesInFlight = new ArrayList<>();
@@ -209,7 +206,7 @@ public class UtpSocket extends Socket {
 		peerClient.setConnectionId(new Random().nextInt() & 0xFFFF);
 		myClient.setConnectionId(peerClient.getConnectionId() + 1);
 		System.out.println("[uTP Protocol] Connecting to " + address + " connId: " + peerClient.getConnectionId());
-		UtpMessage synMessage = new UtpMessage(peerClient.getConnectionId(), myClient.getWindowSize(), ST_SYN, seq_nr++, 0);
+		UtpMessage synMessage = new UtpMessage(peerClient.getConnectionId(), myClient.getWindowSize(), ST_SYN, ++seq_nr, 0);
 		write(synMessage);
 		long sendTime = System.currentTimeMillis();
 		int tries = 1;
@@ -269,12 +266,20 @@ public class UtpSocket extends Socket {
 			if(message.getType() == ST_DATA) { //We don't expect ACK's on anything but DATA
 				messagesInFlight.add(message);
 			}
-			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " to " + remoteAddress + ", seq_nr: " + message.hashCode());
+			System.out.println("[uTP] Wrote message: " + (data[0] >>> 4) + " of " + data.length + " bytes to " + remoteAddress + ", seq_nr: " + message.hashCode());
 			return true;
 		} catch (IOException e) {
 			System.err.println("[uTP] Failed to send message: " + e.getMessage());
 			return false;
 		}
+	}
+	
+	private void processDelay(int timestamp) {
+		int measured_delay = getCurrentMicroseconds() - timestamp;
+		if(peerClient.getDelayCorrection() == 0 || peerClient.getDelayCorrection() > measured_delay) {
+			peerClient.setDelayCorrection(measured_delay);
+		}
+		peerClient.setDelay(measured_delay - peerClient.getDelayCorrection());
 	}
 	
 	/**
@@ -292,38 +297,36 @@ public class UtpSocket extends Socket {
 		int versionAndType = data.readByte();
 		int version = versionAndType & 0x7;
 		int type = versionAndType >>> 4;
-		int extension = data.readByte() & 0xFF;
-		int connection_id = data.readShort() & 0xFFFF;
-		long timestamp = (long)(data.readInt() & 0xFFFFFFFFL);
-		long timestampDiff = (long)(data.readInt() & 0xFFFFFFFFL);
-		long windowSize = data.readInt() & 0xFFFFFFFFL;
-		int sequenceNumber = data.readShort() & 0xFFFF;
+		int extension = data.readByte();
+		int connection_id = data.readShort();
+		int timestamp = data.readInt();
+		int timestampDiff = data.readInt();
+		long windowSize = data.readInt();
+		int sequenceNumber = data.readShort();
 		short ackNumber = (short)data.readShort();
 		System.out.println("Received UDP Message: " + type + " (Version " + version + "), Size: " + length + ", Connection ID: " + connection_id);
-		System.out.println("Extension: " + extension + ", windowSize: " + windowSize);
-		System.out.println("timestamp: " + timestamp + ", Diff: " + timestampDiff + ", CMicro: " + getCurrentMicroseconds());
-		System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + (ackNumber & 0xFFFF));
 		if (extension != 0) {
 			while (data.available() > 0) {
 				extension = data.readByte();
 				int extensionLength = data.readByte();
-				System.out.println("Extension " + extension + " of length " + extensionLength);
+				System.out.print("Extension " + extension + " of length " + extensionLength + ": ");
 				for(int i = 0; i < extensionLength; i++) {
 					System.out.print("0x" + Integer.toHexString(data.readByte()) + " ");
 				}
 				System.out.println();
 			}
 		}
-		measured_delay = ((getCurrentMicroseconds() & 0xFFFFFFFFL) - timestamp) / 1000;
 		ack_nr = ackNumber;
 		processACK(ack_nr);
-		System.out.println("Message Delay: " + measured_delay + "ms");
+		//Process Delay
+		processDelay(timestamp);
+		myClient.setDelay(timestampDiff);
 		// Process Data
 		switch (type) {
 			case ST_SYN: { // Connect
 				System.out.println("[uTP Protocol] SYN");
 				if(utpConnectionState == ConnectionState.CONNECTED) {
-					messageQueue.addLast(new UtpMessage(this, ST_STATE, seq_nr, ackNumber));
+					messageQueue.addLast(new UtpMessage(this, ST_STATE, 1, ackNumber));
 					System.out.println("[uTP Protocol] Ignored SYN on uTP Connected Socket. Resending SYN ACK");
 					return;
 				}
@@ -368,6 +371,13 @@ public class UtpSocket extends Socket {
 				break;
 			}
 		}
+		
+		send(new UtpMessage(this, ST_STATE, seq_nr, ack_nr));
+		
+		//System.out.println("Extension: " + extension + ", windowSize: " + windowSize);
+		//System.out.println("timestamp: " + timestamp + ", CMicro: " + getCurrentMicroseconds());
+		//System.out.println("seq_nr: " + sequenceNumber + ", ack_nr: " + (ackNumber & 0xFFFF));
+		//System.out.println("Their Delay: " + (peerClient.getDelay() / 1000) + "ms, Our Delay: " + (myClient.getDelay() / 1000) + "ms");
 	}
 	
 	private void processACK(int ackNumber) {
@@ -379,8 +389,8 @@ public class UtpSocket extends Socket {
 			}
 		}
 		if(message != null) { //If this message hasn't been ack'ed before
-			long rtt = getCurrentMicroseconds() - message.getSendTime();
-			long delta = roundTripTime - rtt;
+			int rtt = getCurrentMicroseconds() - message.getSendTime();
+			int delta = roundTripTime - rtt;
 			roundTripTimeVariance += (JMath.abs(delta) - roundTripTimeVariance) / 4;
 			roundTripTime = (int)(rtt - roundTripTime) / 8;
 			setTimeout(roundTripTime + roundTripTimeVariance * 4);
@@ -392,10 +402,10 @@ public class UtpSocket extends Socket {
 	/**
 	 * Sets the max_window in bytes to the larger of <tt>window</tt> or 150
 	 * @param window The new max_window
-	 */
+	 *
 	private void setMaxWindow(int window) {
 		myClient.setWindowSize(JMath.max(window, 150));
-	}
+	}*/
 	
 	/**
 	 * Sets the timeout in milliseconds to the larger of <tt>timeout</tt> or 500
@@ -464,7 +474,7 @@ public class UtpSocket extends Socket {
 	 * Tries to send the {@link #sendBuffer}
 	 */
 	private void sendBuffer() {
-		UtpMessage message = new UtpMessage(this, ST_DATA, seq_nr++, ack_nr, sendBuffer.getWrittenBuffer());
+		UtpMessage message = new UtpMessage(this, ST_DATA, ++seq_nr, ack_nr, sendBuffer.getWrittenBuffer());
 		messageQueue.addLast(message);
 		sendBuffer.resetWritePointer();
 	}
@@ -505,8 +515,8 @@ public class UtpSocket extends Socket {
 	 * @return the delay 
 	 */
 	private long getDelay(UtpMessage message, boolean msPrecision) {
-		long cTime = (int)getCurrentMicroseconds() & 0xFFFFFFFFL;
-		long messageTime = message.getSendTime();
+		int cTime = getCurrentMicroseconds();
+		int messageTime = message.getSendTime();
 		if(msPrecision)
 			return cTime - messageTime;
 		else
@@ -543,18 +553,8 @@ public class UtpSocket extends Socket {
 	 * 
 	 * @return
 	 */
-	public long getCurrentMicroseconds() {
-		/*return (System.currentTimeMillis() * 1000L) & 0xFFFFFFFFL;//Strip to 32-bit precision*/
-		return System.currentTimeMillis();
-	}
-
-	/**
-	 * Switches the stream to TCP<br/>
-	 * 
-	 */
-	public void disableUTP() throws IOException {
-		utpEnabled = false;
-		utpConnectionState = ConnectionState.CONNECTING;
+	public int getCurrentMicroseconds() {
+		return (int)(System.currentTimeMillis());
 	}
 
 	public boolean isClosed() {
@@ -600,15 +600,6 @@ public class UtpSocket extends Socket {
 		} else {
 			return super.getPort();
 		}
-	}
-
-	/**
-	 * Gets the last measured delay on the socket
-	 * 
-	 * @return The delay on this socket in microseconds
-	 */
-	public long getDelay() {
-		return measured_delay;
 	}
 
 	public UtpClient getMyClient() {
