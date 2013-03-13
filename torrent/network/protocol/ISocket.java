@@ -38,10 +38,9 @@ public interface ISocket {
 	public void close() throws IOException;
 	/**
 	 * Creates a fallback socket based on the given information on this socket
-	 * @throws IllegalStateException When the fallback could not be created due to missing information
-	 * @return
+	 * @return A new socket on which a connection might be established
 	 */
-	public ISocket getFallbackSocket() throws IllegalStateException;
+	public ISocket getFallbackSocket();
 	
 	/**
 	 * Check if this socket protocol has a fallback protocol<br/>
