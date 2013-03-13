@@ -15,10 +15,9 @@ public interface ISocket {
 	/**
 	 * Connects the underlaying Socket to the endpoint
 	 * @param endpoint The Address to connect to
-	 * @param port The port to connect to
 	 * @throws IOException When connection fails
 	 */
-	public void connect(InetSocketAddress endpoint, int port) throws IOException;
+	public void connect(InetSocketAddress endpoint) throws IOException;
 	/**
 	 * Gets the inputstream from the underlaying socket
 	 * @return An InputStream which allows to read data from it

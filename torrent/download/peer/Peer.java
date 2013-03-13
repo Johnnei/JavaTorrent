@@ -12,6 +12,7 @@ import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
+import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -88,21 +89,25 @@ public class Peer implements Logable, ISortable {
 	}
 
 	public void connect() {
-		try {
-			setStatus("Connecting...");
-			if (socket != null) {
-				setStatus("Connected (Outside request)");
-				return;
-			}
-			/*socket = new ISocket();
-			/TODO Initiate Socket */
-			socket.connect(new InetSocketAddress(address, port), 1000);
-			inStream = new ByteInputStream(this, socket.getInputStream());
-			outStream = new ByteOutputStream(socket.getOutputStream());
-		} catch (IOException e) {
-			//e.printStackTrace();
-			crashed = true;
+		setStatus("Connecting...");
+		if (socket != null) {
+			setStatus("Connected (Outside request)");
 			return;
+		}
+		socket = new TcpSocket();
+		while(socket != null && socket.isClosed()) {
+			try {
+				socket.connect(new InetSocketAddress(address, port));
+				inStream = new ByteInputStream(this, socket.getInputStream());
+				outStream = new ByteOutputStream(socket.getOutputStream());
+			} catch (IOException e) {
+				if(socket.canFallback()) {
+					socket = socket.getFallbackSocket();
+				} else {
+					crashed = true;
+					socket = null;
+				}
+			}
 		}
 	}
 
