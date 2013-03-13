@@ -3,7 +3,6 @@ package torrent.download.peer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.ArrayList;
 
 import torrent.Logable;
@@ -12,6 +11,7 @@ import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
+import torrent.network.protocol.ISocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -29,7 +29,7 @@ public class Peer implements Logable, ISortable {
 	private int port;
 
 	private Torrent torrent;
-	private Socket socket;
+	private ISocket socket;
 	private ByteOutputStream outStream;
 	private ByteInputStream inStream;
 	private boolean crashed;
@@ -94,7 +94,8 @@ public class Peer implements Logable, ISortable {
 				setStatus("Connected (Outside request)");
 				return;
 			}
-			socket = new Socket();
+			/*socket = new ISocket();
+			/TODO Initiate Socket */
 			socket.connect(new InetSocketAddress(address, port), 1000);
 			inStream = new ByteInputStream(this, socket.getInputStream());
 			outStream = new ByteOutputStream(socket.getOutputStream());
@@ -129,9 +130,9 @@ public class Peer implements Logable, ISortable {
 		}
 	}
 
-	public void setSocket(Socket socket) {
+	public void setSocket(ISocket socket) {
 		this.socket = socket;
-		setSocket(socket.getInetAddress(), socket.getPort());
+		//setSocket(socket.getInetAddress(), socket.getPort());
 		try {
 			inStream = new ByteInputStream(this, socket.getInputStream());
 			outStream = new ByteOutputStream(socket.getOutputStream());
@@ -291,14 +292,14 @@ public class Peer implements Logable, ISortable {
 	 * Get this peer's socket
 	 * @return The socket of this peer
 	 */
-	public Socket getSocket() {
+	public ISocket getSocket() {
 		return socket;
 	}
 
 	@Override
 	public String toString() {
 		if (socket != null) {
-			return socket.getRemoteSocketAddress().toString().substring(1);
+			return socket.toString();
 		} else {
 			return "UNCONNECTED";
 		}
@@ -418,10 +419,6 @@ public class Peer implements Logable, ISortable {
 		try {
 			if (socket != null) {
 				if (!socket.isClosed()) {
-					if(!socket.isInputShutdown())
-						socket.shutdownInput();
-					if(!socket.isOutputShutdown())
-						socket.shutdownOutput();
 					socket.close();
 				}
 			}
