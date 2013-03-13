@@ -11,6 +11,8 @@ import java.util.Map.Entry;
 
 import org.johnnei.utils.ThreadUtils;
 
+//TODO Check Linux Support, Other OS might not work with OS home
+
 public class Config {
 
 	/**
