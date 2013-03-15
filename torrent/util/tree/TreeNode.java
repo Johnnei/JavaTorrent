@@ -92,15 +92,12 @@ public class TreeNode<T extends Comparable<T>> {
 		int leftNodeHeight = (leftNode != null) ? leftNode.getHeight() : 0;
 		int rightNodeHeight = (rightNode != null) ? rightNode.getHeight() : 0;
 		if(JMath.diff(leftNodeHeight, rightNodeHeight) > 1) {
-			System.out.println("AVL has been broken [" + leftNodeHeight + ", " + rightNodeHeight + "]");
 			if(leftNodeHeight > rightNodeHeight) {
 				if(!leftNode.fixAVL()) { //We detected it is in the left node, but the leftNode has not found the problem
-					System.out.println("Detected at leftNode in data: " + data);
 					rotateLeft();
 				}
 			} else {
 				if(!rightNode.fixAVL()) { //Same as leftNode but now for right
-					System.out.println("Detected at RightNode in data: " + data);
 					rotateRight();
 				}
 			}
@@ -110,20 +107,58 @@ public class TreeNode<T extends Comparable<T>> {
 		}
 	}
 
+	/**
+	 * Executes a single or double rotation based on the current tree status
+	 */
 	private void rotateLeft() {
 		TreeNode<T> leftSubRight = leftNode.getRightNode();
-		leftNode.rightNode = null;
-		rightNode = new TreeNode<>(data, leftSubRight, rightNode);
-		this.data = leftNode.getValue();
-		leftNode = leftNode.getLeftNode();
+		if(leftNode.getRightNode().isLeaf()) {
+			//Single Rotation
+			leftNode.rightNode = null;
+			rightNode = new TreeNode<>(data, leftSubRight, rightNode);
+			this.data = leftNode.getValue();
+			leftNode = leftNode.getLeftNode();
+		} else {
+			//Double Rotation
+			//Step 1
+			leftSubRight.rightNode = leftSubRight.leftNode;
+			leftSubRight.leftNode = null;
+			T temp = leftSubRight.getValue();
+			leftSubRight.data = leftNode.getValue();
+			leftNode.data = temp;
+			//Step 2
+			rightNode = new TreeNode<>(data, null, rightNode);
+			data = leftNode.getValue();
+			leftNode.data = leftSubRight.getValue();
+			leftNode.rightNode = leftSubRight.getRightNode();
+		}
 	}
 	
+	/**
+	 * Executes a single or double rotation based on the current tree status
+	 */
 	private void rotateRight() {
 		TreeNode<T> rightSubLeft = rightNode.getLeftNode();
-		rightNode.leftNode = null;
-		leftNode = new TreeNode<>(data, rightSubLeft, leftNode);
-		this.data = rightNode.getValue();
-		rightNode = rightNode.getRightNode();
+		if(rightNode.getLeftNode().isLeaf()) {
+			//Single Rotation
+			rightNode.leftNode = null;
+			leftNode = new TreeNode<>(data, rightSubLeft, leftNode);
+			this.data = rightNode.getValue();
+			rightNode = rightNode.getRightNode();
+		} else {
+			//Double Rotation
+			//Step 1
+			rightSubLeft.leftNode = rightSubLeft.rightNode;
+			rightSubLeft.rightNode = null;
+			T temp = rightSubLeft.getValue();
+			rightSubLeft.data = rightNode.getValue();
+			rightNode.data = temp;
+			//Step 2
+			leftNode = new TreeNode<>(data, null, leftNode);
+			data = rightNode.getValue();
+			rightNode.data = rightSubLeft.getValue();
+			rightNode.leftNode = rightSubLeft.getLeftNode();
+		}
 	}
 	
 	public TreeNode<T> getLeftNode() {
@@ -148,6 +183,12 @@ public class TreeNode<T extends Comparable<T>> {
 			return 0;
 	}
 	
+	public boolean isLeaf() {
+		return leftNode == null && rightNode == null;
+	}
+	
+	//PRINT STUFF
+	
 	private void write(int padding, String text) {
 		for(int i = 0; i < padding; i++) 
 			System.out.print("     ");
@@ -155,14 +196,14 @@ public class TreeNode<T extends Comparable<T>> {
 	}
 	
 	public void printInOrder(int depth) {
-		if(leftNode != null)
-			leftNode.printInOrder(depth + 1);
-		else if(rightNode != null)
-			write(depth + 1, "NULL");
-		write(depth, data.toString());
 		if(rightNode != null)
 			rightNode.printInOrder(depth + 1);
 		else if(leftNode != null)
+			write(depth + 1, "NULL");
+		write(depth, data.toString());
+		if(leftNode != null)
+			leftNode.printInOrder(depth + 1);
+		else if(rightNode != null)
 			write(depth + 1, "NULL");
 	}
 	

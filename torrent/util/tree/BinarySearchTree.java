@@ -15,12 +15,10 @@ public class BinarySearchTree<T extends Comparable<T>> {
 	private TreeNode<T> root;
 	
 	public void add(T data) {
-		System.out.println("add(" + data + ")");
 		if(root == null)
 			root = new TreeNode<T>(data);
 		else
 			root.add(data);
-		printInOrder();
 		checkAVL();
 	}
 	
@@ -67,7 +65,6 @@ public class BinarySearchTree<T extends Comparable<T>> {
 			return true;
 		int leftHeight = root.getLeftNodeHeight();
 		int rightHeight = root.getRightNodeHeight();
-		System.out.println("[" + leftHeight + ", " + rightHeight + "]");
 		return JMath.diff(leftHeight, rightHeight) < 2;
 	}
 
