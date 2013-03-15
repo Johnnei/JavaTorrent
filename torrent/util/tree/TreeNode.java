@@ -21,14 +21,14 @@ public class TreeNode<T extends Comparable<T>> {
 	}
 	
 	public void add(T data) {
-		if(data.compareTo(this.data) <= 0) {
+		if(data.compareTo(this.data) <= 0) { //Smaller? Go to left
 			if(leftNode == null) {
 				leftNode = new TreeNode<T>(data);
 			} else {
 				leftNode.add(data);
 			}
 		} else {
-			if(rightNode == null) {
+			if(rightNode == null) { //Larger? Go to Right
 				rightNode = new TreeNode<T>(data);
 			} else {
 				rightNode.add(data);
@@ -110,43 +110,20 @@ public class TreeNode<T extends Comparable<T>> {
 		}
 	}
 
-	/**
-	 *   5  ->   4
-	 *  4       3 5
-	 * 3 
-	 */
 	private void rotateLeft() {
-		TreeNode<T> leftSubNode = leftNode.getLeftNode();
-		rightNode = new TreeNode<T>(getValue(), null, rightNode);
-		if(leftNode.getRightNode() != null) {
-			rightNode = new TreeNode<T>(leftNode.getRightNode().getValue(), null, rightNode);
-		}
-		data = leftNode.getValue();
-		leftNode = leftSubNode;
+		TreeNode<T> leftSubRight = leftNode.getRightNode();
+		leftNode.rightNode = null;
+		rightNode = new TreeNode<>(data, leftSubRight, rightNode);
+		this.data = leftNode.getValue();
+		leftNode = leftNode.getLeftNode();
 	}
 	
-	/**
-	 * 0 ->  6
-	 *  6	0 8
-	 *   8	
-	 */
 	private void rotateRight() {
-		if(leftNode != null) {
-			doubleRotateRight();
-		} else {
-			TreeNode<T> rightSubNode = rightNode.getRightNode();
-			leftNode = new TreeNode<T>(getValue());
-			data = rightNode.getValue();
-			rightNode = rightSubNode;
-		}
-	}
-	
-	private void doubleRotateRight() {
-		System.out.println("doubleRotateRight");
-	}
-	
-	private void doubleRotateLeft() {
-		System.out.println("doubleRotateLeft");
+		TreeNode<T> rightSubLeft = rightNode.getLeftNode();
+		rightNode.leftNode = null;
+		leftNode = new TreeNode<>(data, rightSubLeft, leftNode);
+		this.data = rightNode.getValue();
+		rightNode = rightNode.getRightNode();
 	}
 	
 	public TreeNode<T> getLeftNode() {
@@ -178,14 +155,14 @@ public class TreeNode<T extends Comparable<T>> {
 	}
 	
 	public void printInOrder(int depth) {
-		if(rightNode != null)
-			rightNode.printInOrder(depth + 1);
-		else if(leftNode != null)
-			write(depth + 1, "NULL");
-		write(depth, data.toString());
 		if(leftNode != null)
 			leftNode.printInOrder(depth + 1);
 		else if(rightNode != null)
+			write(depth + 1, "NULL");
+		write(depth, data.toString());
+		if(rightNode != null)
+			rightNode.printInOrder(depth + 1);
+		else if(leftNode != null)
 			write(depth + 1, "NULL");
 	}
 	
