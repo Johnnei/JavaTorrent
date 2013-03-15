@@ -17,5 +17,9 @@ public class JMath {
 	public static long abs(long l) {
 		return l < 0 ? -l : l;
 	}
+	
+	public static int diff(int a, int b) {
+		return Math.abs(a - b);
+	}
 
 }
