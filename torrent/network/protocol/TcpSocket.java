@@ -14,6 +14,14 @@ public class TcpSocket implements ISocket {
 		socket = new Socket();
 	}
 	
+	/**
+	 * Creates a TcpSocket on a pre-connected socket
+	 * @param socket
+	 */
+	public TcpSocket(Socket socket) {
+		this.socket = socket;
+	}
+	
 	@Override
 	public void connect(InetSocketAddress endpoint)
 			throws IOException {
@@ -47,7 +55,7 @@ public class TcpSocket implements ISocket {
 
 	@Override
 	public boolean isClosed() {
-		return socket.isClosed();
+		return socket.isClosed() || !socket.isConnected();
 	}
 
 	@Override
@@ -58,6 +66,11 @@ public class TcpSocket implements ISocket {
 	@Override
 	public boolean isOutputShutdown() {
 		return socket.isOutputShutdown();
+	}
+	
+	@Override
+	public String toString() {
+		return socket.getRemoteSocketAddress().toString().substring(1);
 	}
 
 }

@@ -223,7 +223,7 @@ public class Tracker extends Thread implements Logable {
 				if (isEmptyIP(address))
 					continue;
 				Peer p = new Peer(torrent);
-				p.setSocket(InetAddress.getByAddress(address), port);
+				p.setSocketInformation(InetAddress.getByAddress(address), port);
 				torrent.getConnectorThread().addPeer(p);
 			}
 			setStatus("Announced");

@@ -9,7 +9,7 @@ import org.johnnei.utils.config.Config;
 import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.download.peer.Peer;
-import torrent.network.protocol.ISocket;
+import torrent.network.protocol.TcpSocket;
 
 public class PeerConnector extends Thread {
 
@@ -25,7 +25,7 @@ public class PeerConnector extends Thread {
 			try {
 				Peer peer = new Peer();
 				Socket peerSocket = (Socket) serverSocket.accept();
-				peer.setSocket((ISocket) peerSocket); //TODO This can not be done
+				peer.setSocket(new TcpSocket(peerSocket));
 				long handshakeStart = System.currentTimeMillis();
 				while (!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
 					ThreadUtils.sleep(10);
