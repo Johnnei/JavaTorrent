@@ -64,7 +64,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		packetQueue = new LinkedList<>();
 		packetsInFlight = new BinarySearchTree<>();
 		inStream = new UtpInputStream();
-		outStream = new UtpOutputStream();
+		outStream = new UtpOutputStream(this);
 	}
 	
 	@Override

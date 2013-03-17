@@ -1,12 +1,13 @@
 package torrent.network.protocol.utp;
 
-import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import torrent.network.Stream;
 import torrent.network.protocol.utp.packet.PacketData;
 
-public class UtpInputStream extends FilterInputStream {
+public class UtpInputStream extends InputStream {
 
 	/**
 	 * The buffer of unread data
@@ -22,7 +23,6 @@ public class UtpInputStream extends FilterInputStream {
 	private int lastSequenceNumber;
 	
 	public UtpInputStream() {
-		super(null);
 		buffer = new Stream(5120); //5kB buffer
 		dataQueue = new ArrayList<>();
 		lastSequenceNumber = 1;
@@ -61,6 +61,14 @@ public class UtpInputStream extends FilterInputStream {
 		} else {
 			dataQueue.add(packet);
 		}
+	}
+
+	@Override
+	public int read() throws IOException {
+		if(buffer.available() > 0) {
+			return buffer.readByte() & 0xFF;
+		} else
+			return -1;
 	}
 
 }

@@ -13,6 +13,10 @@ public class PacketData extends Packet {
 	public PacketData() {
 		data = new byte[0];
 	}
+	
+	public PacketData(byte[] data) {
+		this.data = data;
+	}
 
 	@Override
 	protected void writePacket(Stream outStream) {
