@@ -7,7 +7,6 @@ import java.util.ArrayList;
 
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
-import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.Logable;
 import torrent.Manager;
@@ -136,7 +135,7 @@ public class Torrent extends Thread implements Logable {
 		haltDownloading = false;
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max", DefaultConfig.PEER_MAX), Config.getConfig().getFloat("peer-max_burst_ratio", DefaultConfig.PEER_BURST_RATIO));
+		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
 	}
 
 	private boolean hasPeer(Peer p) {
@@ -174,9 +173,9 @@ public class Torrent extends Thread implements Logable {
 
 	public void initialise() {
 		Manager.getManager().addTorrent(this);
-		connectorThreads = new PeerConnectorThread[Config.getConfig().getInt("peer-max_concurrent_connecting", DefaultConfig.PEER_MAX_CONCURRENT_CONNECTING)];
+		connectorThreads = new PeerConnectorThread[Config.getConfig().getInt("peer-max_concurrent_connecting")];
 		for (int i = 0; i < connectorThreads.length; i++) {
-			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting", DefaultConfig.PEER_MAX_CONNECTING) / connectorThreads.length);
+			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting") / connectorThreads.length);
 			connectorThreads[i].start();
 		}
 		readThread = new PeersReadThread(this);
@@ -507,7 +506,7 @@ public class Torrent extends Thread implements Logable {
 	 * @return true if we need more peers
 	 */
 	public boolean needAnnounce() {
-		int peersPerThread = Config.getConfig().getInt("peer-max_connecting", DefaultConfig.PEER_MAX_CONNECTING) / Config.getConfig().getInt("peer-max_concurrent_connecting", DefaultConfig.PEER_MAX_CONCURRENT_CONNECTING);
+		int peersPerThread = Config.getConfig().getInt("peer-max_connecting") / Config.getConfig().getInt("peer-max_concurrent_connecting");
 		boolean needEnoughPeers = peersWanted() >= peersPerThread;
 		boolean notExceedMaxPendingPeers = peers.size() < peerManager.getMaxPendingPeers(torrentStatus);
 		boolean hasConnectingSpace = getFreeConnectingCapacity() > 0;

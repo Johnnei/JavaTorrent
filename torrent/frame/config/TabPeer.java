@@ -11,7 +11,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.johnnei.utils.config.Config;
-import org.johnnei.utils.config.DefaultConfig;
 
 public class TabPeer extends JPanel implements ActionListener {
 
@@ -30,10 +29,10 @@ public class TabPeer extends JPanel implements ActionListener {
 	private JButton maxConnectingButton;
 
 	public TabPeer() {
-		maxPeer = createTextfield("" + Config.getConfig().getInt("peer-max", DefaultConfig.PEER_MAX));
-		maxPeerBurstRatio = createTextfield("" + Config.getConfig().getFloat("peer-max_burst_ratio", DefaultConfig.PEER_BURST_RATIO));
-		maxConcurrentConnecting = createTextfield("" + Config.getConfig().getInt("peer-max_concurrent_connecting", DefaultConfig.PEER_MAX_CONCURRENT_CONNECTING));
-		maxConnecting = createTextfield("" + Config.getConfig().getInt("peer-max_connecting", DefaultConfig.PEER_MAX_CONNECTING));
+		maxPeer = createTextfield("" + Config.getConfig().getInt("peer-max"));
+		maxPeerBurstRatio = createTextfield("" + Config.getConfig().getFloat("peer-max_burst_ratio"));
+		maxConcurrentConnecting = createTextfield("" + Config.getConfig().getInt("peer-max_concurrent_connecting"));
+		maxConnecting = createTextfield("" + Config.getConfig().getInt("peer-max_connecting"));
 		maxPeerButton = createButton();
 		maxPeerBurstRatioButton = createButton();
 		maxConcurrentConnectingButton = createButton();

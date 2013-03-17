@@ -119,28 +119,16 @@ public class Config {
 	}
 
 	/**
-	 * Adds a key/value pair to the config file
-	 * 
-	 * @param key The key of the pair
-	 * @param value The value of the pair
-	 */
-	private void add(String key, Object value) {
-		config.put(key, value.toString());
-		save();
-	}
-
-	/**
 	 * Gets a value from the config
 	 * 
 	 * @param key The key of the pair
 	 * @param defaultValue The default value for the pair if it doesn't exist
 	 * @return The value by the given key
 	 */
-	private String get(String key, Object defaultValue) {
+	private String get(String key) {
 		String value = config.get(key);
 		if (value == null) {
-			add(key, defaultValue);
-			return defaultValue.toString();
+			throw new IllegalArgumentException(getMissingConfigError(key));
 		} else {
 			return value;
 		}
@@ -164,13 +152,12 @@ public class Config {
 	 * @param defaultValue The default value for the pair if it doesn't exist
 	 * @return The value by the given key
 	 */
-	public int getInt(String key, int defaultValue) {
-		String val = get(key, defaultValue);
+	public int getInt(String key) {
+		String val = get(key);
 		if (isInt(val)) {
 			return Integer.parseInt(val);
 		} else {
-			set(key, defaultValue);
-			return defaultValue;
+			throw new IllegalArgumentException(getMissingConfigError(key));
 		}
 	}
 
@@ -181,13 +168,12 @@ public class Config {
 	 * @param defaultValue The default value for the pair if it doesn't exist
 	 * @return The value by the given key
 	 */
-	public float getFloat(String key, float defaultValue) {
-		String val = get(key, defaultValue);
+	public float getFloat(String key) {
+		String val = get(key);
 		if (isFloat(val)) {
 			return Float.parseFloat(val);
 		} else {
-			set(key, defaultValue);
-			return defaultValue;
+			throw new IllegalArgumentException(getMissingConfigError(key));
 		}
 	}
 
@@ -198,8 +184,8 @@ public class Config {
 	 * @param defaultValue The default value for the pair if it doesn't exist
 	 * @return The value by the given key
 	 */
-	public String getString(String key, String defaultValue) {
-		return get(key, defaultValue);
+	public String getString(String key) {
+		return get(key);
 	}
 
 	public String getTempFolder() {
@@ -222,6 +208,10 @@ public class Config {
 		} catch (NumberFormatException e) {
 			return false;
 		}
+	}
+	
+	private final String getMissingConfigError(String key) {
+		return "Configuration Setting \"" + key + "\" has not been registered";
 	}
 
 }

@@ -6,7 +6,6 @@ import java.net.Socket;
 
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
-import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.download.peer.Peer;
 import torrent.network.protocol.TcpSocket;
@@ -17,7 +16,7 @@ public class PeerConnector extends Thread {
 
 	public PeerConnector() throws IOException {
 		super("PeerConnector");
-		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
+		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
 	}
 
 	public void run() {

@@ -11,7 +11,6 @@ import java.util.HashMap;
 import org.johnnei.utils.JMath;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
-import org.johnnei.utils.config.DefaultConfig;
 
 import torrent.TorrentException;
 import torrent.download.files.HashedPiece;
@@ -92,7 +91,7 @@ public class Files {
 	}
 
 	private void parseDictionary(HashMap<String, Object> dictionary) throws IOException {
-		folderName = Config.getConfig().getString("download-output_folder", DefaultConfig.DOWNLOAD_OUTPUT_FOLDER) + dictionary.get("name");
+		folderName = Config.getConfig().getString("download-output_folder") + dictionary.get("name");
 		new File(folderName + "/").mkdirs();
 
 		pieceSize = (int) dictionary.get("piece length");

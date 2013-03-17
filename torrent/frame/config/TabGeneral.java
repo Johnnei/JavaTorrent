@@ -13,7 +13,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.johnnei.utils.config.Config;
-import org.johnnei.utils.config.DefaultConfig;
 
 public class TabGeneral extends JPanel implements ActionListener {
 
@@ -27,13 +26,13 @@ public class TabGeneral extends JPanel implements ActionListener {
 	private JButton portButton;
 
 	public TabGeneral() {
-		downloadFolder = new JTextField(Config.getConfig().getString("download-output_folder", DefaultConfig.DOWNLOAD_OUTPUT_FOLDER));
+		downloadFolder = new JTextField(Config.getConfig().getString("download-output_folder"));
 		downloadFolder.setPreferredSize(new Dimension(350, 24));
 		downloadFolder.setEditable(false);
 		chooseFolderButton = new JButton("Change");
 		chooseFolderButton.addActionListener(this);
 		
-		portTextField = createTextfield("" + Config.getConfig().getInt("download-port", DefaultConfig.DOWNLOAD_PORT));
+		portTextField = createTextfield("" + Config.getConfig().getInt("download-port"));
 		portButton = createButton();
 
 		addConfig("Download Folder", downloadFolder, chooseFolderButton);
@@ -63,12 +62,12 @@ public class TabGeneral extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(chooseFolderButton)) {
-			JFileChooser fc = new JFileChooser(new File(Config.getConfig().getString("download-output_folder", DefaultConfig.DOWNLOAD_OUTPUT_FOLDER)));
+			JFileChooser fc = new JFileChooser(new File(Config.getConfig().getString("download-output_folder")));
 			fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			if (fc.showDialog(this, "Choose directory") == JFileChooser.APPROVE_OPTION) {
 				File newFolder = fc.getSelectedFile();
 				Config.getConfig().set("download-output_folder", newFolder.getAbsolutePath() + "\\");
-				downloadFolder.setText(Config.getConfig().getString("download-output_folder", DefaultConfig.DOWNLOAD_OUTPUT_FOLDER));
+				downloadFolder.setText(Config.getConfig().getString("download-output_folder"));
 				repaint();
 			}
 		} else if(e.getSource().equals(portButton)) {

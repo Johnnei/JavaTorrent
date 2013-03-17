@@ -13,11 +13,21 @@ public class JavaTorrent extends Thread {
 	public static final String BUILD = "JavaTorrent 0.05.0";
 
 	private TorrentFrame frame;
+	
+	private static void loadDefaultConfig() {
+		Config.getConfig().set("peer-max", 500);
+		Config.getConfig().set("peer-max_burst_ratio", 1.5F);
+		Config.getConfig().set("peer-max_concurrent_connecting", 2);
+		Config.getConfig().set("peer-max_connecting", 50);
+		Config.getConfig().set("download-output_folder", ".\\");
+		Config.getConfig().set("download-port", 6881);
+		Config.getConfig().load();
+	}
 
 	public static void main(String[] args) {
 		System.setOut(new Logger(System.out));
 		System.setErr(new Logger(System.err));
-		Config.getConfig().load();
+		loadDefaultConfig();
 		TorrentFrame frame= new TorrentFrame();
 		boolean showGui = true;
 		for(int i = 0; i < args.length; i++) {
