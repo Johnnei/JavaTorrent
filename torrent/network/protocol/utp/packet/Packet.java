@@ -8,12 +8,12 @@ public abstract class Packet implements Comparable<Packet> {
 	public static final int VERSION = 1;
 	protected UtpSocket socket;
 	
-	private short connectionId;
-	private long sendTimestamp;
-	private long delay;
-	private long windowSize;
-	private int sequenceNumber;
-	private int acknowledgeNumber;
+	protected short connectionId;
+	protected long sendTimestamp;
+	protected long delay;
+	protected long windowSize;
+	protected int sequenceNumber;
+	protected int acknowledgeNumber;
 	
 	public Packet() {
 	}
@@ -38,7 +38,7 @@ public abstract class Packet implements Comparable<Packet> {
 		outStream.writeInt(UtpProtocol.getMicrotime()); //"Micro"second timestamp
 		outStream.writeInt(socket.getPeerClient().getDelay());
 		outStream.writeInt(socket.getMyClient().getWindowSize());
-		outStream.writeShort(getSequenceNumber());
+		outStream.writeShort(getSendSequenceNumber());
 		outStream.writeShort(socket.getAcknowledgeNumber());
 		//Write Extra Data if needed
 		writePacket(outStream);
@@ -86,8 +86,12 @@ public abstract class Packet implements Comparable<Packet> {
 	 * In PacketData this will be overriden to increase the number
 	 * @return
 	 */
-	protected int getSequenceNumber() {
+	protected int getSendSequenceNumber() {
 		return socket.getSequenceNumber();
+	}
+	
+	public int getSequenceNumber() {
+		return sequenceNumber;
 	}
 
 	public void process(UtpSocket socket) {

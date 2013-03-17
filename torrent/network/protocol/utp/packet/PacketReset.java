@@ -2,6 +2,7 @@ package torrent.network.protocol.utp.packet;
 
 import torrent.network.Stream;
 import torrent.network.protocol.UtpSocket;
+import torrent.network.protocol.utp.ConnectionState;
 
 public class PacketReset extends Packet {
 	
@@ -11,20 +12,15 @@ public class PacketReset extends Packet {
 
 	@Override
 	protected void writePacket(Stream outStream) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	protected void readPacket(Stream inStream) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void processPacket(UtpSocket socket) {
-		// TODO Auto-generated method stub
-
+		socket.setConnectionState(ConnectionState.DISCONNECTING);
 	}
 
 	@Override

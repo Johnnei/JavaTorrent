@@ -192,4 +192,8 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		}
 	}
 
+	public void setConnectionState(ConnectionState connectionState) {
+		this.connectionState = connectionState;
+	}
+
 }
