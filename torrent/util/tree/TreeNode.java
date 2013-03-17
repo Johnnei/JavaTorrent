@@ -6,6 +6,8 @@ import org.johnnei.utils.JMath;
 
 public class TreeNode<T extends Comparable<T>> {
 	
+	public static boolean DEBUG = true;
+	
 	private T data;
 	private TreeNode<T> leftNode;
 	private TreeNode<T> rightNode;
@@ -14,7 +16,13 @@ public class TreeNode<T extends Comparable<T>> {
 		this.data = data;
 	}
 	
-	private TreeNode(T data, TreeNode<T> leftChild, TreeNode<T> rightChild) {
+	/**
+	 * Used in various operation to modify the tree in a more flexible way
+	 * @param data
+	 * @param leftChild
+	 * @param rightChild
+	 */
+	TreeNode(T data, TreeNode<T> leftChild, TreeNode<T> rightChild) {
 		this.data = data;
 		this.leftNode = leftChild;
 		this.rightNode = rightChild;
@@ -36,27 +44,72 @@ public class TreeNode<T extends Comparable<T>> {
 		}
 	}
 	
-	public TreeNode<T> remove(T data) {
-		int compareResult = data.compareTo(data);
+	public T remove(T target) {
+		int compareResult = target.compareTo(data);
 		if(compareResult == 0) {
-			return this;
+			return data;
 		} else if(compareResult < 0) {
 			if(leftNode != null) {
-				return leftNode.remove(data);
-			} else {
+				T removedItem = leftNode.remove(target);
+				if(removedItem == null)
+					return null;
+				
+				if(leftNode.getValue().equals(target)) {
+					//Remove the node from the tree
+					if(leftNode.isLeaf()) //We did find it, and only 1 now is down there so we can safely delete that
+						leftNode = null;
+					else if(leftNode.getChildCount() == 1) {
+						//Single Child Disconnect
+						leftNode = leftNode.getMaxChild();
+					} else {
+						//Two Child Disconnect
+						TreeNode<T> prevNode = leftNode;
+						TreeNode<T> lastNode = leftNode.getLeftNode();
+						while(lastNode.getLeftNode() != null) {
+							prevNode = lastNode;
+							lastNode = lastNode.getLeftNode();
+						}
+						this.leftNode.data = lastNode.getValue();
+						prevNode.leftNode = lastNode.getRightNode();
+					}
+				}
+				
+				return removedItem;
+			} else
 				return null;
-			}
 		} else {
 			if(rightNode != null) {
-				return rightNode.remove(data);
-			} else {
-				return null;
-			}
+				T removedItem = rightNode.remove(target);
+				if(removedItem == null)
+					return null;
+				
+				if(rightNode.getValue().equals(target)) {
+					if(rightNode.isLeaf()) //We did find it, and only 1 now is down there so we can safely delete that
+						rightNode = null;
+					else if(rightNode.getChildCount() == 1) {
+						//Single Child Disconnect
+						rightNode = rightNode.getMaxChild();
+					} else {
+						//Two Child Disconnect
+						TreeNode<T> prevNode = rightNode;
+						TreeNode<T> lastNode = rightNode.getLeftNode();
+						while(lastNode.getLeftNode() != null) {
+							prevNode = lastNode;
+							lastNode = lastNode.getLeftNode();
+						}
+						this.rightNode.data = lastNode.getValue();
+						prevNode.leftNode = lastNode.getRightNode();
+					}
+				}
+				
+				return removedItem;
+			} else
+				return null; 
 		}
 	}
 	
 	public T find(T target) {
-		int compareResult = data.compareTo(target);
+		int compareResult = target.compareTo(data);
 		if(compareResult == 0) {
 			return data;
 		} else if(compareResult < 0) {
@@ -112,7 +165,11 @@ public class TreeNode<T extends Comparable<T>> {
 	 */
 	private void rotateLeft() {
 		TreeNode<T> leftSubRight = leftNode.getRightNode();
-		if(leftNode.getRightNode().isLeaf()) {
+		if(leftSubRight == null) {
+			rightNode = new TreeNode<>(this.data);
+			this.data = leftNode.getValue();
+			leftNode = leftNode.getLeftNode();
+		}else if(leftNode.getRightNode().isLeaf()) {
 			//Single Rotation
 			leftNode.rightNode = null;
 			rightNode = new TreeNode<>(data, leftSubRight, rightNode);
@@ -120,17 +177,18 @@ public class TreeNode<T extends Comparable<T>> {
 			leftNode = leftNode.getLeftNode();
 		} else {
 			//Double Rotation
-			//Step 1
-			leftSubRight.rightNode = leftSubRight.leftNode;
-			leftSubRight.leftNode = null;
-			T temp = leftSubRight.getValue();
-			leftSubRight.data = leftNode.getValue();
-			leftNode.data = temp;
-			//Step 2
-			rightNode = new TreeNode<>(data, null, rightNode);
-			data = leftNode.getValue();
-			leftNode.data = leftSubRight.getValue();
-			leftNode.rightNode = leftSubRight.getRightNode();
+			rightNode = new TreeNode<T>(data, null, rightNode);
+			TreeNode<T> prevNode = leftNode;
+			while(prevNode.getRightNode() != null) {
+				TreeNode<T> node = prevNode.getRightNode();
+				if(node.getRightNode() != null) {
+					prevNode = node;
+				} else {
+					break;
+				}
+			}
+			this.data = prevNode.getRightNode().getValue();
+			prevNode.rightNode = prevNode.getRightNode().getLeftNode();
 		}
 	}
 	
@@ -139,7 +197,11 @@ public class TreeNode<T extends Comparable<T>> {
 	 */
 	private void rotateRight() {
 		TreeNode<T> rightSubLeft = rightNode.getLeftNode();
-		if(rightNode.getLeftNode().isLeaf()) {
+		if(rightSubLeft == null) {
+			leftNode = new TreeNode<>(this.data);
+			this.data = rightNode.getValue();
+			rightNode = rightNode.getRightNode();
+		} else if(rightSubLeft.isLeaf()) {
 			//Single Rotation
 			rightNode.leftNode = null;
 			leftNode = new TreeNode<>(data, rightSubLeft, leftNode);
@@ -147,17 +209,32 @@ public class TreeNode<T extends Comparable<T>> {
 			rightNode = rightNode.getRightNode();
 		} else {
 			//Double Rotation
-			//Step 1
-			rightSubLeft.leftNode = rightSubLeft.rightNode;
-			rightSubLeft.rightNode = null;
-			T temp = rightSubLeft.getValue();
-			rightSubLeft.data = rightNode.getValue();
-			rightNode.data = temp;
-			//Step 2
-			leftNode = new TreeNode<>(data, null, leftNode);
-			data = rightNode.getValue();
-			rightNode.data = rightSubLeft.getValue();
-			rightNode.leftNode = rightSubLeft.getLeftNode();
+			leftNode = new TreeNode<T>(data, leftNode, null);
+			TreeNode<T> prevNode = rightNode;
+			while(prevNode.getLeftNode() != null) {
+				TreeNode<T> node = prevNode.getLeftNode();
+				if(node.getLeftNode() != null) {
+					prevNode = node;
+				} else {
+					break;
+				}
+			}
+			this.data = prevNode.getLeftNode().getValue();
+			prevNode.leftNode = prevNode.getLeftNode().getLeftNode();
+		}
+	}
+	
+	public TreeNode<T> getMaxChild() {
+		if(leftNode != null && rightNode != null) {
+			if(leftNode.getValue().compareTo(rightNode.getValue()) <= 0) {
+				return rightNode;
+			} else {
+				return leftNode;
+			}
+		} else if(leftNode != null) {
+			return leftNode;
+		} else {
+			return rightNode;
 		}
 	}
 	
@@ -187,6 +264,38 @@ public class TreeNode<T extends Comparable<T>> {
 		return leftNode == null && rightNode == null;
 	}
 	
+	public int getChildCount() {
+		int count = 0;
+		if(leftNode != null) {
+			count++;
+		}
+		if(rightNode != null)
+			count++;
+		return count;
+	}
+	
+	public int getSize() {
+		int size = 1;
+		if(leftNode != null)
+			size += leftNode.getSize();
+		if(rightNode != null)
+			size += rightNode.getSize();
+		return size;
+	}
+	
+	//Root Removal stuff
+	void setValue(T data) {
+		this.data = data;
+	}
+	
+	void setRightTree(TreeNode<T> child) {
+		this.rightNode = child; 
+	}
+	
+	void setLeftTree(TreeNode<T> child) {
+		this.leftNode = child;
+	}
+	
 	//PRINT STUFF
 	
 	private void write(int padding, String text) {
@@ -212,6 +321,15 @@ public class TreeNode<T extends Comparable<T>> {
 		if(data != null)
 			return "TreeNode<T>(" + data + ")";
 		return "TreeNode<T>(null)";
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if(o instanceof TreeNode<?>) {
+			TreeNode<?> node = (TreeNode<?>)o;
+			return node.getValue().equals(data);
+		} else
+			return o.equals(data);
 	}
 
 }
