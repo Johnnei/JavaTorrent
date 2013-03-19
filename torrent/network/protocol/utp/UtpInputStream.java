@@ -53,6 +53,7 @@ public class UtpInputStream extends InputStream {
 				for(int i = 0; i < dataQueue.size(); i++) {
 					PacketData dataPacket = dataQueue.get(i);
 					if(dataPacket.getSequenceNumber() == (lastSequenceNumber + 1)) {
+						dataQueue.remove(i);
 						receiveData(packet);
 						return;
 					}

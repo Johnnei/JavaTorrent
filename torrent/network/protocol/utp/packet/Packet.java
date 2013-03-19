@@ -16,6 +16,7 @@ public abstract class Packet implements Comparable<Packet> {
 	protected int acknowledgeNumber;
 	
 	public Packet() {
+		sequenceNumber = -1;
 	}
 	
 	public Packet(int sequenceNumber) {
@@ -35,11 +36,15 @@ public abstract class Packet implements Comparable<Packet> {
 		outStream.writeByte(getId() << 4 | VERSION);
 		outStream.writeByte(0); //No Extension Support
 		outStream.writeShort(socket.getMyClient().getConnectionId());
-		outStream.writeInt(UtpProtocol.getMicrotime()); //"Micro"second timestamp
+		sendTimestamp = UtpProtocol.getMicrotime(); //Set timestamps so we can resend lost packets
+		outStream.writeInt(sendTimestamp); //"Micro"second timestamp
 		outStream.writeInt(socket.getPeerClient().getDelay());
 		outStream.writeInt(socket.getMyClient().getWindowSize());
 		outStream.writeShort(getSendSequenceNumber());
-		outStream.writeShort(socket.getAcknowledgeNumber());
+		if(acknowledgeNumber == 0)
+			outStream.writeShort(socket.getAcknowledgeNumber());
+		else
+			outStream.writeShort(acknowledgeNumber);
 		//Write Extra Data if needed
 		writePacket(outStream);
 	}
@@ -87,11 +92,20 @@ public abstract class Packet implements Comparable<Packet> {
 	 * @return
 	 */
 	protected int getSendSequenceNumber() {
-		return socket.getSequenceNumber();
+		if(sequenceNumber != -1)
+			return sequenceNumber;
+		else {
+			sequenceNumber = socket.getSequenceNumber();
+			return sequenceNumber;
+		}
 	}
 	
 	public int getSequenceNumber() {
 		return sequenceNumber;
+	}
+	
+	public long getSendTime() {
+		return sendTimestamp;
 	}
 
 	public void process(UtpSocket socket) {
@@ -99,7 +113,7 @@ public abstract class Packet implements Comparable<Packet> {
 		socket.getPeerClient().setWindowSize(windowSize);
 		socket.getPeerClient().setDelay(UtpProtocol.getMicrotime() - sendTimestamp);
 		socket.getMyClient().setDelay(delay);
-		socket.setAcknowledgeNumber(sequenceNumber);
+		socket.setAcknowledgeNumber(sequenceNumber, needAcknowledgement());
 		socket.acknowledgedPacket(acknowledgeNumber);
 		//Process Packet
 		processPacket(socket);
@@ -110,6 +124,10 @@ public abstract class Packet implements Comparable<Packet> {
 	public abstract int getId();
 	
 	public abstract int getSize();
+	
+	public boolean needAcknowledgement() {
+		return false;
+	}
 	
 	@Override
 	public int compareTo(Packet otherPacket) {

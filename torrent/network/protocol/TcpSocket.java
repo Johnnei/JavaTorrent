@@ -73,4 +73,13 @@ public class TcpSocket implements ISocket {
 		return socket.getRemoteSocketAddress().toString().substring(1);
 	}
 
+	@Override
+	public boolean isConnecting() {
+		return false;
+	}
+
+	@Override
+	public void flush() throws IOException {
+	}
+
 }

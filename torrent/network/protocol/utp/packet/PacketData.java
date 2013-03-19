@@ -11,6 +11,7 @@ public class PacketData extends Packet {
 	private byte[] data;
 	
 	public PacketData() {
+		super();
 		data = new byte[0];
 	}
 	
@@ -36,6 +37,21 @@ public class PacketData extends Packet {
 		} catch (IOException e) {
 			//This exception won't be thrown
 		}
+	}
+	
+	@Override
+	protected int getSendSequenceNumber() {
+		if(sequenceNumber != -1)
+			return sequenceNumber;
+		else {
+			sequenceNumber = socket.getNextSequenceNumber();
+			return sequenceNumber;
+		}
+	}
+	
+	@Override
+	public boolean needAcknowledgement() {
+		return true;
 	}
 
 	@Override

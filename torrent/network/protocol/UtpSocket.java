@@ -7,6 +7,9 @@ import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.LinkedList;
+import java.util.Random;
+
+import org.johnnei.utils.ThreadUtils;
 
 import torrent.network.Stream;
 import torrent.network.protocol.utp.ConnectionState;
@@ -15,8 +18,11 @@ import torrent.network.protocol.utp.UtpClient;
 import torrent.network.protocol.utp.UtpInputStream;
 import torrent.network.protocol.utp.UtpOutputStream;
 import torrent.network.protocol.utp.packet.Packet;
+import torrent.network.protocol.utp.packet.PacketFin;
 import torrent.network.protocol.utp.packet.PacketSample;
 import torrent.network.protocol.utp.packet.PacketState;
+import torrent.network.protocol.utp.packet.PacketSyn;
+import torrent.network.protocol.utp.packet.UtpProtocol;
 import torrent.util.tree.BinarySearchTree;
 
 public class UtpSocket implements ISocket, Comparable<UtpSocket> {
@@ -45,6 +51,10 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	 * The last received packet
 	 */
 	private int acknowledgeNumber;
+	/**
+	 * The timeout which is allowed on this socket for a packet
+	 */
+	private int timeout;
 	private UtpInputStream inStream;
 	private UtpOutputStream outStream;
 	
@@ -65,11 +75,31 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		packetsInFlight = new BinarySearchTree<>();
 		inStream = new UtpInputStream();
 		outStream = new UtpOutputStream(this);
+		timeout = 1000;
 	}
 	
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
+		System.out.println("[uTP] Connecting to " + endpoint);
 		this.socketAddress = endpoint;
+		peerClient.setConnectionId(new Random().nextInt() & 0xFFFF);
+		myClient.setConnectionId(peerClient.getConnectionId() + 1);
+		sequenceNumber = 1;
+		acknowledgeNumber = 0;
+		timeout = 1000;
+		PacketSyn connectPacket = new PacketSyn();
+		int tries = 0;
+		UdpMultiplexer.getInstance().register(this);
+		while(tries < 3 && connectionState != ConnectionState.CONNECTED) {
+			sendPacket(connectPacket);
+			tries++;
+			ThreadUtils.sleep(timeout);
+		}
+		if(connectionState == ConnectionState.CONNECTING) {
+			connectionState = ConnectionState.CLOSED;
+			UdpMultiplexer.getInstance().unregister(this);
+			throw new IOException("Host unreachable");
+		}
 	}
 
 	@Override
@@ -85,7 +115,8 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	@Override
 	public void close() throws IOException {
 		connectionState = ConnectionState.DISCONNECTING;
-		//TODO Send PacketFin
+		outStream.flush();
+		sendPacket(new PacketFin());
 	}
 
 	@Override
@@ -130,7 +161,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	 * Gets the sequence number and then advances it to the next number
 	 * @return
 	 */
-	public int getNextSequenceNumber() {
+	public synchronized int getNextSequenceNumber() {
 		short seqnr = getSequenceNumber();
 		++sequenceNumber;
 		return seqnr;
@@ -148,9 +179,13 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		this.sequenceNumber = sequenceNumber;
 	}
 
-	public void setAcknowledgeNumber(int acknowledgeNumber) {
-		this.acknowledgeNumber = acknowledgeNumber;
-		sendPacket(new PacketState());
+	public void setAcknowledgeNumber(int acknowledgeNumber, boolean needAck) {
+		if(acknowledgeNumber > this.acknowledgeNumber)
+			this.acknowledgeNumber = acknowledgeNumber;
+		if(needAck) {
+			System.out.println(myClient.getConnectionId() + "| Ack Send: " + acknowledgeNumber);
+			sendPacket(new PacketState(acknowledgeNumber));
+		}
 	}
 	
 	public void acknowledgedPacket(int acknowledgeNumber) {
@@ -161,39 +196,92 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		}
 	}
 	
+	private void setTimeout(int timeout) {
+		this.timeout = Math.max(500, timeout);
+	}
+	
 	/**
 	 * Adds this packet to the queue and then tries to send all packets in the queue
 	 * @param packet
 	 */
 	public void sendPacket(Packet packet) {
+		packet.setSocket(this);
 		packetQueue.addLast(packet);
-		packet = packetQueue.removeFirst();
-		//Send all packets which we can
-		while(packet.getSize() + bytesInFlight < peerClient.getWindowSize()) {
-			Stream outStream = new Stream(packet.getSize());
-			packet.write(outStream);
-			byte[] dataBuffer = outStream.getBuffer();
-			DatagramPacket udpPacket;
-			try {
-				udpPacket = new DatagramPacket(dataBuffer, dataBuffer.length, socketAddress);
-				if(!UdpMultiplexer.getInstance().send(udpPacket)) {
-					throw new SocketException("Failed to send packet");
-				}
-				bytesInFlight += dataBuffer.length;
-				packetsInFlight.add(packet);
-			} catch (SocketException e) {
-				packetQueue.addFirst(packet);
-			}
-			if(packetQueue.isEmpty()) {
-				break;
+		sendPacketQueue();
+	}
+	
+	private synchronized void sendPacketQueue() {
+		while(!packetQueue.isEmpty()) {
+			Packet packet = packetQueue.removeFirst();
+			if(packet.getSize() + bytesInFlight < peerClient.getWindowSize()) {
+				sendPacketToPeer(packet);
 			} else {
-				packet = packetQueue.removeFirst();
+				break;
 			}
 		}
 	}
+	
+	/**
+	 * Sends a packet to the peer<br/>
+	 * Checks with windows should be applied before calling this function
+	 * @param packet
+	 */
+	private void sendPacketToPeer(Packet packet) {
+		Stream outStream = new Stream(packet.getSize());
+		packet.write(outStream);
+		byte[] dataBuffer = outStream.getBuffer();
+		DatagramPacket udpPacket;
+		try {
+			udpPacket = new DatagramPacket(dataBuffer, dataBuffer.length, socketAddress);
+			System.out.println(myClient.getConnectionId() + "| Send " + packet.getClass().getSimpleName() + " with id: " + packet.getSequenceNumber());
+			if(!UdpMultiplexer.getInstance().send(udpPacket)) {
+				throw new SocketException("Failed to send packet");
+			}
+			if(packet.needAcknowledgement() && packetsInFlight.find(packet) == null) {
+				packetsInFlight.add(packet);
+				bytesInFlight += dataBuffer.length;
+			}
+		} catch (SocketException e) {
+			packetQueue.addFirst(packet);
+		}
+	}
+	
+	public void checkTimeouts() {
+		if(connectionState == ConnectionState.CONNECTING)
+			return;
+		for(Packet packet : packetsInFlight) {
+			long currentTime = UtpProtocol.getMicrotime();
+			if(currentTime - packet.getSendTime() >= timeout) {
+				sendPacketToPeer(packet); //We don't need to check if this would fit in the window, This is already in the window
+				setTimeout(timeout * 2);
+				System.out.println(myClient.getConnectionId() + "| " + packet.getClass().getSimpleName() + " (" +packet.getSequenceNumber() + ") timed-out, Timeout increased to " + timeout + "ms");
+			}
+		}
+		sendPacketQueue();
+	}
 
 	public void setConnectionState(ConnectionState connectionState) {
+		System.out.println(myClient.getConnectionId() + "| " + connectionState);
 		this.connectionState = connectionState;
+	}
+
+	public ConnectionState getConnectionState() {
+		return connectionState;
+	}
+
+	@Override
+	public boolean isConnecting() {
+		return connectionState == ConnectionState.CONNECTING;
+	}
+	
+	@Override
+	public String toString() {
+		return "[uTP] " + socketAddress.toString().substring(1);
+	}
+
+	@Override
+	public void flush() throws IOException {
+		outStream.flush();
 	}
 
 }

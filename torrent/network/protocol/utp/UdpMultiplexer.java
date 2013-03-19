@@ -3,6 +3,9 @@ package torrent.network.protocol.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Iterator;
+
+import org.johnnei.utils.config.Config;
 
 import torrent.Logable;
 import torrent.network.Stream;
@@ -12,30 +15,38 @@ import torrent.util.tree.BinarySearchTree;
 
 public class UdpMultiplexer extends Thread implements Logable {
 
-	private static UdpMultiplexer instance;
+	private static UdpMultiplexer instance = new UdpMultiplexer();
 	
 	public static UdpMultiplexer getInstance() {
-		if(instance == null) {
-			instance = new UdpMultiplexer();
-			instance.start();
-		}
 		return instance;
 	}
 	
 	private final Object BST_LOCK = new Object();
-	
+	/**
+	 * The Factory to create the packet instances<br/>
+	 * If JavaTorrent will need to update the protocol then we can use multiple factory's to create the correct version of the packet
+	 */
 	private UtpPacketFactory packetFactory;
+	/**
+	 * The socket on which the udp packet will be received and send
+	 */
 	private DatagramSocket multiplexerSocket;
+	/**
+	 * All {@link UtpSocket}s which have registered to listen for packets
+	 */
 	private BinarySearchTree<UtpSocket> utpSockets;
 	
 	private UdpMultiplexer() {
-		try {
-			multiplexerSocket = new DatagramSocket(27960);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		super("UdpMultiplexer");
 		utpSockets = new BinarySearchTree<>();
 		packetFactory = new UtpPacketFactory();
+		try {
+			multiplexerSocket = new DatagramSocket(Config.getConfig().getInt("download-port"));
+			new UtpSocketTimeout().start();
+			start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
 	}
 	
 	/**
@@ -59,6 +70,17 @@ public class UdpMultiplexer extends Thread implements Logable {
 		}
 	}
 	
+	public void updateTimeout() {
+		Iterator<UtpSocket> i;
+		synchronized (BST_LOCK) {
+			 i = utpSockets.iterator();
+		}
+		while(i.hasNext()) {
+			UtpSocket socket = i.next();
+			socket.checkTimeouts();
+		}
+	}
+	
 	/**
 	 * Tries to send the UdpPacket
 	 * @param packet The packet to send
@@ -69,6 +91,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 			multiplexerSocket.send(packet);
 			return true;
 		} catch (IOException e) {
+			e.printStackTrace();
 			return false;
 		}
 	}
@@ -86,21 +109,21 @@ public class UdpMultiplexer extends Thread implements Logable {
 				if(version == Packet.VERSION) {
 					try {
 						Packet utpPacket = packetFactory.getFromId(type);
-						Stream inStream = new Stream(packet.getLength());
-						inStream.writeByte(dataBuffer, 0, packet.getLength());
+						Stream inStream = new Stream(packet.getData());
 						utpPacket.read(inStream);
 						UtpSocket socket = new UtpSocket(utpPacket.getConnectionId());
 						socket = utpSockets.find(socket);
 						if(socket != null) {
+							log("Received " + utpPacket.getClass().getSimpleName() + " for " + (utpPacket.getConnectionId() & 0xFFFF));
 							utpPacket.process(socket);
 						} else {
-							log("Packet of " + packet.getLength() + " bytes was send to a connection which was not established");
+							log("Packet of " + packet.getLength() + " bytes was send to a connection which was not established (" + packet.getAddress() + ":" + packet.getPort() + " | " + utpPacket.getConnectionId() + ")");
 						}
 					} catch (IllegalArgumentException e) {
-						log("Invalid Packet of " + packet.getLength() + " bytes with type " + type, true);
+						log("Invalid Packet of " + packet.getLength() + " bytes with type " + type + " (" + packet.getAddress() + ":" + packet.getPort() + ")", true);
 					}
 				} else {
-					log("Invalid Packet of " + packet.getLength() + " bytes with version " + version, true);
+					log("Invalid Packet of " + packet.getLength() + " bytes with version " + version + " (" + packet.getAddress() + ":" + packet.getPort() + ")", true);
 				}
 			} catch (IOException e) {
 				
@@ -115,7 +138,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 
 	@Override
 	public void log(String s, boolean isError) {
-		s = "[UdpMultiplexer] ";
+		s = "[UdpMultiplexer] " + s;
 		if(isError) {
 			System.err.println(s);
 		} else {

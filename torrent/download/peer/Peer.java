@@ -12,7 +12,7 @@ import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
-import torrent.network.protocol.TcpSocket;
+import torrent.network.protocol.UtpSocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -94,8 +94,8 @@ public class Peer implements Logable, ISortable {
 			setStatus("Connected (Outside request)");
 			return;
 		}
-		socket = new TcpSocket();
-		while(socket != null && socket.isClosed()) {
+		socket = new UtpSocket();
+		while(socket != null && (socket.isClosed() || socket.isConnecting())) {
 			try {
 				socket.connect(new InetSocketAddress(address, port));
 				inStream = new ByteInputStream(this, socket.getInputStream());
@@ -158,6 +158,7 @@ public class Peer implements Logable, ISortable {
 		outStream.write(RESERVED_EXTENTION_BYTES);
 		outStream.write(torrent.getHashArray());
 		outStream.write(Manager.getPeerId());
+		outStream.flush();
 		setStatus("Awaiting Handshake response");
 	}
 

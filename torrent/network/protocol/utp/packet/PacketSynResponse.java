@@ -5,6 +5,11 @@ public class PacketSynResponse extends PacketState {
 	
 	@Override
 	protected int getSendSequenceNumber() {
-		return socket.getNextSequenceNumber();
+		if(sequenceNumber != -1)
+			return sequenceNumber;
+		else {
+			sequenceNumber = socket.getNextSequenceNumber();
+			return sequenceNumber;
+		}
 	}
 }

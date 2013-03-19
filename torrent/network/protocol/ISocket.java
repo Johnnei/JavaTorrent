@@ -49,6 +49,12 @@ public interface ISocket {
 	public boolean canFallback();
 	
 	/**
+	 * Checks if this socket is connecting
+	 * @return true if the socket is connecting
+	 */
+	public boolean isConnecting();
+	
+	/**
 	 * Checks if the connection has been closed
 	 * @return true if the connection is closing/closed
 	 */
@@ -65,5 +71,11 @@ public interface ISocket {
 	 * @return true if EOF has been send
 	 */
 	public boolean isOutputShutdown();
+	
+	/**
+	 * Forces the socket to send all data<br/>
+	 * Only supported in {@link UtpSocket}
+	 */
+	public void flush() throws IOException;
 
 }

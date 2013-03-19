@@ -26,6 +26,11 @@ public class UtpClient {
 	 * The size of a single packet
 	 */
 	private int packetSize;
+	
+	public UtpClient() {
+		windowSize = 150;
+		packetSize = 150;
+	}
 
 	/**
 	 * Gets the delay measured on this socket
@@ -74,8 +79,8 @@ public class UtpClient {
 		return packetSize & 0xFFFF;
 	}
 	
-	public short getConnectionId() {
-		return connectionId;
+	public int getConnectionId() {
+		return connectionId & 0xFFFF;
 	}
 	
 	/**

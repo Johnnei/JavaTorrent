@@ -14,6 +14,9 @@ public class PacketSyn extends Packet {
 
 	@Override
 	protected void writePacket(Stream outStream) {
+		outStream.skipWrite(-18); //Skip back to Connection Id
+		outStream.writeShort(socket.getPeerClient().getConnectionId());
+		outStream.skipWrite(16); //Skip forward to end
 	}
 
 	@Override
@@ -32,6 +35,21 @@ public class PacketSyn extends Packet {
 	@Override
 	public int getId() {
 		return UtpProtocol.ST_SYN;
+	}
+	
+	@Override
+	protected int getSendSequenceNumber() {
+		if(sequenceNumber != -1)
+			return sequenceNumber;
+		else {
+			sequenceNumber = socket.getNextSequenceNumber();
+			return sequenceNumber;
+		}
+	}
+	
+	@Override
+	public boolean needAcknowledgement() {
+		return true;
 	}
 
 	@Override

@@ -2,25 +2,37 @@ package torrent.network.protocol.utp;
 
 import java.io.OutputStream;
 
+import torrent.network.Stream;
 import torrent.network.protocol.UtpSocket;
 import torrent.network.protocol.utp.packet.PacketData;
 
 public class UtpOutputStream extends OutputStream {
 
 	private UtpSocket socket;
+	/**
+	 * A buffer to limit the amount of packets send to client when sending single bytes in a row<br/>
+	 */
+	private Stream buffer;
 	
 	public UtpOutputStream(UtpSocket socket) {
 		this.socket = socket;
+		buffer = new Stream(150);
 	}
 	
 	@Override
 	public void write(int i) {
-		write(new byte[] { (byte)i }, 0, 1);
+		if(buffer.writeableSpace() > 0) {
+			buffer.writeByte(i);
+		} else {
+			flush();
+		}
 	}
 	
 	@Override
 	public void write(byte[] array) {
-		write(array, 0, array.length);
+		for(int i = 0; i < array.length; i++) {
+			write(array[i]);
+		}
 	}
 	
 	@Override
@@ -31,6 +43,19 @@ public class UtpOutputStream extends OutputStream {
 			byte[] data = new byte[size];
 			System.arraycopy(array, offset + bytesSend, data, 0, size);
 			socket.sendPacket(new PacketData(data));
+			bytesSend += size;
+		}
+	}
+	
+	/**
+	 * Forces the stream to send all data to the other-side
+	 */
+	@Override
+	public void flush() {
+		if(buffer.getWritePointer() > 0) {
+			byte[] data = buffer.getBuffer();
+			write(data, 0, buffer.getWritePointer());
+			buffer.reset(150);
 		}
 	}
 

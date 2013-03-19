@@ -1,5 +1,7 @@
 package torrent.util.tree;
 
+import java.util.Iterator;
+
 import org.johnnei.utils.JMath;
 
 
@@ -8,10 +10,13 @@ import org.johnnei.utils.JMath;
  * The Tree is based on an AVL tree so the find operations should be guaranteed O(log n)
  * @author Johnnei
  *
- * @param <T> The type of data to store. Must implement Comparable
+ * @param <T> The type of data to store. Must implement {@link Comparable}
  */
-public class BinarySearchTree<T extends Comparable<T>> {
+public class BinarySearchTree<T extends Comparable<T>> implements Iterable<T> {
 	
+	/**
+	 * The total size of the tree
+	 */
 	private TreeNode<T> root;
 	
 	/**
@@ -36,7 +41,6 @@ public class BinarySearchTree<T extends Comparable<T>> {
 			return null;
 		} else {
 			T removedItem = root.remove(target);
-			System.out.println("Removed Item");
 			if(removedItem != null && root.getValue().equals(removedItem)) {
 				if(root.isLeaf()) {
 					root = null;
@@ -58,11 +62,9 @@ public class BinarySearchTree<T extends Comparable<T>> {
 					}
 				}
 			}
-			printInOrder();
 			if(root != null && !root.isLeaf()) {
 				checkAVL();
 			}
-			printInOrder();
 			return removedItem;
 		}
 	}
@@ -123,6 +125,15 @@ public class BinarySearchTree<T extends Comparable<T>> {
 
 	public boolean isEmpty() {
 		return root == null;
+	}
+	
+	TreeNode<T> getRoot() {
+		return root;
+	}
+
+	@Override
+	public Iterator<T> iterator() {
+		return new BstIterator<T>(getSize(), root);
 	}
 
 }
