@@ -3,6 +3,8 @@ package torrent.frame;
 import java.awt.Graphics;
 import java.util.ArrayList;
 
+import org.johnnei.utils.config.Config;
+
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.frame.controls.TableBase;
@@ -63,7 +65,7 @@ public class TabPeers extends TableBase {
 			ArrayList<ISortable> toSort = new ArrayList<>();
 			for (int i = 0; i < peers.size(); i++) {
 				Peer p = peers.get(i);
-				//if (p.getPassedHandshake())
+				if (p.getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers"))
 					toSort.add(p);
 			}
 			Mergesort peerList = new Mergesort(toSort);

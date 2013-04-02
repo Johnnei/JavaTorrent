@@ -22,8 +22,10 @@ public class TabGeneral extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
 	private JTextField downloadFolder;
 	private JTextField portTextField;
+	private JTextField showPendingPeers;
 	private JButton chooseFolderButton;
 	private JButton portButton;
+	private JButton pendingPeerBtn;
 
 	public TabGeneral() {
 		downloadFolder = new JTextField(Config.getConfig().getString("download-output_folder"));
@@ -34,9 +36,13 @@ public class TabGeneral extends JPanel implements ActionListener {
 		
 		portTextField = createTextfield("" + Config.getConfig().getInt("download-port"));
 		portButton = createButton();
+		
+		showPendingPeers = createTextfield("" + Config.getConfig().getBoolean("general-show_all_peers"));
+		pendingPeerBtn = createButton();
 
 		addConfig("Download Folder", downloadFolder, chooseFolderButton);
 		addConfig("Connection Port", portTextField, portButton);
+		addConfig("Show Pending Handshake Peers", showPendingPeers, pendingPeerBtn);
 	}
 	
 	private void addConfig(String labelText, JTextField textField, JButton changeButton) {
@@ -85,6 +91,11 @@ public class TabGeneral extends JPanel implements ActionListener {
 			} else {
 				JOptionPane.showMessageDialog(this, "The given port is not valid. (Has to be between 1025 and 65535)", "Error", JOptionPane.ERROR_MESSAGE);
 			}
+		} else if(e.getSource().equals(pendingPeerBtn)) {
+			int newValue = JOptionPane.showConfirmDialog(this, "Show peers which have not yet passed handshake?", "Show all peers", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+			boolean b = newValue == 0;
+			Config.getConfig().set("general-show_all_peers", b);
+			showPendingPeers.setText("" + Config.getConfig().getBoolean("general-show_all_peers"));
 		}
 	}
 

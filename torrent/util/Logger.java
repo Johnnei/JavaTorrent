@@ -7,7 +7,7 @@ import java.util.Date;
 
 public class Logger extends PrintStream {
 
-	private DateFormat dateFormat = new SimpleDateFormat("d/M k:m:s");
+	private DateFormat dateFormat = new SimpleDateFormat("dd/MM kk:mm:ss");
 	private Date cachedDate = new Date();
 	private long cacheTime = System.currentTimeMillis();
 	private boolean hadBreak = true;

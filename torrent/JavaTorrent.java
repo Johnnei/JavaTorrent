@@ -21,6 +21,7 @@ public class JavaTorrent extends Thread {
 		Config.getConfig().set("peer-max_connecting", 50);
 		Config.getConfig().set("download-output_folder", ".\\");
 		Config.getConfig().set("download-port", 6881);
+		Config.getConfig().set("general-show_all_peers", false);
 		Config.getConfig().load();
 	}
 

@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.IllegalFormatException;
 import java.util.Map.Entry;
 
 import org.johnnei.utils.ThreadUtils;
@@ -160,6 +161,15 @@ public class Config {
 			throw new IllegalArgumentException(getMissingConfigError(key));
 		}
 	}
+	
+	public boolean getBoolean(String key) {
+		String val = get(key);
+		if (isBoolean(val)) {
+			return parseBoolean(val);
+		} else {
+			throw new IllegalArgumentException(getMissingConfigError(key));
+		}
+	}
 
 	/**
 	 * Gets an float config value
@@ -190,6 +200,29 @@ public class Config {
 
 	public String getTempFolder() {
 		return folder;
+	}
+	
+	private boolean isBoolean(String s) {
+		try {
+			parseBoolean(s);
+			return true;
+		} catch (IllegalFormatException e) {
+			return false;
+		}
+	}
+	
+	private boolean parseBoolean(String s) {
+		s = s.toLowerCase();
+		String[] trueList = new String[] { "yes", "1", "true" };
+		String[] falseList = new String[] { "no", "0", "false" };
+		for(int i = 0; i < trueList.length; i++) {
+			if(trueList[i].equals(s)) {
+				return true;
+			} else if(falseList[i].equals(s)) {
+				return false;
+			}
+		}
+		throw new NumberFormatException("Invalid boolean string: " + s);
 	}
 
 	public static boolean isInt(String s) {
