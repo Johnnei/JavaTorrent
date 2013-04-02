@@ -8,8 +8,8 @@ public class UtpProtocol {
 	public static final int ST_RESET = 3;
 	public static final int ST_SYN = 4;
 	
-	public static final long getMicrotime() {
-		return System.currentTimeMillis();
+	public static final int getMicrotime() {
+		return (int)(System.currentTimeMillis() * 1000);
 	}
 
 }

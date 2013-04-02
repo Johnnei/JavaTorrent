@@ -55,6 +55,10 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	 * The timeout which is allowed on this socket for a packet
 	 */
 	private int timeout;
+	/**
+	 * The last packet we will receive
+	 */
+	private int finalAckNumber;
 	private UtpInputStream inStream;
 	private UtpOutputStream outStream;
 	
@@ -192,6 +196,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		Packet p = new PacketSample(acknowledgeNumber);
 		p = packetsInFlight.remove(p);
 		if(p != null) {
+			System.out.println(peerClient.getConnectionId() + "| Acked " + p.getClass().getSimpleName());
 			bytesInFlight -= p.getSize();
 		}
 	}
@@ -233,7 +238,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		DatagramPacket udpPacket;
 		try {
 			udpPacket = new DatagramPacket(dataBuffer, dataBuffer.length, socketAddress);
-			System.out.println(myClient.getConnectionId() + "| Send " + packet.getClass().getSimpleName() + " with id: " + packet.getSequenceNumber());
+			System.out.println(myClient.getConnectionId() + "| Send " + packet.getClass().getSimpleName() + " with id: " + packet.getSequenceNumber() + ", their delay: " + peerClient.getDelay());
 			if(!UdpMultiplexer.getInstance().send(udpPacket)) {
 				throw new SocketException("Failed to send packet");
 			}
@@ -251,7 +256,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 			return;
 		for(Packet packet : packetsInFlight) {
 			long currentTime = UtpProtocol.getMicrotime();
-			if(currentTime - packet.getSendTime() >= timeout) {
+			if(currentTime - packet.getSendTime() >= (timeout * 1000)) {
 				sendPacketToPeer(packet); //We don't need to check if this would fit in the window, This is already in the window
 				setTimeout(timeout * 2);
 				System.out.println(myClient.getConnectionId() + "| " + packet.getClass().getSimpleName() + " (" +packet.getSequenceNumber() + ") timed-out, Timeout increased to " + timeout + "ms");
@@ -276,12 +281,32 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	
 	@Override
 	public String toString() {
-		return "[uTP] " + socketAddress.toString().substring(1);
+		return socketAddress.toString().substring(1);
 	}
 
 	@Override
 	public void flush() throws IOException {
 		outStream.flush();
+	}
+	
+	public void setFinalPacket(int seqNr) {
+		finalAckNumber = seqNr;
+	}
+
+	/**
+	 * Checks if the Disconnecting phase has been completed
+	 */
+	public void checkDisconnect() {
+		if(connectionState == ConnectionState.DISCONNECTING) {
+			if(acknowledgeNumber == finalAckNumber && bytesInFlight == 0) {
+				setConnectionState(ConnectionState.CLOSED);
+				UdpMultiplexer.getInstance().unregister(this);
+			}
+		}
+	}
+
+	public void setUtpInputNumber(int sequenceNumber) {
+		inStream.setSequenceNumber(sequenceNumber);
 	}
 
 }

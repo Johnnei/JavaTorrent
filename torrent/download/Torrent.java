@@ -436,8 +436,9 @@ public class Torrent extends Thread implements Logable {
 
 	public void broadcastMessage(IMessage m) {
 		for (int i = 0; i < peers.size(); i++) {
-			if (!peers.get(i).closed())
-				peers.get(i).addToQueue(m);
+			Peer peer = peers.get(i);
+			if (!peer.closed() && peer.getPassedHandshake())
+				peer.addToQueue(m);
 		}
 	}
 

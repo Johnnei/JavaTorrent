@@ -20,6 +20,12 @@ public class PacketFin extends Packet {
 	@Override
 	public void processPacket(UtpSocket socket) {
 		socket.setConnectionState(ConnectionState.DISCONNECTING);
+		socket.setFinalPacket(sequenceNumber);
+	}
+	
+	@Override
+	public boolean needAcknowledgement() {
+		return true;
 	}
 
 	@Override

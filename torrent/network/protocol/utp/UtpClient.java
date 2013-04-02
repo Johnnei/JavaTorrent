@@ -28,6 +28,7 @@ public class UtpClient {
 	private int packetSize;
 	
 	public UtpClient() {
+		baseDelay = Long.MAX_VALUE;
 		windowSize = 150;
 		packetSize = 150;
 	}
@@ -39,16 +40,20 @@ public class UtpClient {
 	public int getDelay() {
 		return (int)(delay & 0xFFFFFFFF);
 	}
+	
+	public void setDelay(long delay, boolean updateBaseDelay) {
+		if(updateBaseDelay && delay < baseDelay) {
+			baseDelay = delay;
+		}
+		this.delay = delay - baseDelay;
+	}
 
 	/**
 	 * Updates the measured delay and corrects the base delay if needed
 	 * @param delay The measured delay
 	 */
 	public void setDelay(long delay) {
-		if(delay < baseDelay) {
-			baseDelay = delay;
-		}
-		this.delay = delay - baseDelay;
+		setDelay(delay, true);
 	}
 	
 	public void setConnectionId(int connectionId) {

@@ -33,6 +33,7 @@ public class UtpInputStream extends InputStream {
 	 * @param packet
 	 */
 	public void receiveData(PacketData packet) {
+		System.err.println("XXXXX| Received Data SeqNr: " + packet.getSequenceNumber());
 		if(packet.getSequenceNumber() == (lastSequenceNumber + 1)) {
 			//This packet is the next in-chain
 			byte[] data = packet.getData();
@@ -70,6 +71,14 @@ public class UtpInputStream extends InputStream {
 			return buffer.readByte() & 0xFF;
 		} else
 			return -1;
+	}
+
+	/**
+	 * Sets the first sequence number
+	 * @param sequenceNumber
+	 */
+	public void setSequenceNumber(int sequenceNumber) {
+		lastSequenceNumber = sequenceNumber;
 	}
 
 }

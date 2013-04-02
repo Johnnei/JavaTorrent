@@ -78,6 +78,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 		while(i.hasNext()) {
 			UtpSocket socket = i.next();
 			socket.checkTimeouts();
+			socket.checkDisconnect();
 		}
 	}
 	
@@ -117,7 +118,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 							log("Received " + utpPacket.getClass().getSimpleName() + " for " + (utpPacket.getConnectionId() & 0xFFFF));
 							utpPacket.process(socket);
 						} else {
-							log("Packet of " + packet.getLength() + " bytes was send to a connection which was not established (" + packet.getAddress() + ":" + packet.getPort() + " | " + utpPacket.getConnectionId() + ")");
+							log("Packet of " + packet.getLength() + " bytes (0x" + Integer.toHexString(dataBuffer[0]) + ") was send to a connection which was not established (" + packet.getAddress() + ":" + packet.getPort() + " | " + utpPacket.getConnectionId() + ")");
 						}
 					} catch (IllegalArgumentException e) {
 						log("Invalid Packet of " + packet.getLength() + " bytes with type " + type + " (" + packet.getAddress() + ":" + packet.getPort() + ")", true);

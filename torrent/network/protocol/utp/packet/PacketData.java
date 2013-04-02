@@ -31,6 +31,7 @@ public class PacketData extends Packet {
 
 	@Override
 	public void processPacket(UtpSocket socket) {
+		System.err.println(socket.getMyClient().getConnectionId() + "| WE GOT DATA!");
 		try {
 			UtpInputStream inputStream = (UtpInputStream)socket.getInputStream();
 			inputStream.receiveData(this);

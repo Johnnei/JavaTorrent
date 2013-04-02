@@ -11,7 +11,7 @@ public class UtpSocketTimeout extends Thread {
 	@Override
 	public void run() {
 		while (true) {
-			ThreadUtils.sleep(500);
+			ThreadUtils.sleep(250);
 			UdpMultiplexer.getInstance().updateTimeout();
 		}
 	}

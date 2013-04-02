@@ -111,8 +111,9 @@ public abstract class Packet implements Comparable<Packet> {
 	public void process(UtpSocket socket) {
 		//Process Header
 		socket.getPeerClient().setWindowSize(windowSize);
-		socket.getPeerClient().setDelay(UtpProtocol.getMicrotime() - sendTimestamp);
+		socket.getPeerClient().setDelay(UtpProtocol.getMicrotime() - sendTimestamp, false);
 		socket.getMyClient().setDelay(delay);
+		System.out.println("Our Delay: " + delay + ", Translated: " + socket.getMyClient().getDelay() + "us, they send at: " + sendTimestamp);
 		socket.setAcknowledgeNumber(sequenceNumber, needAcknowledgement());
 		socket.acknowledgedPacket(acknowledgeNumber);
 		//Process Packet
