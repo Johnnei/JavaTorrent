@@ -43,7 +43,7 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * The list of trackers
 	 */
-	private Tracker[] trackers;
+	private ArrayList<Tracker> trackers;
 	/**
 	 * The SHA1 hash from the magnetLink
 	 */
@@ -118,15 +118,8 @@ public class Torrent extends Thread implements Logable {
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
 
-	/**
-	 * Creates a torrent with space for 10 trackers
-	 */
 	public Torrent() {
-		this(10);
-	}
-
-	public Torrent(int trackerCount) {
-		trackers = new Tracker[trackerCount];
+		trackers = new ArrayList<>();
 		torrentStatus = STATE_DOWNLOAD_METADATA;
 		downloadedBytes = 0L;
 		peers = new ArrayList<Peer>();
@@ -162,13 +155,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void addTracker(Tracker t) {
-		for (int i = 0; i < trackers.length; i++) {
-			if (trackers[i] == null) {
-				trackers[i] = t;
-				return;
-			}
-		}
-		System.err.println("Failed to add tracker to " + getDisplayName());
+		trackers.add(t);
 	}
 
 	public void initialise() {
@@ -182,11 +169,8 @@ public class Torrent extends Thread implements Logable {
 		writeThread = new PeersWriteThread(this);
 		readThread.start();
 		writeThread.start();
-		for (int i = 0; i < trackers.length; i++) {
-			Tracker t = trackers[i];
-			if (t != null) {
-				t.start();
-			}
+		for(Tracker tracker : trackers) {
+			tracker.start();
 		}
 	}
 
@@ -241,10 +225,8 @@ public class Torrent extends Thread implements Logable {
 			torrentStatus = STATE_DOWNLOAD_DATA;
 			run();
 		} else {
-			for (int i = 0; i < trackers.length; i++) {
-				if(trackers[i] != null) {
-					trackers[i].setEvent(Tracker.EVENT_COMPLETED);
-				}
+			for(Tracker tracker : trackers) {
+				tracker.setEvent(Tracker.EVENT_COMPLETED);
 			}
 			log("Completed download, Switching to upload mode!");
 			// TODO Upload Mode
@@ -339,11 +321,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public boolean hasTracker() {
-		for (int i = 0; i < trackers.length; i++) {
-			if (trackers[i] != null)
-				return true;
-		}
-		return false;
+		return trackers.size() > 0;
 	}
 
 	public byte[] getHashArray() {
@@ -588,7 +566,7 @@ public class Torrent extends Thread implements Logable {
 		return leechers - getSeedCount();
 	}
 
-	public Tracker[] getTrackers() {
+	public ArrayList<Tracker> getTrackers() {
 		return trackers;
 	}
 
