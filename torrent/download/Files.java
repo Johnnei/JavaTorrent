@@ -77,14 +77,14 @@ public class Files {
 	private void parseTorrentFileData(File torrentFile) {
 		try {
 			DataInputStream in = new DataInputStream(new FileInputStream(torrentFile));
-			String data = "";
-			while (in.available() > 0)
-				data += (char) in.readByte();
+			byte[] data = new byte[in.available()];
+			in.read(data, 0, data.length);
 			in.close();
-			Bencode decoder = new Bencode(data);
+			Bencode decoder = new Bencode(new String(data));
 			parseDictionary(decoder.decodeDictionary());
 			isMetadata = false;
 		} catch (IOException e) {
+			e.printStackTrace();
 			ThreadUtils.sleep(10);
 			parseTorrentFileData(torrentFile);
 		}
@@ -102,13 +102,7 @@ public class Files {
 			fileInfo = new FileInfo[files.size()];
 			for (int i = 0; i < fileInfo.length; i++) {
 				HashMap<?, ?> file = (HashMap<?, ?>) files.get(i);
-				long fileSize = 0L;
-				Object o = file.get("length");
-				if (o instanceof Integer) {
-					fileSize = (long) ((int) o);
-				} else {
-					fileSize = (long) o;
-				}
+				long fileSize = getNumberFromDictionary(file.get("length"));
 				ArrayList<?> fileStructure = (ArrayList<?>) file.get("path");
 				String fileName = "";
 				if (fileStructure.size() > 1) {
@@ -129,13 +123,7 @@ public class Files {
 		} else { // Single file torrent
 			fileInfo = new FileInfo[1];
 			String filename = (String) dictionary.get("name");
-			Object o = dictionary.get("length");
-			long filesize = 0;
-			if (o instanceof Integer) {
-				filesize = (int) o;
-			} else {
-				filesize = (long) o;
-			}
+			long filesize = getNumberFromDictionary(dictionary.get("length"));
 			fileInfo[0] = new FileInfo(0, filename, filesize, remainingSize, getFile(filename), JMath.ceil(filesize / (double) pieceSize));
 			remainingSize += filesize;
 		}
@@ -154,6 +142,16 @@ public class Files {
 			pieces[index] = new HashedPiece(sha1Hash, this, index, size, blockSize);
 			remainingSize -= size;
 		}
+	}
+	
+	private long getNumberFromDictionary(Object o) {
+		long l = 0L;
+		if (o instanceof Integer) {
+			l = (long) ((int) o);
+		} else {
+			l = (long) o;
+		}
+		return l;
 	}
 
 	/**

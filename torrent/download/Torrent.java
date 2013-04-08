@@ -1,6 +1,5 @@
 package torrent.download;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -12,14 +11,14 @@ import torrent.Logable;
 import torrent.Manager;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
+import torrent.download.algos.IDownloadPhase;
 import torrent.download.algos.IDownloadRegulator;
 import torrent.download.algos.IPeerManager;
-import torrent.download.files.Block;
+import torrent.download.algos.PhaseMetadata;
 import torrent.download.files.Piece;
 import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobStoreBlock;
 import torrent.download.files.disk.IOManager;
-import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.PeerConnectorThread;
 import torrent.download.tracker.Tracker;
@@ -30,8 +29,6 @@ import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
 import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
-import torrent.protocol.messages.extension.MessageExtension;
-import torrent.protocol.messages.ut_metadata.MessageRequest;
 import torrent.util.StringUtil;
 
 public class Torrent extends Thread implements Logable {
@@ -90,7 +87,7 @@ public class Torrent extends Thread implements Logable {
 	 */
 	private long lastPeerUpdate = System.currentTimeMillis();
 	/**
-	 * Remembers if the torrent is collecting a piece or checking the hash so we can wait until all pieces are written to the hdd before continueing
+	 * Remembers if the torrent is collecting a piece or checking the hash so we can wait until all pieces are written to the hdd before continuing
 	 */
 	private int torrentHaltingOperations;
 	/**
@@ -114,9 +111,14 @@ public class Torrent extends Thread implements Logable {
 	 * Is used to prevent piece requesting during progressCheck
 	 */
 	private boolean haltDownloading;
+	/**
+	 * The phase in which the torrent currently is
+	 */
+	private IDownloadPhase phase;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
+	public static final byte STATE_UPLOAD = 2;
 
 	public Torrent() {
 		trackers = new ArrayList<>();
@@ -129,6 +131,7 @@ public class Torrent extends Thread implements Logable {
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
+		phase = new PhaseMetadata(this);
 	}
 
 	private boolean hasPeer(Peer p) {
@@ -165,19 +168,19 @@ public class Torrent extends Thread implements Logable {
 			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting") / connectorThreads.length);
 			connectorThreads[i].start();
 		}
+		for(Tracker tracker : trackers) {
+			tracker.start();
+		}
 		readThread = new PeersReadThread(this);
 		writeThread = new PeersWriteThread(this);
 		readThread.start();
 		writeThread.start();
-		for(Tracker tracker : trackers) {
-			tracker.start();
-		}
 	}
 
 	/**
 	 * Updates the bitfield size for all peers
 	 */
-	private void updateBitfield() {
+	public void updateBitfield() {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p != null) {
@@ -187,51 +190,21 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public void run() {
-		if (torrentStatus == STATE_DOWNLOAD_DATA)
-			checkProgress();
-		updateBitfield();
-		while (!files.isDone() || torrentHaltingOperations > 0) {
-			processPeers();
-			ArrayList<Peer> downloadPeers = getDownloadablePeers();
-			while (downloadPeers.size() > 0 && !haltDownloading) {
-				Peer peer = downloadPeers.remove(0);
-				Piece piece = downloadRegulator.getPieceForPeer(peer);
-				if (piece == null) {
-					continue;
+		while(phase != null) {
+			torrentStatus = phase.getId();
+			phase.preprocess();
+			while (!phase.isDone() || torrentHaltingOperations > 0) {
+				processPeers();
+				if(!haltDownloading) {
+					phase.process();
 				}
-				while (piece.getRequestedCount() < piece.getBlockCount() && peer.getFreeWorkTime() > 0) {
-					Block block = piece.getRequestBlock();
-					if (block == null) {
-						break;
-					} else {
-						IMessage message = null;
-						if (files.isMetadata()) {
-							message = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), new MessageRequest(block.getIndex()));
-						} else {
-							message = new torrent.protocol.messages.MessageRequest(piece.getIndex(), block.getIndex() * files.getBlockSize(), block.getSize());
-						}
-						peer.getMyClient().addJob(new Job(piece.getIndex(), block.getIndex()));
-						peer.addToQueue(message);
-					}
-				}
+				ioManager.processTask(this);
+				ThreadUtils.sleep(25);
 			}
-			ioManager.processTask(this);
-			ThreadUtils.sleep(25);
+			phase.postprocess();
+			phase = phase.nextPhase();
 		}
-		if (files.isMetadata()) {
-			FileInfo f = files.getFiles()[0];
-			log("Metadata download completed, Starting phase 2");
-			files = new Files(new File(Config.getConfig().getTempFolder() + f.getFilename()));
-			torrentStatus = STATE_DOWNLOAD_DATA;
-			run();
-		} else {
-			for(Tracker tracker : trackers) {
-				tracker.setEvent(Tracker.EVENT_COMPLETED);
-			}
-			log("Completed download, Switching to upload mode!");
-			// TODO Upload Mode
-		}
-		log("loop ended", true);
+		log("Torrent has finished");
 	}
 
 	/**
@@ -406,7 +379,7 @@ public class Torrent extends Thread implements Logable {
 		files.havePiece(pieceIndex);
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
-			if (!p.closed()) {
+			if (!p.closed() && p.getPassedHandshake()) {
 				p.addToQueue(have);
 			}
 		}
@@ -464,6 +437,10 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public void addUploadedBytes(long l) {
 		uploadedBytes += l;
+	}
+	
+	public void setFiles(Files files) {
+		this.files = files;
 	}
 
 	@Override
@@ -612,6 +589,14 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 		return leechers;
+	}
+	
+	/**
+	 * The regulator which is managing this download
+	 * @return The current assigned regulator
+	 */
+	public IDownloadRegulator getDownloadRegulator() {
+		return downloadRegulator;
 	}
 
 	public int getConnectingCount() {
