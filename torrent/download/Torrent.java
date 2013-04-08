@@ -107,11 +107,6 @@ public class Torrent extends Thread implements Logable {
 	 */
 	private IOManager ioManager;
 	/**
-	 * Halt the downloading until further notice<br/>
-	 * Is used to prevent piece requesting during progressCheck
-	 */
-	private boolean haltDownloading;
-	/**
 	 * The phase in which the torrent currently is
 	 */
 	private IDownloadPhase phase;
@@ -127,7 +122,6 @@ public class Torrent extends Thread implements Logable {
 		peers = new ArrayList<Peer>();
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
-		haltDownloading = false;
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
@@ -195,9 +189,7 @@ public class Torrent extends Thread implements Logable {
 			phase.preprocess();
 			while (!phase.isDone() || torrentHaltingOperations > 0) {
 				processPeers();
-				if(!haltDownloading) {
-					phase.process();
-				}
+				phase.process();
 				ioManager.processTask(this);
 				ThreadUtils.sleep(25);
 			}
@@ -397,7 +389,6 @@ public class Torrent extends Thread implements Logable {
 	 * Calculates the current progress based on all available files on the HDD
 	 */
 	public void checkProgress() {
-		haltDownloading = true;
 		updateBitfield();
 		log("Checking progress...");
 		FileInfo[] fileinfo = files.getFiles();
@@ -427,7 +418,6 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 		log("Checking progress done");
-		haltDownloading = false;
 	}
 	
 	/**
