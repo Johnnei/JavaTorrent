@@ -22,6 +22,7 @@ import torrent.download.files.disk.IOManager;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.PeerConnectorThread;
 import torrent.download.tracker.Tracker;
+import torrent.encoding.SHA1;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.MessageChoke;
@@ -161,9 +162,6 @@ public class Torrent extends Thread implements Logable {
 		for (int i = 0; i < connectorThreads.length; i++) {
 			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting") / connectorThreads.length);
 			connectorThreads[i].start();
-		}
-		for(Tracker tracker : trackers) {
-			tracker.start();
 		}
 		readThread = new PeersReadThread(this);
 		writeThread = new PeersWriteThread(this);
@@ -437,6 +435,10 @@ public class Torrent extends Thread implements Logable {
 	public String toString() {
 		return StringUtil.byteArrayToString(btihHash);
 	}
+	
+	public PeerConnectorThread[] getPeerConnectorThreads() {
+		return connectorThreads;
+	}
 
 	private int getFreeConnectingCapacity() {
 		int capacity = 0;
@@ -595,6 +597,16 @@ public class Torrent extends Thread implements Logable {
 			connecting += connectorThreads[i].getConnectingCount();
 		}
 		return connecting;
+	}
+	
+	@Override
+	public boolean equals(Object object) {
+		if(object instanceof Torrent) {
+			Torrent torrent = (Torrent)object;
+			return SHA1.match(btihHash, torrent.btihHash);
+		} else {
+			return false;
+		}
 	}
 
 }

@@ -1,343 +1,174 @@
 package torrent.download.tracker;
 
-import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
-import org.johnnei.utils.ThreadUtils;
-import org.johnnei.utils.config.Config;
-
-import torrent.Logable;
-import torrent.Manager;
 import torrent.download.Torrent;
-import torrent.download.peer.Peer;
-import torrent.network.Stream;
 
-public class Tracker extends Thread implements Logable {
-
-	public static final int ACTION_CONNECT = 0;
-	public static final int ACTION_ANNOUNCE = 1;
-	public static final int ACTION_SCRAPE = 2;
-	public static final int ACTION_ERROR = 3;
-	public static final int ACTION_TRANSACTION_ID_ERROR = 256;
+public class Tracker {
 	
-	public static final int EVENT_NONE = 0; 
-	public static final int EVENT_COMPLETED = 1;
-	public static final int EVENT_STARTED = 2;
-	public static final int EVENT_STOPPED = 3;
-
-	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
-
+	public static final int SCRAPE_INTERVAL = 10000;
+	public static final int DEFAULT_ANNOUNCE_INTERVAL = 30000;
+	public static final int CONNECTION_DURATION = 300000; //5 minutes
+	
+	private TrackerConnection connection;
 	/**
-	 * The Torrent attached to this tracker
+	 * A hashmap containing all torrents which this tracker is supposed to know
 	 */
-	private Torrent torrent;
-	private InetAddress address;
-	private String name;
-	private int port;
-	private DatagramSocket socket;
-	private Stream stream;
-
+	private HashMap<String, TorrentInfo> torrentMap;
 	/**
-	 * The tracker score<br/>
-	 * On each error the errorCount will increase<br/>
-	 * On each succesfull scrape/announce the errorCount will drop by 1 to a min. of 0
+	 * The timestamp of the last scrape
 	 */
-	private int errorCount;
-
-	private long connectionId;
-	private int transactionId;
-	private int action;
-
+	private long lastScrapeTime;
 	/**
-	 * The amount of total seeders
+	 * The minimum announce interval as requested by the tracker
 	 */
-	private int seedersInSwarm;
-	/**
-	 * The amount of total downloaders
-	 */
-	private int leechersInSwarm;
-
-	/**
-	 * The amount of connected seeders
-	 */
-	private int seeders;
-	/**
-	 * The amount of connected leechers
-	 */
-	private int leechers;
-	/**
-	 * Times this torrent was downloaded
-	 */
-	private int downloaded;
-
-	private long lastScrape;
-	// Announce Data
-	private long lastAnnounce;
 	private int announceInterval;
 	/**
-	 * The current event
+	 * The time when the last connection id has been requested
 	 */
-	private int event;
-
-	private String status;
-
-	public Tracker(Torrent torrent, String url) {
-		super("Tracker " + url);
-		this.torrent = torrent;
-		stream = new Stream();
-		connectionId = 0x41727101980L;
-		transactionId = Manager.getTransactionId();
-		event = EVENT_STARTED;
-		String[] urlData = url.split(":");
-		if (!urlData[0].equals("udp")) {
-			System.err.println("Only UDP trackers are supported: " + url);
-		} else {
+	private long connectionTime;
+	/**
+	 * The amount of tracker errors detected<br/>
+	 * Successful operation decrease errorCount by 1 to a minimum of 0
+	 */
+	private int errorCount;
+	
+	public Tracker(String url) {
+		connection = new TrackerConnection(url);
+		torrentMap = new HashMap<>();
+		announceInterval = DEFAULT_ANNOUNCE_INTERVAL;
+		lastScrapeTime = System.currentTimeMillis() - SCRAPE_INTERVAL;
+		connectionTime = System.currentTimeMillis() - CONNECTION_DURATION;
+	}
+	
+	/**
+	 * Adds a torrent to the torrentMap if not already on it
+	 * @param torrent The torrent to add
+	 */
+	public void addTorrent(Torrent torrent) {
+		if(!torrentMap.containsKey(torrent.getHash())) {
+			synchronized (this) {
+				torrentMap.put(torrent.getHash(), new TorrentInfo(torrent));
+			}
+		}
+	}
+	
+	/**
+	 * Checks if the tracker can request information about the torrent
+	 * @param torrent The torrent we want information about
+	 * @return if the tracker knows the torrent
+	 */
+	public boolean hasTorrent(Torrent torrent) {
+		return torrentMap.containsKey(torrent.getHash());
+	}
+	
+	/**
+	 * Finds the torrent info associated to the given torrent
+	 * @param torrent The torrent on which we want info on
+	 * @return The info or null if not found
+	 */
+	public TorrentInfo getInfo(Torrent torrent) {
+		synchronized (this) {
+			Iterator<Entry<String, TorrentInfo>> iterator = torrentMap.entrySet().iterator();
+			while(iterator.hasNext()) {
+				Entry<String, TorrentInfo> entry = iterator.next();
+				TorrentInfo torrentInfo = entry.getValue();
+				if(torrentInfo.getTorrent().equals(torrent)) {
+					return torrentInfo;
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Scrapes all torrents for this tracker
+	 * TODO Improve the tracker implementation to allow multiple torrents to be scraped at once
+	 */
+	public void scrape() {
+		if(System.currentTimeMillis() - lastScrapeTime >= SCRAPE_INTERVAL) {
+			synchronized (this) {
+				Iterator<Entry<String, TorrentInfo>> iterator = torrentMap.entrySet().iterator();
+				while(iterator.hasNext()) {
+					Entry<String, TorrentInfo> entry = iterator.next();
+					TorrentInfo torrentInfo = entry.getValue();
+					try {
+						connection.scrape(torrentInfo);
+						onSucces();
+					} catch (TrackerException e) {
+						onError(e);
+					}
+				}
+			}
+		}
+	}
+	
+	public void announce(Torrent torrent) {
+		TorrentInfo torrentInfo = torrentMap.get(torrent.getHash());
+		if(torrentInfo.getTimeSinceLastAnnouce() >= announceInterval) {
 			try {
-				name = urlData[1] + ":" + urlData[2];
-				address = InetAddress.getByName(urlData[1].substring(2));
-				port = Integer.parseInt(urlData[2]);
-				status = "";
-			} catch (Exception e) {
-				address = null;
-				status = "Failed to parse address";
+				connection.announce(torrentInfo);
+				onSucces();
+			} catch (TrackerException e) {
+				onError(e);
 			}
 		}
 	}
-
-	private boolean attemptConnect() {
-		for (int i = 0; i < 3; i++) {
-			connect();
-			if (socket == null) {
-				setStatus("Delaying reconnecting");
-				ThreadUtils.sleep(10000);
-				setStatus("Connecting (Attempt: " + (2 + i) + ")");
-			} else
-				return true;
-		}
-		return false;
+	
+	public void onError(Exception e) {
+		connection.log(e.getMessage(), true);
+		errorCount++;
 	}
-
-	@Override
-	public void run() {
-		lastAnnounce = System.currentTimeMillis();
-
-		while (torrent.keepDownloading() && errorCount < 3) {
-			if (connectionId == 0x41727101980L) {
-				setStatus("Connecting");
-				if (!attemptConnect())
-					break;
-			} else {
-				if (System.currentTimeMillis() - lastAnnounce >= announceInterval && torrent.needAnnounce() && isConnected()) {
-					announce();
-				}
-				if (System.currentTimeMillis() - lastScrape >= 30000 && isConnected()) {
-					scrape();
-					lastScrape = System.currentTimeMillis();
-				}
-			}
-			ThreadUtils.sleep(1000);
-		}
-		if (errorCount < 3)
-			setStatus("Unable to connect");
-		else
-			setStatus("Error cap reached");
+	
+	public void onSucces() {
+		errorCount = Math.max(errorCount - 1, 0);
 	}
-
+	
+	/**
+	 * Checks if this tracker still validates to be checked<br/>
+	 * @return true if less than 3 errors occured
+	 */
+	public boolean isValid() {
+		return errorCount < 3;
+	}
+	
 	public boolean isConnected() {
-		return connectionId != 0x41727101980L;
+		return (System.currentTimeMillis() - connectionTime) <= CONNECTION_DURATION && connection.isConnected();
+	}
+	
+	public ArrayList<TorrentInfo> getTorrents() {
+		ArrayList<TorrentInfo> torrents = new ArrayList<>(torrentMap.size());
+		
+		synchronized (this) {
+			Iterator<Entry<String, TorrentInfo>> iterator = torrentMap.entrySet().iterator();
+			while(iterator.hasNext()) {
+				Entry<String, TorrentInfo> entry = iterator.next();
+				torrents.add(entry.getValue());
+			}
+		}
+		
+		return torrents;
+	}
+	
+	public String getName() {
+		return connection.getTrackerName();
+	}
+	
+	public String getStatus() {
+		return connection.getStatus();
 	}
 
 	public void connect() {
-		stream.reset(1000);
-		stream.writeLong(connectionId);
-		stream.writeInt(ACTION_CONNECT);
-		stream.writeInt(++transactionId);
 		try {
-			if (socket == null) {
-				socket = new DatagramSocket();
-				socket.setSoTimeout(5000);
-			}
-			log("Connecting to tracker");
-			socket.send(stream.write(address, port));
-			stream.read(socket);
-			action = stream.readInt();
-			if (stream.readInt() != transactionId)
-				action = ACTION_TRANSACTION_ID_ERROR;
-			if (action != ACTION_CONNECT) {
-				String error = stream.readString(stream.available());
-				log("Tracker Error: " + action + ", Message: " + error, true);
-				errorCount++;
-			} else {
-				connectionId = stream.readLong();
-			}
-		} catch (IOException e) {
-			log(e.getMessage(), true);
-			socket = null;
+			connection.connect();
+			connectionTime = System.currentTimeMillis();
+			onSucces();
+		} catch (TrackerException e) {
+			onError(e);
 		}
-	}
-
-	public void announce() {
-		setStatus("Announcing");
-		stream.reset(100);
-		stream.writeLong(connectionId);
-		stream.writeInt(ACTION_ANNOUNCE);
-		stream.writeInt(++transactionId);
-		stream.writeByte(torrent.getHashArray());
-		stream.writeByte(Manager.getPeerId());
-		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
-		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
-		stream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
-		stream.writeInt(event);
-		if(event != EVENT_NONE)
-			event = EVENT_NONE;
-		stream.writeInt(0); // Use sender ip
-		stream.writeInt(new Random().nextInt());
-		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
-		stream.writeShort(Config.getConfig().getInt("download-port"));
-		stream.writeShort(0); // No extensions
-		try {
-			socket.send(stream.write(address, port));
-			stream.read(socket);
-			action = stream.readInt();
-			if (transactionId != stream.readInt())
-				action = ACTION_TRANSACTION_ID_ERROR;
-			if (action != ACTION_ANNOUNCE) {
-				String error = stream.readString(stream.available());
-				log("Announce failed with error: " + action + ", Message: " + error, true);
-				setStatus("Announce failed");
-				announceInterval = 30000;
-				lastAnnounce = System.currentTimeMillis();
-				handleError(error);
-				return;
-			}
-			lastAnnounce = System.currentTimeMillis();
-			announceInterval = stream.readInt();
-			leechersInSwarm = stream.readInt();
-			seedersInSwarm = stream.readInt();
-			while (stream.available() >= 6) {
-				byte[] address = stream.readIP();
-				int port = stream.readShort();
-				if (isEmptyIP(address))
-					continue;
-				Peer p = new Peer(torrent);
-				p.setSocketInformation(InetAddress.getByAddress(address), port);
-				torrent.getConnectorThread().addPeer(p);
-			}
-			setStatus("Announced");
-		} catch (IOException e) {
-			setStatus("Announce failed");
-			log("Announce IOException: " + e.getMessage(), true);
-		}
-	}
-
-	public void scrape() {
-		setStatus("Scraping");
-		stream.reset(36);
-		stream.writeLong(connectionId);
-		stream.writeInt(ACTION_SCRAPE);
-		stream.writeInt(++transactionId);
-		stream.writeByte(torrent.getHashArray());
-		try {
-			socket.send(stream.write(address, port));
-			stream.read(socket);
-			action = stream.readInt();
-			if (stream.readInt() != transactionId)
-				action = ACTION_TRANSACTION_ID_ERROR;
-			if (action == ACTION_SCRAPE) {
-				seeders = stream.readInt();
-				downloaded = stream.readInt();
-				leechers = stream.readInt();
-				setStatus("Scraped");
-			} else {
-				String error = stream.readString(stream.available());
-				log("Scrape failed with error: " + action + ", Message: " + error, true);
-				setStatus("Scrape failed");
-				announceInterval = 30000;
-				lastAnnounce = System.currentTimeMillis();
-				handleError(error);
-				return;
-			}
-		} catch (IOException e) {
-			log("Scrape IOException: " + e.getMessage(), true);
-		}
-	}
-
-	private void handleError(String error) {
-		errorCount++;
-		if (error.startsWith(ERROR_CONNECTION_ID)) {
-			connectionId = 0x41727101980L;
-		}
-	}
-	
-	/**
-	 * Sets the event code for the next announce
-	 * @param event The code to send on the next announce
-	 */
-	public void setEvent(int event) {
-		this.event = event;
-	}
-
-	private boolean isEmptyIP(byte[] address) {
-		for (int i = 0; i < address.length; i++) {
-			if (address[i] != 0)
-				return false;
-		}
-		return true;
-	}
-
-	@Override
-	public void log(String s, boolean error) {
-		s = "[" + toString() + "] " + s;
-		if (error)
-			System.err.println(s);
-		else
-			System.out.println(s);
-	}
-
-	@Override
-	public void log(String s) {
-		log(s, false);
-	}
-
-	@Override
-	public String toString() {
-		return address.getHostAddress();
-	}
-
-	private void setStatus(String s) {
-		status = s;
-		setName(name + " " + status);
-	}
-
-	public int getSeeders() {
-		return seeders;
-	}
-
-	public int getLeechers() {
-		return leechers;
-	}
-
-	public int getLeechersInSwarm() {
-		return leechersInSwarm;
-	}
-
-	public int getSeedersInSwarm() {
-		return seedersInSwarm;
-	}
-
-	public int getDownloadedCount() {
-		return downloaded;
-	}
-
-	@Override
-	public String getStatus() {
-		return status;
-	}
-
-	public String getTrackerName() {
-		return name;
 	}
 
 }

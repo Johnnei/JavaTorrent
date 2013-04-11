@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import torrent.download.Torrent;
+import torrent.download.tracker.TrackerManager;
 
 public class Manager {
 
@@ -13,9 +14,13 @@ public class Manager {
 	public static Manager getManager() {
 		return manager;
 	}
+	
+	public static TrackerManager getTrackerManager() {
+		return manager.trackerManager;
+	}
 
 	private PeerConnector connectorThread;
-	private int transactionId;
+	private TrackerManager trackerManager;
 	private byte[] peerId;
 	private ArrayList<Torrent> activeTorrents;
 
@@ -27,7 +32,6 @@ public class Manager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		transactionId = new Random().nextInt();
 		char[] version = JavaTorrent.BUILD.split(" ")[1].replace(".", "").toCharArray();
 		peerId = new byte[20];
 		peerId[0] = '-';
@@ -41,10 +45,8 @@ public class Manager {
 		for (int i = 8; i < peerId.length; i++) {
 			peerId[i] = (byte) (new Random().nextInt() & 0xFF);
 		}
-	}
-
-	public synchronized int getNextTransactionId() {
-		return transactionId++;
+		trackerManager = new TrackerManager();
+		trackerManager.start();
 	}
 
 	public void addTorrent(Torrent torrent) {
@@ -66,10 +68,6 @@ public class Manager {
 
 	public static byte[] getPeerId() {
 		return getManager().getPeer();
-	}
-
-	public static int getTransactionId() {
-		return getManager().getNextTransactionId();
 	}
 
 }

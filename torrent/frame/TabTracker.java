@@ -4,6 +4,7 @@ import java.awt.Graphics;
 import java.util.ArrayList;
 
 import torrent.download.Torrent;
+import torrent.download.tracker.TorrentInfo;
 import torrent.download.tracker.Tracker;
 import torrent.frame.controls.TableBase;
 
@@ -36,15 +37,16 @@ public class TabTracker extends TableBase {
 			int count = 0;
 			for (Tracker tracker : trackers) {
 				++count;
+				TorrentInfo torrentInfo = tracker.getInfo(torrent);
 				if (isVisible()) {
 					if ((count - 1) == getSelectedIndex()) {
 						drawSelectedBackground(g);
 					}
-					g.drawString(tracker.getTrackerName(), 5, getTextY());
+					g.drawString(tracker.getName(), 5, getTextY());
 					g.drawString(tracker.getStatus(), 200, getTextY());
-					g.drawString(tracker.getSeeders() + " (" + tracker.getSeedersInSwarm() + ")", 350, getTextY());
-					g.drawString(tracker.getLeechers() + " (" + tracker.getLeechersInSwarm() + ")", 450, getTextY());
-					g.drawString(tracker.getDownloadedCount() + "", 550, getTextY());
+					g.drawString("" + torrentInfo.getSeeders(), 350, getTextY());
+					g.drawString("" + torrentInfo.getLeechers(), 450, getTextY());
+					g.drawString(torrentInfo.getDownloadCount(), 550, getTextY());
 				}
 				advanceLine();
 			}
