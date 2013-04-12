@@ -227,6 +227,10 @@ public class Peer implements Logable, ISortable {
 			setStatus("Sending Message: " + message);
 			MessageUtils.getUtils().writeMessage(outStream, message);
 			setStatus("Sended Message: " + message);
+			if(messageQueue.size() == 0) {//Last message has been sended
+				//We dont expect new messages to be send shortly anymore, flush the holded data
+				outStream.flush();
+			}
 		} else {
 			if (peerClient.getQueueSize() > 0 && pendingMessages == 0) {
 				Job request = peerClient.getNextJob();
