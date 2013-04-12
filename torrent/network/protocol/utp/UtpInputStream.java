@@ -21,11 +21,13 @@ public class UtpInputStream extends InputStream {
 	 * The last sequence number which was added to the {@link #buffer}
 	 */
 	private int lastSequenceNumber;
+	private boolean isFirstPacket;
 	
 	public UtpInputStream() {
 		buffer = new Stream(5120); //5kB buffer
 		dataQueue = new ArrayList<>();
 		lastSequenceNumber = 1;
+		isFirstPacket = true;
 	}
 	
 	/**
@@ -33,9 +35,14 @@ public class UtpInputStream extends InputStream {
 	 * @param packet
 	 */
 	public void receiveData(PacketData packet) {
-		System.err.println("XXXXX| Received Data SeqNr: " + packet.getSequenceNumber());
+		System.err.println("XXXXX| Received Data SeqNr: " + packet.getSequenceNumber() + " (" + packet.getSize() + " bytes)");
+		if(isFirstPacket) {
+			lastSequenceNumber = packet.getSequenceNumber() - 1;
+			isFirstPacket = false;
+		}
 		if(packet.getSequenceNumber() == (lastSequenceNumber + 1)) {
 			//This packet is the next in-chain
+			System.out.println("Data is in sequence");
 			byte[] data = packet.getData();
 			if(buffer.writeableSpace() >= data.length) {
 				buffer.writeByte(data);
@@ -61,6 +68,7 @@ public class UtpInputStream extends InputStream {
 				}
 			}
 		} else {
+			System.out.println("Missing a packet");
 			dataQueue.add(packet);
 		}
 	}
@@ -71,6 +79,11 @@ public class UtpInputStream extends InputStream {
 			return buffer.readByte() & 0xFF;
 		} else
 			return -1;
+	}
+	
+	@Override
+	public int available() {
+		return buffer.available();
 	}
 
 	/**

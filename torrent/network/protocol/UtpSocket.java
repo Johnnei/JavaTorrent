@@ -84,7 +84,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
-		System.out.println("[uTP] Connecting to " + endpoint);
+		//System.out.println("[uTP] Connecting to " + endpoint);
 		this.socketAddress = endpoint;
 		peerClient.setConnectionId(new Random().nextInt() & 0xFFFF);
 		myClient.setConnectionId(peerClient.getConnectionId() + 1);
@@ -187,7 +187,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		if(acknowledgeNumber > this.acknowledgeNumber)
 			this.acknowledgeNumber = acknowledgeNumber;
 		if(needAck) {
-			System.out.println(myClient.getConnectionId() + "| Ack Send: " + acknowledgeNumber);
+			//System.out.println(myClient.getConnectionId() + "| Ack Send: " + acknowledgeNumber);
 			sendPacket(new PacketState(acknowledgeNumber));
 		}
 	}
@@ -196,7 +196,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		Packet p = new PacketSample(acknowledgeNumber);
 		p = packetsInFlight.remove(p);
 		if(p != null) {
-			System.out.println(peerClient.getConnectionId() + "| Acked " + p.getClass().getSimpleName());
+			//System.out.println(peerClient.getConnectionId() + "| Acked " + p.getClass().getSimpleName());
 			bytesInFlight -= p.getSize();
 		}
 	}
@@ -238,7 +238,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		DatagramPacket udpPacket;
 		try {
 			udpPacket = new DatagramPacket(dataBuffer, dataBuffer.length, socketAddress);
-			System.out.println(myClient.getConnectionId() + "| Send " + packet.getClass().getSimpleName() + " with id: " + packet.getSequenceNumber() + ", their delay: " + peerClient.getDelay());
+			//System.out.println(myClient.getConnectionId() + "| Send " + packet.getClass().getSimpleName() + " with id: " + packet.getSequenceNumber() + ", their delay: " + peerClient.getDelay());
 			if(!UdpMultiplexer.getInstance().send(udpPacket)) {
 				throw new SocketException("Failed to send packet");
 			}
@@ -259,14 +259,14 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 			if(currentTime - packet.getSendTime() >= (timeout * 1000)) {
 				sendPacketToPeer(packet); //We don't need to check if this would fit in the window, This is already in the window
 				setTimeout(timeout * 2);
-				System.out.println(myClient.getConnectionId() + "| " + packet.getClass().getSimpleName() + " (" +packet.getSequenceNumber() + ") timed-out, Timeout increased to " + timeout + "ms");
+				//System.out.println(myClient.getConnectionId() + "| " + packet.getClass().getSimpleName() + " (" +packet.getSequenceNumber() + ") timed-out, Timeout increased to " + timeout + "ms");
 			}
 		}
 		sendPacketQueue();
 	}
 
 	public void setConnectionState(ConnectionState connectionState) {
-		System.out.println(myClient.getConnectionId() + "| " + connectionState);
+		//System.out.println(myClient.getConnectionId() + "| " + connectionState);
 		this.connectionState = connectionState;
 	}
 

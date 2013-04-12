@@ -23,7 +23,7 @@ public class PacketState extends Packet {
 
 	@Override
 	public void processPacket(UtpSocket socket) {
-		System.out.println(socket.getPeerClient().getConnectionId() + "| ACKed " + acknowledgeNumber);
+		//System.out.println(socket.getPeerClient().getConnectionId() + "| ACKed " + acknowledgeNumber);
 		if(acknowledgeNumber == 1 && socket.getConnectionState() == ConnectionState.CONNECTING) {
 			socket.setConnectionState(ConnectionState.CONNECTED);
 			socket.setUtpInputNumber(sequenceNumber);
