@@ -27,7 +27,7 @@ public class MenubarPanel extends JPanel implements ActionListener {
 
 	public MenubarPanel(TorrentFrame owner) {
 		this.owner = owner;
-		setPreferredSize(new Dimension(1280, 52));
+		setPreferredSize(new Dimension(1280, 40));
 		setLayout(null);
 		try {
 			addTorrentButton = createButton(5, 1, 125, "Add Torrent", "res/download.png");
@@ -41,7 +41,7 @@ public class MenubarPanel extends JPanel implements ActionListener {
 	}
 
 	private JButton createButton(int x, int y, int width, String text, String img) throws IOException {
-		return createButton(x, y, width, 50, text, img);
+		return createButton(x, y, width, 38, text, img);
 	}
 
 	private JButton createButton(int x, int y, int width, int height, String text, String img) throws IOException {

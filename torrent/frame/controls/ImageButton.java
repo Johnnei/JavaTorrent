@@ -32,8 +32,10 @@ public class ImageButton extends JButton {
 
 	@Override
 	public void paintComponent(Graphics g) {
-		g.drawImage(image, 0, 2, 48, 48, 0, 0, image.getWidth(), image.getHeight(), null);
-		g.drawString(getText(), 50, 30);
+		final int x = 3;
+		final int y = 2;
+		g.drawImage(image, x, y, image.getWidth() + x, image.getHeight() + y, 0, 0, image.getWidth(), image.getHeight(), null);
+		g.drawString(getText(), 40, 21);
 	}
 
 }
