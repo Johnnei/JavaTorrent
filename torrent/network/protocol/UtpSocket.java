@@ -59,6 +59,14 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	 * The last packet we will receive
 	 */
 	private int finalAckNumber;
+	/**
+	 * The measured route trip times
+	 */
+	private long roundTripTime;
+	/**
+	 * The variance on the round trip time
+	 */
+	private long roundTripTimeVariance;
 	private UtpInputStream inStream;
 	private UtpOutputStream outStream;
 	
@@ -192,12 +200,35 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		}
 	}
 	
+	/**
+	 * Acknowledges the packet<br/>
+	 * Removes the packet from packetsInflight, if it did remove one it will also reduce the number of bytesInFlight
+	 * @param acknowledgeNumber
+	 */
 	public void acknowledgedPacket(int acknowledgeNumber) {
 		Packet p = new PacketSample(acknowledgeNumber);
 		p = packetsInFlight.remove(p);
 		if(p != null) {
 			//System.out.println(peerClient.getConnectionId() + "| Acked " + p.getClass().getSimpleName());
 			bytesInFlight -= p.getSize();
+			updateTimeoutRTT(p);
+		}
+	}
+	
+	/**
+	 * Updates the RTT based on a RTT
+	 * @param packet The acked packet
+	 */
+	private void updateTimeoutRTT(Packet packet) {
+		if(packet.canUseForRTT()) {
+			//Calculate the Round Trip Time for the given packet, This should be translated to milliseconds
+			long packetRtt = (UtpProtocol.getMicrotime() - packet.getSendTime()) / 1000;
+			//Update RTT's according to specifications
+			long delta = roundTripTime - packetRtt;
+			roundTripTimeVariance += (Math.abs(delta) - roundTripTimeVariance) / 4;
+			roundTripTime += (packetRtt - roundTripTime) / 8;
+			//Update Timeout
+			setTimeout((int)(roundTripTime + roundTripTimeVariance * 4));
 		}
 	}
 	

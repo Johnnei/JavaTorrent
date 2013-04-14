@@ -14,9 +14,11 @@ public abstract class Packet implements Comparable<Packet> {
 	protected long windowSize;
 	protected int sequenceNumber;
 	protected int acknowledgeNumber;
+	protected int timesSent;
 	
 	public Packet() {
 		sequenceNumber = -1;
+		timesSent = 0;
 	}
 	
 	public Packet(int sequenceNumber) {
@@ -47,6 +49,7 @@ public abstract class Packet implements Comparable<Packet> {
 			outStream.writeShort(acknowledgeNumber);
 		//Write Extra Data if needed
 		writePacket(outStream);
+		++timesSent;
 	}
 	
 	/**
@@ -147,5 +150,13 @@ public abstract class Packet implements Comparable<Packet> {
 
 	public short getConnectionId() {
 		return connectionId;
+	}
+	
+	/**
+	 * Checks if this packet is allowed to be used in the RTT calculations
+	 * @return true if the packet was sent exactly once
+	 */
+	public boolean canUseForRTT() {
+		return timesSent == 1;
 	}
 }
