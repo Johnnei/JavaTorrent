@@ -110,7 +110,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 				if(version == Packet.VERSION) {
 					try {
 						Packet utpPacket = packetFactory.getFromId(type);
-						Stream inStream = new Stream(packet.getData());
+						Stream inStream = new Stream(packet.getData(), packet.getOffset(), packet.getLength());
 						utpPacket.read(inStream);
 						UtpSocket socket = new UtpSocket(utpPacket.getConnectionId());
 						socket = utpSockets.find(socket);

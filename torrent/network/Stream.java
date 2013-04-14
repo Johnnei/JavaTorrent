@@ -28,6 +28,12 @@ public class Stream {
 		buffer = dataBuffer;
 		writeOffset = buffer.length;
 	}
+	
+	public Stream(byte[] dataBuffer, int offset, int length) {
+		buffer = new byte[length];
+		System.arraycopy(dataBuffer, offset, buffer, 0, length);
+		writeOffset = length;
+	}
 
 	public void writeByte(int b) {
 		buffer[writeOffset++] = (byte) b;
