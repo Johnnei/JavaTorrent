@@ -22,15 +22,10 @@ public class UtpClient {
 	 * Bytes are in flight when they are send but not yet acked
 	 */
 	private long windowSize;
-	/**
-	 * The size of a single packet
-	 */
-	private int packetSize;
 	
 	public UtpClient() {
 		baseDelay = Long.MAX_VALUE;
 		windowSize = 150;
-		packetSize = 150;
 	}
 
 	/**
@@ -66,22 +61,6 @@ public class UtpClient {
 	 */
 	public void setWindowSize(long size) {
 		windowSize = Math.max(150, size);
-	}
-	
-	/**
-	 * Sets the packet_size to the minimum of the given size or {@link #windowSize}
-	 * @param size the new size
-	 */
-	public void setPacketSize(int size) {
-		packetSize = (int)Math.min(windowSize, size);
-	}
-	
-	/**
-	 * Gets the unsigned short for the packet size
-	 * @return
-	 */
-	public int getPacketSize() {
-		return packetSize & 0xFFFF;
 	}
 	
 	public int getConnectionId() {
