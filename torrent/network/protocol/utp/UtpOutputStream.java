@@ -16,7 +16,7 @@ public class UtpOutputStream extends OutputStream {
 	
 	public UtpOutputStream(UtpSocket socket) {
 		this.socket = socket;
-		buffer = new Stream(150);
+		buffer = new Stream(socket.getPacketSize());
 	}
 	
 	@Override
@@ -25,6 +25,7 @@ public class UtpOutputStream extends OutputStream {
 			buffer.writeByte(i);
 		} else {
 			flush();
+			write(i); //We don't want to lose this byte
 		}
 	}
 	
@@ -39,7 +40,7 @@ public class UtpOutputStream extends OutputStream {
 	public void write(byte[] array, int offset, int length) {
 		int bytesSend = 0;
 		while(bytesSend != length) {
-			int size = Math.min(socket.getPeerClient().getWindowSize(), length - bytesSend);
+			int size = Math.min(socket.getPacketSize(), length - bytesSend);
 			byte[] data = new byte[size];
 			System.arraycopy(array, offset + bytesSend, data, 0, size);
 			socket.sendPacket(new PacketData(data));
@@ -55,7 +56,7 @@ public class UtpOutputStream extends OutputStream {
 		if(buffer.getWritePointer() > 0) {
 			byte[] data = buffer.getBuffer();
 			write(data, 0, buffer.getWritePointer());
-			buffer.reset(150);
+			buffer.reset(socket.getPacketSize());
 		}
 	}
 

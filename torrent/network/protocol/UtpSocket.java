@@ -69,6 +69,10 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	private long roundTripTimeVariance;
 	private UtpInputStream inStream;
 	private UtpOutputStream outStream;
+	/**
+	 * The size of packets
+	 */
+	private int packetSize;
 	
 	/**
 	 * Creates a sample socket for comparison
@@ -88,6 +92,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		inStream = new UtpInputStream();
 		outStream = new UtpOutputStream(this);
 		timeout = 1000;
+		packetSize = 150;
 	}
 	
 	@Override
@@ -338,6 +343,10 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 
 	public void setUtpInputNumber(int sequenceNumber) {
 		inStream.setSequenceNumber(sequenceNumber);
+	}
+	
+	public int getPacketSize() {
+		return packetSize;
 	}
 
 }
