@@ -145,6 +145,17 @@ public class Config {
 		config.put(key, value.toString());
 		save();
 	}
+	
+	/**
+	 * Adds a pair of values if it doesn't exists
+	 * @param key The key of the pair
+	 * @param value The value of the pair
+	 */
+	public void setDefault(String key, Object value) {
+		if(!config.containsKey(key)) {
+			set(key, value);
+		}
+	}
 
 	/**
 	 * Gets an integer config value
