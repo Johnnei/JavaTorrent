@@ -114,9 +114,9 @@ public class UdpMultiplexer extends Thread implements Logable {
 						utpPacket.read(inStream);
 						UtpSocket socket = new UtpSocket(utpPacket.getConnectionId());
 						socket = utpSockets.find(socket);
-						socket.updateLastInteraction();
 						if(socket != null) {
 							//log("Received " + utpPacket.getClass().getSimpleName() + " for " + (utpPacket.getConnectionId() & 0xFFFF));
+							socket.updateLastInteraction();
 							utpPacket.process(socket);
 						} else {
 							//log("Packet of " + packet.getLength() + " bytes (0x" + Integer.toHexString(dataBuffer[0]) + ") was send to a connection which was not established (" + packet.getAddress() + ":" + packet.getPort() + " | " + utpPacket.getConnectionId() + ")");
