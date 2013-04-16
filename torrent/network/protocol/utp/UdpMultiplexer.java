@@ -114,6 +114,7 @@ public class UdpMultiplexer extends Thread implements Logable {
 						utpPacket.read(inStream);
 						UtpSocket socket = new UtpSocket(utpPacket.getConnectionId());
 						socket = utpSockets.find(socket);
+						socket.updateLastInteraction();
 						if(socket != null) {
 							//log("Received " + utpPacket.getClass().getSimpleName() + " for " + (utpPacket.getConnectionId() & 0xFFFF));
 							utpPacket.process(socket);
