@@ -32,6 +32,14 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	private UtpClient myClient;
 	private UtpClient peerClient;
 	/**
+	 * The timestamp (ms) of the last incoming or outgoing packet
+	 */
+	private long lastInteraction;
+	/**
+	 * The timestamp (ms) of the last timeout
+	 */
+	private long lastTimeout;
+	/**
 	 * The packets which could not be send due to windowSize constraints
 	 */
 	private LinkedList<Packet> packetQueue;
@@ -85,6 +93,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	
 	public UtpSocket() {
 		connectionState = ConnectionState.CONNECTING;
+		lastInteraction = System.currentTimeMillis();
 		myClient = new UtpClient();
 		peerClient = new UtpClient();
 		packetQueue = new LinkedList<>();
@@ -285,18 +294,24 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		} catch (SocketException e) {
 			packetQueue.addFirst(packet);
 		}
+		updateLastInteraction();
+	}
+	
+	public void updateLastInteraction() {
+		lastInteraction = System.currentTimeMillis();
 	}
 	
 	public void checkTimeouts() {
 		if(connectionState == ConnectionState.CONNECTING)
 			return;
-		for(Packet packet : packetsInFlight) {
-			long currentTime = UtpProtocol.getMicrotime();
-			if(currentTime - packet.getSendTime() >= (timeout * 1000)) {
-				sendPacketToPeer(packet); //We don't need to check if this would fit in the window, This is already in the window
-				setTimeout(timeout * 2);
-				//System.out.println(myClient.getConnectionId() + "| " + packet.getClass().getSimpleName() + " (" +packet.getSequenceNumber() + ") timed-out, Timeout increased to " + timeout + "ms");
+		if(System.currentTimeMillis() - lastInteraction >= timeout) {
+			if(lastTimeout == lastInteraction) {
+				setTimeout(2 * timeout);
 			}
+			updateLastInteraction();
+			lastTimeout = lastInteraction;
+			packetSize = 150;
+			myClient.setWindowSize(150);
 		}
 		sendPacketQueue();
 	}
