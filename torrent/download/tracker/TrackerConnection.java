@@ -47,7 +47,7 @@ public class TrackerConnection implements Logable {
 	private PeerConnectorPool connectorPool;
 
 	public TrackerConnection(String url, PeerConnectorPool connectorPool) {
-		this.connectorPool = new PeerConnectorPool();
+		this.connectorPool = connectorPool;
 		stream = new Stream();
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
