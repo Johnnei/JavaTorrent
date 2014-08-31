@@ -1,6 +1,5 @@
 package torrent;
 
-import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
 import torrent.download.MagnetLink;
@@ -12,8 +11,6 @@ public class JavaTorrent extends Thread {
 
 	public static final String BUILD = "JavaTorrent 0.05.0";
 
-	private TorrentFrame frame;
-	
 	private static void loadDefaultConfig() {
 		Config.getConfig().load();
 		Config.getConfig().setDefault("peer-max", 500);
@@ -49,24 +46,8 @@ public class JavaTorrent extends Thread {
 		}
 		if(showGui) {
 			frame.setVisible(true);
-			new JavaTorrent(frame).start();
 		} else {
 			frame.dispose();
-		}
-	}
-
-	public JavaTorrent(TorrentFrame frame) {
-		this.frame = frame;
-	}
-
-	public void run() {
-		while (true) {
-			long startTime = System.currentTimeMillis();
-			frame.updateData();
-			frame.repaint();
-			System.gc();
-			int duration = 1000 - (int) (System.currentTimeMillis() - startTime);
-			ThreadUtils.sleep(duration);
 		}
 	}
 
