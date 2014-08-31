@@ -10,11 +10,11 @@ import org.johnnei.utils.config.Config;
 import torrent.download.peer.Peer;
 import torrent.network.protocol.TcpSocket;
 
-public class PeerConnector extends Thread {
+public class PeerConnectionAccepter extends Thread {
 
 	private ServerSocket serverSocket;
 
-	public PeerConnector() throws IOException {
+	public PeerConnectionAccepter() throws IOException {
 		super("PeerConnector");
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
 	}

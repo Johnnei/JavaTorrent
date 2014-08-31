@@ -19,7 +19,7 @@ public class Manager {
 		return manager.trackerManager;
 	}
 
-	private PeerConnector connectorThread;
+	private PeerConnectionAccepter connectorThread;
 	private TrackerManager trackerManager;
 	private byte[] peerId;
 	private ArrayList<Torrent> activeTorrents;
@@ -27,7 +27,7 @@ public class Manager {
 	private Manager() {
 		activeTorrents = new ArrayList<>();
 		try {
-			connectorThread = new PeerConnector();
+			connectorThread = new PeerConnectionAccepter();
 			connectorThread.start();
 		} catch (IOException e) {
 			e.printStackTrace();
