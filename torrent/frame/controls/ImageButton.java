@@ -2,7 +2,6 @@ package torrent.frame.controls;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -23,11 +22,7 @@ public class ImageButton extends JButton {
 	public ImageButton(String text, String file) throws IOException {
 		setText(text);
 		setContentAreaFilled(false);
-		File imageFile = new File(file);
-		if (!imageFile.exists()) {
-			imageFile = new File("src/" + file);
-		}
-		image = ImageIO.read(imageFile);
+		image = ImageIO.read(ImageButton.class.getResourceAsStream(file));
 	}
 
 	@Override

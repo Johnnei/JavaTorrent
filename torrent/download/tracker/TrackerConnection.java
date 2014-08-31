@@ -51,7 +51,7 @@ public class TrackerConnection implements Logable {
 			try {
 				name = urlData[1] + ":" + urlData[2];
 				address = InetAddress.getByName(urlData[1].substring(2));
-				port = Integer.parseInt(urlData[2]);
+				port = Integer.parseInt(urlData[2].split("/")[0]);
 				status = "Waiting";
 			} catch (Exception e) {
 				address = null;
