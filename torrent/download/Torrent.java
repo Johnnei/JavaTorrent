@@ -20,7 +20,6 @@ import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobStoreBlock;
 import torrent.download.files.disk.IOManager;
 import torrent.download.peer.Peer;
-import torrent.download.tracker.PeerConnectorThread;
 import torrent.download.tracker.Tracker;
 import torrent.encoding.SHA1;
 import torrent.protocol.IMessage;
@@ -91,10 +90,7 @@ public class Torrent extends Thread implements Logable {
 	 * Remembers if the torrent is collecting a piece or checking the hash so we can wait until all pieces are written to the hdd before continuing
 	 */
 	private int torrentHaltingOperations;
-	/**
-	 * The threads which connects new peers
-	 */
-	private PeerConnectorThread[] connectorThreads;
+
 	/**
 	 * The thread which reads all information from the peers
 	 */
@@ -158,11 +154,6 @@ public class Torrent extends Thread implements Logable {
 
 	public void initialise() {
 		Manager.getManager().addTorrent(this);
-		connectorThreads = new PeerConnectorThread[Config.getConfig().getInt("peer-max_concurrent_connecting")];
-		for (int i = 0; i < connectorThreads.length; i++) {
-			connectorThreads[i] = new PeerConnectorThread(this, Config.getConfig().getInt("peer-max_connecting") / connectorThreads.length);
-			connectorThreads[i].start();
-		}
 		readThread = new PeersReadThread(this);
 		writeThread = new PeersWriteThread(this);
 		readThread.start();
@@ -435,18 +426,6 @@ public class Torrent extends Thread implements Logable {
 	public String toString() {
 		return StringUtil.byteArrayToString(btihHash);
 	}
-	
-	public PeerConnectorThread[] getPeerConnectorThreads() {
-		return connectorThreads;
-	}
-
-	private int getFreeConnectingCapacity() {
-		int capacity = 0;
-		for (int i = 0; i < connectorThreads.length; i++) {
-			capacity += connectorThreads[i].getFreeCapacity();
-		}
-		return capacity;
-	}
 
 	/**
 	 * Checks if the tracker needs to announce
@@ -457,8 +436,7 @@ public class Torrent extends Thread implements Logable {
 		int peersPerThread = Config.getConfig().getInt("peer-max_connecting") / Config.getConfig().getInt("peer-max_concurrent_connecting");
 		boolean needEnoughPeers = peersWanted() >= peersPerThread;
 		boolean notExceedMaxPendingPeers = peers.size() < peerManager.getMaxPendingPeers(torrentStatus);
-		boolean hasConnectingSpace = getFreeConnectingCapacity() > 0;
-		return needEnoughPeers && notExceedMaxPendingPeers && hasConnectingSpace;
+		return needEnoughPeers && notExceedMaxPendingPeers;
 	}
 
 	public int getMaxPeers() {
@@ -466,8 +444,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	public int peersWanted() {
-
-		return (int) Math.min(peerManager.getAnnounceWantAmount(torrentStatus, peers.size()), getFreeConnectingCapacity());
+		return peerManager.getAnnounceWantAmount(torrentStatus, peers.size());
 	}
 
 	public void pollRates() {
@@ -478,14 +455,6 @@ public class Torrent extends Thread implements Logable {
 
 	public Files getFiles() {
 		return files;
-	}
-
-	public PeerConnectorThread getConnectorThread() {
-		for (int i = 0; i < connectorThreads.length; i++) {
-			if (connectorThreads[i].getFreeCapacity() > 0)
-				return connectorThreads[i];
-		}
-		return null;
 	}
 
 	public int getDownloadRate() {
@@ -591,14 +560,6 @@ public class Torrent extends Thread implements Logable {
 		return downloadRegulator;
 	}
 
-	public int getConnectingCount() {
-		int connecting = 0;
-		for (int i = 0; i < connectorThreads.length; i++) {
-			connecting += connectorThreads[i].getConnectingCount();
-		}
-		return connecting;
-	}
-	
 	@Override
 	public boolean equals(Object object) {
 		if(object instanceof Torrent) {

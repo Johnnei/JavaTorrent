@@ -5,6 +5,7 @@ import java.awt.Graphics;
 
 import javax.swing.JPanel;
 
+import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.util.StringUtil;
 
@@ -46,7 +47,7 @@ public class TabGeneral extends JPanel {
 				leftSize += StringUtil.compactByteSize(torrent.getFiles().getRemainingBytes());
 				uploaded += StringUtil.compactByteSize(torrent.getUploadedBytes());
 			}
-			pending += torrent.getConnectingCount();
+			pending += Integer.toString(Manager.getTrackerManager().getConnectingCountFor(torrent));
 			peers += torrent.getSeedCount();
 			leechers += torrent.getLeecherCount();
 			download += StringUtil.compactByteSize(torrent.getDownloadRate()) + "/s";

@@ -37,27 +37,6 @@ public class TabPeers extends TableBase {
 		g.drawString("State", 690, getHeaderTextY());
 	}
 	
-	/**
-	 * Adds flags to a string based on the state of a peer<br/>
-	 * Possible Flags:<br/>
-	 * U - Uses uTP
-	 * T - Uses TCP
-	 * I - Is Interested
-	 * C - Is Choked
-	 * @param p
-	 * @return
-	 */
-	private String getFlagsForPeer(Peer p) {
-		String flags = p.getSocket().getClass().getSimpleName().substring(0, 1);
-		if(p.getClient().isInterested()) {
-			flags += "I";
-		}
-		if(p.getClient().isChoked()) {
-			flags += "C";
-		}
-		return flags;
-	}
-
 	protected void paintData(Graphics g) {
 		if (torrent != null) {
 			// Sort
@@ -86,7 +65,7 @@ public class TabPeers extends TableBase {
 					g.drawString(StringUtil.timeToString(duration), 440, getTextY());
 					g.drawString("" + peer.getClient().getBitfield().hasPieceCount(), 510, getTextY());
 					g.drawString(peer.getWorkQueueSize() + "/" + peer.getMaxWorkLoad() + " | " + peer.getClient().getQueueSize(), 570, getTextY());
-					g.drawString(getFlagsForPeer(peer), 640, getTextY());
+					g.drawString(peer.getFlags(), 640, getTextY());
 					g.drawString(peer.getStatus(), 690, getTextY());
 				}
 				advanceLine();

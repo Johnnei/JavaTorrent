@@ -36,8 +36,8 @@ public class Tracker {
 	 */
 	private int errorCount;
 	
-	public Tracker(String url) {
-		connection = new TrackerConnection(url);
+	public Tracker(String url, PeerConnectorPool peerConnectorPool) {
+		connection = new TrackerConnection(url, peerConnectorPool);
 		torrentMap = new HashMap<>();
 		announceInterval = DEFAULT_ANNOUNCE_INTERVAL;
 		lastScrapeTime = System.currentTimeMillis() - SCRAPE_INTERVAL;

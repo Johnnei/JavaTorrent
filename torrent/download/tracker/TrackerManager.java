@@ -9,6 +9,7 @@ import torrent.download.Torrent;
 
 public class TrackerManager extends Thread {
 	
+	private PeerConnectorPool peerConnectorPool;
 	private ArrayList<Tracker> trackerList;
 	private int transactionId;
 	
@@ -16,6 +17,7 @@ public class TrackerManager extends Thread {
 		super("Tracker Manager");
 		trackerList = new ArrayList<>();
 		transactionId = new Random().nextInt();
+		peerConnectorPool = new PeerConnectorPool();
 	}
 	
 	@Override
@@ -45,10 +47,11 @@ public class TrackerManager extends Thread {
 	/**
 	 * Adds the torrent to the tracker and registers the tracker
 	 * @param torrent The torrent to add
-	 * @param tracker The tracker to add the torrent to
+	 * @param tracker The tracker url
 	 * @return The tracker on which the torrent has been added
 	 */
-	public Tracker addTorrent(Torrent torrent, Tracker tracker) {
+	public Tracker addTorrent(Torrent torrent, String trackerUrl) {
+		Tracker tracker = new Tracker(trackerUrl, peerConnectorPool);
 		tracker = findTracker(tracker);
 		tracker.addTorrent(torrent);
 		return tracker;
@@ -71,6 +74,10 @@ public class TrackerManager extends Thread {
 	
 	public int getTransactionId() {
 		return transactionId++;
+	}
+
+	public int getConnectingCountFor(Torrent torrent) {
+		return peerConnectorPool.getConnectingCountFor(torrent);
 	}
 
 }

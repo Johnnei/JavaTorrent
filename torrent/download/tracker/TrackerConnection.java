@@ -40,8 +40,14 @@ public class TrackerConnection implements Logable {
 	private int action;
 
 	private String status;
+	
+	/**
+	 * The pool of {@link PeerConnector} which will connect peers for us
+	 */
+	private PeerConnectorPool connectorPool;
 
-	public TrackerConnection(String url) {
+	public TrackerConnection(String url, PeerConnectorPool connectorPool) {
+		this.connectorPool = new PeerConnectorPool();
 		stream = new Stream();
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
@@ -146,39 +152,15 @@ public class TrackerConnection implements Logable {
 				int port = stream.readShort();
 				if (isEmptyIP(address))
 					continue;
-				Peer p = new Peer(torrent);
-				p.setSocketInformation(InetAddress.getByAddress(address), port);
-				assignPeer(torrent, p);
+				Peer peer = new Peer(torrent);
+				peer.setSocketInformation(InetAddress.getByAddress(address), port);
+				connectorPool.addPeer(peer);
 			}
 			setStatus("Announced");
 			return announceInterval;
 		} catch (IOException e) {
 			setStatus("Announce failed");
 			throw new TrackerException("Tracker Packet got lost");
-		}
-	}
-	
-	/**
-	 * Splits the peers evenly over all connector threads
-	 * @param torrent The torrent to add the peer to
-	 * @param peer The peer to assign
-	 */
-	private void assignPeer(Torrent torrent, Peer peer) {
-		PeerConnectorThread chosenThread = null;
-		PeerConnectorThread[] connectorThreads = torrent.getPeerConnectorThreads();
-		
-		for(PeerConnectorThread connectorThread : connectorThreads) {
-			if(chosenThread == null) {
-				chosenThread = connectorThread;
-			} else {
-				if(chosenThread.getFreeCapacity() < connectorThread.getFreeCapacity()) {
-					chosenThread = connectorThread;
-				}
-			}
-		}
-		
-		if(chosenThread.getFreeCapacity() > 0) {
-			chosenThread.addPeer(peer);
 		}
 	}
 

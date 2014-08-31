@@ -296,14 +296,6 @@ public class Peer implements Logable, ISortable {
 			return false;
 		return socket.isClosed();
 	}
-	
-	/**
-	 * Get this peer's socket
-	 * @return The socket of this peer
-	 */
-	public ISocket getSocket() {
-		return socket;
-	}
 
 	@Override
 	public String toString() {
@@ -475,5 +467,25 @@ public class Peer implements Logable, ISortable {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Adds flags to a string based on the state of a peer<br/>
+	 * Possible Flags:<br/>
+	 * U - Uses uTP
+	 * T - Uses TCP
+	 * I - Is Interested
+	 * C - Is Choked
+	 * @return
+	 */
+	public String getFlags() {
+		String flags = socket.getClass().getSimpleName().substring(0, 1);
+		if(peerClient.isInterested()) {
+			flags += "I";
+		}
+		if(peerClient.isChoked()) {
+			flags += "C";
+		}
+		return flags;
 	}
 }
