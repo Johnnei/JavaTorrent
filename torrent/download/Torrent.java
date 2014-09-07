@@ -125,16 +125,10 @@ public class Torrent extends Thread implements Logable {
 		phase = new PhaseMetadata(this);
 	}
 
-	private boolean hasPeer(Peer p) {
+	private boolean hasPeer(Peer peer) {
 		synchronized (this) {
-			for (Peer _p : peers) {
-				if (_p != null) {
-					if (_p.toString().equals(p))
-						return true;
-				}
-			}
+			return peers.stream().filter(p -> p.equals(peer)).findAny().isPresent();
 		}
-		return false;
 	}
 
 	public void addPeer(Peer p) {
