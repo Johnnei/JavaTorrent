@@ -92,14 +92,6 @@ public class Torrent extends Thread implements Logable {
 	private int torrentHaltingOperations;
 
 	/**
-	 * The thread which reads all information from the peers
-	 */
-	private PeersReadThread readThread;
-	/**
-	 * The thread which writes all information to the peers
-	 */
-	private PeersWriteThread writeThread;
-	/**
 	 * IOManager to manage the transaction between the hdd and the programs so none of the actual network thread need to get block for that
 	 */
 	private IOManager ioManager;
@@ -148,10 +140,6 @@ public class Torrent extends Thread implements Logable {
 
 	public void initialise() {
 		Manager.getManager().addTorrent(this);
-		readThread = new PeersReadThread(this);
-		writeThread = new PeersWriteThread(this);
-		readThread.start();
-		writeThread.start();
 	}
 
 	/**
