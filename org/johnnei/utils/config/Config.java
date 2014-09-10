@@ -104,7 +104,7 @@ public class Config {
 		try {
 			outStream = new BufferedWriter(new FileWriter(configFile));
 			for (Entry<String, String> entry : config.entrySet()) {
-				outStream.write(entry.getKey() + "=" + entry.getValue() + "\n");
+				outStream.write(String.format("%s=%s\n", entry.getKey(), entry.getValue()));
 			}
 		} catch (IOException e) {
 			ThreadUtils.sleep(10);
@@ -233,7 +233,7 @@ public class Config {
 				return false;
 			}
 		}
-		throw new NumberFormatException("Invalid boolean string: " + s);
+		throw new NumberFormatException(String.format("Invalid boolean string: %s", s));
 	}
 
 	public static boolean isInt(String s) {
@@ -255,7 +255,7 @@ public class Config {
 	}
 	
 	private final String getMissingConfigError(String key) {
-		return "Configuration Setting \"" + key + "\" has not been registered";
+		return String.format("Configuration Setting \"%s\" has not been registered", key);
 	}
 
 }
