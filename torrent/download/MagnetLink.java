@@ -15,11 +15,11 @@ public class MagnetLink {
 	 */
 	private Torrent torrent;
 
-	public MagnetLink(String magnetLink) {
+	public MagnetLink(String magnetLink, Manager manager) {
 		boolean succeed = true;
 		if (magnetLink.startsWith("magnet:?")) {
 			String[] linkData = magnetLink.split("\\?")[1].split("&");
-			torrent = new Torrent();
+			torrent = new Torrent(manager);
 			for (int i = 0; i < linkData.length; i++) {
 				String[] data = linkData[i].split("=");
 				switch (data[0]) {
@@ -30,7 +30,7 @@ public class MagnetLink {
 
 				case "tr":
 					linkData[i] = StringUtil.removeHex(data[1]);
-					Tracker tracker = Manager.getTrackerManager().addTorrent(torrent, linkData[i]);
+					Tracker tracker = manager.getTrackerManager().addTorrent(torrent, linkData[i], manager);
 					torrent.addTracker(tracker);
 					break;
 

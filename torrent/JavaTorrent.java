@@ -26,12 +26,15 @@ public class JavaTorrent extends Thread {
 		System.setOut(new Logger(System.out));
 		System.setErr(new Logger(System.err));
 		loadDefaultConfig();
-		TorrentFrame frame= new TorrentFrame();
+		
+		Manager manager = new Manager();
+		
+		TorrentFrame frame= new TorrentFrame(manager);
 		boolean showGui = true;
 		for(int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			if(arg.startsWith("magnet")) {
-				MagnetLink magnet = new MagnetLink(arg);
+				MagnetLink magnet = new MagnetLink(arg, manager);
 				if (magnet.isDownloadable()) {
 					Torrent torrent = magnet.getTorrent();
 					torrent.initialise();

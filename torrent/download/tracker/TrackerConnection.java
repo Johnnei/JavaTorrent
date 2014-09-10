@@ -45,9 +45,12 @@ public class TrackerConnection implements Logable {
 	 * The pool of {@link PeerConnector} which will connect peers for us
 	 */
 	private PeerConnectorPool connectorPool;
+	
+	private Manager manager;
 
-	public TrackerConnection(String url, PeerConnectorPool connectorPool) {
+	public TrackerConnection(String url, PeerConnectorPool connectorPool, Manager manager) {
 		this.connectorPool = connectorPool;
+		this.manager = manager;
 		stream = new Stream();
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
@@ -73,7 +76,7 @@ public class TrackerConnection implements Logable {
 	public void connect() throws TrackerException {
 		setStatus("Connecting");
 		stream.reset(1000);
-		int transactionId = Manager.getTrackerManager().getTransactionId();
+		int transactionId = manager.getTrackerManager().getTransactionId();
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_CONNECT);
 		stream.writeInt(transactionId);
@@ -111,12 +114,12 @@ public class TrackerConnection implements Logable {
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
 		stream.reset(100);
-		int transactionId = Manager.getTrackerManager().getTransactionId();
+		int transactionId = manager.getTrackerManager().getTransactionId();
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_ANNOUNCE);
 		stream.writeInt(transactionId);
 		stream.writeByte(torrent.getHashArray());
-		stream.writeByte(Manager.getPeerId());
+		stream.writeByte(manager.getPeerId());
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
 		stream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
@@ -152,7 +155,7 @@ public class TrackerConnection implements Logable {
 				int port = stream.readShort();
 				if (isEmptyIP(address))
 					continue;
-				Peer peer = new Peer(torrent);
+				Peer peer = new Peer(manager, torrent);
 				peer.setSocketInformation(InetAddress.getByAddress(address), port);
 				connectorPool.addPeer(peer);
 			}
@@ -167,7 +170,7 @@ public class TrackerConnection implements Logable {
 	public void scrape(TorrentInfo torrentInfo) throws TrackerException {
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Scraping");
-		int transactionId = Manager.getTrackerManager().getTransactionId();
+		int transactionId = manager.getTrackerManager().getTransactionId();
 		stream.reset(36);
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_SCRAPE);

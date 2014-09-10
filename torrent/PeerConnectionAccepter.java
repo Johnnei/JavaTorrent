@@ -13,16 +13,19 @@ import torrent.network.protocol.TcpSocket;
 public class PeerConnectionAccepter extends Thread {
 
 	private ServerSocket serverSocket;
+	
+	private Manager manager;
 
-	public PeerConnectionAccepter() throws IOException {
-		super("PeerConnector");
+	public PeerConnectionAccepter(Manager manager) throws IOException {
+		super("Peer connector");
+		this.manager = manager;
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
 	}
 
 	public void run() {
 		while (true) {
 			try {
-				Peer peer = new Peer();
+				Peer peer = new Peer(manager);
 				Socket peerSocket = (Socket) serverSocket.accept();
 				peer.setSocket(new TcpSocket(peerSocket));
 				long handshakeStart = System.currentTimeMillis();

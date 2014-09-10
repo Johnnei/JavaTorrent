@@ -12,17 +12,7 @@ import torrent.download.tracker.TrackerManager;
 
 public class Manager {
 
-	private static Manager manager = new Manager();
-
-	public static Manager getManager() {
-		return manager;
-	}
-	
-	public static TrackerManager getTrackerManager() {
-		return manager.trackerManager;
-	}
-	
-	public final Object TORRENTS_LOCK = new Object();
+	private final Object TORRENTS_LOCK = new Object();
 
 	private PeerConnectionAccepter connectorThread;
 	private TrackerManager trackerManager;
@@ -33,11 +23,10 @@ public class Manager {
 	private PeersWriterRunnable peerWriter;
 	private Thread[] peerThreads;
 
-	private Manager() {
+	public Manager() {
 		activeTorrents = new ArrayList<>();
 		try {
-			connectorThread = new PeerConnectionAccepter();
-			connectorThread.start();
+			connectorThread = new PeerConnectionAccepter(this);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -70,6 +59,8 @@ public class Manager {
 		for(Thread thread : peerThreads) {
 			thread.start();
 		}
+		
+		connectorThread.start();
 	}
 
 	public void addTorrent(Torrent torrent) {
@@ -87,12 +78,8 @@ public class Manager {
 		return null;
 	}
 
-	public byte[] getPeer() {
+	public byte[] getPeerId() {
 		return peerId;
-	}
-
-	public static byte[] getPeerId() {
-		return getManager().getPeer();
 	}
 	
 	/**
@@ -103,6 +90,14 @@ public class Manager {
 		synchronized (TORRENTS_LOCK) {
 			return new ArrayList<Torrent>(activeTorrents);
 		}
+	}
+	
+	/**
+	 * Gets the tracker manager which manages the trackers
+	 * @return
+	 */
+	public TrackerManager getTrackerManager() {
+		return trackerManager;
 	}
 
 }

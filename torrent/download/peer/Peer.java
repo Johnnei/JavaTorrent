@@ -70,8 +70,14 @@ public class Peer implements Logable, ISortable {
 	 * If the amount reaches 5 the client will be disconnected on the next peerCheck
 	 */
 	private int strikes;
+	
+	/**
+	 * The torrent manager which manages all torrents within this application
+	 */
+	private Manager manager;
 
-	public Peer() {
+	public Peer(Manager manager) {
+		this.manager = manager;
 		crashed = false;
 		peerClient = new Client();
 		myClient = new Client();
@@ -83,8 +89,8 @@ public class Peer implements Logable, ISortable {
 		passedHandshake = false;
 	}
 
-	public Peer(Torrent torrent) {
-		this();
+	public Peer(Manager manager, Torrent torrent) {
+		this(manager);
 		this.torrent = torrent;
 	}
 
@@ -157,7 +163,7 @@ public class Peer implements Logable, ISortable {
 		outStream.writeString("BitTorrent protocol");
 		outStream.write(RESERVED_EXTENTION_BYTES);
 		outStream.write(torrent.getHashArray());
-		outStream.write(Manager.getPeerId());
+		outStream.write(manager.getPeerId());
 		outStream.flush();
 		setStatus("Awaiting Handshake response");
 	}
@@ -175,7 +181,7 @@ public class Peer implements Logable, ISortable {
 				peerClient.setReservedBytes(inStream.readByteArray(8));
 				byte[] torrentHash = inStream.readByteArray(20);
 				if (torrent == null) {
-					Torrent torrent = Manager.getManager().getTorrent(StringUtil.byteArrayToString(torrentHash));
+					Torrent torrent = manager.getTorrent(StringUtil.byteArrayToString(torrentHash));
 					if (torrent == null) {
 						return;
 					}
