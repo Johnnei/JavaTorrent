@@ -12,7 +12,7 @@ import torrent.download.tracker.TrackerManager;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
-import torrent.network.protocol.UtpSocket;
+import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -92,7 +92,7 @@ public class Peer implements Logable, ISortable {
 			setStatus("Connected (Outside request)");
 			return;
 		}
-		socket = new UtpSocket();
+		socket = new TcpSocket();
 		while(socket != null && (socket.isClosed() || socket.isConnecting())) {
 			try {
 				socket.connect(new InetSocketAddress(address, port));
