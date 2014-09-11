@@ -1,6 +1,7 @@
 package torrent.download.tracker;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.johnnei.utils.ThreadUtils;
@@ -48,16 +49,33 @@ public class TrackerManager extends Thread {
 		while(true) {
 			for(int i = 0; i < trackerList.size(); i++) {
 				Tracker tracker = trackerList.get(i);
+				
+				if (!tracker.isValid()) {
+					continue;
+				}
+				
+				if (tracker.isConnected()) {
+					List<TorrentInfo> torrentList = tracker.getTorrents();
+					for(TorrentInfo torrentInfo : torrentList) {
+						Torrent torrent = torrentInfo.getTorrent();
+						
+						if (!tracker.canAnnounce(torrent)) {
+							// Tracker is still on timeout
+							continue;
+						}
+						
+						//Check if torrent needs announce, else scrape
+						if(torrent.needAnnounce()) {
+							tracker.announce(torrent);
+						}
+					}
+				} else {
+					tracker.connect();
+				}
+				
 				if(tracker.isValid()) {
 					if(tracker.isConnected()) {
-						ArrayList<TorrentInfo> torrentList = tracker.getTorrents();
-						for(TorrentInfo torrentInfo : torrentList) {
-							Torrent torrent = torrentInfo.getTorrent();
-							//Check if torrent needs announce, else scrape
-							if(torrent.needAnnounce()) {
-								tracker.announce(torrent);
-							}
-						}
+						
 					} else {
 						tracker.connect();
 					}

@@ -109,13 +109,12 @@ public class Tracker {
 	
 	public void announce(Torrent torrent) {
 		TorrentInfo torrentInfo = torrentMap.get(torrent.getHash());
-		if(torrentInfo.getTimeSinceLastAnnouce() >= announceInterval) {
-			try {
-				connection.announce(torrentInfo);
-				onSucces();
-			} catch (TrackerException e) {
-				onError(e);
-			}
+		try {
+			connection.announce(torrentInfo);
+			torrentInfo.updateAnnounceTime();
+			onSucces();
+		} catch (TrackerException e) {
+			onError(e);
 		}
 	}
 	
@@ -134,6 +133,16 @@ public class Tracker {
 	 */
 	public boolean isValid() {
 		return errorCount < 3;
+	}
+	
+	/**
+	 * Checks if the tracker is not on timeout for the given torrent
+	 * @param torrent the torrent which needs announcing
+	 * @return
+	 */
+	public boolean canAnnounce(Torrent torrent) {
+		TorrentInfo torrentInfo = torrentMap.get(torrent.getHash());
+		return torrentInfo.getTimeSinceLastAnnouce() >= announceInterval;
 	}
 	
 	public boolean isConnected() {
