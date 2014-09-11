@@ -1,5 +1,7 @@
 package torrent.network;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -93,7 +95,14 @@ public class Stream {
 	}
 
 	public long readLong() {
-		return (readInt() << 32) + readInt();
+		try {
+			return new DataInputStream(new ByteArrayInputStream(buffer, readOffset, writeOffset - readOffset)).readLong();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+		//return (readInt() << 32) + readInt();
 	}
 
 	public byte[] readIP() {
@@ -148,12 +157,7 @@ public class Stream {
 		reset(size);
 		DatagramPacket dp = new DatagramPacket(buffer, 0, buffer.length);
 		socket.receive(dp);
-		byte[] newBuffer = new byte[dp.getLength()];
-		for (int i = 0; i < newBuffer.length; i++) {
-			newBuffer[i] = buffer[i];
-		}
-		buffer = newBuffer;
-		writeOffset = buffer.length;
+		writeOffset = dp.getLength();
 		readOffset = 0;
 	}
 
@@ -282,5 +286,36 @@ public class Stream {
 	 */
 	public int getReadPointer() {
 		return readOffset;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(getClass().getSimpleName());
+		sb.append("[");
+		sb.append("ReadOffset = ");
+		sb.append(readOffset);
+		sb.append(", WriteOffset = ");
+		sb.append(writeOffset);
+		sb.append(", Buffer = [");
+		if (buffer != null) {
+			for (int i = 0; i < buffer.length; i++) {
+				boolean hasNext = i + 1 < buffer.length;
+				
+				String hex = Integer.toHexString(buffer[i] & 0xFF);
+				if (hex.length() == 1) {
+					sb.append("0");
+				}
+				
+				sb.append(hex);
+				
+				if (hasNext) {
+					sb.append(", ");
+				}
+			}
+		}
+		sb.append("] ]");
+		
+		return sb.toString();
 	}
 }

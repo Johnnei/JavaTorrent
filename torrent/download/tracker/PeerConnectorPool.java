@@ -21,6 +21,7 @@ public class PeerConnectorPool {
 		
 		for (int i = 0; i < connectorCount; i++) {
 			PeerConnector connector = new PeerConnector(manager, peerLimitPerConnector);
+			connectors.add(connector);
 			Thread thread = new Thread(connector, String.format("Peer Connector #%d", i));
 			thread.setDaemon(true);
 			thread.start();
