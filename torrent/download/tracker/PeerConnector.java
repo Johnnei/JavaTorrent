@@ -10,6 +10,7 @@ import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.encoding.SHA1;
 import torrent.protocol.BitTorrentHandshake;
+import torrent.protocol.BitTorrentUtil;
 
 public class PeerConnector implements Runnable {
 
@@ -91,6 +92,8 @@ public class PeerConnector implements Runnable {
 					throw new IOException("Unexpected/Incorrect torrent hash received");
 				}
 				
+				BitTorrentUtil.onPostHandshake(peer);
+				
 				
 			} catch (IOException e) {
 				System.err.println(String.format("[PeerConnector] Failed to connect peer: %s", e.getMessage()));
@@ -105,6 +108,8 @@ public class PeerConnector implements Runnable {
 		if (SHA1.match(peer.getTorrent().getHashArray(), handshake.getTorrentHash())) {
 			return false;
 		}
+		
+		peer.getClient().setReservedBytes(handshake.getPeerExtensionBytes());
 		
 		return true;
 	}
