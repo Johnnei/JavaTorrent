@@ -7,8 +7,12 @@ import java.net.Socket;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
+import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.network.protocol.TcpSocket;
+import torrent.protocol.BitTorrentHandshake;
+import torrent.protocol.BitTorrentUtil;
+import torrent.util.StringUtil;
 
 public class PeerConnectionAccepter extends Thread {
 
@@ -32,18 +36,25 @@ public class PeerConnectionAccepter extends Thread {
 				while (!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
 					ThreadUtils.sleep(10);
 				}
-				if (peer.canReadMessage()) {
-					// TODO Update to new API
-					peer.processHandshake();
-					if (peer.getPassedHandshake()) {
-						peer.sendHandshake(manager.getTrackerManager().getPeerId());
-						peer.getTorrent().addPeer(peer);
-					} else {
-						peer.close();
-					}
-				} else {
+				if (!peer.canReadMessage()) {
 					peer.close();
+					continue;
 				}
+					
+				BitTorrentHandshake handshake = peer.readHandshake();
+				
+				Torrent torrent = manager.getTorrent(StringUtil.byteArrayToString(handshake.getTorrentHash()));
+				
+				if (torrent == null) {
+					// We don't know the torrent the peer is downloading
+					peer.close();
+					continue;
+				}
+				
+				peer.setTorrent(torrent);
+				peer.sendHandshake(manager.getTrackerManager().getPeerId());
+				BitTorrentUtil.onPostHandshake(peer);
+				peer.getTorrent().addPeer(peer);
 			} catch (IOException e) {
 			}
 		}

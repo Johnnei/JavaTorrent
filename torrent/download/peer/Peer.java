@@ -387,6 +387,19 @@ public class Peer implements Logable, ISortable {
 			forceClose();
 		}
 	}
+	
+	/**
+	 * Sets the torrent 
+	 * @param torrent
+	 * @throws IllegalStateException if the peer is already bound to a torrent
+	 */
+	public void setTorrent(Torrent torrent) throws IllegalStateException {
+		if (this.torrent != null) {
+			throw new IllegalStateException("Peer is already bound to a torrent");
+		}
+		
+		this.torrent = torrent;
+	}
 
 	public boolean getPassedHandshake() {
 		return passedHandshake;

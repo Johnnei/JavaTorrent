@@ -1,7 +1,6 @@
 package torrent.download.tracker;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.LinkedList;
 
 import org.johnnei.utils.ThreadUtils;
@@ -10,11 +9,7 @@ import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.encoding.SHA1;
-import torrent.protocol.BitTorrent;
 import torrent.protocol.BitTorrentHandshake;
-import torrent.protocol.IMessage;
-import torrent.protocol.messages.extension.MessageExtension;
-import torrent.protocol.messages.extension.MessageHandshake;
 
 public class PeerConnector implements Runnable {
 
@@ -92,14 +87,10 @@ public class PeerConnector implements Runnable {
 					throw new IOException("Handshake timeout");
 				}
 				
-				checkHandshake(peer);
-				
-				if (peer.getClient().supportsExtention(5, 0x10)) {
-					// Extended Messages extension
-					sendExtendedMessages(peer);
+				if (!checkHandshake(peer)) {
+					throw new IOException("Unexpected/Incorrect torrent hash received");
 				}
 				
-				sendHaveMessages(peer);
 				
 			} catch (IOException e) {
 				System.err.println(String.format("[PeerConnector] Failed to connect peer: %s", e.getMessage()));
@@ -108,43 +99,14 @@ public class PeerConnector implements Runnable {
 		}
 	}
 	
-	private void checkHandshake(Peer peer) throws IOException {
+	private boolean checkHandshake(Peer peer) throws IOException {
 		BitTorrentHandshake handshake = peer.readHandshake();
 		
 		if (SHA1.match(peer.getTorrent().getHashArray(), handshake.getTorrentHash())) {
-			throw new IOException("Peer is not downloading expected torrent");
-		}
-	}
-	
-	private void sendExtendedMessages(Peer peer) throws IOException {
-		MessageExtension message;
-		
-		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
-			message = new MessageExtension(
-				BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, 
-				new MessageHandshake()
-			);
-		} else {
-			message = new MessageExtension(
-				BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, 
-				new MessageHandshake(
-					peer.getTorrent().getFiles().getMetadataSize()
-				)
-			);
+			return false;
 		}
 		
-		peer.addToQueue(message);
-	}
-	
-	private void sendHaveMessages(Peer peer) throws IOException {
-		if (peer.getTorrent().getDownloadStatus() != Torrent.STATE_DOWNLOAD_DATA) {
-			return;
-		}
-		
-		Collection<IMessage> messages = peer.getTorrent().getFiles().getBitfield().getBitfieldMessage();
-		for (IMessage message : messages) {
-			peer.addToQueue(message);
-		}
+		return true;
 	}
 
 	public int getFreeCapacity() {
