@@ -24,11 +24,6 @@ public class TorrentManager {
 
 	public TorrentManager() {
 		activeTorrents = new ArrayList<>();
-		try {
-			connectorThread = new PeerConnectionAccepter(this);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 		
 		// Start tracker management
 		trackerManager = new TrackerManager(this);
@@ -47,7 +42,16 @@ public class TorrentManager {
 			thread.start();
 		}
 		
-		connectorThread.start();
+		startListener(trackerManager);
+	}
+	
+	private void startListener(TrackerManager trackerManager) {
+		try {
+			connectorThread = new PeerConnectionAccepter(this, trackerManager);
+			connectorThread.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void addTorrent(Torrent torrent) {
@@ -77,8 +81,10 @@ public class TorrentManager {
 	
 	/**
 	 * Gets the tracker manager which manages the trackers
+	 * @deprecated This function will be removed in the next release, acquire an instance of this during construction or method parameter
 	 * @return
 	 */
+	@Deprecated 
 	public TrackerManager getTrackerManager() {
 		return trackerManager;
 	}

@@ -9,6 +9,7 @@ import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
+import torrent.download.tracker.TrackerManager;
 import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.BitTorrentUtil;
@@ -18,11 +19,14 @@ public class PeerConnectionAccepter extends Thread {
 
 	private ServerSocket serverSocket;
 	
-	private TorrentManager manager;
+	private TorrentManager torrentManager;
+	
+	private TrackerManager trackerManager;
 
-	public PeerConnectionAccepter(TorrentManager manager) throws IOException {
+	public PeerConnectionAccepter(TorrentManager manager, TrackerManager trackerManager) throws IOException {
 		super("Peer connector");
-		this.manager = manager;
+		this.torrentManager = manager;
+		this.trackerManager = trackerManager;
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
 	}
 
@@ -43,7 +47,7 @@ public class PeerConnectionAccepter extends Thread {
 					
 				BitTorrentHandshake handshake = peer.readHandshake();
 				
-				Torrent torrent = manager.getTorrent(StringUtil.byteArrayToString(handshake.getTorrentHash()));
+				Torrent torrent = torrentManager.getTorrent(StringUtil.byteArrayToString(handshake.getTorrentHash()));
 				
 				if (torrent == null) {
 					// We don't know the torrent the peer is downloading
@@ -53,7 +57,7 @@ public class PeerConnectionAccepter extends Thread {
 				
 				peer.getClient().setReservedBytes(handshake.getPeerExtensionBytes());
 				peer.setTorrent(torrent);
-				peer.sendHandshake(manager.getTrackerManager().getPeerId());
+				peer.sendHandshake(trackerManager.getPeerId());
 				BitTorrentUtil.onPostHandshake(peer);
 				peer.getTorrent().addPeer(peer);
 			} catch (IOException e) {
