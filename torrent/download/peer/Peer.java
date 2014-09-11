@@ -26,6 +26,7 @@ import torrent.util.StringUtil;
 public class Peer implements Logable, ISortable {
 
 	private byte[] RESERVED_EXTENTION_BYTES = new byte[8];
+	private static final int HANDSHAKE_SIZE = 68;
 
 	private InetAddress address;
 	private int port;
@@ -210,7 +211,7 @@ public class Peer implements Logable, ISortable {
 
 	public boolean canReadMessage() throws IOException {
 		if (!passedHandshake) {
-			return inStream.available() >= 68;
+			return inStream.available() >= HANDSHAKE_SIZE;
 		}
 		return MessageUtils.getUtils().canReadMessage(inStream, this);
 	}
