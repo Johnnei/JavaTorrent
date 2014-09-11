@@ -1,6 +1,7 @@
 package torrent.download.peer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import org.johnnei.utils.JMath;
 
@@ -119,8 +120,8 @@ public class Bitfield {
 	 * 
 	 * @return A list of messages to send to the client as bitfield
 	 */
-	public ArrayList<IMessage> getBitfieldMessage() {
-		ArrayList<IMessage> messages = new ArrayList<>();
+	public Collection<IMessage> getBitfieldMessage() {
+		Collection<IMessage> messages = new ArrayList<>();
 		if (hasPieceCount() > 0) {
 			if (bitfield.length + 1 < 5 * hasPieceCount()) {
 				messages.add(new MessageBitfield(bitfield));

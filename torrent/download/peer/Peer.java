@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 
 import torrent.Logable;
-import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.download.tracker.TrackerManager;
@@ -14,14 +13,11 @@ import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
 import torrent.network.protocol.UtpSocket;
-import torrent.protocol.BitTorrent;
+import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
 import torrent.protocol.messages.MessageKeepAlive;
-import torrent.protocol.messages.extension.MessageExtension;
-import torrent.protocol.messages.extension.MessageHandshake;
 import torrent.util.ISortable;
-import torrent.util.StringUtil;
 
 public class Peer implements Logable, ISortable {
 
@@ -113,30 +109,6 @@ public class Peer implements Logable, ISortable {
 		}
 	}
 
-	/**
-	 * Send all extension handshakes
-	 */
-	private void sendExtensionMessage() {
-		if (peerClient.supportsExtention(5, 0x10)) { // EXTENDED_MESSAGE
-			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake()));
-			else
-				addToQueue(new MessageExtension(BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(torrent.getFiles().getMetadataSize())));
-		}
-	}
-
-	/**
-	 * Send have messages or bitfield
-	 */
-	private void sendHaveMessages() {
-		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
-			ArrayList<IMessage> messages = torrent.getFiles().getBitfield().getBitfieldMessage();
-			for (int i = 0; i < messages.size(); i++) {
-				addToQueue(messages.get(i));
-			}
-		}
-	}
-
 	public void setSocket(ISocket socket) {
 		this.socket = socket;
 		try {
@@ -168,45 +140,29 @@ public class Peer implements Logable, ISortable {
 		outStream.flush();
 		setStatus("Awaiting Handshake response");
 	}
-
-	public void processHandshake(Manager manager) throws IOException {
-		status = "Verifying handshake";
+	
+	/**
+	 * Reads the handshake information from the peer
+	 * @return A succesfully read handshake
+	 * @throws IOException when either an io error occurs or a protocol error occurs
+	 */
+	public BitTorrentHandshake readHandshake() throws IOException {
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
-			socket.close();
-			crashed = true;
-			return;
-		} else {
-			String protocol = inStream.readString(0x13);
-			if ("BitTorrent protocol".equals(protocol)) {
-				peerClient.setReservedBytes(inStream.readByteArray(8));
-				byte[] torrentHash = inStream.readByteArray(20);
-				if (torrent == null) {
-					Torrent torrent = manager.getTorrent(StringUtil.byteArrayToString(torrentHash));
-					if (torrent == null) {
-						return;
-					}
-					this.torrent = torrent;
-				}
-				if (torrentHash != torrent.getHashArray()) {
-					inStream.readByteArray(20);
-					if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA)
-						peerClient.getBitfield().setBitfieldSize(torrent.getFiles().getBitfieldSize());
-					setStatus("Awaiting Orders");
-					passedHandshake = true;
-				} else {
-					socket.close();
-					crashed = true;
-					return;
-				}
-			} else {
-				crashed = true;
-				socket.close();
-				return;
-			}
+			throw new IOException("Protocol handshake failed");
 		}
-		sendExtensionMessage();
-		sendHaveMessages();
+		
+		String protocol = inStream.readString(0x13);
+		
+		if (!"BitTorrent protocol".equals(protocol)) {
+			throw new IOException("Protocol handshake failed");
+		}
+		
+		byte[] extensionBytes = inStream.readByteArray(8);
+		byte[] torrentHash = inStream.readByteArray(20);
+		byte[] peerId = inStream.readByteArray(20);
+		
+		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
 	}
 
 	public boolean canReadMessage() throws IOException {
@@ -216,11 +172,7 @@ public class Peer implements Logable, ISortable {
 		return MessageUtils.getUtils().canReadMessage(inStream, this);
 	}
 
-	public void readMessage(Manager manager) throws IOException {
-		if (!passedHandshake) {
-			processHandshake(manager);
-			return;
-		}
+	public void readMessage() throws IOException {
 		IMessage message = MessageUtils.getUtils().readMessage(inStream, this);
 		message.process(this);
 		lastActivity = System.currentTimeMillis();

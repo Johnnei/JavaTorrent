@@ -33,7 +33,8 @@ public class PeerConnectionAccepter extends Thread {
 					ThreadUtils.sleep(10);
 				}
 				if (peer.canReadMessage()) {
-					peer.processHandshake(manager);
+					// TODO Update to new API
+					peer.processHandshake();
 					if (peer.getPassedHandshake()) {
 						peer.sendHandshake(manager.getTrackerManager().getPeerId());
 						peer.getTorrent().addPeer(peer);
