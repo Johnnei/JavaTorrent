@@ -16,7 +16,7 @@ import torrent.download.peer.Peer;
  * @author Johnnei
  *
  */
-public class TrackerManager extends Thread {
+public class TrackerManager implements Runnable {
 	
 	private byte[] peerId;
 	private PeerConnectorPool peerConnectorPool;
@@ -24,7 +24,6 @@ public class TrackerManager extends Thread {
 	private int transactionId;
 	
 	public TrackerManager(Manager manager) {
-		super("Tracker Manager");
 		trackerList = new ArrayList<>();
 		transactionId = new Random().nextInt();
 		peerConnectorPool = new PeerConnectorPool(manager);

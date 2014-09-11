@@ -15,6 +15,7 @@ public class Manager {
 
 	private PeerConnectionAccepter connectorThread;
 	private TrackerManager trackerManager;
+	private Thread trackerManagerThread;
 	private ArrayList<Torrent> activeTorrents;
 	
 	private PeersReadRunnable peerReader;
@@ -31,7 +32,8 @@ public class Manager {
 		
 		// Start tracker management
 		trackerManager = new TrackerManager(this);
-		trackerManager.start();
+		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
+		trackerManagerThread.start();
 		
 		// Start reading peer input/output
 		peerReader = new PeersReadRunnable(this);
