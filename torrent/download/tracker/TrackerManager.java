@@ -5,6 +5,7 @@ import java.util.Random;
 
 import org.johnnei.utils.ThreadUtils;
 
+import torrent.Manager;
 import torrent.download.Torrent;
 
 public class TrackerManager extends Thread {
@@ -50,8 +51,8 @@ public class TrackerManager extends Thread {
 	 * @param tracker The tracker url
 	 * @return The tracker on which the torrent has been added
 	 */
-	public Tracker addTorrent(Torrent torrent, String trackerUrl) {
-		Tracker tracker = new Tracker(trackerUrl, peerConnectorPool);
+	public Tracker addTorrent(Torrent torrent, String trackerUrl, Manager manager) {
+		Tracker tracker = new Tracker(trackerUrl, peerConnectorPool, manager);
 		tracker = findTracker(tracker);
 		tracker.addTorrent(torrent);
 		return tracker;

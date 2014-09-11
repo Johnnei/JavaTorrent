@@ -5,8 +5,8 @@ import java.awt.Graphics;
 
 import javax.swing.JPanel;
 
-import torrent.Manager;
 import torrent.download.Torrent;
+import torrent.download.tracker.TrackerManager;
 import torrent.util.StringUtil;
 
 public class TabGeneral extends JPanel {
@@ -14,6 +14,12 @@ public class TabGeneral extends JPanel {
 	public static final long serialVersionUID = 1L;
 
 	private Torrent torrent;
+	
+	private TrackerManager trackerManager;
+	
+	public TabGeneral(TrackerManager trackerManager) {
+		this.trackerManager = trackerManager;
+	}
 
 	public void setTorrent(Torrent torrent) {
 		this.torrent = torrent;
@@ -47,7 +53,7 @@ public class TabGeneral extends JPanel {
 				leftSize += StringUtil.compactByteSize(torrent.getFiles().getRemainingBytes());
 				uploaded += StringUtil.compactByteSize(torrent.getUploadedBytes());
 			}
-			pending += Integer.toString(Manager.getTrackerManager().getConnectingCountFor(torrent));
+			pending += Integer.toString(trackerManager.getConnectingCountFor(torrent));
 			peers += torrent.getSeedCount();
 			leechers += torrent.getLeecherCount();
 			download += StringUtil.compactByteSize(torrent.getDownloadRate()) + "/s";

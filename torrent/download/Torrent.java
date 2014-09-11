@@ -99,12 +99,18 @@ public class Torrent extends Thread implements Logable {
 	 * The phase in which the torrent currently is
 	 */
 	private IDownloadPhase phase;
+	
+	/**
+	 * The manager which takes care of all torrents and trackers
+	 */
+	private Manager manager;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
 	public static final byte STATE_UPLOAD = 2;
 
-	public Torrent() {
+	public Torrent(Manager manager) {
+		this.manager = manager;
 		trackers = new ArrayList<>();
 		torrentStatus = STATE_DOWNLOAD_METADATA;
 		downloadedBytes = 0L;
@@ -138,8 +144,11 @@ public class Torrent extends Thread implements Logable {
 		trackers.add(t);
 	}
 
+	/**
+	 * Registers the torrent with the {@link Manager}
+	 */
 	public void initialise() {
-		Manager.getManager().addTorrent(this);
+		manager.addTorrent(this);
 	}
 
 	/**

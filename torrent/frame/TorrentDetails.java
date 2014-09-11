@@ -6,6 +6,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
 import torrent.download.Torrent;
+import torrent.download.tracker.TrackerManager;
 
 public class TorrentDetails extends JTabbedPane {
 
@@ -19,8 +20,8 @@ public class TorrentDetails extends JTabbedPane {
 	private TabPieces tabPieces;
 	private TabPeers tabPeers;
 
-	public TorrentDetails() {
-		tabGeneral = new TabGeneral();
+	public TorrentDetails(TrackerManager manager) {
+		tabGeneral = new TabGeneral(manager);
 		tabFiles = new TabFiles();
 		tabTracker = new TabTracker();
 		tabPieces = new TabPieces();
