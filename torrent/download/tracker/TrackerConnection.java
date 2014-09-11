@@ -119,7 +119,7 @@ public class TrackerConnection implements Logable {
 		stream.writeInt(ACTION_ANNOUNCE);
 		stream.writeInt(transactionId);
 		stream.writeByte(torrent.getHashArray());
-		stream.writeByte(manager.getPeerId());
+		stream.writeByte(manager.getTrackerManager().getPeerId());
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
 		stream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
@@ -155,7 +155,7 @@ public class TrackerConnection implements Logable {
 				int port = stream.readShort();
 				if (isEmptyIP(address))
 					continue;
-				Peer peer = new Peer(manager, torrent);
+				Peer peer = new Peer(torrent);
 				peer.setSocketInformation(InetAddress.getByAddress(address), port);
 				connectorPool.addPeer(peer);
 			}

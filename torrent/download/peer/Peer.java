@@ -9,6 +9,7 @@ import torrent.Logable;
 import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
+import torrent.download.tracker.TrackerManager;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
@@ -70,14 +71,8 @@ public class Peer implements Logable, ISortable {
 	 * If the amount reaches 5 the client will be disconnected on the next peerCheck
 	 */
 	private int strikes;
-	
-	/**
-	 * The torrent manager which manages all torrents within this application
-	 */
-	private Manager manager;
 
-	public Peer(Manager manager) {
-		this.manager = manager;
+	public Peer() {
 		crashed = false;
 		peerClient = new Client();
 		myClient = new Client();
@@ -89,8 +84,8 @@ public class Peer implements Logable, ISortable {
 		passedHandshake = false;
 	}
 
-	public Peer(Manager manager, Torrent torrent) {
-		this(manager);
+	public Peer(Torrent torrent) {
+		this();
 		this.torrent = torrent;
 	}
 
@@ -157,18 +152,23 @@ public class Peer implements Logable, ISortable {
 		this.port = port;
 	}
 
-	public void sendHandshake() throws IOException {
+	/**
+	 * Writes the handshake onto the output stream
+	 * @param peerId The peer ID which has been received from {@link TrackerManager#getPeerId()}
+	 * @throws IOException
+	 */
+	public void sendHandshake(byte[] peerId) throws IOException {
 		setStatus("Sending Handshake"); // Not making this more OO because it's not within the message-flow
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
 		outStream.write(RESERVED_EXTENTION_BYTES);
 		outStream.write(torrent.getHashArray());
-		outStream.write(manager.getPeerId());
+		outStream.write(peerId);
 		outStream.flush();
 		setStatus("Awaiting Handshake response");
 	}
 
-	public void processHandshake() throws IOException {
+	public void processHandshake(Manager manager) throws IOException {
 		status = "Verifying handshake";
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
@@ -215,9 +215,9 @@ public class Peer implements Logable, ISortable {
 		return MessageUtils.getUtils().canReadMessage(inStream, this);
 	}
 
-	public void readMessage() throws IOException {
+	public void readMessage(Manager manager) throws IOException {
 		if (!passedHandshake) {
-			processHandshake();
+			processHandshake(manager);
 			return;
 		}
 		IMessage message = MessageUtils.getUtils().readMessage(inStream, this);

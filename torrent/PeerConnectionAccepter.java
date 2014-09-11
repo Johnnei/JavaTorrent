@@ -25,7 +25,7 @@ public class PeerConnectionAccepter extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				Peer peer = new Peer(manager);
+				Peer peer = new Peer();
 				Socket peerSocket = (Socket) serverSocket.accept();
 				peer.setSocket(new TcpSocket(peerSocket));
 				long handshakeStart = System.currentTimeMillis();
@@ -33,9 +33,9 @@ public class PeerConnectionAccepter extends Thread {
 					ThreadUtils.sleep(10);
 				}
 				if (peer.canReadMessage()) {
-					peer.processHandshake();
+					peer.processHandshake(manager);
 					if (peer.getPassedHandshake()) {
-						peer.sendHandshake();
+						peer.sendHandshake(manager.getTrackerManager().getPeerId());
 						peer.getTorrent().addPeer(peer);
 					} else {
 						peer.close();

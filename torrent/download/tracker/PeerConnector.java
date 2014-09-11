@@ -5,6 +5,7 @@ import java.util.LinkedList;
 
 import org.johnnei.utils.ThreadUtils;
 
+import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 
@@ -22,9 +23,12 @@ public class PeerConnector implements Runnable {
 	 */
 	private LinkedList<Peer> peers;
 	
+	private Manager manager;
+	
 	private final int maxPeers;
 	
-	public PeerConnector(int maxConnecting) {
+	public PeerConnector(Manager manager, int maxConnecting) {
+		this.manager = manager;
 		this.maxPeers = maxConnecting;
 		peers = new LinkedList<>();
 	}
@@ -68,7 +72,7 @@ public class PeerConnector implements Runnable {
 					continue;
 				}
 				
-				peer.sendHandshake();
+				peer.sendHandshake(manager.getTrackerManager().getPeerId());
 				
 				long timeWaited = 0;
 				while (!peer.canReadMessage() && timeWaited < 10_000) {
@@ -81,7 +85,7 @@ public class PeerConnector implements Runnable {
 					throw new IOException("Handshake timeout");
 				}
 				
-				peer.processHandshake();
+				peer.processHandshake(manager);
 				
 			} catch (IOException e) {
 				System.err.println(String.format("[PeerConnector] Failed to connect peer: %s", e.getMessage()));

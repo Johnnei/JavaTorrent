@@ -3,7 +3,6 @@ package torrent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Random;
 
 import torrent.download.PeersReadRunnable;
 import torrent.download.PeersWriterRunnable;
@@ -16,7 +15,6 @@ public class Manager {
 
 	private PeerConnectionAccepter connectorThread;
 	private TrackerManager trackerManager;
-	private byte[] peerId;
 	private ArrayList<Torrent> activeTorrents;
 	
 	private PeersReadRunnable peerReader;
@@ -30,22 +28,9 @@ public class Manager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		char[] version = JavaTorrent.BUILD.split(" ")[1].replace(".", "").toCharArray();
-		peerId = new byte[20];
-		peerId[0] = '-';
-		peerId[1] = 'J';
-		peerId[2] = 'T';
-		peerId[3] = (byte) version[0];
-		peerId[4] = (byte) version[1];
-		peerId[5] = (byte) version[2];
-		peerId[6] = (byte) version[3];
-		peerId[7] = '-';
-		for (int i = 8; i < peerId.length; i++) {
-			peerId[i] = (byte) (new Random().nextInt() & 0xFF);
-		}
 		
 		// Start tracker management
-		trackerManager = new TrackerManager();
+		trackerManager = new TrackerManager(this);
 		trackerManager.start();
 		
 		// Start reading peer input/output
@@ -76,10 +61,6 @@ public class Manager {
 				return t;
 		}
 		return null;
-	}
-
-	public byte[] getPeerId() {
-		return peerId;
 	}
 	
 	/**

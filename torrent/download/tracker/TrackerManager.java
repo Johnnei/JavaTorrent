@@ -5,20 +5,42 @@ import java.util.Random;
 
 import org.johnnei.utils.ThreadUtils;
 
+import torrent.JavaTorrent;
 import torrent.Manager;
 import torrent.download.Torrent;
+import torrent.download.peer.Peer;
 
+/**
+ * Managers the trackers which are used to collect {@link Peer}s for {@link Torrent}s
+ * @author Johnnei
+ *
+ */
 public class TrackerManager extends Thread {
 	
+	private byte[] peerId;
 	private PeerConnectorPool peerConnectorPool;
 	private ArrayList<Tracker> trackerList;
 	private int transactionId;
 	
-	public TrackerManager() {
+	public TrackerManager(Manager manager) {
 		super("Tracker Manager");
 		trackerList = new ArrayList<>();
 		transactionId = new Random().nextInt();
-		peerConnectorPool = new PeerConnectorPool();
+		peerConnectorPool = new PeerConnectorPool(manager);
+		
+		char[] version = JavaTorrent.BUILD.split(" ")[1].replace(".", "").toCharArray();
+		peerId = new byte[20];
+		peerId[0] = '-';
+		peerId[1] = 'J';
+		peerId[2] = 'T';
+		peerId[3] = (byte) version[0];
+		peerId[4] = (byte) version[1];
+		peerId[5] = (byte) version[2];
+		peerId[6] = (byte) version[3];
+		peerId[7] = '-';
+		for (int i = 8; i < peerId.length; i++) {
+			peerId[i] = (byte) (new Random().nextInt() & 0xFF);
+		}
 	}
 	
 	@Override
@@ -79,6 +101,14 @@ public class TrackerManager extends Thread {
 
 	public int getConnectingCountFor(Torrent torrent) {
 		return peerConnectorPool.getConnectingCountFor(torrent);
+	}
+	
+	/**
+	 * Gets the peer ID associated to this tracker manager
+	 * @return
+	 */
+	public byte[] getPeerId() {
+		return peerId;
 	}
 
 }
