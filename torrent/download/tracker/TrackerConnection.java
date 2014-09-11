@@ -8,7 +8,6 @@ import java.util.Random;
 import org.johnnei.utils.config.Config;
 
 import torrent.Logable;
-import torrent.Manager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
@@ -46,9 +45,9 @@ public class TrackerConnection implements Logable {
 	 */
 	private PeerConnectorPool connectorPool;
 	
-	private Manager manager;
+	private TrackerManager manager;
 
-	public TrackerConnection(String url, PeerConnectorPool connectorPool, Manager manager) {
+	public TrackerConnection(String url, PeerConnectorPool connectorPool, TrackerManager manager) {
 		this.connectorPool = connectorPool;
 		this.manager = manager;
 		stream = new Stream();
@@ -76,7 +75,7 @@ public class TrackerConnection implements Logable {
 	public void connect() throws TrackerException {
 		setStatus("Connecting");
 		stream.reset(1000);
-		int transactionId = manager.getTrackerManager().getTransactionId();
+		int transactionId = manager.getTransactionId();
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_CONNECT);
 		stream.writeInt(transactionId);
@@ -115,12 +114,12 @@ public class TrackerConnection implements Logable {
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
 		stream.reset(100);
-		int transactionId = manager.getTrackerManager().getTransactionId();
+		int transactionId = manager.getTransactionId();
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_ANNOUNCE);
 		stream.writeInt(transactionId);
 		stream.writeByte(torrent.getHashArray());
-		stream.writeByte(manager.getTrackerManager().getPeerId());
+		stream.writeByte(manager.getPeerId());
 		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
 		stream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
@@ -171,7 +170,7 @@ public class TrackerConnection implements Logable {
 	public void scrape(TorrentInfo torrentInfo) throws TrackerException {
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Scraping");
-		int transactionId = manager.getTrackerManager().getTransactionId();
+		int transactionId = manager.getTransactionId();
 		stream.reset(36);
 		stream.writeLong(connectionId);
 		stream.writeInt(ACTION_SCRAPE);

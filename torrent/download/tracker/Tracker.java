@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import torrent.Manager;
 import torrent.download.Torrent;
 
 public class Tracker {
@@ -37,7 +36,7 @@ public class Tracker {
 	 */
 	private int errorCount;
 	
-	public Tracker(String url, PeerConnectorPool peerConnectorPool, Manager manager) {
+	public Tracker(String url, PeerConnectorPool peerConnectorPool, TrackerManager manager) {
 		connection = new TrackerConnection(url, peerConnectorPool, manager);
 		torrentMap = new HashMap<>();
 		announceInterval = DEFAULT_ANNOUNCE_INTERVAL;

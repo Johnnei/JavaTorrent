@@ -30,7 +30,7 @@ public class MagnetLink {
 
 				case "tr":
 					linkData[i] = StringUtil.removeHex(data[1]);
-					Tracker tracker = manager.getTrackerManager().addTorrent(torrent, linkData[i], manager);
+					Tracker tracker = manager.getTrackerManager().addTorrent(torrent, linkData[i]);
 					torrent.addTracker(tracker);
 					break;
 
