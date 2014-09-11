@@ -1,7 +1,5 @@
 package torrent.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -87,22 +85,15 @@ public class Stream {
 	}
 
 	public int readInt() {
-		return (readByte() << 24) + (readByte() << 16) + (readByte() << 8) + readByte();
+		return ((readShort() & 0xffff) << 16) | readShort();
 	}
 
 	public int readShort() {
-		return (readByte() << 8) + readByte();
+		return ((readByte() & 0xff) << 8) | readByte();
 	}
 
 	public long readLong() {
-		try {
-			return new DataInputStream(new ByteArrayInputStream(buffer, readOffset, writeOffset - readOffset)).readLong();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return -1;
-		}
-		//return (readInt() << 32) + readInt();
+		return ((readInt() & 0xffffffffL) << 32) | readInt();
 	}
 
 	public byte[] readIP() {
