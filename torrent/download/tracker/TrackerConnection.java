@@ -85,8 +85,9 @@ public class TrackerConnection implements Logable {
 			socket.send(stream.write(address, port));
 			stream.read(socket);
 			action = stream.readInt();
-			if (stream.readInt() != transactionId)
+			if (stream.readInt() != transactionId) {
 				action = ACTION_TRANSACTION_ID_ERROR;
+			}
 			if (action != ACTION_CONNECT) {
 				String error = stream.readString(stream.available());
 				setStatus("Connection failed");
