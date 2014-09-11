@@ -8,7 +8,7 @@ import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import torrent.Manager;
+import torrent.TorrentManager;
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
 import torrent.frame.controls.ImageButton;
@@ -26,9 +26,9 @@ public class MenubarPanel extends JPanel implements ActionListener {
 	private JButton configButton;
 	private TorrentFrame owner;
 	
-	private Manager manager;
+	private TorrentManager manager;
 
-	public MenubarPanel(TorrentFrame owner, Manager manager) {
+	public MenubarPanel(TorrentFrame owner, TorrentManager manager) {
 		this.owner = owner;
 		this.manager = manager;
 		setPreferredSize(new Dimension(1280, 40));

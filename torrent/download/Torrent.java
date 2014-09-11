@@ -8,7 +8,7 @@ import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
 import torrent.Logable;
-import torrent.Manager;
+import torrent.TorrentManager;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
 import torrent.download.algos.IDownloadPhase;
@@ -103,13 +103,13 @@ public class Torrent extends Thread implements Logable {
 	/**
 	 * The manager which takes care of all torrents and trackers
 	 */
-	private Manager manager;
+	private TorrentManager manager;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
 	public static final byte STATE_UPLOAD = 2;
 
-	public Torrent(Manager manager) {
+	public Torrent(TorrentManager manager) {
 		this.manager = manager;
 		trackers = new ArrayList<>();
 		torrentStatus = STATE_DOWNLOAD_METADATA;
@@ -145,7 +145,7 @@ public class Torrent extends Thread implements Logable {
 	}
 
 	/**
-	 * Registers the torrent with the {@link Manager}
+	 * Registers the torrent with the {@link TorrentManager}
 	 */
 	public void initialise() {
 		manager.addTorrent(this);

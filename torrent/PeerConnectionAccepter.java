@@ -18,9 +18,9 @@ public class PeerConnectionAccepter extends Thread {
 
 	private ServerSocket serverSocket;
 	
-	private Manager manager;
+	private TorrentManager manager;
 
-	public PeerConnectionAccepter(Manager manager) throws IOException {
+	public PeerConnectionAccepter(TorrentManager manager) throws IOException {
 		super("Peer connector");
 		this.manager = manager;
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));

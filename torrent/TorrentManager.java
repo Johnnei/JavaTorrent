@@ -9,7 +9,7 @@ import torrent.download.PeersWriterRunnable;
 import torrent.download.Torrent;
 import torrent.download.tracker.TrackerManager;
 
-public class Manager {
+public class TorrentManager {
 
 	private final Object TORRENTS_LOCK = new Object();
 
@@ -22,7 +22,7 @@ public class Manager {
 	private PeersWriterRunnable peerWriter;
 	private Thread[] peerThreads;
 
-	public Manager() {
+	public TorrentManager() {
 		activeTorrents = new ArrayList<>();
 		try {
 			connectorThread = new PeerConnectionAccepter(this);

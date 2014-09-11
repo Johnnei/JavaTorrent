@@ -9,7 +9,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 
-import torrent.Manager;
+import torrent.TorrentManager;
 import torrent.download.MagnetLink;
 
 public class AddTorrentFrame extends JPopup {
@@ -21,9 +21,9 @@ public class AddTorrentFrame extends JPopup {
 	private JTextArea magnetLink;
 	private JButton okButton;
 	
-	private Manager manager;
+	private TorrentManager manager;
 
-	public AddTorrentFrame(JFrame owner, Manager manager) {
+	public AddTorrentFrame(JFrame owner, TorrentManager manager) {
 		super(owner);
 		this.manager = manager;
 		magnetLink = new JTextArea();

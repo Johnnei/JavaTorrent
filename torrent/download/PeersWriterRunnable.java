@@ -4,14 +4,14 @@ import java.io.IOException;
 
 import org.johnnei.utils.ThreadUtils;
 
-import torrent.Manager;
+import torrent.TorrentManager;
 import torrent.download.peer.Peer;
 
 public class PeersWriterRunnable implements Runnable {
 	
-	private Manager manager;
+	private TorrentManager manager;
 
-	public PeersWriterRunnable(Manager manager) {
+	public PeersWriterRunnable(TorrentManager manager) {
 		this.manager = manager;
 	}
 

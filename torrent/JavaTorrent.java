@@ -27,7 +27,7 @@ public class JavaTorrent extends Thread {
 		System.setErr(new Logger(System.err));
 		loadDefaultConfig();
 		
-		Manager manager = new Manager();
+		TorrentManager manager = new TorrentManager();
 		
 		TorrentFrame frame= new TorrentFrame(manager);
 		boolean showGui = true;

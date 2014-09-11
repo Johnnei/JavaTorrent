@@ -7,7 +7,7 @@ import java.util.Random;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.JavaTorrent;
-import torrent.Manager;
+import torrent.TorrentManager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 
@@ -23,7 +23,7 @@ public class TrackerManager implements Runnable {
 	private ArrayList<Tracker> trackerList;
 	private int transactionId;
 	
-	public TrackerManager(Manager manager) {
+	public TrackerManager(TorrentManager manager) {
 		trackerList = new ArrayList<>();
 		transactionId = new Random().nextInt();
 		peerConnectorPool = new PeerConnectorPool(manager);

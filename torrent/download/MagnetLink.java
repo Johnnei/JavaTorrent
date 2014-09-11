@@ -1,6 +1,6 @@
 package torrent.download;
 
-import torrent.Manager;
+import torrent.TorrentManager;
 import torrent.download.tracker.Tracker;
 import torrent.util.StringUtil;
 
@@ -15,7 +15,7 @@ public class MagnetLink {
 	 */
 	private Torrent torrent;
 
-	public MagnetLink(String magnetLink, Manager manager) {
+	public MagnetLink(String magnetLink, TorrentManager manager) {
 		boolean succeed = true;
 		if (magnetLink.startsWith("magnet:?")) {
 			String[] linkData = magnetLink.split("\\?")[1].split("&");
