@@ -11,6 +11,7 @@ import javax.swing.JTextArea;
 
 import torrent.TorrentManager;
 import torrent.download.MagnetLink;
+import torrent.download.tracker.TrackerManager;
 
 public class AddTorrentFrame extends JPopup {
 
@@ -21,11 +22,12 @@ public class AddTorrentFrame extends JPopup {
 	private JTextArea magnetLink;
 	private JButton okButton;
 	
-	private TorrentManager manager;
+	private TorrentManager torrentManager;
+	private TrackerManager trackerManager;
 
 	public AddTorrentFrame(JFrame owner, TorrentManager manager) {
 		super(owner);
-		this.manager = manager;
+		this.torrentManager = manager;
 		magnetLink = new JTextArea();
 		magnetLink.setPreferredSize(new Dimension(600, 24));
 		okButton = createButton("Add");
@@ -41,7 +43,7 @@ public class AddTorrentFrame extends JPopup {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(okButton)) {
-			MagnetLink mlink = new MagnetLink(magnetLink.getText(), manager);
+			MagnetLink mlink = new MagnetLink(magnetLink.getText(), torrentManager, trackerManager);
 			if (mlink.isDownloadable()) {
 				setOk(true);
 				setVisible(false);
@@ -52,7 +54,7 @@ public class AddTorrentFrame extends JPopup {
 	}
 
 	public MagnetLink getMagnetLink() {
-		return new MagnetLink(magnetLink.getText(), manager);
+		return new MagnetLink(magnetLink.getText(), torrentManager, trackerManager);
 	}
 
 }

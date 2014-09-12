@@ -4,6 +4,7 @@ import org.johnnei.utils.config.Config;
 
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
+import torrent.download.tracker.TrackerManager;
 import torrent.frame.TorrentFrame;
 import torrent.util.Logger;
 
@@ -27,14 +28,17 @@ public class JavaTorrent extends Thread {
 		System.setErr(new Logger(System.err));
 		loadDefaultConfig();
 		
-		TorrentManager manager = new TorrentManager();
+		TorrentManager torrentManager = new TorrentManager();
+		TrackerManager trackerManager = new TrackerManager(torrentManager);
 		
-		TorrentFrame frame= new TorrentFrame(manager);
+		torrentManager.startListener(trackerManager);
+		
+		TorrentFrame frame= new TorrentFrame(torrentManager, trackerManager);
 		boolean showGui = true;
 		for(int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			if(arg.startsWith("magnet")) {
-				MagnetLink magnet = new MagnetLink(arg, manager);
+				MagnetLink magnet = new MagnetLink(arg, torrentManager, trackerManager);
 				if (magnet.isDownloadable()) {
 					Torrent torrent = magnet.getTorrent();
 					torrent.initialise();

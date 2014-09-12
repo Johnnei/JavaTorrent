@@ -14,6 +14,7 @@ import javax.swing.Timer;
 import torrent.JavaTorrent;
 import torrent.TorrentManager;
 import torrent.download.Torrent;
+import torrent.download.tracker.TrackerManager;
 
 public class TorrentFrame extends JFrame implements Observer, ActionListener {
 
@@ -27,7 +28,7 @@ public class TorrentFrame extends JFrame implements Observer, ActionListener {
 	private ArrayList<Torrent> torrents;
 	private Timer updateTimer;
 
-	public TorrentFrame(TorrentManager manager) {
+	public TorrentFrame(TorrentManager torrentManager, TrackerManager trackerManager) {
 		setPreferredSize(new Dimension(1280, 720));
 		setLayout(new BorderLayout());
 		setTitle(JavaTorrent.BUILD);
@@ -35,12 +36,12 @@ public class TorrentFrame extends JFrame implements Observer, ActionListener {
 		setLocationRelativeTo(null);
 		setPreferredSize(new Dimension(getWidth() + getInsets().left + getInsets().right, getHeight() + getInsets().top + getInsets().bottom));
 
-		details = new TorrentDetails(manager.getTrackerManager());
+		details = new TorrentDetails(trackerManager);
 		details.setPreferredSize(new Dimension(getWidth(), 350));
 
 		torrentList = new TorrentList();
 		torrentList.getObservable().addObserver(this);
-		menubar = new MenubarPanel(this, manager);
+		menubar = new MenubarPanel(this, torrentManager);
 
 		add(menubar, BorderLayout.NORTH);
 		add(torrentList, BorderLayout.CENTER);

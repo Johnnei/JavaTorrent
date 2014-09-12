@@ -2,6 +2,7 @@ package torrent.download;
 
 import torrent.TorrentManager;
 import torrent.download.tracker.Tracker;
+import torrent.download.tracker.TrackerManager;
 import torrent.util.StringUtil;
 
 public class MagnetLink {
@@ -15,11 +16,11 @@ public class MagnetLink {
 	 */
 	private Torrent torrent;
 
-	public MagnetLink(String magnetLink, TorrentManager manager) {
+	public MagnetLink(String magnetLink, TorrentManager torrentManager, TrackerManager trackerManager) {
 		boolean succeed = true;
 		if (magnetLink.startsWith("magnet:?")) {
 			String[] linkData = magnetLink.split("\\?")[1].split("&");
-			torrent = new Torrent(manager);
+			torrent = new Torrent(torrentManager);
 			for (int i = 0; i < linkData.length; i++) {
 				String[] data = linkData[i].split("=");
 				switch (data[0]) {
@@ -30,7 +31,7 @@ public class MagnetLink {
 
 				case "tr":
 					linkData[i] = StringUtil.removeHex(data[1]);
-					Tracker tracker = manager.getTrackerManager().addTorrent(torrent, linkData[i]);
+					Tracker tracker = trackerManager.addTorrent(torrent, linkData[i]);
 					torrent.addTracker(tracker);
 					break;
 

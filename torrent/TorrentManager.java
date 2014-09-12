@@ -45,7 +45,15 @@ public class TorrentManager {
 		startListener(trackerManager);
 	}
 	
-	private void startListener(TrackerManager trackerManager) {
+	/**
+	 * Starts the connnection listener which will accept new peers
+	 * @param trackerManager the tracker manager which will assign the peers
+	 */
+	public void startListener(TrackerManager trackerManager) {
+		if (connectorThread != null && connectorThread.isAlive()) {
+			return;
+		}
+		
 		try {
 			connectorThread = new PeerConnectionAccepter(this, trackerManager);
 			connectorThread.start();
