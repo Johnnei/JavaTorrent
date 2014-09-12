@@ -144,6 +144,7 @@ public class Torrent extends Thread implements Logable {
 		}
 	}
 
+	@Deprecated
 	public void addTracker(Tracker t) {
 		trackers.add(t);
 	}
@@ -481,6 +482,7 @@ public class Torrent extends Thread implements Logable {
 		return leechers - getSeedCount();
 	}
 
+	@Deprecated
 	public ArrayList<Tracker> getTrackers() {
 		return trackers;
 	}

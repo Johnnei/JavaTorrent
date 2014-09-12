@@ -1,8 +1,10 @@
 package torrent.download.tracker;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.johnnei.utils.ThreadUtils;
 
@@ -117,6 +119,15 @@ public class TrackerManager implements Runnable {
 
 	public int getConnectingCountFor(Torrent torrent) {
 		return peerConnectorPool.getConnectingCountFor(torrent);
+	}
+	
+	/**
+	 * Gets all trackers which know the given torrent
+	 * @param torrent the torrent which the tracker must support
+	 * @return a collection of trackers which support the given torrent
+	 */
+	public Collection<Tracker> getTrackersFor(Torrent torrent) {
+		return trackerList.stream().filter(tracker -> tracker.hasTorrent(torrent)).collect(Collectors.toList());
 	}
 	
 	/**

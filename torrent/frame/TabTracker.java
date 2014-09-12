@@ -1,20 +1,23 @@
 package torrent.frame;
 
 import java.awt.Graphics;
-import java.util.ArrayList;
+import java.util.Collection;
 
 import torrent.download.Torrent;
 import torrent.download.tracker.TorrentInfo;
 import torrent.download.tracker.Tracker;
+import torrent.download.tracker.TrackerManager;
 import torrent.frame.controls.TableBase;
 
 public class TabTracker extends TableBase {
 
 	public static final long serialVersionUID = 1L;
 	private Torrent torrent;
+	private TrackerManager trackerManager;
 
-	public TabTracker() {
+	public TabTracker(TrackerManager trackerManager) {
 		super(25);
+		this.trackerManager = trackerManager;
 	}
 
 	public void setTorrent(Torrent torrent) {
@@ -33,7 +36,7 @@ public class TabTracker extends TableBase {
 	@Override
 	protected void paintData(Graphics g) {
 		if (torrent != null) {
-			ArrayList<Tracker> trackers = torrent.getTrackers();
+			Collection<Tracker> trackers = trackerManager.getTrackersFor(torrent);
 			int count = 0;
 			for (Tracker tracker : trackers) {
 				++count;

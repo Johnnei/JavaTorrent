@@ -23,7 +23,7 @@ public class TorrentDetails extends JTabbedPane {
 	public TorrentDetails(TrackerManager manager) {
 		tabGeneral = new TabGeneral(manager);
 		tabFiles = new TabFiles();
-		tabTracker = new TabTracker();
+		tabTracker = new TabTracker(manager);
 		tabPieces = new TabPieces();
 		tabPeers = new TabPeers();
 
