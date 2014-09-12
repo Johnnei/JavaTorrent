@@ -59,15 +59,17 @@ public class MessageUtils {
 			}
 		}
 		Stream buffer = inStream.getBuffer();
-		if (buffer != null) {
-			if (inStream.available() > 0) {
-				int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getWritePointer());
-				buffer.writeByte(inStream.readByteArray(readAmount));
-			}
-			p.setStatus("Receiving Message of length: " + (buffer.getWritePointer() - 4) + "/" + (buffer.getBuffer().length - 4));
-			return buffer.getWritePointer() == buffer.getBuffer().length;
+		
+		if (buffer == null) {
+			return false;
 		}
-		return false;
+		
+		if (inStream.available() > 0) {
+			int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getWritePointer());
+			buffer.writeByte(inStream.readByteArray(readAmount));
+		}
+		p.setStatus("Receiving Message of length: " + (buffer.getWritePointer() - 4) + "/" + (buffer.getBuffer().length - 4));
+		return buffer.getWritePointer() == buffer.getBuffer().length;
 	}
 
 	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
