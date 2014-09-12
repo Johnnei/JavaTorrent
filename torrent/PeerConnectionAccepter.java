@@ -25,6 +25,7 @@ public class PeerConnectionAccepter extends Thread {
 
 	public PeerConnectionAccepter(TorrentManager manager, TrackerManager trackerManager) throws IOException {
 		super("Peer connector");
+		setDaemon(true);
 		this.torrentManager = manager;
 		this.trackerManager = trackerManager;
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));

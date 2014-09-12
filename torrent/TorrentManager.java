@@ -32,6 +32,7 @@ public class TorrentManager {
 		peerThreads[1] = new Thread(peerWriter, "Peer output writer");
 		
 		for(Thread thread : peerThreads) {
+			thread.setDaemon(true);
 			thread.start();
 		}
 	}
