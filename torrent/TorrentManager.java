@@ -14,8 +14,6 @@ public class TorrentManager {
 	private final Object TORRENTS_LOCK = new Object();
 
 	private PeerConnectionAccepter connectorThread;
-	private TrackerManager trackerManager;
-	private Thread trackerManagerThread;
 	private ArrayList<Torrent> activeTorrents;
 	
 	private PeersReadRunnable peerReader;
@@ -24,11 +22,6 @@ public class TorrentManager {
 
 	public TorrentManager() {
 		activeTorrents = new ArrayList<>();
-		
-		// Start tracker management
-		trackerManager = new TrackerManager();
-		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
-		trackerManagerThread.start();
 		
 		// Start reading peer input/output
 		peerReader = new PeersReadRunnable(this);
@@ -41,8 +34,6 @@ public class TorrentManager {
 		for(Thread thread : peerThreads) {
 			thread.start();
 		}
-		
-		startListener(trackerManager);
 	}
 	
 	/**
@@ -87,14 +78,4 @@ public class TorrentManager {
 		}
 	}
 	
-	/**
-	 * Gets the tracker manager which manages the trackers
-	 * @deprecated This function will be removed in the next release, acquire an instance of this during construction or method parameter
-	 * @return
-	 */
-	@Deprecated 
-	public TrackerManager getTrackerManager() {
-		return trackerManager;
-	}
-
 }

@@ -41,7 +41,7 @@ public class TorrentFrame extends JFrame implements Observer, ActionListener {
 
 		torrentList = new TorrentList();
 		torrentList.getObservable().addObserver(this);
-		menubar = new MenubarPanel(this, torrentManager);
+		menubar = new MenubarPanel(this, torrentManager, trackerManager);
 
 		add(menubar, BorderLayout.NORTH);
 		add(torrentList, BorderLayout.CENTER);

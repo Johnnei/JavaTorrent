@@ -31,6 +31,10 @@ public class JavaTorrent extends Thread {
 		TorrentManager torrentManager = new TorrentManager();
 		TrackerManager trackerManager = new TrackerManager();
 		
+		Thread trackerManagerThread = new Thread(trackerManager, "Tracker manager");
+		trackerManagerThread.setDaemon(true);
+		trackerManagerThread.start();
+		
 		torrentManager.startListener(trackerManager);
 		
 		TorrentFrame frame= new TorrentFrame(torrentManager, trackerManager);

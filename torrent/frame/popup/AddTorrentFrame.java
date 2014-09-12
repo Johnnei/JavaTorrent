@@ -25,9 +25,10 @@ public class AddTorrentFrame extends JPopup {
 	private TorrentManager torrentManager;
 	private TrackerManager trackerManager;
 
-	public AddTorrentFrame(JFrame owner, TorrentManager manager) {
+	public AddTorrentFrame(JFrame owner, TorrentManager torrentManager, TrackerManager trackerManager) {
 		super(owner);
-		this.torrentManager = manager;
+		this.torrentManager = torrentManager;
+		this.trackerManager = trackerManager;
 		magnetLink = new JTextArea();
 		magnetLink.setPreferredSize(new Dimension(600, 24));
 		okButton = createButton("Add");
