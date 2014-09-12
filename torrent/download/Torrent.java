@@ -109,8 +109,12 @@ public class Torrent extends Thread implements Logable {
 	public static final byte STATE_DOWNLOAD_DATA = 1;
 	public static final byte STATE_UPLOAD = 2;
 
-	public Torrent(TorrentManager manager) {
+	public Torrent(TorrentManager manager, byte[] btihHash, String displayName) {
+		super(displayName);
+		this.displayName = displayName;
+		this.files = new Files("./" + displayName + ".torrent");
 		this.manager = manager;
+		this.btihHash = btihHash;
 		trackers = new ArrayList<>();
 		torrentStatus = STATE_DOWNLOAD_METADATA;
 		downloadedBytes = 0L;
@@ -247,26 +251,8 @@ public class Torrent extends Thread implements Logable {
 		}
 	}
 
-	public void setDisplayName(String displayName) {
-		this.displayName = displayName;
-		files = new Files("./" + displayName + ".torrent");
-		setName(displayName);
-	}
-
 	public String getDisplayName() {
 		return displayName;
-	}
-
-	public void setHash(byte[] i) {
-		btihHash = i;
-	}
-
-	public boolean hasHash() {
-		return btihHash != null;
-	}
-
-	public boolean hasTracker() {
-		return trackers.size() > 0;
 	}
 
 	public byte[] getHashArray() {

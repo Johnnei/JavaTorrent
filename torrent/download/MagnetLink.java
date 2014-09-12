@@ -1,77 +1,71 @@
 package torrent.download;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.johnnei.utils.ConsoleLogger;
+
 import torrent.TorrentManager;
-import torrent.download.tracker.Tracker;
 import torrent.download.tracker.TrackerManager;
 import torrent.util.StringUtil;
 
 public class MagnetLink {
 
 	/**
-	 * Returns if this Magnet link is valid "enough" to be downloaded with JavaTorrent
-	 */
-	private boolean downloadable;
-	/**
 	 * The resulting torrent from this Magnet link
 	 */
 	private Torrent torrent;
-
+	
 	public MagnetLink(String magnetLink, TorrentManager torrentManager, TrackerManager trackerManager) {
-		boolean succeed = true;
-		if (magnetLink.startsWith("magnet:?")) {
-			String[] linkData = magnetLink.split("\\?")[1].split("&");
-			torrent = new Torrent(torrentManager);
-			for (int i = 0; i < linkData.length; i++) {
-				String[] data = linkData[i].split("=");
-				switch (data[0]) {
-				case "dn":
-					linkData[i] = StringUtil.removeHex(StringUtil.spaceFix(data[1]));
-					torrent.setDisplayName(linkData[1]);
-					break;
+		TorrentBuilder torrentBuilder = new TorrentBuilder();
+		Logger log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
+		
+		if (!magnetLink.startsWith("magnet:?")) {
+			return;
+		}
+		
+		String[] linkData = magnetLink.split("\\?")[1].split("&");
+		for (int i = 0; i < linkData.length; i++) {
+			String[] data = linkData[i].split("=");
+			switch (data[0]) {
+			case "dn":
+				linkData[i] = StringUtil.removeHex(StringUtil.spaceFix(data[1]));
+				torrentBuilder.setDisplayName(linkData[1]);
+				break;
 
-				case "tr":
-					linkData[i] = StringUtil.removeHex(data[1]);
-					Tracker tracker = trackerManager.addTorrent(torrent, linkData[i]);
-					torrent.addTracker(tracker);
-					break;
+			case "tr":
+				linkData[i] = StringUtil.removeHex(data[1]);
+				torrentBuilder.addTracker(linkData[i]);
+				break;
 
-				case "xt":
-					String[] subdata = data[1].split(":");
-					if (subdata.length < 3) {
-						succeed = false;
-						System.err.println("XT from MagnetLink is incomplete");
-					} else if (!subdata[0].equals("urn")) {
-						succeed = false;
-						System.err.println("[XT] Expected a URN at position 0");
-					} else if (!subdata[1].equals("btih")) {
-						succeed = false;
-						System.err.println("[XT] Unsupported Hashing: " + subdata[1]);
-					} else if (subdata[2].length() != 40) {
-						succeed = false;
-						System.err.println("[XT] Invalid Hash length: " + subdata[2].length());
-					} else {
-						byte[] hash = new byte[20];
-						for (int j = 0; j < subdata[2].length() / 2; j++) {
-							hash[j] = (byte) Integer.parseInt(subdata[2].substring(j * 2, j * 2 + 2), 16);
-						}
-						torrent.setHash(hash);
+			case "xt":
+				String[] subdata = data[1].split(":");
+				if (subdata.length < 3) {
+					log.warning("XT from MagnetLink is incomplete");
+				} else if (!subdata[0].equals("urn")) {
+					log.warning("[XT] Expected a URN at position 0");
+				} else if (!subdata[1].equals("btih")) {
+					log.warning("[XT] Unsupported Hashing: " + subdata[1]);
+				} else if (subdata[2].length() != 40) {
+					log.warning("[XT] Invalid Hash length: " + subdata[2].length());
+				} else {
+					byte[] hash = new byte[20];
+					for (int j = 0; j < subdata[2].length() / 2; j++) {
+						hash[j] = (byte) Integer.parseInt(subdata[2].substring(j * 2, j * 2 + 2), 16);
 					}
-					break;
-
-				default:
-					System.err.println("Unhandled Magnet Data: " + linkData[i]);
+					torrentBuilder.setHash(hash);
 				}
-				downloadable = succeed;
+				break;
+
+			default:
+				log.fine("Unhandled Magnet Data: " + linkData[i]);
 			}
-			if(!torrent.hasHash()) {
-				System.err.println("Magnet link has no hash");
-				downloadable = false;
-			} else if(!torrent.hasTracker()) {
-				System.err.println("Manget link has no tracker");
-				downloadable = false;
-			}
-		} else {
-			downloadable = false;
+		}
+		
+		try {
+			torrent = torrentBuilder.build(torrentManager, trackerManager);
+		} catch (IllegalStateException e) {
+			log.warning("Failed to build torrent from magnet link: " + e.getMessage());
 		}
 	}
 
@@ -80,7 +74,7 @@ public class MagnetLink {
 	}
 
 	public boolean isDownloadable() {
-		return downloadable;
+		return torrent != null;
 	}
 
 }
