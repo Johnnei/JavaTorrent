@@ -7,16 +7,18 @@ import torrent.download.files.Block;
 import torrent.download.files.Piece;
 import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
-import torrent.download.tracker.Tracker;
 import torrent.download.tracker.TrackerConnection;
+import torrent.download.tracker.TrackerManager;
 import torrent.protocol.IMessage;
 import torrent.protocol.messages.MessageRequest;
 
 public class PhaseData implements IDownloadPhase {
 
 	private Torrent torrent;
+	private TrackerManager trackerManager;
 	
-	public PhaseData(Torrent torrent) {
+	public PhaseData(TrackerManager trackerManager, Torrent torrent) {
+		this.trackerManager = trackerManager;
 		this.torrent = torrent;
 	}
 	
@@ -60,9 +62,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void postprocess() {
-		for(Tracker tracker : torrent.getTrackers()) {
-			tracker.getInfo(torrent).setEvent(TrackerConnection.EVENT_COMPLETED);
-		}
+		trackerManager.getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).setEvent(TrackerConnection.EVENT_COMPLETED));
 		torrent.log("Download completed");
 	}
 

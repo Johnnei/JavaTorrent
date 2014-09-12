@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 
 import torrent.TorrentManager;
-import torrent.download.tracker.Tracker;
 import torrent.download.tracker.TrackerManager;
 
 public class TorrentBuilder {
@@ -49,11 +48,10 @@ public class TorrentBuilder {
 			throw new IllegalStateException("Missing trackers for torrent");
 		}
 		
-		Torrent torrent = new Torrent(torrentManager, btihHash, displayName);
+		Torrent torrent = new Torrent(torrentManager, trackerManager, btihHash, displayName);
 		
 		trackers.forEach(trackerUrl -> {
-			Tracker tracker = trackerManager.addTorrent(torrent, trackerUrl);
-			torrent.addTracker(tracker);
+			trackerManager.addTorrent(torrent, trackerUrl);
 		});
 		
 		return torrent;

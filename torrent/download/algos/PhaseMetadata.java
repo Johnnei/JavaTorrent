@@ -14,6 +14,7 @@ import torrent.download.files.Block;
 import torrent.download.files.Piece;
 import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
+import torrent.download.tracker.TrackerManager;
 import torrent.encoding.SHA1;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
@@ -28,7 +29,10 @@ public class PhaseMetadata implements IDownloadPhase {
 	 */
 	private boolean foundMatchingFile;
 	
-	public PhaseMetadata(Torrent torrent) {
+	private TrackerManager trackerManager;
+	
+	public PhaseMetadata(TrackerManager trackerManager, Torrent torrent) {
+		this.trackerManager = trackerManager;
 		this.torrent = torrent;
 		foundMatchingFile = false;
 	}
@@ -40,7 +44,7 @@ public class PhaseMetadata implements IDownloadPhase {
 
 	@Override
 	public IDownloadPhase nextPhase() {
-		return new PhaseData(torrent);
+		return new PhaseData(trackerManager, torrent);
 	}
 
 	@Override

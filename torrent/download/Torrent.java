@@ -20,7 +20,7 @@ import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobStoreBlock;
 import torrent.download.files.disk.IOManager;
 import torrent.download.peer.Peer;
-import torrent.download.tracker.Tracker;
+import torrent.download.tracker.TrackerManager;
 import torrent.encoding.SHA1;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
@@ -37,10 +37,7 @@ public class Torrent extends Thread implements Logable {
 	 * The display name of this torrent
 	 */
 	private String displayName;
-	/**
-	 * The list of trackers
-	 */
-	private ArrayList<Tracker> trackers;
+
 	/**
 	 * The SHA1 hash from the magnetLink
 	 */
@@ -109,13 +106,12 @@ public class Torrent extends Thread implements Logable {
 	public static final byte STATE_DOWNLOAD_DATA = 1;
 	public static final byte STATE_UPLOAD = 2;
 
-	public Torrent(TorrentManager manager, byte[] btihHash, String displayName) {
+	public Torrent(TorrentManager manager, TrackerManager trackerManager, byte[] btihHash, String displayName) {
 		super(displayName);
 		this.displayName = displayName;
 		this.files = new Files("./" + displayName + ".torrent");
 		this.manager = manager;
 		this.btihHash = btihHash;
-		trackers = new ArrayList<>();
 		torrentStatus = STATE_DOWNLOAD_METADATA;
 		downloadedBytes = 0L;
 		peers = new ArrayList<Peer>();
@@ -124,7 +120,7 @@ public class Torrent extends Thread implements Logable {
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
-		phase = new PhaseMetadata(this);
+		phase = new PhaseMetadata(trackerManager, this);
 	}
 
 	private boolean hasPeer(Peer peer) {
@@ -142,11 +138,6 @@ public class Torrent extends Thread implements Logable {
 		synchronized (this) {
 			peers.add(p);
 		}
-	}
-
-	@Deprecated
-	public void addTracker(Tracker t) {
-		trackers.add(t);
 	}
 
 	/**
@@ -480,11 +471,6 @@ public class Torrent extends Thread implements Logable {
 			}
 		}
 		return leechers - getSeedCount();
-	}
-
-	@Deprecated
-	public ArrayList<Tracker> getTrackers() {
-		return trackers;
 	}
 
 	public ArrayList<Peer> getPeers() {

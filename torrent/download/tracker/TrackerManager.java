@@ -3,6 +3,7 @@ package torrent.download.tracker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -104,11 +105,12 @@ public class TrackerManager implements Runnable {
 	 * @return the tracker
 	 */
 	private Tracker findTracker(Tracker tracker) {
-		for(Tracker t : trackerList) {
-			if(t.equals(tracker)) {
-				return t;
-			}
+		Optional<Tracker> optionalTracker = trackerList.stream().filter(t -> t.equals(tracker)).findAny();
+		
+		if (optionalTracker.isPresent()) {
+			return optionalTracker.get();
 		}
+		
 		trackerList.add(tracker);
 		return tracker;
 	}
