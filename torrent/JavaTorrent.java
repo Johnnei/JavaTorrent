@@ -29,7 +29,7 @@ public class JavaTorrent extends Thread {
 		loadDefaultConfig();
 		
 		TorrentManager torrentManager = new TorrentManager();
-		TrackerManager trackerManager = new TrackerManager(torrentManager);
+		TrackerManager trackerManager = new TrackerManager();
 		
 		torrentManager.startListener(trackerManager);
 		

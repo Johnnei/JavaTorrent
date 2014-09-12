@@ -26,7 +26,7 @@ public class TorrentManager {
 		activeTorrents = new ArrayList<>();
 		
 		// Start tracker management
-		trackerManager = new TrackerManager(this);
+		trackerManager = new TrackerManager();
 		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
 		trackerManagerThread.start();
 		

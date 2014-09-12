@@ -5,7 +5,6 @@ import java.util.LinkedList;
 
 import org.johnnei.utils.ThreadUtils;
 
-import torrent.TorrentManager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.encoding.SHA1;
@@ -26,11 +25,11 @@ public class PeerConnector implements Runnable {
 	 */
 	private LinkedList<Peer> peers;
 	
-	private TorrentManager manager;
+	private TrackerManager manager;
 	
 	private final int maxPeers;
 	
-	public PeerConnector(TorrentManager manager, int maxConnecting) {
+	public PeerConnector(TrackerManager manager, int maxConnecting) {
 		this.manager = manager;
 		this.maxPeers = maxConnecting;
 		peers = new LinkedList<>();
@@ -75,7 +74,7 @@ public class PeerConnector implements Runnable {
 					continue;
 				}
 				
-				peer.sendHandshake(manager.getTrackerManager().getPeerId());
+				peer.sendHandshake(manager.getPeerId());
 				
 				long timeWaited = 0;
 				while (!peer.canReadMessage() && timeWaited < 10_000) {

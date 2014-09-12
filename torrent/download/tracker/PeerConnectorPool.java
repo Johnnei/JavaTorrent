@@ -6,7 +6,6 @@ import java.util.List;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
-import torrent.TorrentManager;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 
@@ -14,7 +13,7 @@ public class PeerConnectorPool {
 	
 	private List<PeerConnector> connectors;
 	
-	public PeerConnectorPool(TorrentManager manager) {
+	public PeerConnectorPool(TrackerManager manager) {
 		connectors = new LinkedList<>();
 		final int connectorCount = Config.getConfig().getInt("peer-max_concurrent_connecting");
 		final int peerLimitPerConnector = Config.getConfig().getInt("peer-max_connecting") / connectorCount;
