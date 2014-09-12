@@ -4,15 +4,15 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import org.johnnei.utils.config.Config;
 
-import torrent.Logable;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
 
-public class TrackerConnection implements Logable {
+public class TrackerConnection {
 
 	public static final int ACTION_CONNECT = 0;
 	public static final int ACTION_ANNOUNCE = 1;
@@ -28,6 +28,8 @@ public class TrackerConnection implements Logable {
 	public static final long NO_CONNECTION_ID = 0x41727101980L;
 
 	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
+	
+	private Logger log;
 
 	private InetAddress address;
 	private String name;
@@ -47,9 +49,10 @@ public class TrackerConnection implements Logable {
 	
 	private TrackerManager manager;
 
-	public TrackerConnection(String url, PeerConnectorPool connectorPool, TrackerManager manager) {
+	public TrackerConnection(Logger log, String url, PeerConnectorPool connectorPool, TrackerManager manager) {
 		this.connectorPool = connectorPool;
 		this.manager = manager;
+		this.log = log;
 		stream = new Stream();
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
@@ -141,7 +144,7 @@ public class TrackerConnection implements Logable {
 				action = ACTION_TRANSACTION_ID_ERROR;
 			if (action != ACTION_ANNOUNCE) {
 				String error = stream.readString(stream.available());
-				log("Announce failed with error: " + action + ", Message: " + error, true);
+				log.warning(String.format("Announce failed with error: %d, Message: %s", action, error));
 				setStatus("Announce failed");
 				handleError(error);
 				throw new TrackerException("Tracker responded with an error: " + error);
@@ -214,20 +217,6 @@ public class TrackerConnection implements Logable {
 	}
 
 	@Override
-	public void log(String s, boolean error) {
-		s = "[" + toString() + "] " + s;
-		if (error)
-			System.err.println(s);
-		else
-			System.out.println(s);
-	}
-
-	@Override
-	public void log(String s) {
-		log(s, false);
-	}
-
-	@Override
 	public String toString() {
 		return address.getHostAddress();
 	}
@@ -236,7 +225,6 @@ public class TrackerConnection implements Logable {
 		status = s;
 	}
 
-	@Override
 	public String getStatus() {
 		return status;
 	}

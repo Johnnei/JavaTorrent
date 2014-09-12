@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.johnnei.utils.ConsoleLogger;
 
 import torrent.download.Torrent;
 
@@ -36,8 +40,14 @@ public class Tracker {
 	 */
 	private int errorCount;
 	
+	/**
+	 * The logger of this tracker
+	 */
+	private Logger log;
+	
 	public Tracker(String url, PeerConnectorPool peerConnectorPool, TrackerManager manager) {
-		connection = new TrackerConnection(url, peerConnectorPool, manager);
+		log = ConsoleLogger.createLogger(String.format("Tracker %s", url), Level.INFO);
+		connection = new TrackerConnection(log, url, peerConnectorPool, manager);
 		torrentMap = new HashMap<>();
 		announceInterval = DEFAULT_ANNOUNCE_INTERVAL;
 		lastScrapeTime = System.currentTimeMillis() - SCRAPE_INTERVAL;
@@ -118,7 +128,7 @@ public class Tracker {
 	}
 	
 	public void onError(Exception e) {
-		connection.log(e.getMessage(), true);
+		log.warning(e.getMessage());
 		errorCount++;
 	}
 	
