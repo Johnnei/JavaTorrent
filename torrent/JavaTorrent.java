@@ -1,16 +1,21 @@
 package torrent;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.config.Config;
 
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
 import torrent.download.tracker.TrackerManager;
 import torrent.frame.TorrentFrame;
-import torrent.util.Logger;
 
 public class JavaTorrent extends Thread {
 
 	public static final String BUILD = "JavaTorrent 0.04.1";
+	
+	private static Logger log;
 
 	private static void loadDefaultConfig() {
 		Config.getConfig().load();
@@ -24,8 +29,7 @@ public class JavaTorrent extends Thread {
 	}
 
 	public static void main(String[] args) {
-		System.setOut(new Logger(System.out));
-		System.setErr(new Logger(System.err));
+		log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
 		loadDefaultConfig();
 		
 		TorrentManager torrentManager = new TorrentManager();
@@ -48,7 +52,7 @@ public class JavaTorrent extends Thread {
 					torrent.initialise();
 					torrent.start();
 				} else {
-					System.err.println("Magnet link error occured");
+					log.severe("Magnet link error occured");
 				}
 				frame.addTorrent(magnet.getTorrent());
 			} else if(arg.startsWith("-no-gui")) {
