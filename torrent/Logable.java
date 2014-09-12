@@ -1,5 +1,6 @@
 package torrent;
 
+@Deprecated
 public interface Logable {
 
 	public void log(String s);
