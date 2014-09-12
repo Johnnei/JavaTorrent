@@ -4,16 +4,18 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.config.Config;
 
-import torrent.Logable;
 import torrent.network.Stream;
 import torrent.network.protocol.UtpSocket;
 import torrent.network.protocol.utp.packet.Packet;
 import torrent.util.tree.BinarySearchTree;
 
-public class UdpMultiplexer extends Thread implements Logable {
+public class UdpMultiplexer extends Thread {
 
 	private static UdpMultiplexer instance = new UdpMultiplexer();
 	
@@ -99,6 +101,8 @@ public class UdpMultiplexer extends Thread implements Logable {
 	
 	@Override
 	public void run() {
+		Logger log = ConsoleLogger.createLogger("UDP Multiplexer", Level.INFO);
+		
 		while(true) {
 			try {
 				byte[] dataBuffer = new byte[25600]; //25kB buffer
@@ -115,43 +119,23 @@ public class UdpMultiplexer extends Thread implements Logable {
 						UtpSocket socket = new UtpSocket(utpPacket.getConnectionId());
 						socket = utpSockets.find(socket);
 						if(socket != null) {
-							//log("Received " + utpPacket.getClass().getSimpleName() + " for " + (utpPacket.getConnectionId() & 0xFFFF));
 							socket.updateLastInteraction();
 							utpPacket.process(socket);
-						} else {
-							//log("Packet of " + packet.getLength() + " bytes (0x" + Integer.toHexString(dataBuffer[0]) + ") was send to a connection which was not established (" + packet.getAddress() + ":" + packet.getPort() + " | " + utpPacket.getConnectionId() + ")");
 						}
 					} catch (IllegalArgumentException e) {
-						log("Invalid Packet of " + packet.getLength() + " bytes with type " + type + " (" + packet.getAddress() + ":" + packet.getPort() + ")", true);
+						log.fine(String.format("Invalid Packet of %d bytes with type %d (%s:%d)",
+							packet.getLength(), type, packet.getAddress(), packet.getPort())
+						);
 					}
 				} else {
-					log("Invalid Packet of " + packet.getLength() + " bytes with version " + version + " (" + packet.getAddress() + ":" + packet.getPort() + ")", true);
+					log.fine(String.format("Invalid Packet of %d bytes with version %d (%s:%d)",
+						packet.getLength(), version, packet.getAddress(), packet.getPort())
+					);
 				}
 			} catch (IOException e) {
 				
 			}
 		}
-	}
-
-	@Override
-	public void log(String s) {
-		log(s, false);
-	}
-
-	@Override
-	public void log(String s, boolean isError) {
-		s = "[UdpMultiplexer] " + s;
-		if(isError) {
-			System.err.println(s);
-		} else {
-			System.out.println(s);
-		}
-	}
-
-	@Override
-	public String getStatus() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }
