@@ -9,7 +9,7 @@ import torrent.util.Logger;
 
 public class JavaTorrent extends Thread {
 
-	public static final String BUILD = "JavaTorrent 0.05.1";
+	public static final String BUILD = "JavaTorrent 0.04.1";
 
 	private static void loadDefaultConfig() {
 		Config.getConfig().load();
