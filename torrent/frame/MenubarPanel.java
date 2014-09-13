@@ -65,7 +65,6 @@ public class MenubarPanel extends JPanel implements ActionListener {
 			if (addTorrent.isOk()) {
 				MagnetLink link = addTorrent.getMagnetLink();
 				Torrent torrent = link.getTorrent();
-				torrent.initialise();
 				torrent.start();
 				owner.addTorrent(torrent);
 			}

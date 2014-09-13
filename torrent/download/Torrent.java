@@ -33,7 +33,7 @@ import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
 import torrent.util.StringUtil;
 
-public class Torrent extends Thread {
+public class Torrent implements Runnable {
 
 	/**
 	 * The display name of this torrent
@@ -105,13 +105,17 @@ public class Torrent extends Thread {
 	private TorrentManager manager;
 	
 	private Logger log;
+	
+	/**
+	 * The thread on which the torrent is being processed
+	 */
+	private Thread thread;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
 	public static final byte STATE_UPLOAD = 2;
 
 	public Torrent(TorrentManager manager, TrackerManager trackerManager, byte[] btihHash, String displayName) {
-		super(displayName);
 		log = ConsoleLogger.createLogger(String.format("Torrent %s", StringUtil.byteArrayToString(btihHash)), Level.INFO);
 		this.displayName = displayName;
 		this.files = new Files("./" + displayName + ".torrent");
@@ -126,6 +130,8 @@ public class Torrent extends Thread {
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
 		phase = new PhaseMetadata(trackerManager, this);
+		
+		thread = new Thread(this, displayName);
 	}
 
 	private boolean hasPeer(Peer peer) {
@@ -144,12 +150,13 @@ public class Torrent extends Thread {
 			peers.add(p);
 		}
 	}
-
+	
 	/**
-	 * Registers the torrent with the {@link TorrentManager}
+	 * Registers the torrent and starts downloading it
 	 */
-	public void initialise() {
+	public void start() {
 		manager.addTorrent(this);
+		thread.start();
 	}
 
 	/**

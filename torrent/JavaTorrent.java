@@ -49,7 +49,6 @@ public class JavaTorrent extends Thread {
 				MagnetLink magnet = new MagnetLink(arg, torrentManager, trackerManager);
 				if (magnet.isDownloadable()) {
 					Torrent torrent = magnet.getTorrent();
-					torrent.initialise();
 					torrent.start();
 				} else {
 					log.severe("Magnet link error occured");
