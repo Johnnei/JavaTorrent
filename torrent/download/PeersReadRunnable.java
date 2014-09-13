@@ -41,7 +41,7 @@ public class PeersReadRunnable implements Runnable {
 				peer.readMessage();
 			}
 		} catch (IOException e) {
-			peer.log(e.getMessage(), true);
+			peer.getLogger().severe(e.getMessage());
 			peer.close();
 		}
 	}

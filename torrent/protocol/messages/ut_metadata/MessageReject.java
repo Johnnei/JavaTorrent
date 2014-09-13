@@ -17,7 +17,7 @@ public class MessageReject extends Message {
 	@Override
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
-		peer.log("Piece Request got rejected: " + blockIndex, true);
+		peer.getLogger().severe("Piece Request got rejected: " + blockIndex);
 		peer.getTorrent().getFiles().getPiece(0).reset(blockIndex);
 		peer.getMyClient().removeJob(new Job(0, blockIndex));
 		peer.close();

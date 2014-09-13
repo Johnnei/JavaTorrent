@@ -80,7 +80,7 @@ public class MessageHandshake implements IMessage {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			peer.log("Extension handshake error: " + e.getMessage());
+			peer.getLogger().severe("Extension handshake error: " + e.getMessage());
 			peer.close();
 		}
 	}

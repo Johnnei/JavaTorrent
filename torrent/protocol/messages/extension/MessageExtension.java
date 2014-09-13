@@ -46,7 +46,7 @@ public class MessageExtension implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		if (message == null) {
-			peer.log("Extended Message Error (ID: " + extensionId + ")", true);
+			peer.getLogger().severe("Extended Message Error (ID: " + extensionId + ")");
 			peer.close();
 		}
 		message.process(peer);

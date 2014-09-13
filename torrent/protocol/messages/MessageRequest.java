@@ -41,7 +41,7 @@ public class MessageRequest implements IMessage {
 		if (peer.getTorrent().getFiles().getBitfield().hasPiece(index)) {
 			peer.getClient().addJob(new Job(index, offset, length));
 		} else {
-			peer.log("Requested piece " + index + " which I don't have", true);
+			peer.getLogger().severe("Requested piece " + index + " which I don't have");
 			peer.close();
 		}
 	}

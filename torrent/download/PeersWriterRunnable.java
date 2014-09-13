@@ -39,7 +39,7 @@ public class PeersWriterRunnable implements Runnable {
 		try {
 			peer.sendMessage();
 		} catch (IOException e) {
-			peer.log(e.getMessage(), true);
+			peer.getLogger().severe(e.getMessage());
 			peer.close();
 		}
 	}
