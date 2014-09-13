@@ -82,7 +82,7 @@ public class PhaseMetadata implements IDownloadPhase {
 					fileAccess.read(data, 0, data.length);
 					if(SHA1.match(SHA1.hash(data), torrent.getHashArray())) {
 						foundMatchingFile = true;
-						torrent.log("Found pre-downloaded Torrent file");
+						torrent.getLogger().info("Found pre-downloaded Torrent file");
 					}
 				} catch (IOException e) {
 				}
@@ -94,7 +94,7 @@ public class PhaseMetadata implements IDownloadPhase {
 	public void postprocess() {
 		FileInfo f = torrent.getFiles().getFiles()[0];
 		torrent.setFiles(new Files(new File(Config.getConfig().getTempFolder() + f.getFilename())));
-		torrent.log("Metadata download completed");
+		torrent.getLogger().info("Metadata download completed");
 	}
 
 	@Override

@@ -4,7 +4,7 @@ import torrent.download.Torrent;
 
 public class PhaseUpload implements IDownloadPhase {
 
-private Torrent torrent;
+	private Torrent torrent;
 	
 	public PhaseUpload(Torrent torrent) {
 		this.torrent = torrent;
@@ -36,7 +36,7 @@ private Torrent torrent;
 
 	@Override
 	public void postprocess() {
-		torrent.log("Upload target reached");
+		torrent.getLogger().info("Upload target reached");
 	}
 
 	@Override

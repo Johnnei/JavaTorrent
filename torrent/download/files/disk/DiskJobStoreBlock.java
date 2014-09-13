@@ -24,7 +24,7 @@ public class DiskJobStoreBlock extends DiskJob {
 				torrent.addDiskJob(new DiskJobCheckHash(pieceIndex));
 			}
 		} catch (TorrentException e) {
-			torrent.log(e.getMessage(), true);
+			torrent.getLogger().warning(e.getMessage());
 			torrent.getFiles().getPiece(pieceIndex).reset(blockIndex);
 		}
 		torrent.addToHaltingOperations(-1);

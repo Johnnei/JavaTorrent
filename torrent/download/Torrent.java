@@ -3,11 +3,13 @@ package torrent.download;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
-import torrent.Logable;
 import torrent.TorrentManager;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
@@ -31,7 +33,7 @@ import torrent.protocol.messages.MessageUnchoke;
 import torrent.protocol.messages.MessageUninterested;
 import torrent.util.StringUtil;
 
-public class Torrent extends Thread implements Logable {
+public class Torrent extends Thread {
 
 	/**
 	 * The display name of this torrent
@@ -101,6 +103,8 @@ public class Torrent extends Thread implements Logable {
 	 * The manager which takes care of all torrents and trackers
 	 */
 	private TorrentManager manager;
+	
+	private Logger log;
 
 	public static final byte STATE_DOWNLOAD_METADATA = 0;
 	public static final byte STATE_DOWNLOAD_DATA = 1;
@@ -108,6 +112,7 @@ public class Torrent extends Thread implements Logable {
 
 	public Torrent(TorrentManager manager, TrackerManager trackerManager, byte[] btihHash, String displayName) {
 		super(displayName);
+		log = ConsoleLogger.createLogger(String.format("Torrent %s", StringUtil.byteArrayToString(btihHash)), Level.INFO);
 		this.displayName = displayName;
 		this.files = new Files("./" + displayName + ".torrent");
 		this.manager = manager;
@@ -132,7 +137,7 @@ public class Torrent extends Thread implements Logable {
 	public void addPeer(Peer p) {
 		if (hasPeer(p)) {
 			p.close();
-			log("Filtered duplicate Peer: " + p, true);
+			log.fine("Filtered duplicate Peer: " + p);
 			return;
 		}
 		synchronized (this) {
@@ -172,7 +177,7 @@ public class Torrent extends Thread implements Logable {
 			phase.postprocess();
 			phase = phase.nextPhase();
 		}
-		log("Torrent has finished");
+		log.info("Torrent has finished");
 	}
 
 	/**
@@ -255,23 +260,10 @@ public class Torrent extends Thread implements Logable {
 		return StringUtil.byteArrayToString(btihHash);
 	}
 
-	public void log(String s, boolean error) {
-		s = "[" + toString() + "] " + s;
-		if (error)
-			System.err.println(s);
-		else
-			System.out.println(s);
-	}
-
-	public void log(String s) {
-		log(s, false);
-	}
-
 	public boolean keepDownloading() {
 		return keepDownloading;
 	}
 
-	@Override
 	public String getStatus() {
 		return status;
 	}
@@ -348,7 +340,7 @@ public class Torrent extends Thread implements Logable {
 	 */
 	public void checkProgress() {
 		updateBitfield();
-		log("Checking progress...");
+		log.info("Checking progress...");
 		FileInfo[] fileinfo = files.getFiles();
 		for (int i = 0; i < fileinfo.length; i++) {
 			FileInfo info = fileinfo[i];
@@ -375,7 +367,7 @@ public class Torrent extends Thread implements Logable {
 			} catch (IOException e) {
 			}
 		}
-		log("Checking progress done");
+		log.info("Checking progress done");
 	}
 	
 	/**
@@ -533,6 +525,10 @@ public class Torrent extends Thread implements Logable {
 		} else {
 			return false;
 		}
+	}
+	
+	public Logger getLogger() {
+		return log;
 	}
 
 }

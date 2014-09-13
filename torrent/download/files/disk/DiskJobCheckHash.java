@@ -28,13 +28,13 @@ public class DiskJobCheckHash extends DiskJob {
 				if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
 					torrent.broadcastHave(pieceIndex);
 				}
-				torrent.log("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
+				torrent.getLogger().info("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
 			} else {
-				torrent.log("Hash check failed on piece: " + pieceIndex, true);
+				torrent.getLogger().warning("Hash check failed on piece: " + pieceIndex);
 				torrent.getFiles().getPiece(pieceIndex).hashFail();
 			}
 		} catch (TorrentException e) {
-			torrent.log("Hash check error on piece: " + pieceIndex + ", Err: " + e.getMessage(), true);
+			torrent.getLogger().warning("Hash check error on piece: " + pieceIndex + ", Err: " + e.getMessage());
 			torrent.getFiles().getPiece(pieceIndex).hashFail();
 		}
 		torrent.addToHaltingOperations(-1);
