@@ -17,7 +17,7 @@ public class BitTorrentUtil {
 	 * @param peer
 	 */
 	public static void onPostHandshake(Peer peer) throws IOException {
-		if (peer.getClient().supportsExtention(5, 0x10)) {
+		if (peer.getExtensions().hasExtension(5, 0x10)) {
 			// Extended Messages extension
 			sendExtendedMessages(peer);
 		}

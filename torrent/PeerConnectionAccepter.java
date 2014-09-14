@@ -56,7 +56,7 @@ public class PeerConnectionAccepter extends Thread {
 					continue;
 				}
 				
-				peer.getClient().setReservedBytes(handshake.getPeerExtensionBytes());
+				peer.getExtensions().register(handshake.getPeerExtensionBytes());
 				peer.setTorrent(torrent);
 				peer.sendHandshake(trackerManager.getPeerId());
 				BitTorrentUtil.onPostHandshake(peer);

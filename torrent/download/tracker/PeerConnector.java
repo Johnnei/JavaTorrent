@@ -108,7 +108,7 @@ public class PeerConnector implements Runnable {
 			return false;
 		}
 		
-		peer.getClient().setReservedBytes(handshake.getPeerExtensionBytes());
+		peer.getExtensions().register(handshake.getPeerExtensionBytes());
 		
 		return true;
 	}

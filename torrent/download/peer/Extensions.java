@@ -11,6 +11,11 @@ public class Extensions {
 	 */
 	private Map<String, Integer> extensionMap;
 	
+	/**
+	 * The extension bytes as defined in the handshake
+	 */
+	private byte[] extensionBytes;
+	
 	public Extensions() {
 		extensionMap = new HashMap<>();
 	}
@@ -25,12 +30,38 @@ public class Extensions {
 	}
 	
 	/**
-	 * Checks if the {@link #extensionMap} has an entry for the given extension
+	 * Registers the extensions which are defined the handshake
+	 * @param peerExtensionBytes the 8 bytes of the extension bytes. 
+	 */
+	public void register(byte[] peerExtensionBytes) {
+		extensionBytes = peerExtensionBytes;
+	}
+	
+	/**
+	 * Checks if the {@link #extensionMap} has an entry for the given extension which is part of the Extended message standard
 	 * @param extension the extension to test
 	 * @return returns true if the extension is supported. Otherwise false
 	 */
 	public boolean hasExtension(String extension) {
 		return extensionMap.containsKey(extension);
+	}
+	
+	/**
+	 * Checks if the {@link #extensionBytes} has the given bit set for the extension which is part of the extension bytes in the handshake
+	 * @param index
+	 * @param bit
+	 * @return returns true if the extension bit is set. Otherwise false
+	 */
+	public boolean hasExtension(int index, int bit) {
+		if (extensionBytes == null) {
+			return false;
+		}
+		
+		if (index < 0 || index >= extensionBytes.length) {
+			return false;
+		}
+		
+		return (extensionBytes[index] & bit) > 0;
 	}
 	
 	/**
