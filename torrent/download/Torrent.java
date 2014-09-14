@@ -140,14 +140,14 @@ public class Torrent implements Runnable {
 		}
 	}
 
-	public void addPeer(Peer p) {
-		if (hasPeer(p)) {
-			p.close();
-			log.fine("Filtered duplicate Peer: " + p);
+	public void addPeer(Peer peer) {
+		if (hasPeer(peer)) {
+			peer.close();
+			log.fine("Filtered duplicate Peer: " + peer);
 			return;
 		}
 		synchronized (this) {
-			peers.add(p);
+			peers.add(peer);
 		}
 	}
 	
@@ -162,7 +162,7 @@ public class Torrent implements Runnable {
 	/**
 	 * Updates the bitfield size for all peers
 	 */
-	public void updateBitfield() {
+	private void updateBitfield() {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p != null) {

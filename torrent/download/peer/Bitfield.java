@@ -27,14 +27,13 @@ public class Bitfield {
 	 * @param size The new size to grow/shrink to
 	 */
 	public void setBitfieldSize(int size) {
-		if (size != bitfield.length) {
-			byte[] newBitfield = new byte[size];
-			int maxSize = JMath.min(size, bitfield.length);
-			for (int i = 0; i < maxSize; i++) {
-				newBitfield[i] = bitfield[i];
-			}
-			bitfield = newBitfield;
+		if (size == bitfield.length) {
+			return;
 		}
+		
+		byte[] newBitfield = new byte[size];
+		System.arraycopy(bitfield, 0, newBitfield, 0, JMath.min(size, bitfield.length));
+		bitfield = newBitfield;
 	}
 
 	/**
