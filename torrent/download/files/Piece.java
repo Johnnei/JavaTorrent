@@ -8,9 +8,8 @@ import org.johnnei.utils.JMath;
 import torrent.TorrentException;
 import torrent.download.FileInfo;
 import torrent.download.Files;
-import torrent.util.ISortable;
 
-public class Piece implements ISortable {
+public class Piece implements Comparable<Piece> {
 
 	/**
 	 * The files associated with this piece
@@ -209,7 +208,15 @@ public class Piece implements ISortable {
 	}
 
 	@Override
-	public int getValue() {
+	public int compareTo(Piece p) {
+		int myValue = getCompareValue();
+		int theirValue = p.getCompareValue();
+		
+		return myValue - theirValue;
+		
+	}
+	
+	private int getCompareValue() {
 		int value = 0;
 		for (int i = 0; i < blocks.length; i++) {
 			if (blocks[i].isDone())

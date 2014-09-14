@@ -3,13 +3,12 @@ package torrent.frame;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.Collections;
 
-import torrent.download.Torrent;
 import torrent.download.Files;
+import torrent.download.Torrent;
 import torrent.download.files.Piece;
 import torrent.frame.controls.TableBase;
-import torrent.util.ISortable;
-import torrent.util.Mergesort;
 import torrent.util.StringUtil;
 
 public class TabPieces extends TableBase {
@@ -46,19 +45,19 @@ public class TabPieces extends TableBase {
 			return;
 		if (torrent.getDownloadStatus() != Torrent.STATE_DOWNLOAD_DATA)
 			return;
-		ArrayList<ISortable> pieceList = new ArrayList<>();
+		ArrayList<Piece> pieceList = new ArrayList<>();
 		Files tf = torrent.getFiles();
 		for (int i = 0; i < tf.getPieceCount(); i++) {
 			if (tf.getPiece(i).isStarted() && !tf.getPiece(i).isDone()) {
 				pieceList.add(torrent.getFiles().getPiece(i));
 			}
 		}
-		Mergesort sortedPieces = new Mergesort(pieceList);
-		sortedPieces.sort();
+		
+		Collections.sort(pieceList);;
 		setItemCount(pieceList.size());
 		for (int i = pieceList.size() - 1; i >= 0; i--) {
 			if (isVisible()) {
-				Piece p = (Piece) sortedPieces.getItem(i);
+				Piece p = (Piece) pieceList.get(i);
 				g.setColor(Color.BLACK);
 				g.drawString("" + p.getIndex(), 5, getTextY());
 				g.drawString(StringUtil.compactByteSize(p.getSize()), 100, getTextY());
