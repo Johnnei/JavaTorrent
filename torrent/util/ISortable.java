@@ -1,5 +1,11 @@
 package torrent.util;
 
+/**
+ * Use {@link IComparable}
+ * @author Johnnei
+ *
+ */
+@Deprecated
 public interface ISortable {
 
 	/**
