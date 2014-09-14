@@ -162,7 +162,7 @@ public class Torrent implements Runnable {
 	/**
 	 * Updates the bitfield size for all peers
 	 */
-	private void updateBitfield() {
+	public void updateBitfield() {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (p != null) {
