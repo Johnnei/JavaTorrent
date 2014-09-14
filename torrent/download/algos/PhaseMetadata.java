@@ -13,6 +13,7 @@ import torrent.download.Torrent;
 import torrent.download.files.Block;
 import torrent.download.files.Piece;
 import torrent.download.peer.Job;
+import torrent.download.peer.JobType;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.TrackerManager;
 import torrent.encoding.SHA1;
@@ -62,7 +63,7 @@ public class PhaseMetadata implements IDownloadPhase {
 					break;
 				} else {
 					IMessage message = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), new MessageRequest(block.getIndex()));
-					peer.getMyClient().addJob(new Job(piece.getIndex(), block.getIndex()));
+					peer.addJob(new Job(piece.getIndex(), block.getIndex()), JobType.Download);
 					peer.addToQueue(message);
 				}
 			}

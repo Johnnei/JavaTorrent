@@ -253,6 +253,27 @@ public class Peer implements Comparable<Peer> {
 			close();
 		}
 	}
+	
+	/**
+	 * Adds a download or upload job to the peer
+	 * @param job
+	 * @param type
+	 */
+	public void addJob(Job job, JobType type) {
+		Client client = null;
+		
+		switch (type) {
+		case Download:
+			client = myClient;
+			break;
+			
+		case Upload:
+			client = peerClient;
+			break;
+		}
+		
+		client.addJob(job);
+	}
 
 	/**
 	 * Add a value to the pending Messages count
@@ -332,10 +353,12 @@ public class Peer implements Comparable<Peer> {
 		messageQueue.add(m);
 	}
 
+	@Deprecated
 	public Client getClient() {
 		return peerClient;
 	}
 
+	@Deprecated
 	public Client getMyClient() {
 		return myClient;
 	}

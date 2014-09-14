@@ -6,6 +6,7 @@ import torrent.download.Torrent;
 import torrent.download.files.Block;
 import torrent.download.files.Piece;
 import torrent.download.peer.Job;
+import torrent.download.peer.JobType;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.TrackerConnection;
 import torrent.download.tracker.TrackerManager;
@@ -47,7 +48,7 @@ public class PhaseData implements IDownloadPhase {
 					break;
 				} else {
 					IMessage message = new MessageRequest(piece.getIndex(), block.getIndex() * torrent.getFiles().getBlockSize(), block.getSize());
-					peer.getMyClient().addJob(new Job(piece.getIndex(), block.getIndex()));
+					peer.addJob(new Job(piece.getIndex(), block.getIndex()), JobType.Download);
 					peer.addToQueue(message);
 				}
 			}
