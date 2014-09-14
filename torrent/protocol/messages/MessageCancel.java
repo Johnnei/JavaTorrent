@@ -1,6 +1,7 @@
 package torrent.protocol.messages;
 
 import torrent.download.peer.Job;
+import torrent.download.peer.JobType;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
@@ -38,7 +39,7 @@ public class MessageCancel implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.getClient().removeJob(new Job(index, offset));
+		peer.removeJob(new Job(index, offset), JobType.Upload);
 	}
 
 	@Override

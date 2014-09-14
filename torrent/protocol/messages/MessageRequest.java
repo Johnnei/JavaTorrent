@@ -1,6 +1,7 @@
 package torrent.protocol.messages;
 
 import torrent.download.peer.Job;
+import torrent.download.peer.JobType;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
@@ -39,9 +40,9 @@ public class MessageRequest implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		if (peer.getTorrent().getFiles().getBitfield().hasPiece(index)) {
-			peer.getClient().addJob(new Job(index, offset, length));
+			peer.addJob(new Job(index, offset, length), JobType.Upload);
 		} else {
-			peer.getLogger().severe("Requested piece " + index + " which I don't have");
+			peer.getLogger().severe(String.format("Requested piece %d which I don't have", index));
 			peer.close();
 		}
 	}

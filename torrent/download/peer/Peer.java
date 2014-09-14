@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.johnnei.utils.ConsoleLogger;
+import org.johnnei.utils.JMath;
 
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
@@ -36,10 +37,12 @@ public class Peer implements Comparable<Peer> {
 	private boolean crashed;
 	/**
 	 * Client information about the connected peer
+	 * This will contain the requests the endpoint made of us
 	 */
 	private Client peerClient;
 	/**
-	 * Client information about me retrieved from the connected peer
+	 * Client information about me retrieved from the connected peer<br/>
+	 * This will contain the requests we made to the endpoint 
 	 */
 	private Client myClient;
 	/**
@@ -78,6 +81,17 @@ public class Peer implements Comparable<Peer> {
 	 * The extensions which are supported by this peer
 	 */
 	private Extensions extensions;
+	
+	/**
+	 * The absolute maximum amount of requests which the peer can support<br/>
+	 * Default value will be {@link Integer#MAX_VALUE}
+	 */
+	private int absoluteRequestLimit;
+	
+	/**
+	 * The amount of requests we think this peer can handle at most at the same time.
+	 */
+	private int requestLimit;
 
 	public Peer() {
 		crashed = false;
@@ -91,6 +105,7 @@ public class Peer implements Comparable<Peer> {
 		passedHandshake = false;
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
+		absoluteRequestLimit = Integer.MAX_VALUE;
 	}
 
 	public Peer(Torrent torrent) {
@@ -266,21 +281,18 @@ public class Peer implements Comparable<Peer> {
 	 * @param type
 	 */
 	public void addJob(Job job, JobType type) {
-		Client client = null;
-		
-		switch (type) {
-		case Download:
-			client = myClient;
-			break;
-			
-		case Upload:
-			client = peerClient;
-			break;
-		}
-		
-		client.addJob(job);
+		getClientByJobType(type).addJob(job);
 	}
-
+	
+	/**
+	 * Removes the download or upload job from the peer
+	 * @param job
+	 * @param type
+	 */
+	public void removeJob(Job job, JobType type) {
+		getClientByJobType(type).removeJob(job);
+	}
+	
 	/**
 	 * Add a value to the pending Messages count
 	 * 
@@ -351,6 +363,12 @@ public class Peer implements Comparable<Peer> {
 		return myClient.getQueueSize();
 	}
 
+	/**
+	 *
+	 * @return
+	 * @see {@link #getRequestLimit()}
+	 */
+	@Deprecated
 	public int getMaxWorkLoad() {
 		return myClient.getMaxRequests();
 	}
@@ -477,6 +495,28 @@ public class Peer implements Comparable<Peer> {
 			strikes += i;
 		}
 	}
+	
+	/**
+	 * Sets the amount of requests this peer can support at most
+	 * @param absoluteRequestLimit
+	 */
+	public void setAbsoluteRequestLimit(int absoluteRequestLimit) {
+		this.absoluteRequestLimit = absoluteRequestLimit;
+	}
+	
+	/**
+	 * Sets the amount of requests we think this peer can handle properly.<br/>
+	 * This amount will be limited by {@link #absoluteRequestLimit}
+	 * @param requestLimit
+	 */
+	public void setRequestLimit(int requestLimit) {
+		if (requestLimit < 0) {
+			// This wouldn't make any sense
+			return;
+		}
+		
+		requestLimit = JMath.min(requestLimit, absoluteRequestLimit);
+	}
 
 	@Override
 	public boolean equals(Object o) {
@@ -516,5 +556,25 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public Extensions getExtensions() {
 		return extensions;
+	}
+	
+	/**
+	 * Gets the amount of requests we are allowed to make to this peer
+	 * @return the maximum amount of concurrent requests we can make to this peer
+	 */
+	public int getRequestLimit() {
+		return requestLimit;
+	}
+	
+	private Client getClientByJobType(JobType type) {
+		switch (type) {
+		case Download:
+			return myClient;
+			
+		case Upload:
+			return peerClient;
+		}
+		
+		return null;
 	}
 }
