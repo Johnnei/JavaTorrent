@@ -10,7 +10,6 @@ public class Client {
 	private boolean isChoked;
 	private boolean isInterested;
 	private byte[] reserved_bytes;
-	private HashMap<String, Integer> extentionIds;
 	/**
 	 * The pieces to be send or be requested
 	 */
@@ -26,7 +25,6 @@ public class Client {
 		isChoked = true;
 		isInterested = false;
 		bitfield = new Bitfield();
-		extentionIds = new HashMap<>();
 		maxRequests = 20;
 		maxWorkQueue = 1;
 		workingQueue = new HashMap<>();
@@ -84,20 +82,8 @@ public class Client {
 		return maxWorkQueue;
 	}
 
-	public void addExtentionID(String key, int id) {
-		extentionIds.put(key, id);
-	}
-
-	public int getExtentionID(String key) {
-		return extentionIds.get(key);
-	}
-
 	public boolean supportsExtention(int index, int bit) {
 		return (reserved_bytes[index] & bit) > 0;
-	}
-
-	public boolean hasExtentionID(String extention) {
-		return extentionIds.containsKey(extention);
 	}
 
 	public Set<Job> getKeySet() {

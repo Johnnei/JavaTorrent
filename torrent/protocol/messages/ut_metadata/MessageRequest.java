@@ -19,7 +19,7 @@ public class MessageRequest extends Message {
 	public void process(Peer peer) {
 		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
-			MessageExtension extendedMessage = new MessageExtension(peer.getClient().getExtentionID(UTMetadata.NAME), mr);
+			MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mr);
 			peer.addToQueue(extendedMessage);
 		} else {
 			int piece = (int) dictionary.get("piece");

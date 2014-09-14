@@ -506,7 +506,7 @@ public class Torrent implements Runnable {
 			if (p == null)
 				continue;
 			if (torrentStatus == STATE_DOWNLOAD_METADATA) {
-				if (p.getClient().hasExtentionID(UTMetadata.NAME))
+				if (p.getExtensions().hasExtension(UTMetadata.NAME))
 					leechers.add(p);
 			} else {
 				if (p.getClient().getBitfield().hasPieceCount() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)

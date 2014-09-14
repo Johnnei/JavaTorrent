@@ -73,6 +73,11 @@ public class Peer implements Comparable<Peer> {
 	private int strikes;
 	
 	private Logger log;
+	
+	/**
+	 * The extensions which are supported by this peer
+	 */
+	private Extensions extensions;
 
 	public Peer() {
 		crashed = false;
@@ -85,6 +90,7 @@ public class Peer implements Comparable<Peer> {
 		lastActivity = System.currentTimeMillis();
 		passedHandshake = false;
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
+		extensions = new Extensions();
 	}
 
 	public Peer(Torrent torrent) {
@@ -502,5 +508,13 @@ public class Peer implements Comparable<Peer> {
 	
 	public Logger getLogger() {
 		return log;
+	}
+	
+	/**
+	 * Gets the extensions which are supported by this peer
+	 * @return the extensions of this peer
+	 */
+	public Extensions getExtensions() {
+		return extensions;
 	}
 }
