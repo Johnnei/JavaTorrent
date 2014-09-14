@@ -2,14 +2,13 @@ package torrent.frame;
 
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.frame.controls.TableBase;
-import torrent.util.ISortable;
-import torrent.util.Mergesort;
 import torrent.util.StringUtil;
 
 public class TabPeers extends TableBase {
@@ -41,14 +40,14 @@ public class TabPeers extends TableBase {
 		if (torrent != null) {
 			// Sort
 			ArrayList<Peer> peers = torrent.getPeers();
-			ArrayList<ISortable> toSort = new ArrayList<>();
+			ArrayList<Peer> toSort = new ArrayList<>();
 			for (int i = 0; i < peers.size(); i++) {
 				Peer p = peers.get(i);
-				if (p.getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers"))
+				if (p.getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers")) {
 					toSort.add(p);
+				}
 			}
-			Mergesort peerList = new Mergesort(toSort);
-			peerList.sort();
+			Collections.sort(toSort);
 			setItemCount(toSort.size());
 			// Draw
 			for (int i = toSort.size() - 1; i >= 0; i--) {
@@ -56,7 +55,7 @@ public class TabPeers extends TableBase {
 					if (getSelectedIndex() == toSort.size() - i - 1) {
 						drawSelectedBackground(g);
 					}
-					Peer peer = (Peer) peerList.getItem(i);
+					Peer peer = (Peer) toSort.get(i);
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
 					g.drawString(peer.toString(), 5, getTextY());
 					g.drawString(peer.getClientName(), 160, getTextY());

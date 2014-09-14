@@ -20,9 +20,8 @@ import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
 import torrent.protocol.messages.MessageKeepAlive;
-import torrent.util.ISortable;
 
-public class Peer implements ISortable {
+public class Peer implements Comparable<Peer> {
 
 	private byte[] RESERVED_EXTENTION_BYTES = new byte[8];
 	private static final int HANDSHAKE_SIZE = 68;
@@ -426,9 +425,15 @@ public class Peer implements ISortable {
 	}
 
 	@Override
-	public int getValue() {
-		return (getWorkQueueSize() * 5000)
-				+ peerClient.getBitfield().hasPieceCount() + downloadRate;
+	public int compareTo(Peer p) {
+		int myValue = getCompareValue();
+		int theirValue = p.getCompareValue();
+		
+		return myValue - theirValue;
+	}
+	
+	private int getCompareValue() {
+		return (getWorkQueueSize() * 5000) + peerClient.getBitfield().hasPieceCount() + downloadRate;
 	}
 
 	/**

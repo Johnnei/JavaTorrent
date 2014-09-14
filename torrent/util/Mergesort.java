@@ -2,6 +2,7 @@ package torrent.util;
 
 import java.util.ArrayList;
 
+@Deprecated
 public class Mergesort {
 
 	private ISortable[] array;
