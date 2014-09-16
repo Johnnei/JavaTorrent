@@ -232,7 +232,7 @@ public class Torrent implements Runnable {
 			Peer p = peers.get(i);
 			boolean hasNoPieces = true;
 			for (int j = 0; j < neededPieces.size(); j++) {
-				if (p.getClient().getBitfield().hasPiece(neededPieces.get(j).getIndex())) {
+				if (p.hasPiece(neededPieces.get(j).getIndex())) {
 					hasNoPieces = false;
 					if (!p.getClient().isInterested()) {
 						p.addToQueue(new MessageInterested());

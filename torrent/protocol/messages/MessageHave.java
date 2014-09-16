@@ -1,6 +1,5 @@
 package torrent.protocol.messages;
 
-import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
@@ -29,8 +28,7 @@ public class MessageHave implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-			peer.getClient().getBitfield().havePiece(pieceIndex, true);
+		peer.havePiece(pieceIndex);
 	}
 
 	@Override

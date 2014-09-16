@@ -20,6 +20,7 @@ import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
+import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageKeepAlive;
 
 public class Peer implements Comparable<Peer> {
@@ -78,6 +79,11 @@ public class Peer implements Comparable<Peer> {
 	private Logger log;
 	
 	/**
+	 * The pieces this peer has
+	 */
+	private Bitfield haveState;
+	
+	/**
 	 * The extensions which are supported by this peer
 	 */
 	private Extensions extensions;
@@ -106,6 +112,7 @@ public class Peer implements Comparable<Peer> {
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
+		haveState = new Bitfield();
 	}
 
 	public Peer(Torrent torrent) {
@@ -441,6 +448,31 @@ public class Peer implements Comparable<Peer> {
 			e.printStackTrace();
 			forceClose();
 		}
+	}
+	
+	/**
+	 * Registers that this peer has the given piece
+	 * @param pieceIndex the piece to marked as "have"
+	 */
+	public void havePiece(int pieceIndex) {
+		// TODO Some magic to correctly handle the have messages during METADATA phase
+	}
+	
+	/**
+	 * Registers that this peer has the given set of pieces
+	 * @param bitfieldInfo the {@link MessageBitfield}'s bitfield
+	 */
+	public void havePiece(byte[] bitfieldInfo) {
+		// TODO Some magic to correctly handle the have message during METADATA phase
+	}
+	
+	/**
+	 * Checks if the peer has the piece with the given index
+	 * @param pieceIndex the piece to check for
+	 * @return returns true when the peer has the piece otherwise false
+	 */
+	public boolean hasPiece(int pieceIndex) {
+		return haveState.hasPiece(pieceIndex);
 	}
 
 	/**
