@@ -6,6 +6,8 @@ import org.johnnei.utils.ThreadUtils;
 
 import torrent.TorrentManager;
 import torrent.download.peer.Peer;
+import torrent.network.BitTorrentClient;
+import torrent.protocol.IMessage;
 
 public class PeersReadRunnable implements Runnable {
 
@@ -36,10 +38,16 @@ public class PeersReadRunnable implements Runnable {
 			return;
 		}
 		
+		BitTorrentClient socket = peer.getBitTorrentClient();
+		
 		try {
-			if (peer.canReadMessage()) {
-				peer.readMessage();
+			if (!socket.canReadMessage()) {
+				return;
 			}
+			
+			IMessage message = socket.readMessage();
+			message.process(peer);
+			peer.updateLastActivity();
 		} catch (IOException e) {
 			peer.getLogger().severe(e.getMessage());
 			peer.close();

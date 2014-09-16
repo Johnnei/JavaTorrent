@@ -4,14 +4,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import torrent.download.peer.Peer;
-
 public class ByteInputStream extends DataInputStream {
-
-	/**
-	 * The peer associated with this inputStream
-	 */
-	private Peer peer;
+	
 	/**
 	 * The speed in bytes that this inputStream is being read
 	 */
@@ -24,10 +18,14 @@ public class ByteInputStream extends DataInputStream {
 	 * The last time a buffer was created
 	 */
 	private long lastBufferCreate;
+	
+	/**
+	 * The timestamp of the last time we've succesfully read a byte.
+	 */
+	private long lastActivity;
 
-	public ByteInputStream(Peer peer, InputStream in) {
+	public ByteInputStream(InputStream in) {
 		super(in);
-		this.peer = peer;
 		speed = 0;
 	}
 
@@ -36,7 +34,7 @@ public class ByteInputStream extends DataInputStream {
 		int b = super.read();
 		if (b != -1) {
 			++speed;
-			peer.updateLastActivity();
+			lastActivity = System.currentTimeMillis();
 		}
 		return b;
 	}
@@ -96,6 +94,14 @@ public class ByteInputStream extends DataInputStream {
 	 */
 	public int getBufferLifetime() {
 		return (int) (System.currentTimeMillis() - lastBufferCreate);
+	}
+	
+	/**
+	 * Gets the timestamp at which the last byte has been read
+	 * @return
+	 */
+	public long getLastActivity() {
+		return lastActivity;
 	}
 
 }

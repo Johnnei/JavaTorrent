@@ -101,6 +101,10 @@ public class PeerConnector implements Runnable {
 		}
 	}
 	
+	private void connectPeer(Peer peer) {
+		
+	}
+	
 	private boolean checkHandshake(Peer peer) throws IOException {
 		BitTorrentHandshake handshake = peer.readHandshake();
 		

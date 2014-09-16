@@ -2,7 +2,6 @@ package torrent.download.peer;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,10 +12,10 @@ import org.johnnei.utils.JMath;
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.download.tracker.TrackerManager;
+import torrent.network.BitTorrentClient;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
-import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
@@ -26,15 +25,8 @@ import torrent.protocol.messages.MessageKeepAlive;
 public class Peer implements Comparable<Peer> {
 
 	private byte[] RESERVED_EXTENTION_BYTES = new byte[8];
-	private static final int HANDSHAKE_SIZE = 68;
-
-	private InetAddress address;
-	private int port;
 
 	private Torrent torrent;
-	private ISocket socket;
-	private ByteOutputStream outStream;
-	private ByteInputStream inStream;
 	private boolean crashed;
 	/**
 	 * Client information about the connected peer
@@ -59,10 +51,6 @@ public class Peer implements Comparable<Peer> {
 	 * <i>Values are System.currentMillis()</i>
 	 */
 	private long lastActivity;
-
-	private int downloadRate;
-	private int uploadRate;
-	private boolean passedHandshake;
 
 	private String clientName;
 	/**
@@ -98,8 +86,13 @@ public class Peer implements Comparable<Peer> {
 	 * The amount of requests we think this peer can handle at most at the same time.
 	 */
 	private int requestLimit;
+	
+	/**
+	 * The bittorrent client which handles this peer's socket information and input/outputstreams
+	 */
+	private BitTorrentClient socket;
 
-	public Peer() {
+	public Peer(BitTorrentClient client, Torrent torrent) {
 		crashed = false;
 		peerClient = new Client();
 		myClient = new Client();
@@ -108,115 +101,16 @@ public class Peer implements Comparable<Peer> {
 		messageQueue = new ArrayList<>();
 		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
-		passedHandshake = false;
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		haveState = new Bitfield();
-	}
-
-	public Peer(Torrent torrent) {
-		this();
 		this.torrent = torrent;
 	}
 
 	public void connect() {
 		setStatus("Connecting...");
-		if (socket != null) {
-			setStatus("Connected (Outside request)");
-			log = ConsoleLogger.createLogger(String.format("Peer %s", socket.toString()), Level.INFO);
-			return;
-		}
-		socket = new TcpSocket();
-		while (socket != null && (socket.isClosed() || socket.isConnecting())) {
-			try {
-				socket.connect(new InetSocketAddress(address, port));
-				inStream = new ByteInputStream(this, socket.getInputStream());
-				outStream = new ByteOutputStream(socket.getOutputStream());
-				log = ConsoleLogger.createLogger(String.format("Peer %s", socket.toString()), Level.INFO);
-			} catch (IOException e) {
-				if (socket.canFallback()) {
-					socket = socket.getFallbackSocket();
-				} else {
-					crashed = true;
-					socket = null;
-				}
-			}
-		}
-	}
-
-	public void setSocket(ISocket socket) {
-		this.socket = socket;
-		try {
-			inStream = new ByteInputStream(this, socket.getInputStream());
-			outStream = new ByteOutputStream(socket.getOutputStream());
-		} catch (IOException e) {
-			log.warning(e.getMessage());
-		}
-	}
-
-	public void setSocketInformation(InetAddress address, int port) {
-		this.address = address;
-		this.port = port;
-	}
-
-	/**
-	 * Writes the handshake onto the output stream
-	 * 
-	 * @param peerId
-	 *            The peer ID which has been received from
-	 *            {@link TrackerManager#getPeerId()}
-	 * @throws IOException
-	 */
-	public void sendHandshake(byte[] peerId) throws IOException {
-		setStatus("Sending Handshake"); // Not making this more OO because it's
-										// not within the message-flow
-		outStream.writeByte(0x13);
-		outStream.writeString("BitTorrent protocol");
-		outStream.write(RESERVED_EXTENTION_BYTES);
-		outStream.write(torrent.getHashArray());
-		outStream.write(peerId);
-		outStream.flush();
-		setStatus("Awaiting Handshake response");
-	}
-
-	/**
-	 * Reads the handshake information from the peer
-	 * 
-	 * @return A succesfully read handshake
-	 * @throws IOException
-	 *             when either an io error occurs or a protocol error occurs
-	 */
-	public BitTorrentHandshake readHandshake() throws IOException {
-		int protocolLength = inStream.read();
-		if (protocolLength != 0x13) {
-			throw new IOException("Protocol handshake failed");
-		}
-
-		String protocol = inStream.readString(0x13);
-
-		if (!"BitTorrent protocol".equals(protocol)) {
-			throw new IOException("Protocol handshake failed");
-		}
-
-		byte[] extensionBytes = inStream.readByteArray(8);
-		byte[] torrentHash = inStream.readByteArray(20);
-		byte[] peerId = inStream.readByteArray(20);
-
-		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
-	}
-
-	public boolean canReadMessage() throws IOException {
-		if (!passedHandshake) {
-			return inStream.available() >= HANDSHAKE_SIZE;
-		}
-		return MessageUtils.getUtils().canReadMessage(inStream, this);
-	}
-
-	public void readMessage() throws IOException {
-		IMessage message = MessageUtils.getUtils().readMessage(inStream, this);
-		message.process(this);
-		lastActivity = System.currentTimeMillis();
+		
 	}
 
 	public void sendMessage() throws IOException {
@@ -246,7 +140,7 @@ public class Peer implements Comparable<Peer> {
 
 	public void checkDisconnect() {
 		if (strikes >= 5) {
-			close();
+			socket.close();
 			return;
 		}
 		int inactiveSeconds = (int) ((System.currentTimeMillis() - lastActivity) / 1000);
@@ -278,7 +172,7 @@ public class Peer implements Comparable<Peer> {
 			}
 		}
 		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark
-			close();
+			socket.close();
 		}
 	}
 	
@@ -308,19 +202,6 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public synchronized void addToPendingMessages(int i) {
 		pendingMessages += i;
-	}
-
-	/**
-	 * Checks if the connection is/should be closed
-	 * 
-	 * @return If the connection should be/is closed
-	 */
-	public boolean closed() {
-		if (crashed)
-			return true;
-		if (socket == null)
-			return false;
-		return socket.isClosed();
 	}
 
 	@Override
@@ -394,25 +275,6 @@ public class Peer implements Comparable<Peer> {
 		return myClient;
 	}
 
-	public void pollRates() {
-		if (inStream != null) {
-			downloadRate = inStream.getSpeed();
-			inStream.reset(downloadRate);
-		}
-		if (outStream != null) {
-			uploadRate = outStream.getSpeed();
-			outStream.reset(uploadRate);
-		}
-	}
-
-	public int getDownloadRate() {
-		return downloadRate;
-	}
-
-	public int getUploadRate() {
-		return uploadRate;
-	}
-
 	/**
 	 * Cancels all pieces
 	 */
@@ -432,22 +294,6 @@ public class Peer implements Comparable<Peer> {
 
 	public void forceClose() {
 		crashed = true;
-	}
-
-	/**
-	 * Gracefully close the connection with this peer
-	 */
-	public void close() {
-		try {
-			if (socket != null) {
-				if (!socket.isClosed()) {
-					socket.close();
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			forceClose();
-		}
 	}
 	
 	/**
@@ -491,10 +337,6 @@ public class Peer implements Comparable<Peer> {
 		this.torrent = torrent;
 	}
 
-	public boolean getPassedHandshake() {
-		return passedHandshake;
-	}
-
 	public long getLastActivity() {
 		return lastActivity;
 	}
@@ -512,7 +354,7 @@ public class Peer implements Comparable<Peer> {
 	}
 	
 	private int getCompareValue() {
-		return (getWorkQueueSize() * 5000) + haveState.countHavePieces() + downloadRate;
+		return (getWorkQueueSize() * 5000) + haveState.countHavePieces() + socket.getDownloadRate();
 	}
 
 	/**
@@ -624,6 +466,14 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public int countHavePieces() {
 		return haveState.countHavePieces();
+	}
+
+	/**
+	 * Gets the socket handler which handles the socket of this peer
+	 * @return
+	 */
+	public BitTorrentClient getBitTorrentClient() {
+		return socket;
 	}
 
 }

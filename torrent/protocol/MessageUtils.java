@@ -3,7 +3,6 @@ package torrent.protocol;
 import java.io.IOException;
 import java.util.HashMap;
 
-import torrent.download.peer.Peer;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.Message;
@@ -48,7 +47,7 @@ public class MessageUtils {
 
 	private HashMap<Integer, IMessage> idToMessage;
 
-	public boolean canReadMessage(ByteInputStream inStream, Peer p) throws IOException {
+	public boolean canReadMessage(ByteInputStream inStream) throws IOException {
 		if (inStream.getBuffer() == null) {
 			if (inStream.available() >= 4) {
 				inStream.initialiseBuffer();
@@ -68,17 +67,15 @@ public class MessageUtils {
 			int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getWritePointer());
 			buffer.writeByte(inStream.readByteArray(readAmount));
 		}
-		p.setStatus("Receiving Message of length: " + (buffer.getWritePointer() - 4) + "/" + (buffer.getBuffer().length - 4));
 		return buffer.getWritePointer() == buffer.getBuffer().length;
 	}
 
-	public IMessage readMessage(ByteInputStream inStream, Peer p) throws IOException {
+	public IMessage readMessage(ByteInputStream inStream) throws IOException {
 		Stream stream = inStream.getBuffer();
 		int duration = inStream.getBufferLifetime();
 		stream.resetReadPointer();
 		int length = stream.readInt();
 		if (length == 0) {
-			p.setStatus("Received Message: KeepAlive");
 			inStream.resetBuffer();
 			return new MessageKeepAlive();
 		} else {
@@ -87,7 +84,6 @@ public class MessageUtils {
 				if (!idToMessage.containsKey(id))
 					throw new IOException("Unhandled Message: " + id);
 				IMessage message = idToMessage.get(id).getClass().newInstance();
-				p.setStatus("Received Message: " + message.toString());
 				message.setReadDuration(duration);
 				message.read(stream);
 				inStream.resetBuffer();
