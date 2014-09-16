@@ -6,7 +6,6 @@ import java.util.Set;
 public class Client {
 
 	private final Object JOB_LOCK = new Object();
-	private Bitfield bitfield;
 	private boolean isChoked;
 	private boolean isInterested;
 	private byte[] reserved_bytes;
@@ -24,7 +23,6 @@ public class Client {
 	public Client() {
 		isChoked = true;
 		isInterested = false;
-		bitfield = new Bitfield();
 		maxRequests = 20;
 		maxWorkQueue = 1;
 		workingQueue = new HashMap<>();
@@ -121,10 +119,6 @@ public class Client {
 
 	public void clearJobs() {
 		workingQueue.clear();
-	}
-
-	public Bitfield getBitfield() {
-		return bitfield;
 	}
 
 }

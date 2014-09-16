@@ -283,7 +283,7 @@ public class Torrent implements Runnable {
 		if (files.getPieceCount() == 0) {
 			return 0D;
 		}
-		return 100D * (files.getBitfield().hasPieceCount() / (double) files.getPieceCount());
+		return 100D * (files.getBitfield().countHavePieces() / (double) files.getPieceCount());
 	}
 
 	/**
@@ -450,7 +450,7 @@ public class Torrent implements Runnable {
 			Peer p = peers.get(i);
 			if (p == null)
 				continue;
-			if (p.getClient().getBitfield().hasPieceCount() == files.getPieceCount())
+			if (p.countHavePieces() == files.getPieceCount())
 				++seeds;
 		}
 
@@ -508,7 +508,7 @@ public class Torrent implements Runnable {
 				if (p.getExtensions().hasExtension(UTMetadata.NAME))
 					leechers.add(p);
 			} else {
-				if (p.getClient().getBitfield().hasPieceCount() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)
+				if (p.countHavePieces() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)
 					leechers.add(p);
 			}
 		}

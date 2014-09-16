@@ -512,7 +512,7 @@ public class Peer implements Comparable<Peer> {
 	}
 	
 	private int getCompareValue() {
-		return (getWorkQueueSize() * 5000) + peerClient.getBitfield().hasPieceCount() + downloadRate;
+		return (getWorkQueueSize() * 5000) + haveState.countHavePieces() + downloadRate;
 	}
 
 	/**
@@ -616,6 +616,14 @@ public class Peer implements Comparable<Peer> {
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Gets the amount of pieces this peer has
+	 * @return returns the amount of pieces which this peer has
+	 */
+	public int countHavePieces() {
+		return haveState.countHavePieces();
 	}
 
 }

@@ -49,7 +49,7 @@ public class TabGeneral extends JPanel {
 				uploaded += "Retrieving metadata";
 			} else {
 				totalSize += StringUtil.compactByteSize(torrent.getFiles().getTotalSize());
-				pieces += torrent.getFiles().getBitfield().hasPieceCount() + "/" + torrent.getFiles().getPieceCount();
+				pieces += torrent.getFiles().getBitfield().countHavePieces() + "/" + torrent.getFiles().getPieceCount();
 				leftSize += StringUtil.compactByteSize(torrent.getFiles().getRemainingBytes());
 				uploaded += StringUtil.compactByteSize(torrent.getUploadedBytes());
 			}

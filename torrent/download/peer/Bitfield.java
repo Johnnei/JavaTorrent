@@ -99,7 +99,7 @@ public class Bitfield {
 	 * 
 	 * @return The amount of pieces the client has
 	 */
-	public int hasPieceCount() {
+	public int countHavePieces() {
 		int pieces = bitfield.length * 8;
 		int have = 0;
 		for (int pieceIndex = 0; pieceIndex < pieces; pieceIndex++) {
@@ -119,8 +119,8 @@ public class Bitfield {
 	 */
 	public Collection<IMessage> getBitfieldMessage() {
 		Collection<IMessage> messages = new ArrayList<>();
-		if (hasPieceCount() > 0) {
-			if (bitfield.length + 1 < 5 * hasPieceCount()) {
+		if (countHavePieces() > 0) {
+			if (bitfield.length + 1 < 5 * countHavePieces()) {
 				messages.add(new MessageBitfield(bitfield));
 			} else {
 				int pieceIndex = 0;
