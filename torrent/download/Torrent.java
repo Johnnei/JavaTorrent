@@ -162,11 +162,11 @@ public class Torrent implements Runnable {
 	/**
 	 * Updates the bitfield size for all peers
 	 */
-	public void updateBitfield() {
+	public void updateBitfields() {
 		for (int i = 0; i < peers.size(); i++) {
-			Peer p = peers.get(i);
-			if (p != null) {
-				p.getClient().getBitfield().setBitfieldSize(files.getBitfieldSize());
+			Peer peer = peers.get(i);
+			if (peer != null) {
+				peer.setBitfieldSize(files.getBitfieldSize());
 			}
 		}
 	}
@@ -346,7 +346,6 @@ public class Torrent implements Runnable {
 	 * Calculates the current progress based on all available files on the HDD
 	 */
 	public void checkProgress() {
-		updateBitfield();
 		log.info("Checking progress...");
 		FileInfo[] fileinfo = files.getFiles();
 		for (int i = 0; i < fileinfo.length; i++) {

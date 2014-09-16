@@ -57,7 +57,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void preprocess() {
-		torrent.updateBitfield();
+		torrent.updateBitfields();
 		torrent.checkProgress();
 	}
 

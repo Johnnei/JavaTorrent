@@ -3,8 +3,6 @@ package torrent.download.peer;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.johnnei.utils.JMath;
-
 import torrent.protocol.IMessage;
 import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageHave;
@@ -26,13 +24,13 @@ public class Bitfield {
 	 * 
 	 * @param size The new size to grow/shrink to
 	 */
-	public void setBitfieldSize(int size) {
+	public void setSize(int size) {
 		if (size == bitfield.length) {
 			return;
 		}
 		
 		byte[] newBitfield = new byte[size];
-		System.arraycopy(bitfield, 0, newBitfield, 0, JMath.min(size, bitfield.length));
+		System.arraycopy(bitfield, 0, newBitfield, 0, Math.min(size, bitfield.length));
 		bitfield = newBitfield;
 	}
 

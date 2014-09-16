@@ -550,6 +550,14 @@ public class Peer implements Comparable<Peer> {
 		requestLimit = JMath.min(requestLimit, absoluteRequestLimit);
 	}
 
+	/**
+	 * Sets the amount of reserved bytes for the have message caching
+	 * @param bitfieldSize The amount of bytes needed to store the have messages as a bitfield
+	 */
+	public void setBitfieldSize(int bitfieldSize) {
+		haveState.setSize(bitfieldSize);
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Peer) {
@@ -609,4 +617,5 @@ public class Peer implements Comparable<Peer> {
 		
 		return null;
 	}
+
 }
