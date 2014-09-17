@@ -60,6 +60,7 @@ public class PeerConnector implements Runnable {
 			}
 			
 			PeerConnectInfo peerInfo = null;
+			BitTorrentSocket peerSocket = null;
 			
 			synchronized (LOCK_PEER_LIST) {
 				peerInfo = peers.remove();
@@ -70,7 +71,7 @@ public class PeerConnector implements Runnable {
 			}
 			
 			try {
-				BitTorrentSocket peerSocket = new BitTorrentSocket();
+				peerSocket = new BitTorrentSocket();
 				peerSocket.connect(peerInfo.getAddress());
 				peerSocket.sendHandshake(manager.getPeerId(), peerInfo.getTorrent().getHashArray());
 				
@@ -92,7 +93,9 @@ public class PeerConnector implements Runnable {
 				BitTorrentUtil.onPostHandshake(peer);
 			} catch (IOException e) {
 				System.err.println(String.format("[PeerConnector] Failed to connect peer: %s", e.getMessage()));
-				// TODO Close bittorrent socket if it crashes
+				if (peerSocket != null) {
+					peerSocket.close();
+				}
 			}
 		}
 	}
