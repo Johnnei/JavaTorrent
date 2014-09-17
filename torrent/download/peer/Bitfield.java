@@ -35,15 +35,6 @@ public class Bitfield {
 	}
 
 	/**
-	 * Override bitfield with a given one
-	 * 
-	 * @param bitfield The new bitfield
-	 */
-	public void setBitfield(byte[] bitfield) {
-		this.bitfield = bitfield;
-	}
-
-	/**
 	 * Checks the bitfield if we have the given piece
 	 * 
 	 * @param pieceIndex the piece to check
