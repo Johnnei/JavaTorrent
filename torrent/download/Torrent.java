@@ -142,7 +142,7 @@ public class Torrent implements Runnable {
 
 	public void addPeer(Peer peer) {
 		if (hasPeer(peer)) {
-			peer.close();
+			peer.getBitTorrentSocket().close();
 			log.fine("Filtered duplicate Peer: " + peer);
 			return;
 		}
@@ -209,7 +209,7 @@ public class Torrent implements Runnable {
 			Peer p = peers.get(i);
 			if (p == null)
 				continue;
-			if (p.closed()) {
+			if (p.getBitTorrentSocket().closed()) {
 				p.cancelAllPieces();
 				synchronized (this) {
 					peers.remove(i--);
@@ -328,7 +328,7 @@ public class Torrent implements Runnable {
 		files.havePiece(pieceIndex);
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
-			if (!p.closed() && p.getPassedHandshake()) {
+			if (!p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()) {
 				p.addToQueue(have);
 			}
 		}
@@ -337,7 +337,7 @@ public class Torrent implements Runnable {
 	public void broadcastMessage(IMessage m) {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer peer = peers.get(i);
-			if (!peer.closed() && peer.getPassedHandshake())
+			if (!peer.getBitTorrentSocket().closed() && peer.getBitTorrentSocket().getPassedHandshake())
 				peer.addToQueue(m);
 		}
 	}
@@ -463,7 +463,7 @@ public class Torrent implements Runnable {
 			for (int i = 0; i < peers.size(); i++) {
 				Peer peer = peers.get(i);
 				if (peer != null) {
-					if (peer.getPassedHandshake())
+					if (peer.getBitTorrentSocket().getPassedHandshake())
 						leechers++;
 				}
 			}

@@ -34,7 +34,7 @@ public class PeersReadRunnable implements Runnable {
 	}
 	
 	private void processPeer(Peer peer) {
-		if (peer.closed()) {
+		if (peer.getBitTorrentSocket().closed()) {
 			return;
 		}
 		
@@ -50,7 +50,7 @@ public class PeersReadRunnable implements Runnable {
 			peer.updateLastActivity();
 		} catch (IOException e) {
 			peer.getLogger().severe(e.getMessage());
-			peer.close();
+			peer.getBitTorrentSocket().close();
 		}
 	}
 

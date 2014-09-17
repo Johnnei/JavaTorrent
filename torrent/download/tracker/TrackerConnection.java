@@ -3,13 +3,14 @@ package torrent.download.tracker;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Random;
 import java.util.logging.Logger;
 
 import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
-import torrent.download.peer.Peer;
+import torrent.download.peer.PeerConnectInfo;
 import torrent.network.Stream;
 
 public class TrackerConnection {
@@ -158,9 +159,11 @@ public class TrackerConnection {
 				int port = stream.readShort();
 				if (isEmptyIP(address))
 					continue;
-				Peer peer = new Peer(torrent);
-				peer.setSocketInformation(InetAddress.getByAddress(address), port);
-				connectorPool.addPeer(peer);
+				
+				InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(address), port);
+				PeerConnectInfo peerInfo = new PeerConnectInfo(torrent, socketAddress);
+				
+				connectorPool.addPeer(peerInfo);
 			}
 			setStatus("Announced");
 			return announceInterval;

@@ -167,5 +167,9 @@ public class BitTorrentSocket {
 		
 		return socket.isClosed();
 	}
+	
+	public boolean getPassedHandshake() {
+		return passedHandshake;
+	}
 
 }

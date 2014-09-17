@@ -43,7 +43,7 @@ public class TabPeers extends TableBase {
 			ArrayList<Peer> toSort = new ArrayList<>();
 			for (int i = 0; i < peers.size(); i++) {
 				Peer p = peers.get(i);
-				if (p.getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers")) {
+				if (p.getBitTorrentSocket().getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers")) {
 					toSort.add(p);
 				}
 			}
@@ -59,8 +59,8 @@ public class TabPeers extends TableBase {
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
 					g.drawString(peer.toString(), 5, getTextY());
 					g.drawString(peer.getClientName(), 160, getTextY());
-					g.drawString(StringUtil.compactByteSize(peer.getDownloadRate()) + "/s", 290, getTextY());
-					g.drawString(StringUtil.compactByteSize(peer.getUploadRate()) + "/s", 370, getTextY());
+					g.drawString(StringUtil.compactByteSize(peer.getBitTorrentSocket().getDownloadRate()) + "/s", 290, getTextY());
+					g.drawString(StringUtil.compactByteSize(peer.getBitTorrentSocket().getUploadRate()) + "/s", 370, getTextY());
 					g.drawString(StringUtil.timeToString(duration), 440, getTextY());
 					g.drawString("" + peer.countHavePieces(), 510, getTextY());
 					g.drawString(peer.getWorkQueueSize() + "/" + peer.getRequestLimit() + " | " + peer.getClient().getQueueSize(), 570, getTextY());

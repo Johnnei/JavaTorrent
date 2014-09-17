@@ -32,7 +32,7 @@ public class PeersWriterRunnable implements Runnable {
 	}
 	
 	private void processPeer(Peer peer) {
-		if (peer.closed()) {
+		if (peer.getBitTorrentSocket().closed()) {
 			return;
 		}
 		
@@ -40,7 +40,7 @@ public class PeersWriterRunnable implements Runnable {
 			peer.sendMessage();
 		} catch (IOException e) {
 			peer.getLogger().severe(e.getMessage());
-			peer.close();
+			peer.getBitTorrentSocket().close();
 		}
 	}
 }
