@@ -34,7 +34,7 @@ public class Piece implements Comparable<Piece> {
 		blocks = new Block[JMath.ceil(pieceSize / (double) blockSize)];
 		int blockOffset = 0;
 		while (pieceSize > 0) {
-			blocks[blockOffset] = new Block(blockOffset, JMath.min(blockSize, pieceSize));
+			blocks[blockOffset] = new Block(blockOffset, Math.min(blockSize, pieceSize));
 			pieceSize -= blocks[blockOffset].getSize();
 			++blockOffset;
 		}

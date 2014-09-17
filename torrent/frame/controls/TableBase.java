@@ -12,8 +12,6 @@ import java.util.Observable;
 
 import javax.swing.JPanel;
 
-import org.johnnei.utils.JMath;
-
 /**
  * Table base, Note that this is not an actual table.<Br/>
  * This is a base to help you draw a table without any restrictions
@@ -138,7 +136,7 @@ public abstract class TableBase extends JPanel implements MouseListener, MouseWh
 			int hiddenItems = itemCount - visibleItemCount;
 			double sliderSize = (double) maxSliderSize / hiddenItems;
 			double scrollItemIndex = scrollY;
-			int drawSliderSize = JMath.max((int) sliderSize, 5);
+			int drawSliderSize = Math.max((int) sliderSize, 5);
 			int scrollBarOffset = 20 + (int) (scrollItemIndex * (sliderSize - ((double) drawSliderSize / hiddenItems)));
 			g.setColor(new Color(0xAA, 0xAA, 0xAA));
 			g.fillRect(x, scrollBarOffset, 20, drawSliderSize);

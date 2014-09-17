@@ -1,6 +1,5 @@
 package torrent.util;
 
-import org.johnnei.utils.JMath;
 
 public class StringUtil {
 
@@ -71,7 +70,7 @@ public class StringUtil {
 			progressString = "0.0";
 		if (progressString.contains(".")) {
 			int pointIndex = progressString.indexOf(".");
-			progressString = progressString.substring(0, JMath.min(pointIndex + 3, progressString.length()));
+			progressString = progressString.substring(0, Math.min(pointIndex + 3, progressString.length()));
 		}
 		return progressString;
 	}

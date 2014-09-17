@@ -1,24 +1,13 @@
 package torrent.download.peer;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.johnnei.utils.ConsoleLogger;
-import org.johnnei.utils.JMath;
 
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
-import torrent.download.tracker.TrackerManager;
 import torrent.network.BitTorrentSocket;
-import torrent.network.ByteInputStream;
-import torrent.network.ByteOutputStream;
-import torrent.network.protocol.ISocket;
-import torrent.protocol.BitTorrentHandshake;
-import torrent.protocol.IMessage;
-import torrent.protocol.MessageUtils;
 import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageKeepAlive;
 
@@ -365,7 +354,7 @@ public class Peer implements Comparable<Peer> {
 			return;
 		}
 		
-		requestLimit = JMath.min(requestLimit, absoluteRequestLimit);
+		requestLimit = Math.min(requestLimit, absoluteRequestLimit);
 	}
 
 	/**
