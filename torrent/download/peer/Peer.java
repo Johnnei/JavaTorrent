@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import org.johnnei.utils.ConsoleLogger;
 
 import torrent.download.Torrent;
+import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.BitTorrentSocket;
 import torrent.protocol.messages.MessageBitfield;
@@ -97,18 +98,6 @@ public class Peer implements Comparable<Peer> {
 	public void connect() {
 		setStatus("Connecting...");
 		
-	}
-
-	private void sendMessage() {
-		// TODO Implement this bit of code somewhere else
-		if (peerClient.getQueueSize() > 0 && pendingMessages == 0) {
-			Job request = peerClient.getNextJob();
-			peerClient.removeJob(request);
-			addToPendingMessages(1);
-			torrent.addDiskJob(new DiskJobSendBlock(this, request
-					.getPieceIndex(), request.getBlockIndex(), request
-					.getLength()));
-		}
 	}
 
 	public void checkDisconnect() {
@@ -220,6 +209,10 @@ public class Peer implements Comparable<Peer> {
 				.getMaxRequests() - getWorkQueueSize();
 	}
 
+	/**
+	 * Gets the amount of pieces the client still needs to send
+	 * @return
+	 */
 	public int getWorkQueueSize() {
 		return myClient.getQueueSize();
 	}
@@ -439,6 +432,26 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public BitTorrentSocket getBitTorrentSocket() {
 		return socket;
+	}
+
+	/**
+	 * Requests to queue the next piece in the socket for sending
+	 */
+	public void queueNextPieceForSending() {
+		if (myClient.getQueueSize() == 0 || pendingMessages > 0) {
+			return;
+		}
+		
+		Job request = peerClient.getNextJob();
+		peerClient.removeJob(request);
+		addToPendingMessages(1);
+		
+		DiskJob sendBlock = new DiskJobSendBlock(this,
+			request.getPieceIndex(), request.getBlockIndex(),
+			request.getLength()
+		);
+		
+		torrent.addDiskJob(sendBlock);
 	}
 
 }

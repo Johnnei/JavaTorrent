@@ -231,4 +231,12 @@ public class BitTorrentSocket {
 		return passedHandshake;
 	}
 
+	/**
+	 * Checks if this socket has messages queued for sending
+	 * @return
+	 */
+	public boolean canWriteMessage() {
+		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
+	}
+
 }
