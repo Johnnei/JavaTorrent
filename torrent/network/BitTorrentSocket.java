@@ -2,16 +2,22 @@ package torrent.network;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import torrent.JavaTorrent;
 import torrent.download.tracker.TrackerManager;
 import torrent.network.protocol.ISocket;
 import torrent.network.protocol.TcpSocket;
+import torrent.protocol.BitTorrent;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
 
 public class BitTorrentSocket {
+	
+	private final Object QUEUE_LOCK = new Object();
+	private final Object BLOCK_QUEUE_LOCK = new Object();
 	
 	private static final int HANDSHAKE_SIZE = 68;
 	
@@ -36,10 +42,23 @@ public class BitTorrentSocket {
 	 */
 	private boolean passedHandshake;
 	
+	/**
+	 * The queue containing the messages which still have to be send
+	 */
+	private Queue<IMessage> messageQueue;
+	
+	/**
+	 * The queue containing the block message which still have to be send
+	 */
+	private Queue<IMessage> blockQueue;
+	
 	public BitTorrentSocket() {
+		messageQueue = new LinkedList<>();
+		blockQueue = new LinkedList<>();
 	}
 	
 	public BitTorrentSocket(ISocket socket) throws IOException {
+		this();
 		this.socket = socket;
 		createIOStreams();
 	}
@@ -63,6 +82,22 @@ public class BitTorrentSocket {
 			}
 		}
 	}
+
+	/**
+	 * Queues the message to be send
+	 * @param message
+	 */
+	public void queueMessage(IMessage message) {
+		if (message.getId() == BitTorrent.MESSAGE_PIECE) {
+			synchronized (BLOCK_QUEUE_LOCK) {
+				blockQueue.add(message);
+			}
+		} else {
+			synchronized (QUEUE_LOCK) {
+				messageQueue.add(message);
+			}
+		}
+	}
 	
 	private void createIOStreams() throws IOException {
 		inStream = new ByteInputStream(socket.getInputStream());
@@ -71,6 +106,30 @@ public class BitTorrentSocket {
 	
 	public IMessage readMessage() throws IOException {
 		return MessageUtils.getUtils().readMessage(inStream);
+	}
+	
+	/**
+	 * Sends at most 1 pending message. {@link MessagePiece} will be send last
+	 * @throws IOException
+	 */
+	public void sendMessage() throws IOException {
+		IMessage message = null;
+		
+		if (!messageQueue.isEmpty()) {
+			synchronized (QUEUE_LOCK) {
+				message = messageQueue.poll();
+			}
+		} else if (!blockQueue.isEmpty()) {
+			synchronized (BLOCK_QUEUE_LOCK) {
+				message = blockQueue.poll();
+			}
+		}
+		
+		if (message == null) {
+			return;
+		}
+		
+		MessageUtils.getUtils().writeMessage(outStream, message);
 	}
 	
 	/**

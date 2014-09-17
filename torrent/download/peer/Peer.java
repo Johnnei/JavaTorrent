@@ -25,25 +25,24 @@ import torrent.protocol.messages.MessageKeepAlive;
 public class Peer implements Comparable<Peer> {
 
 	private Torrent torrent;
-	private boolean crashed;
+	
 	/**
 	 * Client information about the connected peer
 	 * This will contain the requests the endpoint made of us
 	 */
 	private Client peerClient;
+	
 	/**
 	 * Client information about me retrieved from the connected peer<br/>
 	 * This will contain the requests we made to the endpoint 
 	 */
 	private Client myClient;
+	
 	/**
 	 * The current Threads status
 	 */
 	private String status;
-	/**
-	 * The message queue
-	 */
-	private ArrayList<IMessage> messageQueue;
+
 	/**
 	 * The last time this connection showed any form of activity<br/>
 	 * <i>Values are System.currentMillis()</i>
@@ -51,10 +50,12 @@ public class Peer implements Comparable<Peer> {
 	private long lastActivity;
 
 	private String clientName;
+	
 	/**
 	 * The count of messages which are still being processed by the IOManager
 	 */
 	private int pendingMessages;
+	
 	/**
 	 * The amount of errors the client made<br/>
 	 * If the amount reaches 5 the client will be disconnected on the next
@@ -91,18 +92,17 @@ public class Peer implements Comparable<Peer> {
 	private BitTorrentSocket socket;
 
 	public Peer(BitTorrentSocket client, Torrent torrent) {
-		crashed = false;
+		this.torrent = torrent;
+		this.socket = client;
 		peerClient = new Client();
 		myClient = new Client();
 		status = "";
 		clientName = "pending";
-		messageQueue = new ArrayList<>();
 		lastActivity = System.currentTimeMillis();
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		haveState = new Bitfield();
-		this.torrent = torrent;
 	}
 
 	public void connect() {
@@ -110,28 +110,15 @@ public class Peer implements Comparable<Peer> {
 		
 	}
 
-	public void sendMessage() throws IOException {
-		if (messageQueue.size() > 0) {
-			IMessage message = messageQueue.remove(0);
-			if (message == null)
-				return;
-			setStatus("Sending Message: " + message);
-			MessageUtils.getUtils().writeMessage(outStream, message);
-			setStatus("Sended Message: " + message);
-			if (messageQueue.size() == 0) {// Last message has been sended
-				// We dont expect new messages to be send shortly anymore, flush
-				// the holded data
-				outStream.flush();
-			}
-		} else {
-			if (peerClient.getQueueSize() > 0 && pendingMessages == 0) {
-				Job request = peerClient.getNextJob();
-				peerClient.removeJob(request);
-				addToPendingMessages(1);
-				torrent.addDiskJob(new DiskJobSendBlock(this, request
-						.getPieceIndex(), request.getBlockIndex(), request
-						.getLength()));
-			}
+	private void sendMessage() {
+		// TODO Implement this bit of code somewhere else
+		if (peerClient.getQueueSize() > 0 && pendingMessages == 0) {
+			Job request = peerClient.getNextJob();
+			peerClient.removeJob(request);
+			addToPendingMessages(1);
+			torrent.addDiskJob(new DiskJobSendBlock(this, request
+					.getPieceIndex(), request.getBlockIndex(), request
+					.getLength()));
 		}
 	}
 
@@ -258,10 +245,6 @@ public class Peer implements Comparable<Peer> {
 		return myClient.getMaxRequests();
 	}
 
-	public void addToQueue(IMessage m) {
-		messageQueue.add(m);
-	}
-
 	@Deprecated
 	public Client getClient() {
 		return peerClient;
@@ -289,10 +272,6 @@ public class Peer implements Comparable<Peer> {
 		}
 	}
 
-	public void forceClose() {
-		crashed = true;
-	}
-	
 	/**
 	 * Registers that this peer has the given piece
 	 * @param pieceIndex the piece to marked as "have"
