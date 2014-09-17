@@ -10,7 +10,7 @@ import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;
 import torrent.protocol.MessageUtils;
 
-public class BitTorrentClient {
+public class BitTorrentSocket {
 	
 	private static final int HANDSHAKE_SIZE = 68;
 	

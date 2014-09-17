@@ -12,7 +12,7 @@ import org.johnnei.utils.JMath;
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.download.tracker.TrackerManager;
-import torrent.network.BitTorrentClient;
+import torrent.network.BitTorrentSocket;
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
 import torrent.network.protocol.ISocket;
@@ -90,9 +90,9 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * The bittorrent client which handles this peer's socket information and input/outputstreams
 	 */
-	private BitTorrentClient socket;
+	private BitTorrentSocket socket;
 
-	public Peer(BitTorrentClient client, Torrent torrent) {
+	public Peer(BitTorrentSocket client, Torrent torrent) {
 		crashed = false;
 		peerClient = new Client();
 		myClient = new Client();
@@ -472,7 +472,7 @@ public class Peer implements Comparable<Peer> {
 	 * Gets the socket handler which handles the socket of this peer
 	 * @return
 	 */
-	public BitTorrentClient getBitTorrentClient() {
+	public BitTorrentSocket getBitTorrentSocket() {
 		return socket;
 	}
 
