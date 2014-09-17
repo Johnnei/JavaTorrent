@@ -23,6 +23,7 @@ public class BitTorrentUtil {
 		}
 		
 		sendHaveMessages(peer);
+		peer.getTorrent().addPeer(peer);
 	}
 	
 	private static void sendExtendedMessages(Peer peer) throws IOException {

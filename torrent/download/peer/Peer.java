@@ -24,8 +24,6 @@ import torrent.protocol.messages.MessageKeepAlive;
 
 public class Peer implements Comparable<Peer> {
 
-	private byte[] RESERVED_EXTENTION_BYTES = new byte[8];
-
 	private Torrent torrent;
 	private boolean crashed;
 	/**
@@ -99,7 +97,6 @@ public class Peer implements Comparable<Peer> {
 		status = "";
 		clientName = "pending";
 		messageQueue = new ArrayList<>();
-		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
 		lastActivity = System.currentTimeMillis();
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();

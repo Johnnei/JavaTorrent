@@ -43,7 +43,7 @@ public class MessageRequest implements IMessage {
 			peer.addJob(new Job(index, offset, length), JobType.Upload);
 		} else {
 			peer.getLogger().severe(String.format("Requested piece %d which I don't have", index));
-			peer.close();
+			peer.getBitTorrentSocket().close();
 		}
 	}
 

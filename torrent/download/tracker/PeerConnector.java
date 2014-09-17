@@ -7,7 +7,9 @@ import org.johnnei.utils.ThreadUtils;
 
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
+import torrent.download.peer.PeerConnectInfo;
 import torrent.encoding.SHA1;
+import torrent.network.BitTorrentSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.BitTorrentUtil;
 
@@ -23,7 +25,7 @@ public class PeerConnector implements Runnable {
 	/**
 	 * List of peer that are currently being connected
 	 */
-	private LinkedList<Peer> peers;
+	private LinkedList<PeerConnectInfo> peers;
 	
 	private TrackerManager manager;
 	
@@ -38,15 +40,15 @@ public class PeerConnector implements Runnable {
 	/**
 	 * Adds a pending connection peer to the connection cycle
 	 * 
-	 * @param peer The peer to connect
+	 * @param peerInfo The peer to connect
 	 */
-	public void addPeer(Peer peer) {
+	public void addPeer(PeerConnectInfo peerInfo) {
 		if (peers.size() >= maxPeers) {
 			throw new IllegalStateException(String.format("Connector is full"));
 		}
 		
 		synchronized (LOCK_PEER_LIST) {
-			peers.add(peer);
+			peers.add(peerInfo);
 		}
 	}
 
@@ -57,64 +59,52 @@ public class PeerConnector implements Runnable {
 				ThreadUtils.wait(PEER_JOB_NOTIFY);
 			}
 			
-			Peer peer = null;
+			PeerConnectInfo peerInfo = null;
 			
 			synchronized (LOCK_PEER_LIST) {
-				peer = peers.remove();
+				peerInfo = peers.remove();
 			}
 			
-			if (peer == null) {
+			if (peerInfo == null) {
 				continue;
 			}
 			
 			try {
-				peer.connect();
-				
-				if (peer.closed()) {
-					continue;
-				}
-				
-				peer.sendHandshake(manager.getPeerId());
+				BitTorrentSocket peerSocket = new BitTorrentSocket();
+				peerSocket.connect(peerInfo.getAddress());
+				peerSocket.sendHandshake(manager.getPeerId(), peerInfo.getTorrent().getHashArray());
 				
 				long timeWaited = 0;
-				while (!peer.canReadMessage() && timeWaited < 10_000) {
+				while (!peerSocket.canReadMessage() && timeWaited < 10_000) {
 					final int INTERVAL = 100;
 					ThreadUtils.sleep(INTERVAL);
 					timeWaited += INTERVAL;
 				}
 				
-				if (!peer.canReadMessage()) {
+				if (!peerSocket.canReadMessage()) {
 					throw new IOException("Handshake timeout");
 				}
 				
-				if (!checkHandshake(peer)) {
-					throw new IOException("Unexpected/Incorrect torrent hash received");
-				}
+				BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getHashArray());
 				
+				Peer peer = new Peer(peerSocket, peerInfo.getTorrent());
+				peer.getExtensions().register(handshake.getPeerExtensionBytes());
 				BitTorrentUtil.onPostHandshake(peer);
-				
-				
 			} catch (IOException e) {
 				System.err.println(String.format("[PeerConnector] Failed to connect peer: %s", e.getMessage()));
-				peer.close();
+				// TODO Close bittorrent socket if it crashes
 			}
 		}
 	}
 	
-	private void connectPeer(Peer peer) {
+	private BitTorrentHandshake checkHandshake(BitTorrentSocket peerSocket, byte[] torrentHash) throws IOException {
+		BitTorrentHandshake handshake = peerSocket.readHandshake();
 		
-	}
-	
-	private boolean checkHandshake(Peer peer) throws IOException {
-		BitTorrentHandshake handshake = peer.readHandshake();
-		
-		if (SHA1.match(peer.getTorrent().getHashArray(), handshake.getTorrentHash())) {
-			return false;
+		if (SHA1.match(torrentHash, handshake.getTorrentHash())) {
+			throw new IOException("Peer does not download the same torrent");
 		}
 		
-		peer.getExtensions().register(handshake.getPeerExtensionBytes());
-		
-		return true;
+		return handshake;
 	}
 
 	public int getFreeCapacity() {

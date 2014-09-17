@@ -416,7 +416,7 @@ public class Torrent implements Runnable {
 
 	public void pollRates() {
 		for (int i = 0; i < peers.size(); i++) {
-			peers.get(i).pollRates();
+			peers.get(i).getBitTorrentSocket().pollRates();
 		}
 	}
 
@@ -427,7 +427,7 @@ public class Torrent implements Runnable {
 	public int getDownloadRate() {
 		int dlRate = 0;
 		for (int i = 0; i < peers.size(); i++) {
-			dlRate += peers.get(i).getDownloadRate();
+			dlRate += peers.get(i).getBitTorrentSocket().getDownloadRate();
 		}
 		return dlRate;
 	}
@@ -435,7 +435,7 @@ public class Torrent implements Runnable {
 	public int getUploadRate() {
 		int ulRate = 0;
 		for (int i = 0; i < peers.size(); i++) {
-			ulRate += peers.get(i).getUploadRate();
+			ulRate += peers.get(i).getBitTorrentSocket().getUploadRate();
 		}
 		return ulRate;
 	}

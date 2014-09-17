@@ -21,7 +21,7 @@ public class MessageReject extends Message {
 		peer.getLogger().severe("Piece Request got rejected: " + blockIndex);
 		peer.getTorrent().getFiles().getPiece(0).reset(blockIndex);
 		peer.removeJob(new Job(0, blockIndex), JobType.Download);
-		peer.close();
+		peer.getBitTorrentSocket().close();
 	}
 
 	@Override

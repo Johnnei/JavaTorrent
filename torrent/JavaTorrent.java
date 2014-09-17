@@ -14,6 +14,7 @@ import torrent.frame.TorrentFrame;
 public class JavaTorrent extends Thread {
 
 	public static final String BUILD = "JavaTorrent 0.04.1";
+	public static final byte[] RESERVED_EXTENTION_BYTES = new byte[8];
 	
 	private static Logger log;
 
@@ -31,6 +32,11 @@ public class JavaTorrent extends Thread {
 	public static void main(String[] args) {
 		log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
 		loadDefaultConfig();
+		
+		// Initialise reserved bytes field
+		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
+		
+		// Initialise managers
 		
 		TorrentManager torrentManager = new TorrentManager();
 		TrackerManager trackerManager = new TrackerManager();

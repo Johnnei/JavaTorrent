@@ -3,6 +3,7 @@ package torrent.network;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import torrent.JavaTorrent;
 import torrent.download.tracker.TrackerManager;
 import torrent.network.protocol.ISocket;
 import torrent.network.protocol.TcpSocket;
@@ -35,6 +36,14 @@ public class BitTorrentSocket {
 	 */
 	private boolean passedHandshake;
 	
+	public BitTorrentSocket() {
+	}
+	
+	public BitTorrentSocket(ISocket socket) throws IOException {
+		this.socket = socket;
+		createIOStreams();
+	}
+	
 	public void connect(InetSocketAddress address) throws IOException {
 		if (socket != null) {
 			return;
@@ -44,8 +53,7 @@ public class BitTorrentSocket {
 		while (socket != null && (socket.isClosed() || socket.isConnecting())) {
 			try {
 				socket.connect(address);
-				inStream = new ByteInputStream(socket.getInputStream());
-				outStream = new ByteOutputStream(socket.getOutputStream());
+				createIOStreams();
 			} catch (IOException e) {
 				if (socket.canFallback()) {
 					socket = socket.getFallbackSocket();
@@ -54,6 +62,11 @@ public class BitTorrentSocket {
 				}
 			}
 		}
+	}
+	
+	private void createIOStreams() throws IOException {
+		inStream = new ByteInputStream(socket.getInputStream());
+		outStream = new ByteOutputStream(socket.getOutputStream());
 	}
 	
 	public IMessage readMessage() throws IOException {
@@ -68,10 +81,10 @@ public class BitTorrentSocket {
 	 *            {@link TrackerManager#getPeerId()}
 	 * @throws IOException
 	 */
-	public void sendHandshake(byte[] peerId, byte[] extensionBytes, byte[] torrentHash) throws IOException {
+	public void sendHandshake(byte[] peerId, byte[] torrentHash) throws IOException {
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
-		outStream.write(extensionBytes);
+		outStream.write(JavaTorrent.RESERVED_EXTENTION_BYTES);
 		outStream.write(torrentHash);
 		outStream.write(peerId);
 		outStream.flush();

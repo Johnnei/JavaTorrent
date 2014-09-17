@@ -47,7 +47,7 @@ public class MessageExtension implements IMessage {
 	public void process(Peer peer) {
 		if (message == null) {
 			peer.getLogger().severe("Extended Message Error (ID: " + extensionId + ")");
-			peer.close();
+			peer.getBitTorrentSocket().close();
 		}
 		message.process(peer);
 	}

@@ -10,6 +10,7 @@ import org.johnnei.utils.config.Config;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.download.tracker.TrackerManager;
+import torrent.network.BitTorrentSocket;
 import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.BitTorrentUtil;
@@ -34,33 +35,34 @@ public class PeerConnectionAccepter extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				Peer peer = new Peer();
-				Socket peerSocket = (Socket) serverSocket.accept();
-				peer.setSocket(new TcpSocket(peerSocket));
+				Socket tcpSocket = (Socket) serverSocket.accept();
+				
+				BitTorrentSocket peerSocket = new BitTorrentSocket(new TcpSocket(tcpSocket));
+				
 				long handshakeStart = System.currentTimeMillis();
-				while (!peer.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
+				while (!peerSocket.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
 					ThreadUtils.sleep(10);
 				}
-				if (!peer.canReadMessage()) {
-					peer.close();
+				if (!peerSocket.canReadMessage()) {
+					peerSocket.close();
 					continue;
 				}
 					
-				BitTorrentHandshake handshake = peer.readHandshake();
+				BitTorrentHandshake handshake = peerSocket.readHandshake();
 				
 				Torrent torrent = torrentManager.getTorrent(StringUtil.byteArrayToString(handshake.getTorrentHash()));
 				
 				if (torrent == null) {
 					// We don't know the torrent the peer is downloading
-					peer.close();
+					peerSocket.close();
 					continue;
 				}
 				
+				Peer peer = new Peer(peerSocket, torrent);
 				peer.getExtensions().register(handshake.getPeerExtensionBytes());
 				peer.setTorrent(torrent);
-				peer.sendHandshake(trackerManager.getPeerId());
+				peerSocket.sendHandshake(trackerManager.getPeerId(), torrent.getHashArray());
 				BitTorrentUtil.onPostHandshake(peer);
-				peer.getTorrent().addPeer(peer);
 			} catch (IOException e) {
 			}
 		}

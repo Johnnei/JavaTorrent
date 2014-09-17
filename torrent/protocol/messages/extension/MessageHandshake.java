@@ -81,7 +81,7 @@ public class MessageHandshake implements IMessage {
 		} catch (Exception e) {
 			e.printStackTrace();
 			peer.getLogger().severe("Extension handshake error: " + e.getMessage());
-			peer.close();
+			peer.getBitTorrentSocket().close();
 		}
 	}
 

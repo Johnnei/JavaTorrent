@@ -7,7 +7,7 @@ import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
-import torrent.download.peer.Peer;
+import torrent.download.peer.PeerConnectInfo;
 
 public class PeerConnectorPool {
 	
@@ -31,7 +31,7 @@ public class PeerConnectorPool {
 	 * Queues a peer to be connected
 	 * @param p the peer to be connected
 	 */
-	public void addPeer(Peer peer) {
+	public void addPeer(PeerConnectInfo peer) {
 		PeerConnector connector = connectors.stream().min((a, b) -> a.getFreeCapacity() - b.getFreeCapacity()).get();
 		
 		if (connector.getFreeCapacity() == 0) {
