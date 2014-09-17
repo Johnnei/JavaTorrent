@@ -135,7 +135,7 @@ public class Peer implements Comparable<Peer> {
 				// Let's try (max twice) if we can wake'm up by sending them a
 				// keepalive
 				addStrike(2);
-				addToQueue(new MessageKeepAlive());
+				getBitTorrentSocket().queueMessage(new MessageKeepAlive());
 				updateLastActivity();
 				return;
 			} else if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
@@ -152,7 +152,7 @@ public class Peer implements Comparable<Peer> {
 		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to
 									// timeout D:
 			if (myClient.isInterested()) {
-				addToQueue(new MessageKeepAlive());
+				getBitTorrentSocket().queueMessage(new MessageKeepAlive());
 			}
 		}
 		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark

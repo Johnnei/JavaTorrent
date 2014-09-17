@@ -23,7 +23,7 @@ public class DiskJobSendMetadataBlock extends DiskJob {
 	public void process(Torrent torrent) {
 		MessageData mData = new MessageData(blockIndex, peer.getTorrent().getFiles().getMetadataBlock(blockIndex));
 		MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mData);
-		peer.addToQueue(extendedMessage);
+		peer.getBitTorrentSocket().queueMessage(extendedMessage);
 	}
 
 	@Override

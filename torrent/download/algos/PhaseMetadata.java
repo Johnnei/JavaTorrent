@@ -64,7 +64,7 @@ public class PhaseMetadata implements IDownloadPhase {
 				} else {
 					IMessage message = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), new MessageRequest(block.getIndex()));
 					peer.addJob(new Job(piece.getIndex(), block.getIndex()), JobType.Download);
-					peer.addToQueue(message);
+					peer.getBitTorrentSocket().queueMessage(message);
 				}
 			}
 		}

@@ -37,7 +37,7 @@ public class PeersWriterRunnable implements Runnable {
 		}
 		
 		try {
-			peer.sendMessage();
+			peer.getBitTorrentSocket().sendMessage();
 		} catch (IOException e) {
 			peer.getLogger().severe(e.getMessage());
 			peer.getBitTorrentSocket().close();

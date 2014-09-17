@@ -235,21 +235,21 @@ public class Torrent implements Runnable {
 				if (p.hasPiece(neededPieces.get(j).getIndex())) {
 					hasNoPieces = false;
 					if (!p.getClient().isInterested()) {
-						p.addToQueue(new MessageInterested());
+						p.getBitTorrentSocket().queueMessage(new MessageInterested());
 						p.getClient().interested();
 					}
 					break;
 				}
 			}
 			if (hasNoPieces && p.getClient().isInterested()) {
-				p.addToQueue(new MessageUninterested());
+				p.getBitTorrentSocket().queueMessage(new MessageUninterested());
 				p.getClient().uninterested();
 			}
 			if (p.getMyClient().isInterested() && p.getClient().isChoked()) {
-				p.addToQueue(new MessageUnchoke());
+				p.getBitTorrentSocket().queueMessage(new MessageUnchoke());
 				p.getClient().unchoke();
 			} else if (!p.getMyClient().isInterested() && !p.getClient().isChoked()) {
-				p.addToQueue(new MessageChoke());
+				p.getBitTorrentSocket().queueMessage(new MessageChoke());
 				p.getClient().choke();
 			}
 		}
@@ -329,7 +329,7 @@ public class Torrent implements Runnable {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
 			if (!p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()) {
-				p.addToQueue(have);
+				p.getBitTorrentSocket().queueMessage(have);
 			}
 		}
 	}
@@ -338,7 +338,7 @@ public class Torrent implements Runnable {
 		for (int i = 0; i < peers.size(); i++) {
 			Peer peer = peers.get(i);
 			if (!peer.getBitTorrentSocket().closed() && peer.getBitTorrentSocket().getPassedHandshake())
-				peer.addToQueue(m);
+				peer.getBitTorrentSocket().queueMessage(m);
 		}
 	}
 

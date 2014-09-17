@@ -20,7 +20,7 @@ public class MessageRequest extends Message {
 		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
 			MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mr);
-			peer.addToQueue(extendedMessage);
+			peer.getBitTorrentSocket().queueMessage(extendedMessage);
 		} else {
 			int piece = (int) dictionary.get("piece");
 			peer.getTorrent().addDiskJob(new DiskJobSendMetadataBlock(peer, piece));

@@ -30,7 +30,7 @@ public class DiskJobSendBlock extends DiskJob {
 		} catch (TorrentException te) {
 			te.printStackTrace();
 		}
-		peer.addToQueue(new MessageBlock(pieceIndex, offset, data));
+		peer.getBitTorrentSocket().queueMessage(new MessageBlock(pieceIndex, offset, data));
 		peer.addToPendingMessages(-1);
 		torrent.addUploadedBytes(data.length);
 	}

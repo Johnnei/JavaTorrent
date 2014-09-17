@@ -43,7 +43,7 @@ public class BitTorrentUtil {
 			);
 		}
 		
-		peer.addToQueue(message);
+		peer.getBitTorrentSocket().queueMessage(message);
 	}
 	
 	private static void sendHaveMessages(Peer peer) throws IOException {
@@ -53,7 +53,7 @@ public class BitTorrentUtil {
 		
 		Collection<IMessage> messages = peer.getTorrent().getFiles().getBitfield().getBitfieldMessage();
 		for (IMessage message : messages) {
-			peer.addToQueue(message);
+			peer.getBitTorrentSocket().queueMessage(message);
 		}
 	}
 

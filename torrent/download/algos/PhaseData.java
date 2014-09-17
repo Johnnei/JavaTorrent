@@ -49,7 +49,7 @@ public class PhaseData implements IDownloadPhase {
 				} else {
 					IMessage message = new MessageRequest(piece.getIndex(), block.getIndex() * torrent.getFiles().getBlockSize(), block.getSize());
 					peer.addJob(new Job(piece.getIndex(), block.getIndex()), JobType.Download);
-					peer.addToQueue(message);
+					peer.getBitTorrentSocket().queueMessage(message);
 				}
 			}
 		}
