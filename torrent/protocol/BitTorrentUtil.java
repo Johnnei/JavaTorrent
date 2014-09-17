@@ -1,9 +1,9 @@
 package torrent.protocol;
 
 import java.io.IOException;
-import java.util.Collection;
 
 import torrent.download.Torrent;
+import torrent.download.peer.Bitfield;
 import torrent.download.peer.Peer;
 import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageHave;
@@ -47,13 +47,27 @@ public class BitTorrentUtil {
 	}
 	
 	private static void sendHaveMessages(Peer peer) throws IOException {
-		if (peer.getTorrent().getDownloadStatus() != Torrent.STATE_DOWNLOAD_DATA) {
+		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
 			return;
 		}
 		
-		Collection<IMessage> messages = peer.getTorrent().getFiles().getBitfield().getBitfieldMessage();
-		for (IMessage message : messages) {
-			peer.getBitTorrentSocket().queueMessage(message);
+		Torrent torrent = peer.getTorrent();
+		Bitfield bitfield = torrent.getFiles().getBitfield();
+		
+		if (bitfield.countHavePieces() == 0) {
+			return;
+		}
+		
+		if (torrent.getFiles().getBitfieldSize() + 1 < 5 * bitfield.countHavePieces()) {
+			peer.getBitTorrentSocket().queueMessage(new MessageBitfield(bitfield.getBytes()));
+		} else {
+			for (int pieceIndex = 0; pieceIndex < torrent.getFiles().getPieceCount(); pieceIndex++) {
+				if (!bitfield.hasPiece(pieceIndex)) {
+					continue;
+				}
+				
+				peer.getBitTorrentSocket().queueMessage(new MessageHave(pieceIndex));
+			}
 		}
 	}
 

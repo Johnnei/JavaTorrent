@@ -1,11 +1,5 @@
 package torrent.download.peer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
-import torrent.protocol.IMessage;
-import torrent.protocol.messages.MessageBitfield;
-import torrent.protocol.messages.MessageHave;
 
 public class Bitfield {
 
@@ -84,6 +78,14 @@ public class Bitfield {
 		}
 		bitfield[byteIndex] |= (0x80 >> bit);
 	}
+	
+	/**
+	 * Returns a copy of the internal byte array
+	 * @return
+	 */
+	public byte[] getBytes() {
+		return bitfield.clone();
+	}
 
 	/**
 	 * Goes through the bitfield and checks how many pieces the client has
@@ -99,33 +101,6 @@ public class Bitfield {
 			}
 		}
 		return have;
-	}
-
-	/**
-	 * Generates the most efficient way to send the peer which pieces we have.<br/>
-	 * This comes down to:<Br/>
-	 * ((1 + bitfield.length) < (5 * pieceHaveCount)) ? sendBitfield : sendHaveMessage(s)
-	 * 
-	 * @return A list of messages to send to the client as bitfield
-	 */
-	public Collection<IMessage> getBitfieldMessage() {
-		Collection<IMessage> messages = new ArrayList<>();
-		if (countHavePieces() > 0) {
-			if (bitfield.length + 1 < 5 * countHavePieces()) {
-				messages.add(new MessageBitfield(bitfield));
-			} else {
-				int pieceIndex = 0;
-				for (int i = 0; i < bitfield.length; i++) {
-					for (int j = 0; j < 8; j++) {
-						if (hasPiece(pieceIndex)) {
-							messages.add(new MessageHave(pieceIndex));
-						}
-						++pieceIndex;
-					}
-				}
-			}
-		}
-		return messages;
 	}
 
 }
