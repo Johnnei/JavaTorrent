@@ -259,15 +259,7 @@ public class Peer implements Comparable<Peer> {
 	 * @param pieceIndex the piece to marked as "have"
 	 */
 	public void havePiece(int pieceIndex) {
-		// TODO Some magic to correctly handle the have messages during METADATA phase
-	}
-	
-	/**
-	 * Registers that this peer has the given set of pieces
-	 * @param bitfieldInfo the {@link MessageBitfield}'s bitfield
-	 */
-	public void havePiece(byte[] bitfieldInfo) {
-		// TODO Some magic to correctly handle the have message during METADATA phase
+		haveState.havePiece(pieceIndex);
 	}
 	
 	/**

@@ -34,7 +34,19 @@ public class MessageBitfield implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.havePiece(bitfield);
+		int pieceIndex = 0;
+		for (int byteIndex = 0; byteIndex < bitfield.length; byteIndex++) {
+			byte b = bitfield[byteIndex];
+			for (int i = 0; i < 8; i++) {
+				boolean isSet = ((b >> (7 - i)) & 0x1) != 0;
+				
+				if (isSet) {
+					peer.havePiece(pieceIndex);
+				}
+				
+				pieceIndex++;
+			}
+		}
 	}
 
 	@Override
