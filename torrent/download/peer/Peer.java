@@ -143,7 +143,7 @@ public class Peer implements Comparable<Peer> {
 	 * @param type
 	 */
 	public void addJob(Job job, PeerDirection type) {
-		getClientByJobType(type).addJob(job);
+		getClientByDirection(type).addJob(job);
 	}
 	
 	/**
@@ -152,7 +152,7 @@ public class Peer implements Comparable<Peer> {
 	 * @param type
 	 */
 	public void removeJob(Job job, PeerDirection type) {
-		getClientByJobType(type).removeJob(job);
+		getClientByDirection(type).removeJob(job);
 	}
 	
 	/**
@@ -349,6 +349,26 @@ public class Peer implements Comparable<Peer> {
 		
 		requestLimit = Math.min(requestLimit, absoluteRequestLimit);
 	}
+	
+	public void setChoked(PeerDirection direction, boolean choked) {
+		Client client = getClientByDirection(direction);
+		
+		if (choked) {
+			client.choke();
+		} else {
+			client.unchoke();
+		}
+	}
+	
+	public void setInterested(PeerDirection direction, boolean interested) {
+		Client client = getClientByDirection(direction);
+		
+		if (interested) {
+			client.interested();
+		} else {
+			client.uninterested();
+		}
+	}
 
 	@Override
 	public boolean equals(Object o) {
@@ -398,7 +418,15 @@ public class Peer implements Comparable<Peer> {
 		return requestLimit;
 	}
 	
-	private Client getClientByJobType(PeerDirection type) {
+	public boolean isInterested(PeerDirection direction) {
+		return getClientByDirection(direction).isInterested();
+	}
+	
+	public boolean isChoked(PeerDirection direction) {
+		return getClientByDirection(direction).isChoked();
+	}
+	
+	private Client getClientByDirection(PeerDirection type) {
 		switch (type) {
 		case Download:
 			return myClient;
