@@ -324,7 +324,7 @@ public class Torrent implements Runnable {
 	 */
 	public void broadcastHave(int pieceIndex) {
 		MessageHave have = new MessageHave(pieceIndex);
-		downloadedBytes -= files.getPiece(pieceIndex).getSize();
+		downloadedBytes += files.getPiece(pieceIndex).getSize();
 		files.havePiece(pieceIndex);
 		for (int i = 0; i < peers.size(); i++) {
 			Peer p = peers.get(i);
