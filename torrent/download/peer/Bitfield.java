@@ -1,8 +1,18 @@
 package torrent.download.peer;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 public class Bitfield {
 
+	/**
+	 * The lock which prevents thread-unsafety when the bitfield gets resized.<br/>
+	 * Read lock: Read/Write data into the {@link #bitfield} (both are allowed as missing one bit is not critical)<br/>
+	 * Write lock: Resizing the datastructure
+	 */
+	private ReadWriteLock resizeLock;
+	
 	private byte[] bitfield;
 
 	public Bitfield() {
@@ -11,6 +21,7 @@ public class Bitfield {
 
 	public Bitfield(int size) {
 		bitfield = new byte[size];
+		resizeLock = new ReentrantReadWriteLock();
 	}
 
 	/**
@@ -19,13 +30,20 @@ public class Bitfield {
 	 * @param size The new size to grow/shrink to
 	 */
 	public void setSize(int size) {
+		resizeLock.readLock().lock();
 		if (size == bitfield.length) {
+			resizeLock.readLock().unlock();
 			return;
 		}
+		resizeLock.readLock().unlock();
+		
+		resizeLock.writeLock().lock();
 		
 		byte[] newBitfield = new byte[size];
 		System.arraycopy(bitfield, 0, newBitfield, 0, Math.min(size, bitfield.length));
 		bitfield = newBitfield;
+		
+		resizeLock.writeLock().unlock();
 	}
 
 	/**
@@ -37,10 +55,15 @@ public class Bitfield {
 	public boolean hasPiece(int pieceIndex) {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
+		
+		resizeLock.readLock().lock();
 		if (byteIndex < bitfield.length) {
 			int bitVal = (0x80 >> bit);
-			return (bitfield[byteIndex] & bitVal) > 0;
+			boolean isSet = (bitfield[byteIndex] & bitVal) > 0;
+			resizeLock.readLock().unlock();
+			return isSet;
 		} else {
+			resizeLock.readLock().unlock();
 			return false;
 		}
 	}
@@ -65,18 +88,18 @@ public class Bitfield {
 	public void havePiece(int pieceIndex, boolean mayExpand) {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
+		resizeLock.readLock().lock();
 		if (bitfield.length < byteIndex) {
 			if (mayExpand) {
-				byte[] newBitfield = new byte[byteIndex + 1];
-				for (int i = 0; i < bitfield.length; i++) {
-					newBitfield[i] = bitfield[i];
-				}
-				this.bitfield = newBitfield;
+				resizeLock.readLock().unlock();
+				setSize(byteIndex + 1);
+				resizeLock.readLock().lock();
 			} else {
 				return; // Prevent IndexOutOfRange
 			}
 		}
 		bitfield[byteIndex] |= (0x80 >> bit);
+		resizeLock.readLock().unlock();
 	}
 	
 	/**
@@ -84,7 +107,10 @@ public class Bitfield {
 	 * @return
 	 */
 	public byte[] getBytes() {
-		return bitfield.clone();
+		resizeLock.readLock().lock();
+		byte[] clone = bitfield.clone();
+		resizeLock.readLock().unlock();
+		return clone;
 	}
 
 	/**
@@ -93,6 +119,7 @@ public class Bitfield {
 	 * @return The amount of pieces the client has
 	 */
 	public int countHavePieces() {
+		resizeLock.readLock().lock();
 		int pieces = bitfield.length * 8;
 		int have = 0;
 		for (int pieceIndex = 0; pieceIndex < pieces; pieceIndex++) {
@@ -100,6 +127,7 @@ public class Bitfield {
 				have++;
 			}
 		}
+		resizeLock.readLock().unlock();
 		return have;
 	}
 

@@ -194,6 +194,15 @@ public class Peer implements Comparable<Peer> {
 	public void updateLastActivity() {
 		lastActivity = System.currentTimeMillis();
 	}
+	
+	/**
+	 * A callback method which gets invoked when the torrent starts a new phase
+	 */
+	public void onTorrentPhaseChange() {
+		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+			haveState.setSize(torrent.getFiles().getBitfieldSize());
+		}
+	}
 
 	/**
 	 * Gets the amount of messages waiting to be send
@@ -340,14 +349,6 @@ public class Peer implements Comparable<Peer> {
 		}
 		
 		requestLimit = Math.min(requestLimit, absoluteRequestLimit);
-	}
-
-	/**
-	 * Sets the amount of reserved bytes for the have message caching
-	 * @param bitfieldSize The amount of bytes needed to store the have messages as a bitfield
-	 */
-	public void setBitfieldSize(int bitfieldSize) {
-		haveState.setSize(bitfieldSize);
 	}
 
 	@Override

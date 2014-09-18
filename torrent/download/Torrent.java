@@ -159,21 +159,20 @@ public class Torrent implements Runnable {
 		thread.start();
 	}
 
-	/**
-	 * Updates the bitfield size for all peers
-	 */
-	public void updateBitfields() {
-		for (int i = 0; i < peers.size(); i++) {
-			Peer peer = peers.get(i);
-			if (peer != null) {
-				peer.setBitfieldSize(files.getBitfieldSize());
-			}
-		}
-	}
-
 	public void run() {
 		while(phase != null) {
 			torrentStatus = phase.getId();
+			
+			for (int i = 0; i < peers.size(); i++) {
+				Peer peer = peers.get(i);
+				
+				if (peer == null) {
+					continue;
+				}
+				
+				peer.onTorrentPhaseChange();
+			}
+			
 			phase.preprocess();
 			while (!phase.isDone() || torrentHaltingOperations > 0) {
 				processPeers();
