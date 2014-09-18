@@ -9,7 +9,6 @@ import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobSendBlock;
 import torrent.network.BitTorrentSocket;
-import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageKeepAlive;
 
 public class Peer implements Comparable<Peer> {
