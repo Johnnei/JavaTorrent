@@ -213,8 +213,7 @@ public class Peer implements Comparable<Peer> {
 	}
 
 	public int getFreeWorkTime() {
-		return (getWorkQueueSize() >= myClient.getMaxRequests()) ? 0 : myClient
-				.getMaxRequests() - getWorkQueueSize();
+		return (getWorkQueueSize() >= getRequestLimit()) ? 0 : getRequestLimit() - getWorkQueueSize();
 	}
 
 	/**
@@ -232,7 +231,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	@Deprecated
 	public int getMaxWorkLoad() {
-		return myClient.getMaxRequests();
+		return getRequestLimit();
 	}
 
 	@Deprecated
