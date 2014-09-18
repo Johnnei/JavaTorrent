@@ -1,6 +1,6 @@
 package torrent.download.peer;
 
-public enum JobType {
+public enum PeerDirection {
 	
 	Download,
 	Upload;

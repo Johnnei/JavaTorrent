@@ -1,7 +1,7 @@
 package torrent.protocol.messages.ut_metadata;
 
 import torrent.download.peer.Job;
-import torrent.download.peer.JobType;
+import torrent.download.peer.PeerDirection;
 import torrent.download.peer.Peer;
 import torrent.protocol.UTMetadata;
 
@@ -20,7 +20,7 @@ public class MessageReject extends Message {
 		int blockIndex = (int) dictionary.get("piece");
 		peer.getLogger().severe("Piece Request got rejected: " + blockIndex);
 		peer.getTorrent().getFiles().getPiece(0).reset(blockIndex);
-		peer.removeJob(new Job(0, blockIndex), JobType.Download);
+		peer.removeJob(new Job(0, blockIndex), PeerDirection.Download);
 		peer.getBitTorrentSocket().close();
 	}
 

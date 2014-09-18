@@ -1,7 +1,7 @@
 package torrent.protocol.messages;
 
 import torrent.download.peer.Job;
-import torrent.download.peer.JobType;
+import torrent.download.peer.PeerDirection;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
@@ -41,7 +41,7 @@ public class MessageBlock implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece(index, offset, data);
-		peer.removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)), JobType.Download);
+		peer.removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)), PeerDirection.Download);
 		if (data.length > 0) {
 			peer.addStrike(-1);
 			if (readDuration > 0 && readDuration < 1000) { // Set by extreme speed

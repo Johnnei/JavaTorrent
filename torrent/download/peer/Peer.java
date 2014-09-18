@@ -142,7 +142,7 @@ public class Peer implements Comparable<Peer> {
 	 * @param job
 	 * @param type
 	 */
-	public void addJob(Job job, JobType type) {
+	public void addJob(Job job, PeerDirection type) {
 		getClientByJobType(type).addJob(job);
 	}
 	
@@ -151,7 +151,7 @@ public class Peer implements Comparable<Peer> {
 	 * @param job
 	 * @param type
 	 */
-	public void removeJob(Job job, JobType type) {
+	public void removeJob(Job job, PeerDirection type) {
 		getClientByJobType(type).removeJob(job);
 	}
 	
@@ -398,7 +398,7 @@ public class Peer implements Comparable<Peer> {
 		return requestLimit;
 	}
 	
-	private Client getClientByJobType(JobType type) {
+	private Client getClientByJobType(PeerDirection type) {
 		switch (type) {
 		case Download:
 			return myClient;

@@ -1,7 +1,7 @@
 package torrent.protocol.messages.ut_metadata;
 
 import torrent.download.peer.Job;
-import torrent.download.peer.JobType;
+import torrent.download.peer.PeerDirection;
 import torrent.download.peer.Peer;
 import torrent.network.Stream;
 import torrent.protocol.UTMetadata;
@@ -35,7 +35,7 @@ public class MessageData extends Message {
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
 		peer.getTorrent().collectPiece(0, blockIndex * peer.getTorrent().getFiles().getBlockSize(), data);
-		peer.removeJob(new Job(0, blockIndex), JobType.Download);
+		peer.removeJob(new Job(0, blockIndex), PeerDirection.Download);
 	}
 
 	@Override
