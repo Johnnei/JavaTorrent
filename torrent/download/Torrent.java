@@ -22,6 +22,7 @@ import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobStoreBlock;
 import torrent.download.files.disk.IOManager;
 import torrent.download.peer.Peer;
+import torrent.download.peer.PeerDirection;
 import torrent.download.tracker.TrackerManager;
 import torrent.encoding.SHA1;
 import torrent.protocol.IMessage;
@@ -233,23 +234,23 @@ public class Torrent implements Runnable {
 			for (int j = 0; j < neededPieces.size(); j++) {
 				if (p.hasPiece(neededPieces.get(j).getIndex())) {
 					hasNoPieces = false;
-					if (!p.getClient().isInterested()) {
+					if (!p.isInterested(PeerDirection.Upload)) {
 						p.getBitTorrentSocket().queueMessage(new MessageInterested());
-						p.getClient().interested();
+						p.setInterested(PeerDirection.Upload, true);
 					}
 					break;
 				}
 			}
-			if (hasNoPieces && p.getClient().isInterested()) {
+			if (hasNoPieces && p.isInterested(PeerDirection.Upload)) {
 				p.getBitTorrentSocket().queueMessage(new MessageUninterested());
-				p.getClient().uninterested();
+				p.setInterested(PeerDirection.Upload, false);
 			}
-			if (p.getMyClient().isInterested() && p.getClient().isChoked()) {
+			if (p.isInterested(PeerDirection.Download) && p.isChoked(PeerDirection.Upload)) {
 				p.getBitTorrentSocket().queueMessage(new MessageUnchoke());
-				p.getClient().unchoke();
-			} else if (!p.getMyClient().isInterested() && !p.getClient().isChoked()) {
+				p.setChoked(PeerDirection.Upload, false);
+			} else if (!p.isInterested(PeerDirection.Download) && !p.isChoked(PeerDirection.Upload)) {
 				p.getBitTorrentSocket().queueMessage(new MessageChoke());
-				p.getClient().choke();
+				p.setChoked(PeerDirection.Upload, true);
 			}
 		}
 	}
@@ -507,7 +508,7 @@ public class Torrent implements Runnable {
 				if (p.getExtensions().hasExtension(UTMetadata.NAME))
 					leechers.add(p);
 			} else {
-				if (p.countHavePieces() > 0 && !p.getMyClient().isChoked() && p.getFreeWorkTime() > 0)
+				if (p.countHavePieces() > 0 && !p.isChoked(PeerDirection.Download) && p.getFreeWorkTime() > 0)
 					leechers.add(p);
 			}
 		}

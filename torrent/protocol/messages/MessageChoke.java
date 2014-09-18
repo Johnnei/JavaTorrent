@@ -1,6 +1,7 @@
 package torrent.protocol.messages;
 
 import torrent.download.peer.Peer;
+import torrent.download.peer.PeerDirection;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
@@ -17,7 +18,7 @@ public class MessageChoke implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.getMyClient().choke();
+		peer.setChoked(PeerDirection.Download, true);
 		peer.cancelAllPieces();
 	}
 

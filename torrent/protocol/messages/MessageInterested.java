@@ -1,6 +1,7 @@
 package torrent.protocol.messages;
 
 import torrent.download.peer.Peer;
+import torrent.download.peer.PeerDirection;
 import torrent.network.Stream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
@@ -17,7 +18,8 @@ public class MessageInterested implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.getMyClient().interested();
+		// This is questionable behaviour, they notify that THEY are interested, for us that is upload not download
+		peer.setInterested(PeerDirection.Download, true);
 	}
 
 	@Override
