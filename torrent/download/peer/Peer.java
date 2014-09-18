@@ -203,45 +203,21 @@ public class Peer implements Comparable<Peer> {
 		}
 	}
 
-	/**
-	 * Gets the amount of messages waiting to be send
-	 * 
-	 * @return
-	 */
 	public boolean isWorking() {
-		return getWorkQueueSize() > 0;
+		return getWorkQueueSize(PeerDirection.Download) > 0;
 	}
 
 	public int getFreeWorkTime() {
-		return (getWorkQueueSize() >= getRequestLimit()) ? 0 : getRequestLimit() - getWorkQueueSize();
+		return (getWorkQueueSize(PeerDirection.Download) >= getRequestLimit()) ?
+				0 : getRequestLimit() - getWorkQueueSize(PeerDirection.Download);
 	}
 
 	/**
 	 * Gets the amount of pieces the client still needs to send
 	 * @return
 	 */
-	public int getWorkQueueSize() {
+	public int getWorkQueueSize(PeerDirection direction) {
 		return myClient.getQueueSize();
-	}
-
-	/**
-	 *
-	 * @return
-	 * @see {@link #getRequestLimit()}
-	 */
-	@Deprecated
-	public int getMaxWorkLoad() {
-		return getRequestLimit();
-	}
-
-	@Deprecated
-	public Client getClient() {
-		return peerClient;
-	}
-
-	@Deprecated
-	public Client getMyClient() {
-		return myClient;
 	}
 
 	/**
@@ -249,7 +225,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public void cancelAllPieces() {
 		synchronized (this) {
-			if (getWorkQueueSize() > 0) {
+			if (getWorkQueueSize(PeerDirection.Download) > 0) {
 				Object[] keys = myClient.getKeySet().toArray();
 				for (int i = 0; i < keys.length; i++) {
 					Job job = (Job) keys[i];
@@ -311,7 +287,7 @@ public class Peer implements Comparable<Peer> {
 	}
 	
 	private int getCompareValue() {
-		return (getWorkQueueSize() * 5000) + haveState.countHavePieces() + socket.getDownloadRate();
+		return (getWorkQueueSize(PeerDirection.Download) * 5000) + haveState.countHavePieces() + socket.getDownloadRate();
 	}
 
 	/**
