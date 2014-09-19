@@ -16,8 +16,8 @@ BEP | Description | Implemented
 
 Version System
 ===========
-From version 1.0.0 and onward it will comply with http://semver.org/ standards.
-Before version 1.0.0 the versioning is based on: [major].[feature].[patch]
+The version system will be similar to Semantic Versioning but as this isn't a library I will decide when "major" should be updated.
+Version format: [major].[feature].[patch]
 
 Used Resources
 ===========
