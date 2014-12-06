@@ -37,7 +37,7 @@ public abstract class Message implements IMessage {
 	public void read(Stream inStream) {
 		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
 		try {
-			dictionary = (HashMap<String, Object>) decoder.decodeDictionary();
+			dictionary = decoder.decodeDictionary();
 			inStream.moveBack(decoder.remainingChars());
 		} catch (InvalidObjectException e) {
 		}
