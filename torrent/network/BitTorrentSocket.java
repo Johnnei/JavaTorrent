@@ -68,16 +68,18 @@ public class BitTorrentSocket {
 			return;
 		}
 		
+		BitTorrentSocketException exception = new BitTorrentSocketException("Failed to connect to end point.");
 		socket = new TcpSocket();
 		while (socket != null && (socket.isClosed() || socket.isConnecting())) {
 			try {
 				socket.connect(address);
 				createIOStreams();
 			} catch (IOException e) {
+				exception.addConnectionFailure(socket, e);
 				if (socket.canFallback()) {
 					socket = socket.getFallbackSocket();
 				} else {
-					throw new IOException(String.format("Failed to connect to end point with all socket types"));
+					throw exception;
 				}
 			}
 		}
