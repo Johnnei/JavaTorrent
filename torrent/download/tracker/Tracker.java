@@ -163,9 +163,7 @@ public class Tracker {
 		ArrayList<TorrentInfo> torrents = new ArrayList<>(torrentMap.size());
 		
 		synchronized (this) {
-			Iterator<Entry<String, TorrentInfo>> iterator = torrentMap.entrySet().iterator();
-			while(iterator.hasNext()) {
-				Entry<String, TorrentInfo> entry = iterator.next();
+			for (Entry<String, TorrentInfo> entry : torrentMap.entrySet()) {
 				torrents.add(entry.getValue());
 			}
 		}
