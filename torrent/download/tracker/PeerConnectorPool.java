@@ -43,6 +43,10 @@ public class PeerConnectorPool {
 		connector.addPeer(peer);
 		ThreadUtils.notify(connector.PEER_JOB_NOTIFY);
 	}
+	
+	public int getFreeCapacity() {
+		return connectors.stream().mapToInt(PeerConnector::getFreeCapacity).sum();
+	}
 
 	public int getConnectingCountFor(Torrent torrent) {
 		return connectors.stream().mapToInt(c -> c.getConnectingCountFor(torrent)).sum();

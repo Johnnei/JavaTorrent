@@ -5,6 +5,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.johnnei.utils.config.Config;
@@ -115,6 +116,12 @@ public class TrackerConnection {
 	 * @return The interval report by tracker or {@link Tracker#DEFAULT_ANNOUNCE_INTERVAL} on error
 	 */
 	public int announce(TorrentInfo torrentInfo) throws TrackerException {
+		int connectorCapacity = connectorPool.getFreeCapacity();
+		if (connectorCapacity == 0) {
+			log.info("Ignored announce, connector is full.");
+			return (int) TimeUnit.SECONDS.toMillis(30);
+		}
+		
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
 		stream.reset(100);
@@ -134,7 +141,7 @@ public class TrackerConnection {
 		}
 		stream.writeInt(0); // Use sender ip
 		stream.writeInt(new Random().nextInt());
-		stream.writeInt(torrent.peersWanted()); // Use defaults num_want (-1) Use the max our buffer can hold
+		stream.writeInt(Math.min(connectorCapacity, torrent.peersWanted())); // Use defaults num_want (-1) Use the max our buffer can hold
 		stream.writeShort(Config.getConfig().getInt("download-port"));
 		stream.writeShort(0); // No extensions
 		try {
