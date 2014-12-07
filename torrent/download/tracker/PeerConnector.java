@@ -12,6 +12,7 @@ import torrent.encoding.SHA1;
 import torrent.network.BitTorrentSocket;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.BitTorrentUtil;
+import torrent.util.StringUtil;
 
 public class PeerConnector implements Runnable {
 
@@ -103,8 +104,8 @@ public class PeerConnector implements Runnable {
 	private BitTorrentHandshake checkHandshake(BitTorrentSocket peerSocket, byte[] torrentHash) throws IOException {
 		BitTorrentHandshake handshake = peerSocket.readHandshake();
 		
-		if (SHA1.match(torrentHash, handshake.getTorrentHash())) {
-			throw new IOException("Peer does not download the same torrent");
+		if (!SHA1.match(torrentHash, handshake.getTorrentHash())) {
+			throw new IOException(String.format("Peer does not download the same torrent (Expected: %s, Got: %s)", StringUtil.byteArrayToString(torrentHash), StringUtil.byteArrayToString(handshake.getTorrentHash())));
 		}
 		
 		return handshake;
