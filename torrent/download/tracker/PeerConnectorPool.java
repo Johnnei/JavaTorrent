@@ -32,7 +32,7 @@ public class PeerConnectorPool {
 	 * @param p the peer to be connected
 	 */
 	public void addPeer(PeerConnectInfo peer) {
-		PeerConnector connector = connectors.stream().min((a, b) -> a.getFreeCapacity() - b.getFreeCapacity()).get();
+		PeerConnector connector = connectors.stream().max((a, b) -> a.getFreeCapacity() - b.getFreeCapacity()).get();
 		
 		if (connector.getFreeCapacity() == 0) {
 			System.err.println("[PeerConnectorPool] Overflowing in peers. Can't distribute peers!");
