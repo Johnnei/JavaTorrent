@@ -1,5 +1,6 @@
 package torrent.download.tracker;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -178,6 +179,10 @@ public class Tracker {
 	
 	public String getStatus() {
 		return connection.getStatus();
+	}
+	
+	public InetAddress getInetAddress() {
+		return connection.getAddress();
 	}
 
 	public void connect() {

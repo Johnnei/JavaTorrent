@@ -238,6 +238,10 @@ public class TrackerConnection {
 	public String getStatus() {
 		return status;
 	}
+	
+	public InetAddress getAddress() {
+		return address;
+	}
 
 	public String getTrackerName() {
 		return name;

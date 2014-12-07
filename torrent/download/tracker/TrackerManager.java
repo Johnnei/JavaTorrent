@@ -105,7 +105,7 @@ public class TrackerManager implements Runnable {
 	 * @return the tracker
 	 */
 	private Tracker findTracker(Tracker tracker) {
-		Optional<Tracker> optionalTracker = trackerList.stream().filter(t -> t.equals(tracker)).findAny();
+		Optional<Tracker> optionalTracker = trackerList.stream().filter(t -> t.getInetAddress().equals(tracker.getInetAddress())).findAny();
 		
 		if (optionalTracker.isPresent()) {
 			return optionalTracker.get();
