@@ -3,7 +3,7 @@ package torrent.download;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.HashMap;
+import java.util.HashSet;
 
 public class FileInfo {
 
@@ -22,7 +22,7 @@ public class FileInfo {
 	/**
 	 * The amount of pieces that have been downloaded
 	 */
-	private HashMap<Integer, Object> pieceHave;
+	private HashSet<Integer> pieceHave;
 	/**
 	 * The amount of pieces which contain a part of data for this file
 	 */
@@ -46,7 +46,7 @@ public class FileInfo {
 		this.filename = filename;
 		this.filesize = filesize;
 		this.pieceCount = pieceCount;
-		pieceHave = new HashMap<>();
+		pieceHave = new HashSet<>();
 		try {
 			if (!file.exists()) {
 				file.getParentFile().mkdirs();
@@ -59,7 +59,7 @@ public class FileInfo {
 	}
 
 	public void addPiece(int index) {
-		pieceHave.put(index, new Object());
+		pieceHave.add(index);
 	}
 
 	public int getIndex() {
