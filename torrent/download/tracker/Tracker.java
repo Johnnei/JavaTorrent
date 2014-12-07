@@ -189,7 +189,6 @@ public class Tracker {
 		try {
 			connection.connect();
 			connectionTime = System.currentTimeMillis();
-			onSucces();
 		} catch (TrackerException e) {
 			onError(e);
 		}
