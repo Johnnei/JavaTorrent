@@ -122,12 +122,11 @@ public class PeerConnector implements Runnable {
 		return maxPeers;
 	}
 
-	@SuppressWarnings("unchecked")
 	public int getConnectingCountFor(Torrent torrent) {
-		LinkedList<Peer> peerList = null;
+		LinkedList<PeerConnectInfo> peerList = null;
 		
 		synchronized (LOCK_PEER_LIST) {
-			peerList = (LinkedList<Peer>) peers.clone();
+			peerList = new LinkedList<>(peers);
 		}
 		
 		return (int) peerList.stream().
