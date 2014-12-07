@@ -69,6 +69,7 @@ public class TrackerConnection {
 			} catch (Exception e) {
 				address = null;
 				status = "Failed to parse address";
+				log.warning(String.format("Failed to resolve tracker: %s", e.getMessage()));
 			}
 		}
 	}

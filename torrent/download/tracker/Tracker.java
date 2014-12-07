@@ -142,7 +142,7 @@ public class Tracker {
 	 * @return true if less than 3 errors occured
 	 */
 	public boolean isValid() {
-		return errorCount < 3;
+		return errorCount < 3 && connection.getAddress() != null;
 	}
 	
 	/**

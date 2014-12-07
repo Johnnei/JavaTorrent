@@ -90,13 +90,16 @@ public class TrackerManager implements Runnable {
 	 * Adds the torrent to the tracker and registers the tracker
 	 * @param torrent The torrent to add
 	 * @param tracker The tracker url
-	 * @return The tracker on which the torrent has been added
 	 */
-	public Tracker addTorrent(Torrent torrent, String trackerUrl) {
+	public void addTorrent(Torrent torrent, String trackerUrl) {
 		Tracker tracker = new Tracker(trackerUrl, peerConnectorPool, this);
+		
+		if (!tracker.isValid()) {
+			return;
+		}
+		
 		tracker = findTracker(tracker);
 		tracker.addTorrent(torrent);
-		return tracker;
 	}
 	
 	/**
