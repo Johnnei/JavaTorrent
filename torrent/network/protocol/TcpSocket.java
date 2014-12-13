@@ -23,9 +23,8 @@ public class TcpSocket implements ISocket {
 	}
 	
 	@Override
-	public void connect(InetSocketAddress endpoint)
-			throws IOException {
-		socket.connect(endpoint, 2500);
+	public void connect(InetSocketAddress endpoint) throws IOException {
+		socket.connect(endpoint, 10_000);
 	}
 
 	@Override

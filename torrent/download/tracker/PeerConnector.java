@@ -93,7 +93,7 @@ public class PeerConnector implements Runnable {
 				peer.getExtensions().register(handshake.getPeerExtensionBytes());
 				BitTorrentUtil.onPostHandshake(peer);
 			} catch (IOException e) {
-				System.err.println(String.format("[PeerConnector] Failed to connect to peer (%s): %s", peerInfo.getAddress().getAddress(), e.getMessage()));
+				System.err.println(String.format("[PeerConnector] Failed to connect to peer (%s:%d): %s", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort(), e.getMessage()));
 				if (peerSocket != null) {
 					peerSocket.close();
 				}

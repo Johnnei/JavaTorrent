@@ -8,9 +8,12 @@ import java.net.InetAddress;
 /**
  * A Data Helper Class
  * 
+ * <b>Warning</b>: This class is fundamentally broken and is doing far too much.
+ * 
  * @author Johnnei
  * 
  */
+@Deprecated
 public class Stream {
 	protected byte[] buffer;
 	protected int writeOffset;
