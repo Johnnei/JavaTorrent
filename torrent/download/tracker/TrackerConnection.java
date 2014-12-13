@@ -12,7 +12,9 @@ import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
+import torrent.network.UdpUtils;
 
 public class TrackerConnection {
 
@@ -37,7 +39,6 @@ public class TrackerConnection {
 	private String name;
 	private int port;
 	private DatagramSocket socket;
-	private Stream stream;
 
 	private long connectionId;
 	private int action;
@@ -55,7 +56,6 @@ public class TrackerConnection {
 		this.connectorPool = connectorPool;
 		this.manager = manager;
 		this.log = log;
-		stream = new Stream();
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
 		if (!urlData[0].equals("udp")) {
@@ -80,34 +80,34 @@ public class TrackerConnection {
 
 	public void connect() throws TrackerException {
 		setStatus("Connecting");
-		stream.reset(1000);
 		int transactionId = manager.getTransactionId();
-		stream.writeLong(connectionId);
-		stream.writeInt(ACTION_CONNECT);
-		stream.writeInt(transactionId);
+		OutStream outStream = new OutStream();
 		try {
+			outStream.writeLong(connectionId);
+			outStream.writeInt(ACTION_CONNECT);
+			outStream.writeInt(transactionId);
 			if (socket == null) {
 				socket = new DatagramSocket();
 				socket.setSoTimeout(15000);
 			}
-			socket.send(stream.write(address, port));
-			stream.read(socket);
-			action = stream.readInt();
-			if (stream.readInt() != transactionId) {
+			UdpUtils.write(socket, address, port, outStream);
+			InStream inStream = UdpUtils.read(socket);
+			action = inStream.readInt();
+			if (inStream.readInt() != transactionId) {
 				action = ACTION_TRANSACTION_ID_ERROR;
 			}
 			if (action != ACTION_CONNECT) {
-				String error = stream.readString(stream.available());
+				String error = inStream.readString(inStream.available());
 				setStatus("Connection failed");
 				throw new TrackerException("Tracker responded with an error: " + error);
 			} else {
-				connectionId = stream.readLong();
+				connectionId = inStream.readLong();
 				setStatus("Connected");
 			}
 		} catch (IOException e) {
 			socket = null;
 			setStatus("Connection failed");
-			throw new TrackerException("Tracker Packet got lost");
+			throw new TrackerException(String.format("Tracker Packet got lost: %s", e.getMessage()));
 		}
 	}
 
@@ -125,46 +125,47 @@ public class TrackerConnection {
 		
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
-		stream.reset(100);
 		int transactionId = manager.getTransactionId();
-		stream.writeLong(connectionId);
-		stream.writeInt(ACTION_ANNOUNCE);
-		stream.writeInt(transactionId);
-		stream.writeByte(torrent.getHashArray());
-		stream.writeByte(manager.getPeerId());
-		stream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
-		stream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
-		stream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
+		OutStream outStream = new OutStream();
+		outStream.writeLong(connectionId);
+		outStream.writeInt(ACTION_ANNOUNCE);
+		outStream.writeInt(transactionId);
+		outStream.writeByte(torrent.getHashArray());
+		outStream.writeByte(manager.getPeerId());
+		outStream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
+		outStream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
+		outStream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
 		int event = torrentInfo.getEvent();
-		stream.writeInt(event);
+		outStream.writeInt(event);
 		if(event != EVENT_NONE) {
 			torrentInfo.setEvent(EVENT_NONE);
 		}
-		stream.writeInt(0); // Use sender ip
-		stream.writeInt(new Random().nextInt());
-		stream.writeInt(Math.min(connectorCapacity, torrent.peersWanted())); // Use defaults num_want (-1) Use the max our buffer can hold
-		stream.writeShort(Config.getConfig().getInt("download-port"));
-		stream.writeShort(0); // No extensions
+		outStream.writeInt(0); // Use sender ip
+		outStream.writeInt(new Random().nextInt());
+		outStream.writeInt(Math.min(connectorCapacity, torrent.peersWanted())); // Use defaults num_want (-1) Use the max our buffer can hold
+		outStream.writeShort(Config.getConfig().getInt("download-port"));
+		outStream.writeShort(0); // No extensions
 		try {
-			socket.send(stream.write(address, port));
-			stream.read(socket);
-			action = stream.readInt();
-			if (transactionId != stream.readInt())
+			UdpUtils.write(socket, address, port, outStream);
+			InStream inStream = UdpUtils.read(socket);
+			action = inStream.readInt();
+			if (transactionId != inStream.readInt())
 				action = ACTION_TRANSACTION_ID_ERROR;
 			if (action != ACTION_ANNOUNCE) {
-				String error = stream.readString(stream.available());
+				String error = inStream.readString(inStream.available());
 				log.warning(String.format("Announce failed with error: %d, Message: %s", action, error));
 				setStatus("Announce failed");
 				handleError(error);
 				throw new TrackerException("Tracker responded with an error: " + error);
 			}
-			int announceInterval = stream.readInt();
-			int leechers = stream.readInt();
-			int seeders = stream.readInt();
+			int announceInterval = inStream.readInt();
+			int leechers = inStream.readInt();
+			int seeders = inStream.readInt();
 			torrentInfo.setInfo(seeders, leechers);
-			while (stream.available() >= 6) {
-				byte[] address = stream.readIP();
-				int port = stream.readShort();
+			while (inStream.available() >= 6) {
+				byte[] address = new byte[4];
+				inStream.readFully(address);
+				int port = inStream.readUnsignedShort();
 				if (isEmptyIP(address))
 					continue;
 				
@@ -185,25 +186,25 @@ public class TrackerConnection {
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Scraping");
 		int transactionId = manager.getTransactionId();
-		stream.reset(36);
-		stream.writeLong(connectionId);
-		stream.writeInt(ACTION_SCRAPE);
-		stream.writeInt(transactionId);
-		stream.writeByte(torrent.getHashArray());
+		OutStream outStream = new OutStream();
+		outStream.writeLong(connectionId);
+		outStream.writeInt(ACTION_SCRAPE);
+		outStream.writeInt(transactionId);
+		outStream.writeByte(torrent.getHashArray());
 		try {
-			socket.send(stream.write(address, port));
-			stream.read(socket);
-			action = stream.readInt();
-			if (stream.readInt() != transactionId) {
+			UdpUtils.write(socket, address, port, outStream);
+			InStream inStream = UdpUtils.read(socket);
+			action = inStream.readInt();
+			if (inStream.readInt() != transactionId) {
 				action = ACTION_TRANSACTION_ID_ERROR;
 			} if (action == ACTION_SCRAPE) {
-				int seeders = stream.readInt();
-				int downloaded = stream.readInt();
-				int leechers = stream.readInt();
+				int seeders = inStream.readInt();
+				int downloaded = inStream.readInt();
+				int leechers = inStream.readInt();
 				torrentInfo.setInfo(seeders, leechers, downloaded);
 				setStatus("Scraped");
 			} else {
-				String error = stream.readString(stream.available());
+				String error = inStream.readString(inStream.available());
 				setStatus("Scrape failed");
 				handleError(error);
 				throw new TrackerException("Tracker responded with an error: " + error);
