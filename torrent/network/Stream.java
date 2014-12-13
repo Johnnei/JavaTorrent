@@ -9,6 +9,9 @@ import java.net.InetAddress;
  * A Data Helper Class
  * 
  * <b>Warning</b>: This class is fundamentally broken and is doing far too much.
+ * @see InStream
+ * @see OutStream
+ * 
  * 
  * @author Johnnei
  * 
