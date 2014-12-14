@@ -57,4 +57,16 @@ public class TorrentBuilder {
 		return torrent;
 	}
 
+	public boolean isBuildable() {
+		if (btihHash == null) {
+			return false;
+		}
+		
+		if (trackers.isEmpty()) {
+			return false;
+		}
+		
+		return true;
+	}
+
 }

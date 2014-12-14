@@ -16,9 +16,19 @@ public class MagnetLink {
 	 */
 	private Torrent torrent;
 	
+	private TorrentBuilder torrentBuilder;
+	
+	private TorrentManager torrentManager;
+	
+	private TrackerManager trackerManager;
+	
+	private Logger log;
+	
 	public MagnetLink(String magnetLink, TorrentManager torrentManager, TrackerManager trackerManager) {
-		TorrentBuilder torrentBuilder = new TorrentBuilder();
-		Logger log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
+		this.torrentBuilder = new TorrentBuilder();
+		this.log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
+		this.torrentManager = torrentManager;
+		this.trackerManager = trackerManager;
 		
 		if (!magnetLink.startsWith("magnet:?")) {
 			return;
@@ -61,20 +71,22 @@ public class MagnetLink {
 				log.fine("Unhandled Magnet Data: " + linkData[i]);
 			}
 		}
-		
-		try {
-			torrent = torrentBuilder.build(torrentManager, trackerManager);
-		} catch (IllegalStateException e) {
-			log.warning("Failed to build torrent from magnet link: " + e.getMessage());
-		}
 	}
 
-	public Torrent getTorrent() {
+	public Torrent getTorrent() throws IllegalStateException {
+		if (torrent == null) {
+			try {
+				torrent = torrentBuilder.build(torrentManager, trackerManager);
+			} catch (IllegalStateException e) {
+				log.warning("Failed to build torrent from magnet link: " + e.getMessage());
+			}
+		}
+		
 		return torrent;
 	}
 
 	public boolean isDownloadable() {
-		return torrent != null;
+		return torrentBuilder.isBuildable();
 	}
 
 }
