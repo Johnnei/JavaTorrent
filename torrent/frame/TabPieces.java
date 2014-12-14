@@ -5,7 +5,7 @@ import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import torrent.download.Files;
+import torrent.download.AFiles;
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
 import torrent.frame.controls.TableBase;
@@ -46,7 +46,7 @@ public class TabPieces extends TableBase {
 		if (torrent.getDownloadStatus() != Torrent.STATE_DOWNLOAD_DATA)
 			return;
 		ArrayList<Piece> pieceList = new ArrayList<>();
-		Files tf = torrent.getFiles();
+		AFiles tf = torrent.getFiles();
 		for (int i = 0; i < tf.getPieceCount(); i++) {
 			if (tf.getPiece(i).isStarted() && !tf.getPiece(i).isDone()) {
 				pieceList.add(torrent.getFiles().getPiece(i));

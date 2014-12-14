@@ -2,8 +2,10 @@ package torrent.protocol;
 
 import java.io.IOException;
 
+import org.johnnei.utils.JMath;
+
+import torrent.download.AFiles;
 import torrent.download.Torrent;
-import torrent.download.peer.Bitfield;
 import torrent.download.peer.Peer;
 import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageHave;
@@ -23,6 +25,7 @@ public class BitTorrentUtil {
 		}
 		
 		sendHaveMessages(peer);
+		peer.getBitTorrentSocket().setPassedHandshake();
 		peer.getTorrent().addPeer(peer);
 	}
 	
@@ -38,7 +41,8 @@ public class BitTorrentUtil {
 			message = new MessageExtension(
 				BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, 
 				new MessageHandshake(
-					peer.getTorrent().getFiles().getMetadataSize()
+					//peer.getTorrent().getFiles().getMetadataSize()
+					0 // TODO Correctly implement the metadata size again.
 				)
 			);
 		}
@@ -52,17 +56,17 @@ public class BitTorrentUtil {
 		}
 		
 		Torrent torrent = peer.getTorrent();
-		Bitfield bitfield = torrent.getFiles().getBitfield();
+		AFiles files = torrent.getFiles();
 		
-		if (bitfield.countHavePieces() == 0) {
+		if (files.countCompletedPieces() == 0) {
 			return;
 		}
 		
-		if (torrent.getFiles().getBitfieldSize() + 1 < 5 * bitfield.countHavePieces()) {
-			peer.getBitTorrentSocket().queueMessage(new MessageBitfield(bitfield.getBytes()));
+		if (JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8) + 1 < 5 * files.countCompletedPieces()) {
+			peer.getBitTorrentSocket().queueMessage(new MessageBitfield(files.getBitfieldBytes()));
 		} else {
 			for (int pieceIndex = 0; pieceIndex < torrent.getFiles().getPieceCount(); pieceIndex++) {
-				if (!bitfield.hasPiece(pieceIndex)) {
+				if (!torrent.getFiles().hasPiece(pieceIndex)) {
 					continue;
 				}
 				

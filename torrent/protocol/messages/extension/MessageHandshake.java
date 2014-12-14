@@ -3,7 +3,6 @@ package torrent.protocol.messages.extension;
 import java.util.HashMap;
 
 import torrent.JavaTorrent;
-import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.encoding.Bencode;
 import torrent.encoding.Bencoder;
@@ -61,12 +60,7 @@ public class MessageHandshake implements IMessage {
 					if (extensionData.containsKey(UTMetadata.NAME)) {
 						peer.getExtensions().register(UTMetadata.NAME, (Integer) extensionData.get(UTMetadata.NAME));
 						if (dictionary.containsKey("metadata_size")) {
-							if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
-								if (peer.getTorrent().getFiles().getTotalSize() == 0) {
-									peer.getTorrent().getFiles().setFilesize(peer.getTorrent().getHashArray(), (int) dictionary.get("metadata_size"));
-									peer.getTorrent().checkProgress();
-								}
-							}
+							peer.getTorrent().setMetadataSize((int) dictionary.get("metadata_size"));
 						}
 					}
 				}

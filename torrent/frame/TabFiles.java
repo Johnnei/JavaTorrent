@@ -1,6 +1,7 @@
 package torrent.frame;
 
 import java.awt.Graphics;
+import java.util.Collection;
 
 import torrent.download.FileInfo;
 import torrent.download.Torrent;
@@ -33,18 +34,19 @@ public class TabFiles extends TableBase {
 			return;
 		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
 			return;
-		FileInfo[] f = torrent.getFiles().getFiles();
-		setItemCount(f.length);
-		for (int i = 0; i < f.length; i++) {
+		Collection<FileInfo> f = torrent.getFiles().getFiles();
+		setItemCount(f.size());
+		int i = 0;
+		for (FileInfo fileInfo : f) {
 			if (isVisible()) {
-				if (i == getSelectedIndex()) {
+				if (i++ == getSelectedIndex()) {
 					drawSelectedBackground(g);
 				}
 				Graphics name = g.create();
 				name.clipRect(0, getDrawY(), getWidth() - 210, 25);
-				name.drawString(f[i].getFilename(), 5, getTextY());
-				g.drawString(StringUtil.compactByteSize(f[i].getSize()), getWidth() - 200, getTextY());
-				g.drawString(f[i].getPieceHaveCount() + "/" + f[i].getPieceCount(), getWidth() - 100, getTextY());
+				name.drawString(fileInfo.getFilename(), 5, getTextY());
+				g.drawString(StringUtil.compactByteSize(fileInfo.getSize()), getWidth() - 200, getTextY());
+				g.drawString(fileInfo.getPieceHaveCount() + "/" + fileInfo.getPieceCount(), getWidth() - 100, getTextY());
 			}
 			advanceLine();
 		}

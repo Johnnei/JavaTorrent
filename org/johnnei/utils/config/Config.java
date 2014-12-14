@@ -12,6 +12,8 @@ import java.util.Map.Entry;
 
 import org.johnnei.utils.ThreadUtils;
 
+import torrent.download.Torrent;
+
 //TODO Check Linux Support, Other OS might not work with OS home
 
 public class Config {
@@ -211,6 +213,10 @@ public class Config {
 
 	public String getTempFolder() {
 		return folder;
+	}
+	
+	public File getTorrentFileFor(Torrent torrent) {
+		return new File(String.format("%s%s.torrent", getTempFolder(), torrent.getHash()));
 	}
 	
 	private boolean isBoolean(String s) {

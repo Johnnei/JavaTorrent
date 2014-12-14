@@ -133,7 +133,11 @@ public class TrackerConnection {
 		outStream.writeByte(torrent.getHashArray());
 		outStream.writeByte(manager.getPeerId());
 		outStream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
-		outStream.writeLong(torrent.getFiles().getRemainingBytes()); // Bytes left
+		if (torrent.getFiles() != null) {
+			outStream.writeLong(torrent.getFiles().countRemainingBytes()); // Bytes left
+		} else {
+			outStream.writeLong(0); // Bytes left
+		}
 		outStream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
 		int event = torrentInfo.getEvent();
 		outStream.writeInt(event);

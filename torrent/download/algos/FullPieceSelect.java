@@ -1,6 +1,8 @@
 package torrent.download.algos;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
@@ -33,7 +35,7 @@ public class FullPieceSelect implements IDownloadRegulator {
 	 * @return
 	 */
 	private Piece getMostAvailable() {
-		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
+		List<Piece> undownloaded = torrent.getFiles().getNeededPieces().collect(Collectors.toList());
 		int[] availability = new int[torrent.getFiles().getPieceCount()];
 		int max = -1;
 		Piece mostAvailable = null;
@@ -59,7 +61,7 @@ public class FullPieceSelect implements IDownloadRegulator {
 
 	@Override
 	public Piece getPieceForPeer(Peer peer) {
-		ArrayList<Piece> undownloaded = torrent.getFiles().getNeededPieces();
+		List<Piece> undownloaded = torrent.getFiles().getNeededPieces().collect(Collectors.toList());
 		ArrayList<Piece> started = new ArrayList<Piece>();
 		for (int i = 0; i < undownloaded.size(); i++) {
 			Piece piece = undownloaded.get(i);

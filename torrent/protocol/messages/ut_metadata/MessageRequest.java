@@ -17,7 +17,8 @@ public class MessageRequest extends Message {
 
 	@Override
 	public void process(Peer peer) {
-		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+		// TODO Enable this functionality once DiskJobSendMetadataBlock has been fixed
+		if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA || true) {
 			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
 			MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mr);
 			peer.getBitTorrentSocket().queueMessage(extendedMessage);

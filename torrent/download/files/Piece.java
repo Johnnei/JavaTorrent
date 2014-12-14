@@ -4,17 +4,19 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import org.johnnei.utils.JMath;
+import org.johnnei.utils.ThreadUtils;
 
 import torrent.TorrentException;
+import torrent.download.AFiles;
 import torrent.download.FileInfo;
-import torrent.download.Files;
+import torrent.encoding.SHA1;
 
 public class Piece implements Comparable<Piece> {
 
 	/**
 	 * The files associated with this piece
 	 */
-	protected Files files;
+	protected AFiles files;
 	/**
 	 * The index of this piece in the torrent
 	 */
@@ -27,11 +29,14 @@ public class Piece implements Comparable<Piece> {
 	 * The next piece which will be dropped on hash fail
 	 */
 	private int hashFailCheck;
+	
+	private byte[] expectedHash;
 
-	public Piece(Files files, int index, int pieceSize, int blockSize) {
+	public Piece(AFiles files, byte[] hash, int index, int pieceSize, int blockSize) {
 		this.index = index;
 		this.files = files;
-		blocks = new Block[JMath.ceil(pieceSize / (double) blockSize)];
+		this.expectedHash = hash;
+		blocks = new Block[JMath.ceilDivision(pieceSize, blockSize)];
 		int blockOffset = 0;
 		while (pieceSize > 0) {
 			blocks[blockOffset] = new Block(blockOffset, Math.min(blockSize, pieceSize));
@@ -44,7 +49,7 @@ public class Piece implements Comparable<Piece> {
 	 * Drops ceil(10%) of the blocks in order to maintain speed and still try to *not* redownload the entire piece
 	 */
 	public void hashFail() {
-		int tenPercent = JMath.ceil(blocks.length * 0.1D);
+		int tenPercent = (int) Math.ceil(blocks.length * 0.1D);
 		for (int i = 0; i < tenPercent; i++) {
 			reset(hashFailCheck++);
 			if (hashFailCheck >= blocks.length) {
@@ -100,6 +105,46 @@ public class Piece implements Comparable<Piece> {
 			}
 		}
 		return blockData;
+	}
+	
+	/**
+	 * Checks if the received bytes hash matches with the hash which was given in the metadata
+	 * 
+	 * @return hashMatched ? true : false
+	 * @throws TorrentException If the piece is not within any of the files in this torrent (Shouldn't occur)
+	 */
+	public boolean checkHash() throws TorrentException {
+		byte[] pieceData = new byte[getSize()];
+		int bytesCollected = 0;
+		long pieceOffset = getIndex() * files.getPieceSize();
+		while (bytesCollected < pieceData.length) {
+			int blockIndex = bytesCollected / files.getBlockSize();
+			int blockOffset = blockIndex * files.getBlockSize();
+			int blockDataOffset = bytesCollected % files.getBlockSize();
+			int bytesToRead = getSize() - bytesCollected;
+			FileInfo file = files.getFileForBlock(getIndex(), blockIndex, blockDataOffset);
+			long offsetInFile = pieceOffset + blockOffset + bytesCollected - file.getFirstByteOffset();
+			if (file.getSize() < offsetInFile + bytesToRead) {
+				if (offsetInFile >= file.getSize())
+					return false;
+				bytesToRead = (int) (file.getSize() - offsetInFile);
+			}
+			synchronized (file.FILE_LOCK) {
+				try {
+					RandomAccessFile fileAccess = file.getFileAcces();
+					fileAccess.seek(offsetInFile);
+					int read = fileAccess.read(pieceData, bytesCollected, bytesToRead);
+					if (read >= 0)
+						bytesCollected += read;
+					else if (read == -1) // End of File
+						return false;
+				} catch (IOException e) {
+					ThreadUtils.sleep(10);
+					return checkHash();
+				}
+			}
+		}
+		return SHA1.match(expectedHash, SHA1.hash(pieceData));
 	}
 
 	/**

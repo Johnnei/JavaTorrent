@@ -40,7 +40,7 @@ public class MessageRequest implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		if (peer.getTorrent().getFiles().getBitfield().hasPiece(index)) {
+		if (peer.getTorrent().getFiles().hasPiece(index)) {
 			peer.addJob(new Job(index, offset, length), PeerDirection.Upload);
 		} else {
 			peer.getLogger().severe(String.format("Requested piece %d which I don't have", index));

@@ -277,6 +277,10 @@ public class BitTorrentSocket {
 	public boolean getPassedHandshake() {
 		return passedHandshake;
 	}
+	
+	public void setPassedHandshake() {
+		passedHandshake = true;
+	}
 
 	/**
 	 * Checks if this socket has messages queued for sending

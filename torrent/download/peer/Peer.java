@@ -4,6 +4,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.johnnei.utils.ConsoleLogger;
+import org.johnnei.utils.JMath;
 
 import torrent.download.Torrent;
 import torrent.download.files.disk.DiskJob;
@@ -199,7 +200,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public void onTorrentPhaseChange() {
 		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
-			haveState.setSize(torrent.getFiles().getBitfieldSize());
+			haveState.setSize(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
 		}
 	}
 
@@ -208,8 +209,7 @@ public class Peer implements Comparable<Peer> {
 	}
 
 	public int getFreeWorkTime() {
-		return (getWorkQueueSize(PeerDirection.Download) >= getRequestLimit()) ?
-				0 : getRequestLimit() - getWorkQueueSize(PeerDirection.Download);
+		return Math.max(0, getRequestLimit() - getWorkQueueSize(PeerDirection.Download));
 	}
 
 	/**

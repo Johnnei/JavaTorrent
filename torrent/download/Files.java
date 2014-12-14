@@ -4,26 +4,23 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 
 import org.johnnei.utils.JMath;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
 import torrent.TorrentException;
-import torrent.download.files.HashedPiece;
 import torrent.download.files.Piece;
 import torrent.download.peer.Bitfield;
 import torrent.encoding.Bencode;
 
-public class Files {
+public class Files extends AFiles {
+	
+	public static final int BLOCK_SIZE = 1 << 14; 
 
-	/**
-	 * The pieces downloaded by this torrent
-	 */
-	private HashedPiece[] pieces;
 	/**
 	 * The folder name to put the files in
 	 */
@@ -36,31 +33,13 @@ public class Files {
 	 * Contains all needed file info to download all files
 	 */
 	private FileInfo[] fileInfo;
-	private FileInfo metadata;
-	private long totalSize;
+	
 	private boolean isMetadata;
-	/**
-	 * The default size for a block
-	 */
-	private int blockSize;
+
 	/**
 	 * Centralised storage of have pieces
 	 */
 	private Bitfield bitfield;
-
-	/**
-	 * Creates a Files instance based upon a magnet-link
-	 * 
-	 * @param filename
-	 */
-	public Files(String filename) {
-		isMetadata = true;
-		blockSize = 16384;
-		fileInfo = new FileInfo[1];
-		fileInfo[0] = new FileInfo(0, filename, 0L, 0L, new File(Config.getConfig().getTempFolder() + filename), 0);
-		pieces = new HashedPiece[0];
-		bitfield = new Bitfield(getBitfieldSize());
-	}
 
 	/**
 	 * Creates a Files instance based upon a .torrent file
@@ -68,8 +47,6 @@ public class Files {
 	 * @param torrentFile
 	 */
 	public Files(File torrentFile) {
-		blockSize = 1 << 14;
-		metadata = new FileInfo(0, torrentFile.getName(), torrentFile.length(), 0, torrentFile, JMath.ceil(torrentFile.length() / 16384));
 		parseTorrentFileData(torrentFile);
 		bitfield = new Bitfield(getBitfieldSize());
 	}
@@ -112,25 +89,24 @@ public class Files {
 				} else {
 					fileName = (String) fileStructure.get(0);
 				}
-				int pieceCount = JMath.ceil(fileSize / (double) pieceSize);
+				int pieceCount = (int) JMath.ceilDivision(fileSize, pieceSize);
 				if (remainingSize % pieceSize != 0 && fileSize >= pieceSize) {
 					pieceCount++;
 				}
-				FileInfo info = new FileInfo(i, fileName, fileSize, remainingSize, getFile(fileName), pieceCount);
+				FileInfo info = new FileInfo(fileSize, remainingSize, getFile(fileName), pieceCount);
 				fileInfo[i] = info;
 				remainingSize += fileSize;
 			}
 		} else { // Single file torrent
 			fileInfo = new FileInfo[1];
 			String filename = (String) dictionary.get("name");
-			long filesize = getNumberFromDictionary(dictionary.get("length"));
-			fileInfo[0] = new FileInfo(0, filename, filesize, remainingSize, getFile(filename), JMath.ceil(filesize / (double) pieceSize));
-			remainingSize += filesize;
+			long fileSize = getNumberFromDictionary(dictionary.get("length"));
+			fileInfo[0] = new FileInfo(fileSize, remainingSize, getFile(filename), (int) JMath.ceilDivision(fileSize, pieceSize));
+			remainingSize += fileSize;
 		}
-		totalSize = remainingSize;
 		String pieceHashes = (String) dictionary.get("pieces");
 		int pieceAmount = pieceHashes.length() / 20;
-		pieces = new HashedPiece[pieceAmount];
+		pieces = new ArrayList<>(pieceAmount);
 		for (int index = 0; index < pieceAmount; index++) {
 			int hashOffset = index * 20;
 			int size = (remainingSize >= pieceSize) ? pieceSize : (int) remainingSize;
@@ -139,7 +115,7 @@ public class Files {
 			for (int i = 0; i < sha1Hash.length; i++) {
 				sha1Hash[i] = (byte) hashBytes[i];
 			}
-			pieces[index] = new HashedPiece(sha1Hash, this, index, size, blockSize);
+			pieces.add(new Piece(this, sha1Hash, index, size, BLOCK_SIZE));
 			remainingSize -= size;
 		}
 	}
@@ -161,9 +137,9 @@ public class Files {
 	 */
 	public void havePiece(int pieceIndex) {
 		bitfield.havePiece(pieceIndex);
-		if (!pieces[pieceIndex].isDone()) {
-			for (int i = 0; i < pieces[pieceIndex].getBlockCount(); i++) {
-				pieces[pieceIndex].setDone(i);
+		if (!pieces.get(pieceIndex).isDone()) {
+			for (int i = 0; i < pieces.get(pieceIndex).getBlockCount(); i++) {
+				pieces.get(pieceIndex).setDone(i);
 			}
 		}
 		long pieceOffset = pieceIndex * getPieceSize();
@@ -186,11 +162,11 @@ public class Files {
 			if (fileInfo[0].getSize() == 0L)
 				return false;
 		}
-		return getNeededPieces().size() == 0;
+		return getNeededPieces().count() == 0;
 	}
 
 	public int getBitfieldSize() {
-		return (int) Math.ceil(pieces.length / 8D);
+		return (int) Math.ceil(pieces.size() / 8D);
 	}
 
 	/**
@@ -203,16 +179,12 @@ public class Files {
 		return new File(folderName + "/" + name);
 	}
 
-	public HashedPiece getPiece(int index) {
-		return pieces[index];
+	public Piece getPiece(int index) {
+		return pieces.get(index);
 	}
 
 	public File getFolderName() {
 		return new File(folderName);
-	}
-
-	public Bitfield getBitfield() {
-		return bitfield;
 	}
 
 	/**
@@ -224,62 +196,8 @@ public class Files {
 		return pieceSize;
 	}
 
-	/**
-	 * Returns the list of pieces which are not completed yet
-	 * 
-	 * @return
-	 */
-	public ArrayList<Piece> getNeededPieces() {
-		ArrayList<Piece> undownloaded = new ArrayList<>();
-		for (int i = 0; i < pieces.length; i++) {
-			if (!pieces[i].isDone()) {
-				undownloaded.add(pieces[i]);
-			}
-		}
-		return undownloaded;
-	}
-
-	/**
-	 * The amount of pieces in all pieces
-	 * 
-	 * @return
-	 */
-	public int getPieceCount() {
-		return pieces.length;
-	}
-
-	/**
-	 * The total size of all pieces together
-	 * 
-	 * @return
-	 */
-	public long getTotalSize() {
-		return totalSize;
-	}
-
-	public FileInfo[] getFiles() {
-		return fileInfo;
-	}
-
-	public int getBlockIndexByOffset(int offset) {
-		return offset / blockSize;
-	}
-
 	public int getBlockSize() {
-		return blockSize;
-	}
-
-	/**
-	 * The amount of bytes still needed to be downloaded
-	 * 
-	 * @return
-	 */
-	public long getRemainingBytes() {
-		long left = 0;
-		for (int i = 0; i < pieces.length; i++) {
-			left += pieces[i].getRemainingBytes();
-		}
-		return left;
+		return BLOCK_SIZE;
 	}
 
 	/**
@@ -291,7 +209,7 @@ public class Files {
 	 * @return The FileInfo for the given data
 	 */
 	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
-		long pieceOffset = (index * getPieceSize()) + (blockIndex * blockSize) + blockDataOffset;
+		long pieceOffset = (index * getPieceSize()) + (blockIndex * BLOCK_SIZE) + blockDataOffset;
 		if (pieceOffset <= 0) {
 			return fileInfo[0];
 		} else {
@@ -306,67 +224,14 @@ public class Files {
 		}
 	}
 
-	/**
-	 * Sets the size of the metadata file
-	 * 
-	 * @param torrentHash the associated torrent hash
-	 * @param size the size of the metadata file
-	 */
-	public void setFilesize(byte[] torrentHash, int size) {
-		if (isMetadata && fileInfo[0].getSize() == 0L && size > 0) {
-			pieceSize = size;
-			pieces = new HashedPiece[] { new HashedPiece(torrentHash, this, 0, size, blockSize) };
-			FileInfo f = fileInfo[0];
-			fileInfo[0] = new FileInfo(0, f.getFilename(), size, 0, new File(Config.getConfig().getTempFolder() + f.getFilename()), JMath.ceil(size / blockSize));
-			totalSize = size;
-			bitfield = new Bitfield(1);
-		}
+	@Override
+	public boolean hasPiece(int pieceIndex) throws NoSuchElementException {
+		return bitfield.hasPiece(pieceIndex);
 	}
 
-	/**
-	 * checks if the files are metadata
-	 * 
-	 * @return
-	 */
-	public boolean isMetadata() {
-		return isMetadata;
+	@Override
+	public byte[] getBitfieldBytes() throws UnsupportedOperationException {
+		return bitfield.getBytes();
 	}
 
-	/**
-	 * Gets a block from the metadata file
-	 * 
-	 * @param piece The block
-	 * @return The 16384 bytes needed to answer the request
-	 */
-	public byte[] getMetadataBlock(int piece) {
-		long blockSize = 16384L;
-		byte[] data = new byte[(int) blockSize];
-		long blockOffset = piece * blockSize;
-		synchronized (metadata.FILE_LOCK) {
-			RandomAccessFile fileAccess = metadata.getFileAcces();
-			try {
-				if (fileAccess.length() < blockOffset + data.length)
-					data = new byte[(int) (fileAccess.length() - blockOffset)];
-				int bytesRead = 0;
-				while (bytesRead < data.length) {
-					fileAccess.seek(piece * blockSize + bytesRead);
-					int read = fileAccess.read(data, piece * (int) blockSize + bytesRead, data.length - bytesRead);
-					if(read >= 0) {
-						bytesRead += read;
-					}
-				}
-			} catch (IOException e) {
-			}
-		}
-		return data;
-	}
-
-	/**
-	 * Gets the size of the metadata file
-	 * 
-	 * @return
-	 */
-	public long getMetadataSize() {
-		return metadata.getSize();
-	}
 }
