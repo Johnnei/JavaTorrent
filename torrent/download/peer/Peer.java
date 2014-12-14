@@ -242,7 +242,7 @@ public class Peer implements Comparable<Peer> {
 	 * @param pieceIndex the piece to marked as "have"
 	 */
 	public void havePiece(int pieceIndex) {
-		haveState.havePiece(pieceIndex);
+		haveState.havePiece(pieceIndex, torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA);
 	}
 	
 	/**

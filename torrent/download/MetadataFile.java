@@ -1,11 +1,13 @@
 package torrent.download;
 
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
 import org.johnnei.utils.JMath;
 import org.johnnei.utils.config.Config;
 
 import torrent.TorrentException;
+import torrent.download.files.Piece;
 
 public class MetadataFile extends AFiles {
 	
@@ -21,18 +23,20 @@ public class MetadataFile extends AFiles {
 	public MetadataFile(Torrent torrent, int fileSize) {
 		metadata = new FileInfo(fileSize, 0, Config.getConfig().getTorrentFileFor(torrent), JMath.ceilDivision(fileSize, BLOCK_SIZE));
 		this.fileSize = fileSize;
+		pieces = new ArrayList<>(1);
+		pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
 	}
 
 	@Override
 	public boolean hasPiece(int pieceIndex) throws NoSuchElementException {
-		// TODO Auto-generated method stub
-		return false;
+		return pieces.get(pieceIndex).isDone();
 	}
 
 	@Override
 	public void havePiece(int pieceIndex) throws NoSuchElementException {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < pieces.get(pieceIndex).getBlockCount(); i++) {
+			pieces.get(pieceIndex).setDone(i);
+		}
 	}
 	
 	@Override

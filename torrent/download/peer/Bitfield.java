@@ -89,7 +89,7 @@ public class Bitfield {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
 		resizeLock.readLock().lock();
-		if (bitfield.length < byteIndex) {
+		if (byteIndex >= bitfield.length) {
 			if (mayExpand) {
 				resizeLock.readLock().unlock();
 				setSize(byteIndex + 1);
