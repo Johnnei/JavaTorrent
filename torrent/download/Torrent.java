@@ -458,17 +458,9 @@ public class Torrent implements Runnable {
 	}
 
 	public int getLeecherCount() {
-		int leechers = 0;
 		synchronized (this) {
-			for (int i = 0; i < peers.size(); i++) {
-				Peer peer = peers.get(i);
-				if (peer != null) {
-					if (peer.getBitTorrentSocket().getPassedHandshake())
-						leechers++;
-				}
-			}
+			return (int) (peers.stream().filter(p -> p.getBitTorrentSocket().getPassedHandshake()).count() - getSeedCount());
 		}
-		return leechers - getSeedCount();
 	}
 
 	public ArrayList<Peer> getPeers() {
