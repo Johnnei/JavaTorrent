@@ -84,7 +84,7 @@ public class PeerConnector implements Runnable {
 				}
 				
 				if (!peerSocket.canReadMessage()) {
-					throw new IOException("Handshake timeout");
+					throw new IOException(String.format("Handshake timeout (%s)", peerSocket.getHandshakeProgress()));
 				}
 				
 				BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getHashArray());

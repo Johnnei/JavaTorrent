@@ -3,7 +3,7 @@ package torrent.protocol;
 import java.io.IOException;
 import java.util.HashMap;
 
-import torrent.network.ByteInputStream;
+import torrent.network.BitTorrentSocket;
 import torrent.network.ByteOutputStream;
 import torrent.network.InStream;
 import torrent.network.OutStream;
@@ -47,9 +47,9 @@ public class MessageUtils {
 
 	private HashMap<Integer, IMessage> idToMessage;
 
-	public IMessage readMessage(ByteInputStream inStream) throws IOException {
-		InStream stream = inStream.getBufferedMessage();
-		int duration = inStream.getBufferLifetime();
+	public IMessage readMessage(BitTorrentSocket socket) throws IOException {
+		InStream stream = socket.getBufferedMessage();
+		int duration = socket.getBufferLifetime();
 		int length = stream.readInt();
 		if (length == 0) {
 			return new MessageKeepAlive();

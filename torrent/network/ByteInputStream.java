@@ -11,14 +11,6 @@ public class ByteInputStream extends DataInputStream {
 	 */
 	private int speed;
 	
-	private OutStream buffer;
-	private int bufferSize;
-	
-	/**
-	 * The last time a buffer was created
-	 */
-	private long lastBufferCreate;
-	
 	/**
 	 * The timestamp of the last time we've succesfully read a byte.
 	 */
@@ -67,45 +59,7 @@ public class ByteInputStream extends DataInputStream {
 	public void reset(int downloadRate) {
 		speed -= downloadRate;
 	}
-	
-	public boolean canReadBufferedMessage() throws IOException {
-		if (buffer == null) {
-			if (available() < 4) {
-				return false;
-			}
-			
-			int length = readInt();
-			buffer = new OutStream(length + 4);
-			bufferSize = length + 4;
-			buffer.writeInt(length);
-		}
-		
-		int remainingBytes = bufferSize - buffer.size();
-		if (remainingBytes == 0) {
-			return true;
-		}
-		
-		int availableBytes = Math.min(remainingBytes, available());
-		buffer.write(readByteArray(availableBytes));
-		
-		return bufferSize - buffer.size() == 0;
-	}
-	
-	public InStream getBufferedMessage() {
-		InStream inStream = new InStream(buffer.toByteArray());
-		buffer = null;
-		return inStream;
-	}
 
-	/**
-	 * The time in milliseconds that this buffer has existed
-	 * 
-	 * @return
-	 */
-	public int getBufferLifetime() {
-		return (int) (System.currentTimeMillis() - lastBufferCreate);
-	}
-	
 	/**
 	 * Gets the timestamp at which the last byte has been read
 	 * @return

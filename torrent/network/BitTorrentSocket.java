@@ -52,6 +52,15 @@ public class BitTorrentSocket {
 	 */
 	private Queue<IMessage> blockQueue;
 	
+	
+	private OutStream buffer;
+	private int bufferSize;
+	
+	/**
+	 * The last time a buffer was created
+	 */
+	private long lastBufferCreate;
+	
 	public BitTorrentSocket() {
 		messageQueue = new LinkedList<>();
 		blockQueue = new LinkedList<>();
@@ -107,7 +116,7 @@ public class BitTorrentSocket {
 	}
 	
 	public IMessage readMessage() throws IOException {
-		return MessageUtils.getUtils().readMessage(inStream);
+		return MessageUtils.getUtils().readMessage(this);
 	}
 	
 	/**
@@ -206,8 +215,44 @@ public class BitTorrentSocket {
 		if (!passedHandshake) {
 			return inStream.available() >= HANDSHAKE_SIZE;
 		}
-		return inStream.canReadBufferedMessage();
+		
+		if (buffer == null) {
+			if (inStream.available() < 4) {
+				return false;
+			}
+			
+			int length = inStream.readInt();
+			buffer = new OutStream(length + 4);
+			bufferSize = length + 4;
+			buffer.writeInt(length);
+		}
+		
+		int remainingBytes = bufferSize - buffer.size();
+		if (remainingBytes == 0) {
+			return true;
+		}
+		
+		int availableBytes = Math.min(remainingBytes, inStream.available());
+		buffer.write(inStream.readByteArray(availableBytes));
+		
+		return bufferSize - buffer.size() == 0;
 	}
+	
+	public InStream getBufferedMessage() {
+		InStream inStream = new InStream(buffer.toByteArray());
+		buffer = null;
+		return inStream;
+	}
+
+	/**
+	 * The time in milliseconds that this buffer has existed
+	 * 
+	 * @return
+	 */
+	public int getBufferLifetime() {
+		return (int) (System.currentTimeMillis() - lastBufferCreate);
+	}
+	
 
 	public int getDownloadRate() {
 		return downloadRate;
@@ -239,6 +284,10 @@ public class BitTorrentSocket {
 	 */
 	public boolean canWriteMessage() {
 		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
+	}
+
+	public String getHandshakeProgress() throws IOException {
+		return String.format("%d/%d bytes", inStream.available(), HANDSHAKE_SIZE);
 	}
 
 }
