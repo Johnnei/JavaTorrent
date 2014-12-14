@@ -1,6 +1,6 @@
 package torrent.protocol;
 
-import torrent.network.Stream;
+import torrent.network.InStream;
 
 public interface IExtension {
 
@@ -10,6 +10,6 @@ public interface IExtension {
 	 * @param data The stream which remained after the extension base
 	 * @return The Message
 	 */
-	public IMessage getMessage(Stream data) throws Exception;
+	public IMessage getMessage(InStream data) throws Exception;
 
 }

@@ -2,18 +2,19 @@ package torrent.protocol.messages;
 
 import torrent.download.peer.Peer;
 import torrent.download.peer.PeerDirection;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 
 public class MessageUninterested implements IMessage {
 
 	@Override
-	public void write(Stream outStream) {
+	public void write(OutStream outStream) {
 	}
 
 	@Override
-	public void read(Stream inStream) {
+	public void read(InStream inStream) {
 	}
 
 	@Override

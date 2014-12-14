@@ -5,8 +5,8 @@ import java.util.HashMap;
 
 import torrent.network.ByteInputStream;
 import torrent.network.ByteOutputStream;
-import torrent.network.Message;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 import torrent.protocol.messages.MessageBitfield;
 import torrent.protocol.messages.MessageBlock;
 import torrent.protocol.messages.MessageCancel;
@@ -47,36 +47,11 @@ public class MessageUtils {
 
 	private HashMap<Integer, IMessage> idToMessage;
 
-	public boolean canReadMessage(ByteInputStream inStream) throws IOException {
-		if (inStream.getBuffer() == null) {
-			if (inStream.available() >= 4) {
-				inStream.initialiseBuffer();
-				inStream.getBuffer().fill(inStream.readByteArray(4));
-				inStream.getBuffer().resetReadPointer();
-				int length = inStream.getBuffer().readInt();
-				inStream.getBuffer().expand(length);
-			}
-		}
-		Stream buffer = inStream.getBuffer();
-		
-		if (buffer == null) {
-			return false;
-		}
-		
-		if (inStream.available() > 0) {
-			int readAmount = Math.min(inStream.available(), buffer.getBuffer().length - buffer.getWritePointer());
-			buffer.writeByte(inStream.readByteArray(readAmount));
-		}
-		return buffer.getWritePointer() == buffer.getBuffer().length;
-	}
-
 	public IMessage readMessage(ByteInputStream inStream) throws IOException {
-		Stream stream = inStream.getBuffer();
+		InStream stream = inStream.getBufferedMessage();
 		int duration = inStream.getBufferLifetime();
-		stream.resetReadPointer();
 		int length = stream.readInt();
 		if (length == 0) {
-			inStream.resetBuffer();
 			return new MessageKeepAlive();
 		} else {
 			int id = stream.readByte();
@@ -86,7 +61,6 @@ public class MessageUtils {
 				IMessage message = idToMessage.get(id).getClass().newInstance();
 				message.setReadDuration(duration);
 				message.read(stream);
-				inStream.resetBuffer();
 				return message;
 			} catch (IllegalAccessException | InstantiationException ex) {
 				throw new IOException("Message Read Error", ex);
@@ -95,12 +69,15 @@ public class MessageUtils {
 	}
 
 	public void writeMessage(ByteOutputStream outStream, IMessage message) throws IOException {
-		Message messageStream = new Message(message.getLength());
+		OutStream outBuffer = new OutStream(message.getLength() + 4);
+		outBuffer.writeInt(message.getLength());
+		
 		if (message.getLength() > 0) {
-			messageStream.getStream().writeByte(message.getId());
-			message.write(messageStream.getStream());
+			outBuffer.writeByte(message.getId());
+			message.write(outBuffer);
 		}
-		outStream.write(messageStream.getMessage());
+		
+		outStream.write(outBuffer.toByteArray());
 	}
 
 }

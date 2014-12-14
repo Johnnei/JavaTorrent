@@ -1,9 +1,10 @@
 package torrent.protocol.messages;
 
 import torrent.download.peer.Job;
-import torrent.download.peer.PeerDirection;
 import torrent.download.peer.Peer;
-import torrent.network.Stream;
+import torrent.download.peer.PeerDirection;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 
@@ -24,14 +25,14 @@ public class MessageRequest implements IMessage {
 	}
 
 	@Override
-	public void write(Stream outStream) {
+	public void write(OutStream outStream) {
 		outStream.writeInt(index);
 		outStream.writeInt(offset);
 		outStream.writeInt(length);
 	}
 
 	@Override
-	public void read(Stream inStream) {
+	public void read(InStream inStream) {
 		index = inStream.readInt();
 		offset = inStream.readInt();
 		length = inStream.readInt();

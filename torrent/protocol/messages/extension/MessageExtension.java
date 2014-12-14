@@ -1,7 +1,8 @@
 package torrent.protocol.messages.extension;
 
 import torrent.download.peer.Peer;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.ExtensionUtils;
 import torrent.protocol.IExtension;
@@ -22,13 +23,13 @@ public class MessageExtension implements IMessage {
 	}
 
 	@Override
-	public void write(Stream outStream) {
+	public void write(OutStream outStream) {
 		outStream.writeByte(extensionId);
 		message.write(outStream);
 	}
 
 	@Override
-	public void read(Stream inStream) {
+	public void read(InStream inStream) {
 		extensionId = inStream.readByte();
 		if (extensionId == BitTorrent.EXTENDED_MESSAGE_HANDSHAKE) {
 			message = new MessageHandshake();

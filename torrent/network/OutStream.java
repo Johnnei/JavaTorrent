@@ -110,6 +110,16 @@ public class OutStream {
 		} catch (IOException e) { /* Ignore */ }
 	}
 	
+	public void writeString(String s) {
+		for (int i = 0; i < s.length(); i++) {
+			writeByte(s.charAt(i));
+		}
+	}
+	
+	public int size() {
+		return buffer.size();
+	}
+	
 	public byte[] toByteArray() {
 		return buffer.toByteArray();
 	}

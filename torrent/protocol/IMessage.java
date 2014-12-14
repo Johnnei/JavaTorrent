@@ -1,7 +1,8 @@
 package torrent.protocol;
 
 import torrent.download.peer.Peer;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 
 public interface IMessage {
 
@@ -10,14 +11,14 @@ public interface IMessage {
 	 * 
 	 * @param outStream
 	 */
-	public void write(Stream outStream);
+	public void write(OutStream outStream);
 
 	/***
 	 * Read a message from the inputStream
 	 * 
 	 * @param inStream
 	 */
-	public void read(Stream inStream);
+	public void read(InStream inStream);
 
 	/**
 	 * Process the message

@@ -7,7 +7,8 @@ import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.encoding.Bencode;
 import torrent.encoding.Bencoder;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
@@ -39,12 +40,12 @@ public class MessageHandshake implements IMessage {
 	}
 
 	@Override
-	public void write(Stream outStream) {
+	public void write(OutStream outStream) {
 		outStream.writeString(bencodedHandshake);
 	}
 
 	@Override
-	public void read(Stream inStream) {
+	public void read(InStream inStream) {
 		bencodedHandshake = inStream.readString(inStream.available());
 	}
 

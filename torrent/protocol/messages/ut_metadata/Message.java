@@ -5,7 +5,8 @@ import java.util.HashMap;
 
 import torrent.encoding.Bencode;
 import torrent.encoding.Bencoder;
-import torrent.network.Stream;
+import torrent.network.InStream;
+import torrent.network.OutStream;
 import torrent.protocol.IMessage;
 
 public abstract class Message implements IMessage {
@@ -29,12 +30,12 @@ public abstract class Message implements IMessage {
 	}
 
 	@Override
-	public void write(Stream outStream) {
+	public void write(OutStream outStream) {
 		outStream.writeString(bencodedData);
 	}
 
 	@Override
-	public void read(Stream inStream) {
+	public void read(InStream inStream) {
 		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
 		try {
 			dictionary = decoder.decodeDictionary();

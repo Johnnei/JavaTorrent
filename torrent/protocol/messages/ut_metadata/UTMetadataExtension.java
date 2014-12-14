@@ -4,7 +4,7 @@ import java.io.InvalidObjectException;
 import java.util.HashMap;
 
 import torrent.encoding.Bencode;
-import torrent.network.Stream;
+import torrent.network.InStream;
 import torrent.protocol.IExtension;
 import torrent.protocol.IMessage;
 import torrent.protocol.UTMetadata;
@@ -12,7 +12,7 @@ import torrent.protocol.UTMetadata;
 public class UTMetadataExtension implements IExtension {
 
 	@Override
-	public IMessage getMessage(Stream inStream) throws InvalidObjectException {
+	public IMessage getMessage(InStream inStream) throws InvalidObjectException {
 		int moveBackLength = inStream.available();
 
 		Bencode decoder = new Bencode(inStream.readString(inStream.available()));

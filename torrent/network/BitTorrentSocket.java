@@ -206,7 +206,7 @@ public class BitTorrentSocket {
 		if (!passedHandshake) {
 			return inStream.available() >= HANDSHAKE_SIZE;
 		}
-		return MessageUtils.getUtils().canReadMessage(inStream);
+		return inStream.canReadBufferedMessage();
 	}
 
 	public int getDownloadRate() {
