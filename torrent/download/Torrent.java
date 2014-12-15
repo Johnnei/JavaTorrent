@@ -545,4 +545,8 @@ public class Torrent implements Runnable {
 		}
 	}
 
+	public void setDownloadRegulator(IDownloadRegulator downloadRegulator) {
+		this.downloadRegulator = downloadRegulator;
+	}
+
 }

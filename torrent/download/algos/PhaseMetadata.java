@@ -53,6 +53,12 @@ public class PhaseMetadata extends AMetadataPhase {
 			}
 		}
 	}
+	
+	@Override
+	public void preprocess() {
+		super.preprocess();
+		torrent.setDownloadRegulator(new MetadataSelect(torrent));
+	}
 
 	@Override
 	public void postprocess() {

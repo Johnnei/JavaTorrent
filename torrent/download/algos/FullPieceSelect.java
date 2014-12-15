@@ -62,35 +62,24 @@ public class FullPieceSelect implements IDownloadRegulator {
 	@Override
 	public Piece getPieceForPeer(Peer peer) {
 		List<Piece> undownloaded = torrent.getFiles().getNeededPieces().collect(Collectors.toList());
-		ArrayList<Piece> started = new ArrayList<Piece>();
-		for (int i = 0; i < undownloaded.size(); i++) {
-			Piece piece = undownloaded.get(i);
-			if (piece.isStarted() && piece.getTotalRequestedCount() < piece.getBlockCount()) {
-				started.add(piece);
-			}
-		}
+		List<Piece> started = undownloaded.stream().
+				filter(p -> p.isStarted() && p.getTotalRequestedCount() < p.getBlockCount()).
+				collect(Collectors.toList());
+
 		// Check if peer has any of the started pieces
-		for (int i = 0; i < started.size(); i++) {
-			Piece piece = started.get(i);
-			if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
-				return piece;
-			}
+		for (Piece piece : started) {
 			if (peer.hasPiece(piece.getIndex())) {
 				return piece;
 			}
 		}
 		// Peer doesn't have any of the started pieces (or there are no started pieces)
 		Piece mostAvailable = getMostAvailable();
-		if (mostAvailable != null && peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-			return mostAvailable;
 		if (mostAvailable != null && peer.hasPiece(mostAvailable.getIndex())) { // Try most available piece
 			return mostAvailable;
 		} else { // Nope, just request the first piece they have
 			for (int i = 0; i < undownloaded.size(); i++) {
 				Piece piece = undownloaded.get(i);
 				if (piece.getTotalRequestedCount() < piece.getBlockCount()) {
-					if (peer.getTorrent().getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-						return piece;
 					if (peer.hasPiece(piece.getIndex())) {
 						return piece;
 					}
