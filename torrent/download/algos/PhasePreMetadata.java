@@ -1,5 +1,7 @@
 package torrent.download.algos;
 
+import org.johnnei.utils.config.Config;
+
 import torrent.download.MetadataFile;
 import torrent.download.Torrent;
 import torrent.download.tracker.TrackerManager;
@@ -25,6 +27,14 @@ public class PhasePreMetadata extends AMetadataPhase {
 	@Override
 	public void process() {
 		// Wait for peers to connect with the correct information.
+	}
+	
+	@Override
+	public void preprocess() {
+		super.preprocess();
+		if (foundMatchingFile) {
+			metadataSize = (int) Config.getConfig().getTorrentFileFor(torrent).length();
+		}
 	}
 
 	@Override
