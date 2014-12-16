@@ -217,7 +217,7 @@ public class Peer implements Comparable<Peer> {
 	 * @return
 	 */
 	public int getWorkQueueSize(PeerDirection direction) {
-		return myClient.getQueueSize();
+		return getClientByDirection(direction).getQueueSize();
 	}
 
 	/**
@@ -263,8 +263,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public void setTorrent(Torrent torrent) throws IllegalStateException {
 		if (this.torrent != null) {
-			throw new IllegalStateException(
-					"Peer is already bound to a torrent");
+			throw new IllegalStateException("Peer is already bound to a torrent");
 		}
 
 		this.torrent = torrent;
