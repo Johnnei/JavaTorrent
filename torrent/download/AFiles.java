@@ -18,7 +18,7 @@ public abstract class AFiles {
 	/**
 	 * The file info about all the files which are contained within this {@link AFiles}
 	 */
-	protected Collection<FileInfo> files;
+	protected List<FileInfo> fileInfos;
 	
 	/**
 	 * Checks if this piece has been completed.
@@ -97,7 +97,7 @@ public abstract class AFiles {
 	 * @return
 	 */
 	public long getTotalFileSize() {
-		return files.stream().mapToLong(FileInfo::getSize).sum();
+		return fileInfos.stream().mapToLong(FileInfo::getSize).sum();
 	}
 
 	/**
@@ -120,7 +120,7 @@ public abstract class AFiles {
 	public abstract byte[] getBitfieldBytes() throws UnsupportedOperationException;
 	
 	public Collection<FileInfo> getFiles() {
-		return files;
+		return fileInfos;
 	}
 
 }

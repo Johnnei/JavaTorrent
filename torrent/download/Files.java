@@ -29,12 +29,6 @@ public class Files extends AFiles {
 	 * The size of a standard block
 	 */
 	private int pieceSize;
-	/**
-	 * Contains all needed file info to download all files
-	 */
-	private FileInfo[] fileInfo;
-	
-	private boolean isMetadata;
 
 	/**
 	 * Centralised storage of have pieces
@@ -59,7 +53,6 @@ public class Files extends AFiles {
 			in.close();
 			Bencode decoder = new Bencode(new String(data));
 			parseDictionary(decoder.decodeDictionary());
-			isMetadata = false;
 		} catch (IOException e) {
 			e.printStackTrace();
 			ThreadUtils.sleep(10);
@@ -76,8 +69,8 @@ public class Files extends AFiles {
 
 		if (dictionary.containsKey("files")) { // Multi-file torrent
 			ArrayList<?> files = (ArrayList<?>) dictionary.get("files");
-			fileInfo = new FileInfo[files.size()];
-			for (int i = 0; i < fileInfo.length; i++) {
+			fileInfos = new ArrayList<>(files.size());
+			for (int i = 0; i < files.size(); i++) {
 				HashMap<?, ?> file = (HashMap<?, ?>) files.get(i);
 				long fileSize = getNumberFromDictionary(file.get("length"));
 				ArrayList<?> fileStructure = (ArrayList<?>) file.get("path");
@@ -94,14 +87,14 @@ public class Files extends AFiles {
 					pieceCount++;
 				}
 				FileInfo info = new FileInfo(fileSize, remainingSize, getFile(fileName), pieceCount);
-				fileInfo[i] = info;
+				fileInfos.add(info);
 				remainingSize += fileSize;
 			}
 		} else { // Single file torrent
-			fileInfo = new FileInfo[1];
+			fileInfos = new ArrayList<>(1);
 			String filename = (String) dictionary.get("name");
 			long fileSize = getNumberFromDictionary(dictionary.get("length"));
-			fileInfo[0] = new FileInfo(fileSize, remainingSize, getFile(filename), (int) JMath.ceilDivision(fileSize, pieceSize));
+			fileInfos.add(new FileInfo(fileSize, remainingSize, getFile(filename), (int) JMath.ceilDivision(fileSize, pieceSize)));
 			remainingSize += fileSize;
 		}
 		String pieceHashes = (String) dictionary.get("pieces");
@@ -144,25 +137,11 @@ public class Files extends AFiles {
 		}
 		long pieceOffset = pieceIndex * getPieceSize();
 		long pieceEndOffset = pieceOffset + getPieceSize();
-		for (int i = 0; i < fileInfo.length; i++) {
-			FileInfo f = fileInfo[i];
+		for (FileInfo f : fileInfos) {
 			if (f.getFirstByteOffset() + f.getSize() >= pieceOffset && f.getFirstByteOffset() < pieceEndOffset) {
 				f.addPiece(pieceIndex);
 			}
 		}
-	}
-
-	/**
-	 * Checks if all files are downloaded
-	 * 
-	 * @return
-	 */
-	public boolean isDone() {
-		if (isMetadata) {
-			if (fileInfo[0].getSize() == 0L)
-				return false;
-		}
-		return getNeededPieces().count() == 0;
 	}
 
 	public int getBitfieldSize() {
@@ -211,13 +190,13 @@ public class Files extends AFiles {
 	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
 		long pieceOffset = (index * getPieceSize()) + (blockIndex * BLOCK_SIZE) + blockDataOffset;
 		if (pieceOffset <= 0) {
-			return fileInfo[0];
+			return fileInfos.get(0);
 		} else {
 			long fileTotal = 0L;
-			for (int i = 0; i < fileInfo.length; i++) {
-				fileTotal += fileInfo[i].getSize();
+			for (FileInfo fileInfo : fileInfos) {
+				fileTotal += fileInfo.getSize();
 				if (pieceOffset < fileTotal) {
-					return fileInfo[i];
+					return fileInfo;
 				}
 			}
 			throw new TorrentException("Piece is not within any of the files");

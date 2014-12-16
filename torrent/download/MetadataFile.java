@@ -15,15 +15,14 @@ public class MetadataFile extends AFiles {
 	
 	public static final int BLOCK_SIZE = 16384;
 	
-	private FileInfo metadata;
-	
 	/**
 	 * The size of the metadata file in total
 	 */
 	private int fileSize;
 	
 	public MetadataFile(Torrent torrent, int fileSize) {
-		metadata = new FileInfo(fileSize, 0, Config.getConfig().getTorrentFileFor(torrent), JMath.ceilDivision(fileSize, BLOCK_SIZE));
+		fileInfos = new ArrayList<>();
+		fileInfos.add(new FileInfo(fileSize, 0, Config.getConfig().getTorrentFileFor(torrent), JMath.ceilDivision(fileSize, BLOCK_SIZE)));
 		this.fileSize = fileSize;
 		pieces = new ArrayList<>(1);
 		pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
@@ -43,7 +42,7 @@ public class MetadataFile extends AFiles {
 	
 	@Override
 	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
-		return metadata;
+		return fileInfos.get(0);
 	}
 
 	@Override
@@ -70,8 +69,8 @@ public class MetadataFile extends AFiles {
 	 */
 	public byte[] getBlock(int piece) throws IOException {
 		int blockOffset = piece * BLOCK_SIZE;
-		synchronized (metadata.FILE_LOCK) {
-			RandomAccessFile fileAccess = metadata.getFileAcces();
+		synchronized (fileInfos.get(0).FILE_LOCK) {
+			RandomAccessFile fileAccess = fileInfos.get(0).getFileAcces();
 			int blockSize = Math.min(BLOCK_SIZE, (int)(fileAccess.length() - blockOffset));
 			byte[] data = new byte[blockSize];
 			fileAccess.seek(blockOffset);
