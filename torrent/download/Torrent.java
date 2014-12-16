@@ -52,14 +52,22 @@ public class Torrent implements Runnable {
 	 */
 	private ArrayList<Peer> peers;
 	private boolean keepDownloading;
+	
 	/**
 	 * The current status
 	 */
 	private String status;
+	
 	/**
 	 * Contains all data of the actual torrent
 	 */
 	private AFiles files;
+	
+	/**
+	 * Contains the information about the metadata backing this torrent.
+	 */
+	private MetadataFile metadata;
+	
 	/**
 	 * The current state of the torrent
 	 */
@@ -389,6 +397,22 @@ public class Torrent implements Runnable {
 	
 	public void setFiles(AFiles files) {
 		this.files = files;
+	}
+	
+	/**
+	 * Sets the associated metadata file of the torrent
+	 * @param metadata the metadata which is backing this torrent
+	 */
+	public void setMetadata(MetadataFile metadata) {
+		this.metadata = metadata;
+	}
+	
+	public MetadataFile getMetadata() throws IllegalStateException {
+		if (getDownloadStatus() == STATE_DOWNLOAD_METADATA) {
+			throw new IllegalStateException("Torrent is still downloading the associated metadata file.");
+		}
+		
+		return metadata;
 	}
 
 	@Override
