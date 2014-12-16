@@ -93,6 +93,7 @@ public class Peer implements Comparable<Peer> {
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		haveState = new Bitfield();
+		requestLimit = 1;
 	}
 
 	public void connect() {
@@ -321,7 +322,7 @@ public class Peer implements Comparable<Peer> {
 			return;
 		}
 		
-		requestLimit = Math.min(requestLimit, absoluteRequestLimit);
+		this.requestLimit = Math.min(requestLimit, absoluteRequestLimit);
 	}
 	
 	public void setChoked(PeerDirection direction, boolean choked) {
