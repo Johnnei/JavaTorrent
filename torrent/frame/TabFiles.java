@@ -30,10 +30,9 @@ public class TabFiles extends TableBase {
 
 	@Override
 	protected void paintData(Graphics g) {
-		if (torrent == null)
+		if (torrent == null || torrent.getFiles() == null) {
 			return;
-		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
-			return;
+		}
 		Collection<FileInfo> f = torrent.getFiles().getFiles();
 		setItemCount(f.size());
 		int i = 0;
