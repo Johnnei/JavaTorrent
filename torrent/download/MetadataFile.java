@@ -1,5 +1,7 @@
 package torrent.download;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
@@ -59,34 +61,22 @@ public class MetadataFile extends AFiles {
 		throw new UnsupportedOperationException("UT_METADATA does not support bitfields.");
 	}
 	
-	/*
-	 * /**
+	 /**
 	 * Gets a block from the metadata file
 	 * 
 	 * @param piece The block
-	 * @return The 16384 bytes needed to answer the request
-		public byte[] getMetadataBlock(int piece) {
-			long blockSize = 16384L;
-			byte[] data = new byte[(int) blockSize];
-			long blockOffset = piece * blockSize;
-			synchronized (metadata.FILE_LOCK) {
-				RandomAccessFile fileAccess = metadata.getFileAcces();
-				try {
-					if (fileAccess.length() < blockOffset + data.length)
-						data = new byte[(int) (fileAccess.length() - blockOffset)];
-					int bytesRead = 0;
-					while (bytesRead < data.length) {
-						fileAccess.seek(piece * blockSize + bytesRead);
-						int read = fileAccess.read(data, piece * (int) blockSize + bytesRead, data.length - bytesRead);
-						if(read >= 0) {
-							bytesRead += read;
-						}
-					}
-				} catch (IOException e) {
-				}
-			}
+	 * @return The 16384 (or less if it is the last block) bytes needed to answer the request
+	 * @throws IOException When reading the file fails for whatever reason
+	 */
+	public byte[] getMetadataBlock(int piece) throws IOException {
+		int blockOffset = piece * BLOCK_SIZE;
+		synchronized (metadata.FILE_LOCK) {
+			RandomAccessFile fileAccess = metadata.getFileAcces();
+			int blockSize = Math.min(BLOCK_SIZE, (int)(fileAccess.length() - blockOffset));
+			byte[] data = new byte[blockSize];
+			fileAccess.seek(blockOffset);
+			fileAccess.readFully(data);
 			return data;
 		}
-	 */
-
+	}
 }
