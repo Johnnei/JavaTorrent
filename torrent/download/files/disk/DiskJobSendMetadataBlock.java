@@ -1,5 +1,7 @@
 package torrent.download.files.disk;
 
+import java.io.IOException;
+
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 import torrent.protocol.UTMetadata;
@@ -21,10 +23,14 @@ public class DiskJobSendMetadataBlock extends DiskJob {
 
 	@Override
 	public void process(Torrent torrent) {
-		// TODO Recreate this functionality.
-//		MessageData mData = new MessageData(blockIndex, peer.getTorrent().getFiles().getMetadataBlock(blockIndex));
-//		MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mData);
-//		peer.getBitTorrentSocket().queueMessage(extendedMessage);
+		try {
+			MessageData mData = new MessageData(blockIndex, peer.getTorrent().getMetadata().getBlock(blockIndex));
+			MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mData);
+			peer.getBitTorrentSocket().queueMessage(extendedMessage);
+		} catch (IOException e) {
+			torrent.getLogger().warning(String.format("Reading metadata block %d failed, requeueing read job. %s", blockIndex, e.getMessage()));
+			torrent.addDiskJob(new DiskJobSendMetadataBlock(peer, blockIndex));
+		}
 	}
 
 	@Override

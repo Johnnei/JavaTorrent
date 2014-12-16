@@ -68,7 +68,7 @@ public class MetadataFile extends AFiles {
 	 * @return The 16384 (or less if it is the last block) bytes needed to answer the request
 	 * @throws IOException When reading the file fails for whatever reason
 	 */
-	public byte[] getMetadataBlock(int piece) throws IOException {
+	public byte[] getBlock(int piece) throws IOException {
 		int blockOffset = piece * BLOCK_SIZE;
 		synchronized (metadata.FILE_LOCK) {
 			RandomAccessFile fileAccess = metadata.getFileAcces();
