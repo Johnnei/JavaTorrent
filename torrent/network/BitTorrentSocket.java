@@ -294,6 +294,14 @@ public class BitTorrentSocket {
 		return String.format("%d/%d bytes", inStream.available(), HANDSHAKE_SIZE);
 	}
 	
+	public String getConnectionFlag() {
+		if (socket == null) {
+			return "";
+		}
+		
+		return socket.getClass().getSimpleName().substring(0, 1);
+	}
+	
 	@Override
 	public String toString() {
 		return socket.toString();

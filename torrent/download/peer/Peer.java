@@ -363,7 +363,7 @@ public class Peer implements Comparable<Peer> {
 	 * @return
 	 */
 	public String getFlags() {
-		String flags = socket.getClass().getSimpleName().substring(0, 1);
+		String flags = socket.getConnectionFlag();
 		if (peerClient.isInterested()) {
 			flags += "I";
 		}

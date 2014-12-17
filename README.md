@@ -13,6 +13,14 @@ BEP | Description | Implemented
 15 | UDP Trackers | Functional (Optimizations pending)
 29 | uTP support | Planned
 
+Peer flag description
+===========
+Flag | Description
+---: | -----------
+T    | Connected through TCP
+U    | Connected through uTP
+C    | Choked (Can't download from peer yet)
+I    | Interested (Request to allow downloading)
 
 Version System
 ===========
