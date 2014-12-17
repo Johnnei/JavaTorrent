@@ -293,5 +293,10 @@ public class BitTorrentSocket {
 	public String getHandshakeProgress() throws IOException {
 		return String.format("%d/%d bytes", inStream.available(), HANDSHAKE_SIZE);
 	}
+	
+	@Override
+	public String toString() {
+		return socket.toString();
+	}
 
 }
