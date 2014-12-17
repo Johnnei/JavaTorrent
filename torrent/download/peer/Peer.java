@@ -92,7 +92,7 @@ public class Peer implements Comparable<Peer> {
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
-		haveState = new Bitfield();
+		haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
 		requestLimit = 1;
 	}
 
