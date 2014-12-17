@@ -74,39 +74,45 @@ public class Piece implements Comparable<Piece> {
 	 * Loads a bit of data from the file but it is not strictly a block as I use it
 	 * 
 	 * @param offset The offset in the piece
-	 * @param remainingBytes The amount of bytes to read
+	 * @param length The amount of bytes to read
 	 * @return The read bytes or an excpetion
 	 * @throws TorrentException
 	 */
-	public byte[] loadPiece(int offset, int remainingBytes) throws TorrentException {
-		byte[] blockData = new byte[remainingBytes];
-		// Write Block
-		while (remainingBytes > 0) {
-			int dataOffset = offset + (blockData.length - remainingBytes);
-			// Retrieve fileinfo
-			FileInfo outputFile = files.getFileForBytes(index, 0, dataOffset);
-			long indexOffset = (index * files.getPieceSize());
-			long totalOffset = indexOffset + dataOffset;
+	public byte[] loadPiece(int offset, int length) throws TorrentException, IOException {
+		byte[] pieceData = new byte[length];
+		
+		int readBytes = 0;
+		while (readBytes < length) {
+			// Offset within the piece
+			int alreadyReadOffset = offset + readBytes;
+			
+			// Find file for the given offset
+			FileInfo outputFile = files.getFileForBytes(index, 0, alreadyReadOffset);
+			
+			// Calculate offset as if the torrent was one file
+			long pieceIndexOffset = (index * files.getPieceSize());
+			long totalOffset = pieceIndexOffset + alreadyReadOffset;
+			
+			// Calculate the offset within the file
 			long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
-			int bytesToRead = remainingBytes;
-			if (offsetInFile + remainingBytes > outputFile.getSize()) {
-				bytesToRead = (int) (outputFile.getSize() - offsetInFile);
+			
+			// Calculate how many bytes we want/can read from the file
+			int bytesToRead = Math.min(length - readBytes, (int) (outputFile.getSize() - offsetInFile));
+			
+			// Check if we don't read outside the file
+			if (offsetInFile < 0) {
+				throw new IOException("Cannot seek to position: " + offsetInFile);
 			}
-			if (offsetInFile < 0)
-				throw new TorrentException("Cannot seek to position: " + offsetInFile);
-			// Write Bytes
+			
+			// Read the actual files
 			synchronized (outputFile.FILE_LOCK) {
 				RandomAccessFile file = outputFile.getFileAcces();
-				try {
-					file.seek(offsetInFile);
-					int read = file.read(blockData, (blockData.length - remainingBytes), bytesToRead);
-					if (read >= 0)
-						remainingBytes -= read;
-				} catch (IOException e) {
-				}
+				file.seek(offsetInFile);
+				file.readFully(pieceData, readBytes, bytesToRead);
+				readBytes += bytesToRead;
 			}
 		}
-		return blockData;
+		return pieceData;
 	}
 	
 	/**
@@ -115,7 +121,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return hashMatched ? true : false
 	 * @throws TorrentException If the piece is not within any of the files in this torrent (Shouldn't occur)
 	 */
-	public boolean checkHash() throws TorrentException {
+	public boolean checkHash() throws TorrentException, IOException {
 		byte[] pieceData = loadPiece(0, getSize());
 		return SHA1.match(expectedHash, SHA1.hash(pieceData));
 	}

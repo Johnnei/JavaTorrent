@@ -1,5 +1,7 @@
 package torrent.download.files.disk;
 
+import java.io.IOException;
+
 import torrent.TorrentException;
 import torrent.download.Torrent;
 import torrent.util.StringUtil;
@@ -36,6 +38,9 @@ public class DiskJobCheckHash extends DiskJob {
 		} catch (TorrentException e) {
 			torrent.getLogger().warning("Hash check error on piece: " + pieceIndex + ", Err: " + e.getMessage());
 			torrent.getFiles().getPiece(pieceIndex).hashFail();
+		} catch (IOException e) {
+			torrent.getLogger().warning(String.format("IO error while checking hash on piece %d: %s. Requeuing task.", pieceIndex, e.getMessage()));
+			return;
 		}
 		torrent.addToHaltingOperations(-1);
 	}

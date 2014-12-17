@@ -1,5 +1,6 @@
 package torrent.download;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -360,12 +361,12 @@ public class Torrent implements Runnable {
 			filter(p -> {
 				try {
 					return p.checkHash();
-				} catch (TorrentException e) { return false; }
+				} catch (IOException | TorrentException e) {
+					log.warning(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
+					return false; 
+				}
 			}).
-			forEach(p -> {
-				files.havePiece(p.getIndex());
-				broadcastHave(p.getIndex());
-			}
+			forEach(p -> files.havePiece(p.getIndex())
 		);
 		log.info("Checking progress done");
 	}

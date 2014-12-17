@@ -1,5 +1,7 @@
 package torrent.download.files.disk;
 
+import java.io.IOException;
+
 import torrent.TorrentException;
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
@@ -27,12 +29,15 @@ public class DiskJobSendBlock extends DiskJob {
 		byte[] data = new byte[0];
 		try {
 			data = torrent.getFiles().getPiece(pieceIndex).loadPiece(offset, length);
+			peer.getBitTorrentSocket().queueMessage(new MessageBlock(pieceIndex, offset, data));
+			peer.addToPendingMessages(-1);
+			torrent.addUploadedBytes(data.length);
 		} catch (TorrentException te) {
-			te.printStackTrace();
+			torrent.getLogger().warning(String.format("Can't satify peer request for block: %s", te.getMessage()));
+		} catch (IOException e) {
+			torrent.getLogger().warning(String.format("IO error while reading block request: %s. Requeueing task.", e.getMessage()));
+			torrent.addDiskJob(this);
 		}
-		peer.getBitTorrentSocket().queueMessage(new MessageBlock(pieceIndex, offset, data));
-		peer.addToPendingMessages(-1);
-		torrent.addUploadedBytes(data.length);
 	}
 
 	@Override
