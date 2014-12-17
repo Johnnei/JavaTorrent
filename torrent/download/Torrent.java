@@ -1,7 +1,5 @@
 package torrent.download;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -12,6 +10,7 @@ import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
+import torrent.TorrentException;
 import torrent.TorrentManager;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
@@ -357,32 +356,17 @@ public class Torrent implements Runnable {
 	 */
 	public void checkProgress() {
 		log.info("Checking progress...");
-		for (FileInfo info : files.getFiles()) {
-			RandomAccessFile file = info.getFileAcces();
-			synchronized (info.FILE_LOCK) {
+		files.pieces.stream().
+			filter(p -> {
 				try {
-					if (file.length() > 0L) {
-						int pieceIndex = (int) (info.getFirstByteOffset() / files.getPieceSize());
-						int lastPieceIndex = pieceIndex + info.getPieceCount();
-						for (; pieceIndex < lastPieceIndex; pieceIndex++) {
-							try {
-								if (files.getPiece(pieceIndex).checkHash()) {
-									// log("Progress Check: Have " + pieceIndex);
-									if (torrentStatus == STATE_DOWNLOAD_DATA) {
-										broadcastHave(pieceIndex);
-									} else {
-										files.havePiece(pieceIndex);
-									}
-	
-								}
-							} catch (Exception e) {
-							}
-						}
-					}
-				} catch (IOException e) {
-				}
+					return p.checkHash();
+				} catch (TorrentException e) { return false; }
+			}).
+			forEach(p -> {
+				files.havePiece(p.getIndex());
+				broadcastHave(p.getIndex());
 			}
-		}
+		);
 		log.info("Checking progress done");
 	}
 	
