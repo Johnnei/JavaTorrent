@@ -127,43 +127,48 @@ public class Piece implements Comparable<Piece> {
 	 * @param blockData The data of the block
 	 * @throws Exception
 	 */
-	public void storeBlock(int blockIndex, byte[] blockData) throws TorrentException {
+	public void storeBlock(int blockIndex, byte[] blockData) throws TorrentException, IOException {
 		Block block = blocks.get(blockIndex);
-		if (block.getSize() == blockData.length) {
-			int remainingBytes = block.getSize();
-			// Write Block
-			while (remainingBytes > 0) {
-				int dataOffset = (block.getSize() - remainingBytes);
-				// Retrieve fileinfo
-				FileInfo outputFile = files.getFileForBytes(index, blockIndex, dataOffset);
-				long indexOffset = (index * files.getPieceSize());
-				int blockOffset = (blockIndex * files.getBlockSize());
-				long totalOffset = indexOffset + blockOffset + dataOffset;
-				long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
-				int bytesToWrite = remainingBytes;
-				if (offsetInFile + remainingBytes > outputFile.getSize()) {
-					bytesToWrite = (int) (outputFile.getSize() - offsetInFile);
-				}
-				if (offsetInFile < 0)
-					throw new TorrentException("Cannot seek to position: " + offsetInFile);
-				// Write Bytes
-				synchronized (outputFile.FILE_LOCK) {
-					RandomAccessFile file = outputFile.getFileAcces();
-					try {
-						file.seek(offsetInFile);
-						file.write(blockData, dataOffset, bytesToWrite);
-						remainingBytes -= bytesToWrite;
-					} catch (IOException e) {
-						block.setDone(false);
-						block.setRequested(false);
-					}
-				}
-				block.setDone(true);
-			}
-		} else {
+		if (block.getSize() != blockData.length) {
 			blocks.get(blockIndex).setDone(false);
 			blocks.get(blockIndex).setRequested(false);
-			throw new TorrentException("Block x-" + blockIndex + " size did not match. Expected: " + blocks.get(blockIndex).getSize() + ", Got: " + blockData.length);
+			throw new TorrentException("Block size did not match. Expected: " + blocks.get(blockIndex).getSize() + ", Got: " + blockData.length);
+		}
+		
+		int remainingBytesToWrite = block.getSize();
+		// Write Block
+		while (remainingBytesToWrite > 0) {
+			// The offset within the block itself
+			int dataOffset = (block.getSize() - remainingBytesToWrite);
+			// Retrieve the file to which we need to write
+			FileInfo outputFile = files.getFileForBytes(index, blockIndex, dataOffset);
+			
+			// Calculate the offset in bytes as if the torrent was one file
+			final long pieceOffset = (index * files.getPieceSize());
+			final long blockOffset = (blockIndex * files.getBlockSize());
+			final long totalOffset = pieceOffset + blockOffset + dataOffset;
+			
+			// Calculate the offset within the file
+			long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
+			
+			// Determine how many bytes still belong in this file
+			int bytesToWrite = Math.min(remainingBytesToWrite, (int) (outputFile.getSize() - offsetInFile));
+			
+			// Check if the calculated offset is within the file
+			if (offsetInFile < 0) {
+				throw new IOException("Cannot seek to position: " + offsetInFile);
+			}
+			
+			// Write the actual bytes
+			synchronized (outputFile.FILE_LOCK) {
+				RandomAccessFile file = outputFile.getFileAcces();
+				file.seek(offsetInFile);
+				file.write(blockData, dataOffset, bytesToWrite);
+				remainingBytesToWrite -= bytesToWrite;
+			}
+			
+			// Mark the block as done
+			block.setDone(true);
 		}
 	}
 

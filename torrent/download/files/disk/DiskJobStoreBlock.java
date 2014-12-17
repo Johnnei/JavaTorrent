@@ -1,5 +1,7 @@
 package torrent.download.files.disk;
 
+import java.io.IOException;
+
 import torrent.TorrentException;
 import torrent.download.Torrent;
 
@@ -26,6 +28,10 @@ public class DiskJobStoreBlock extends DiskJob {
 		} catch (TorrentException e) {
 			torrent.getLogger().warning(e.getMessage());
 			torrent.getFiles().getPiece(pieceIndex).reset(blockIndex);
+		} catch (IOException e) {
+			torrent.getLogger().warning(String.format("IO error while saving piece %d block %d: %s. Requeueing write task.", pieceIndex, blockIndex, e.getMessage()));
+			torrent.addDiskJob(this);
+			
 		}
 		torrent.addToHaltingOperations(-1);
 	}

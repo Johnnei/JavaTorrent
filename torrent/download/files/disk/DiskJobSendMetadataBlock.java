@@ -29,7 +29,7 @@ public class DiskJobSendMetadataBlock extends DiskJob {
 			peer.getBitTorrentSocket().queueMessage(extendedMessage);
 		} catch (IOException e) {
 			torrent.getLogger().warning(String.format("Reading metadata block %d failed, requeueing read job. %s", blockIndex, e.getMessage()));
-			torrent.addDiskJob(new DiskJobSendMetadataBlock(peer, blockIndex));
+			torrent.addDiskJob(this);
 		}
 	}
 
