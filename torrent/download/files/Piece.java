@@ -114,36 +114,7 @@ public class Piece implements Comparable<Piece> {
 	 * @throws TorrentException If the piece is not within any of the files in this torrent (Shouldn't occur)
 	 */
 	public boolean checkHash() throws TorrentException {
-		byte[] pieceData = new byte[getSize()];
-		int bytesCollected = 0;
-		long pieceOffset = getIndex() * files.getPieceSize();
-		while (bytesCollected < pieceData.length) {
-			int blockIndex = bytesCollected / files.getBlockSize();
-			int blockOffset = blockIndex * files.getBlockSize();
-			int blockDataOffset = bytesCollected % files.getBlockSize();
-			int bytesToRead = getSize() - bytesCollected;
-			FileInfo file = files.getFileForBlock(getIndex(), blockIndex, blockDataOffset);
-			long offsetInFile = pieceOffset + blockOffset + bytesCollected - file.getFirstByteOffset();
-			if (file.getSize() < offsetInFile + bytesToRead) {
-				if (offsetInFile >= file.getSize())
-					return false;
-				bytesToRead = (int) (file.getSize() - offsetInFile);
-			}
-			synchronized (file.FILE_LOCK) {
-				try {
-					RandomAccessFile fileAccess = file.getFileAcces();
-					fileAccess.seek(offsetInFile);
-					int read = fileAccess.read(pieceData, bytesCollected, bytesToRead);
-					if (read >= 0)
-						bytesCollected += read;
-					else if (read == -1) // End of File
-						return false;
-				} catch (IOException e) {
-					ThreadUtils.sleep(10);
-					return checkHash();
-				}
-			}
-		}
+		byte[] pieceData = loadPiece(0, getSize());
 		return SHA1.match(expectedHash, SHA1.hash(pieceData));
 	}
 
