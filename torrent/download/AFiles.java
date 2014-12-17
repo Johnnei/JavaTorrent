@@ -44,7 +44,7 @@ public abstract class AFiles {
 	 * @param blockDataOffset The offset within the block
 	 * @return The FileInfo for the given data
 	 */
-	public abstract FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException;
+	public abstract FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) throws TorrentException;
 	
 	/**
 	 * Gets the piece with the given index

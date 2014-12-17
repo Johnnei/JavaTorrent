@@ -182,25 +182,26 @@ public class Files extends AFiles {
 	/**
 	 * Gets the FileInfo for the given piece and block
 	 * 
-	 * @param index The piece index
+	 * @param pieceIndex The piece index
 	 * @param blockIndex The block index within the piece
-	 * @param blockDataOffset The offset within the block
+	 * @param byteOffset The offset within the block
 	 * @return The FileInfo for the given data
 	 */
-	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
-		long pieceOffset = (index * getPieceSize()) + (blockIndex * BLOCK_SIZE) + blockDataOffset;
-		if (pieceOffset <= 0) {
-			return fileInfos.get(0);
-		} else {
-			long fileTotal = 0L;
-			for (FileInfo fileInfo : fileInfos) {
-				fileTotal += fileInfo.getSize();
-				if (pieceOffset < fileTotal) {
-					return fileInfo;
-				}
-			}
-			throw new TorrentException("Piece is not within any of the files");
+	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) throws TorrentException {
+		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * BLOCK_SIZE) + byteOffset;
+		
+		if (bytesStartPosition < 0) {
+			throw new TorrentException("Trying to find file for bytes with a negative byte start position.");
 		}
+		
+		for (FileInfo fileInfo : fileInfos) {
+			// If the file started before or at the wanted byteStartPosition then that file contains the bytes
+			if (fileInfo.getFirstByteOffset() <= bytesStartPosition) {
+				return fileInfo;
+			}
+		}
+		
+		throw new TorrentException("Piece is not within any of the files");
 	}
 
 	@Override

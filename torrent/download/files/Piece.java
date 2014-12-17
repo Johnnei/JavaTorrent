@@ -84,7 +84,7 @@ public class Piece implements Comparable<Piece> {
 		while (remainingBytes > 0) {
 			int dataOffset = offset + (blockData.length - remainingBytes);
 			// Retrieve fileinfo
-			FileInfo outputFile = files.getFileForBlock(index, 0, dataOffset);
+			FileInfo outputFile = files.getFileForBytes(index, 0, dataOffset);
 			long indexOffset = (index * files.getPieceSize());
 			long totalOffset = indexOffset + dataOffset;
 			long offsetInFile = totalOffset - outputFile.getFirstByteOffset();
@@ -135,7 +135,7 @@ public class Piece implements Comparable<Piece> {
 			while (remainingBytes > 0) {
 				int dataOffset = (block.getSize() - remainingBytes);
 				// Retrieve fileinfo
-				FileInfo outputFile = files.getFileForBlock(index, blockIndex, dataOffset);
+				FileInfo outputFile = files.getFileForBytes(index, blockIndex, dataOffset);
 				long indexOffset = (index * files.getPieceSize());
 				int blockOffset = (blockIndex * files.getBlockSize());
 				long totalOffset = indexOffset + blockOffset + dataOffset;

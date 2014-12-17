@@ -41,7 +41,7 @@ public class MetadataFile extends AFiles {
 	}
 	
 	@Override
-	public FileInfo getFileForBlock(int index, int blockIndex, int blockDataOffset) throws TorrentException {
+	public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) throws TorrentException {
 		return fileInfos.get(0);
 	}
 
