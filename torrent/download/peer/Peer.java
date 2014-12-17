@@ -92,7 +92,7 @@ public class Peer implements Comparable<Peer> {
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
-		haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+		haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8)); // TODO Make sure this is correct after torrent state change
 		requestLimit = 1;
 	}
 
@@ -364,10 +364,10 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public String getFlags() {
 		String flags = socket.getConnectionFlag();
-		if (peerClient.isInterested()) {
+		if (isInterested(PeerDirection.Upload)) { // TODO Why is this supposed to be upload?
 			flags += "I";
 		}
-		if (peerClient.isChoked()) {
+		if (isChoked(PeerDirection.Download)) {
 			flags += "C";
 		}
 		return flags;
