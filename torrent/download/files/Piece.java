@@ -2,9 +2,10 @@ package torrent.download.files;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.johnnei.utils.JMath;
-import org.johnnei.utils.ThreadUtils;
 
 import torrent.TorrentException;
 import torrent.download.AFiles;
@@ -24,7 +25,7 @@ public class Piece implements Comparable<Piece> {
 	/**
 	 * All the blocks in this piece
 	 */
-	private Block[] blocks;
+	private List<Block> blocks;
 	/**
 	 * The next piece which will be dropped on hash fail
 	 */
@@ -36,12 +37,13 @@ public class Piece implements Comparable<Piece> {
 		this.index = index;
 		this.files = files;
 		this.expectedHash = hash;
-		blocks = new Block[JMath.ceilDivision(pieceSize, blockSize)];
-		int blockOffset = 0;
+		blocks = new ArrayList<>(JMath.ceilDivision(pieceSize, blockSize));
+		int blockIndex = 0;
 		while (pieceSize > 0) {
-			blocks[blockOffset] = new Block(blockOffset, Math.min(blockSize, pieceSize));
-			pieceSize -= blocks[blockOffset].getSize();
-			++blockOffset;
+			Block block = new Block(blockIndex, Math.min(blockSize, pieceSize));
+			pieceSize -= block.getSize();
+			blocks.add(block);
+			++blockIndex;
 		}
 	}
 
@@ -49,10 +51,10 @@ public class Piece implements Comparable<Piece> {
 	 * Drops ceil(10%) of the blocks in order to maintain speed and still try to *not* redownload the entire piece
 	 */
 	public void hashFail() {
-		int tenPercent = (int) Math.ceil(blocks.length * 0.1D);
+		int tenPercent = JMath.ceilDivision(blocks.size(), 10);
 		for (int i = 0; i < tenPercent; i++) {
 			reset(hashFailCheck++);
-			if (hashFailCheck >= blocks.length) {
+			if (hashFailCheck >= blocks.size()) {
 				hashFailCheck = 0;
 			}
 		}
@@ -64,8 +66,8 @@ public class Piece implements Comparable<Piece> {
 	 * @param blockIndex
 	 */
 	public void reset(int blockIndex) {
-		blocks[blockIndex].setDone(false);
-		blocks[blockIndex].setRequested(false);
+		blocks.get(blockIndex).setDone(false);
+		blocks.get(blockIndex).setRequested(false);
 	}
 
 	/**
@@ -126,7 +128,7 @@ public class Piece implements Comparable<Piece> {
 	 * @throws Exception
 	 */
 	public void storeBlock(int blockIndex, byte[] blockData) throws TorrentException {
-		Block block = blocks[blockIndex];
+		Block block = blocks.get(blockIndex);
 		if (block.getSize() == blockData.length) {
 			int remainingBytes = block.getSize();
 			// Write Block
@@ -159,9 +161,9 @@ public class Piece implements Comparable<Piece> {
 				block.setDone(true);
 			}
 		} else {
-			blocks[blockIndex].setDone(false);
-			blocks[blockIndex].setRequested(false);
-			throw new TorrentException("Block x-" + blockIndex + " size did not match. Expected: " + blocks[blockIndex].getSize() + ", Got: " + blockData.length);
+			blocks.get(blockIndex).setDone(false);
+			blocks.get(blockIndex).setRequested(false);
+			throw new TorrentException("Block x-" + blockIndex + " size did not match. Expected: " + blocks.get(blockIndex).getSize() + ", Got: " + blockData.length);
 		}
 	}
 
@@ -171,13 +173,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return The remaining amount of bytes to finish this piece
 	 */
 	public long getRemainingBytes() {
-		long remaining = 0L;
-		for (int i = 0; i < blocks.length; i++) {
-			if (!blocks[i].isDone()) {
-				remaining += blocks[i].getSize();
-			}
-		}
-		return remaining;
+		return blocks.stream().filter(b -> !b.isDone()).mapToLong(Block::getSize).sum();
 	}
 
 	/**
@@ -186,15 +182,15 @@ public class Piece implements Comparable<Piece> {
 	 * @param blockIndex
 	 */
 	public void setDone(int blockIndex) {
-		blocks[blockIndex].setDone(true);
+		blocks.get(blockIndex).setDone(true);
 	}
 
 	public boolean isRequested(int blockIndex) {
-		return blocks[blockIndex].isRequested();
+		return blocks.get(blockIndex).isRequested();
 	}
 
 	public boolean isDone(int blockIndex) {
-		return blocks[blockIndex].isDone();
+		return blocks.get(blockIndex).isDone();
 	}
 
 	/**
@@ -203,11 +199,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return If this piece is completed
 	 */
 	public boolean isDone() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (!blocks[i].isDone())
-				return false;
-		}
-		return true;
+		return !blocks.stream().filter(b -> !b.isDone()).findAny().isPresent();
 	}
 
 	/**
@@ -216,11 +208,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return true if any progress is found
 	 */
 	public boolean isStarted() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isStarted())
-				return true;
-		}
-		return false;
+		return blocks.stream().filter(b -> b.isStarted()).findAny().isPresent();
 	}
 
 	@Override
@@ -234,10 +222,10 @@ public class Piece implements Comparable<Piece> {
 	
 	private int getCompareValue() {
 		int value = 0;
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isDone())
+		for (Block block : blocks) {
+			if (block.isDone())
 				value += 2;
-			else if (blocks[i].isRequested())
+			else if (block.isRequested())
 				value += 1;
 		}
 		return value;
@@ -249,7 +237,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return block count
 	 */
 	public int getBlockCount() {
-		return blocks.length;
+		return blocks.size();
 	}
 
 	/**
@@ -268,11 +256,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return The size of this piece
 	 */
 	public int getSize() {
-		int size = 0;
-		for (int i = 0; i < blocks.length; i++) {
-			size += blocks[i].getSize();
-		}
-		return size;
+		return blocks.stream().mapToInt(Block::getSize).sum();
 	}
 
 	/**
@@ -281,12 +265,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return block done count
 	 */
 	public int getDoneCount() {
-		int doneCount = 0;
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isDone())
-				++doneCount;
-		}
-		return doneCount;
+		return (int) blocks.stream().filter(p -> p.isDone()).count();
 	}
 
 	/**
@@ -295,12 +274,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return block requested count
 	 */
 	public int getRequestedCount() {
-		int requestedCount = 0;
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isRequested() && !blocks[i].isDone())
-				++requestedCount;
-		}
-		return requestedCount;
+		return (int) blocks.stream().filter(p -> p.isRequested() && !p.isDone()).count();
 	}
 
 	/**
@@ -309,12 +283,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return
 	 */
 	public int getTotalRequestedCount() {
-		int requestedCount = 0;
-		for (int i = 0; i < blocks.length; i++) {
-			if (blocks[i].isRequested())
-				++requestedCount;
-		}
-		return requestedCount;
+		return (int) blocks.stream().filter(p -> p.isRequested()).count();
 	}
 
 	/**
@@ -323,13 +292,14 @@ public class Piece implements Comparable<Piece> {
 	 * @return an unrequested block
 	 */
 	public Block getRequestBlock() {
-		for (int i = 0; i < blocks.length; i++) {
-			if (!blocks[i].isDone() && !blocks[i].isRequested()) {
-				blocks[i].setRequested(true);
-				return blocks[i];
-			}
+		Block block = blocks.stream().filter(p -> !p.isStarted()).findAny().orElse(null);
+		
+		if (block == null) {
+			return null;
+		} else {
+			block.setRequested(true);
+			return block;
 		}
-		return null;
 	}
 
 	/**
@@ -339,7 +309,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return Size of the block in bytes
 	 */
 	public int getBlockSize(int blockIndex) {
-		return blocks[blockIndex].getSize();
+		return blocks.get(blockIndex).getSize();
 	}
 
 }
