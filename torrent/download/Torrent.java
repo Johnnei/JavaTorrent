@@ -2,6 +2,8 @@ package torrent.download;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,7 +52,8 @@ public class Torrent implements Runnable {
 	/**
 	 * All connected peers
 	 */
-	private ArrayList<Peer> peers;
+	private Collection<Peer> peers;
+	
 	private boolean keepDownloading;
 	
 	/**
@@ -133,7 +136,7 @@ public class Torrent implements Runnable {
 		this.btihHash = btihHash;
 		torrentStatus = STATE_DOWNLOAD_METADATA;
 		downloadedBytes = 0L;
-		peers = new ArrayList<Peer>();
+		peers = new LinkedList<Peer>();
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
@@ -439,7 +442,7 @@ public class Torrent implements Runnable {
 		}
 	}
 
-	public ArrayList<Peer> getPeers() {
+	public Collection<Peer> getPeers() {
 		return peers;
 	}
 
