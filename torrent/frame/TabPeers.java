@@ -1,8 +1,9 @@
 package torrent.frame;
 
 import java.awt.Graphics;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.johnnei.utils.config.Config;
 
@@ -40,23 +41,21 @@ public class TabPeers extends TableBase {
 	protected void paintData(Graphics g) {
 		if (torrent != null) {
 			// Sort
-			ArrayList<Peer> peers = torrent.getPeers();
-			ArrayList<Peer> toSort = new ArrayList<>();
-			for (int i = 0; i < peers.size(); i++) {
-				Peer p = peers.get(i);
-				if (p.getBitTorrentSocket().getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers")) {
-					toSort.add(p);
-				}
+			List<Peer> peers;
+			synchronized (torrent) {
+				peers = torrent.getPeers().stream().
+						filter(p -> p.getBitTorrentSocket().getPassedHandshake() || Config.getConfig().getBoolean("general-show_all_peers")).
+						collect(Collectors.toList());
 			}
-			Collections.sort(toSort);
-			setItemCount(toSort.size());
+			Collections.sort(peers);
+			setItemCount(peers.size());
 			// Draw
-			for (int i = toSort.size() - 1; i >= 0; i--) {
+			for (int i = peers.size() - 1; i >= 0; i--) {
 				if (rowIsVisible()) {
-					if (getSelectedIndex() == toSort.size() - i - 1) {
+					if (getSelectedIndex() == peers.size() - i - 1) {
 						drawSelectedBackground(g);
 					}
-					Peer peer = (Peer) toSort.get(i);
+					Peer peer = peers.get(i);
 					long duration = (System.currentTimeMillis() - peer.getLastActivity()) / 1000;
 					g.drawString(peer.toString(), 5, getTextY());
 					g.drawString(peer.getClientName(), 160, getTextY());

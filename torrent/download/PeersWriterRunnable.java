@@ -28,8 +28,10 @@ public class PeersWriterRunnable implements Runnable {
 	}
 	
 	private void processTorrent(Torrent torrent) {
-		for (Peer peer : torrent.getPeers()) {
-			processPeer(peer);
+		synchronized (torrent) {
+			for (Peer peer : torrent.getPeers()) {
+				processPeer(peer);
+			}
 		}
 	}
 	

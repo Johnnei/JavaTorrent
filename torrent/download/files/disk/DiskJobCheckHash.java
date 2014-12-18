@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import torrent.TorrentException;
 import torrent.download.Torrent;
+import torrent.protocol.messages.MessageHave;
 import torrent.util.StringUtil;
 
 /**
@@ -28,7 +29,8 @@ public class DiskJobCheckHash extends DiskJob {
 		try {
 			if (torrent.getFiles().getPiece(pieceIndex).checkHash()) {
 				if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
-					torrent.broadcastHave(pieceIndex);
+					torrent.getFiles().havePiece(pieceIndex);
+					torrent.broadcastMessage(new MessageHave(pieceIndex));
 				}
 				torrent.getLogger().info("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
 			} else {

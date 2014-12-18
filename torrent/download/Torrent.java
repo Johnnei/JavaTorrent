@@ -173,17 +173,9 @@ public class Torrent implements Runnable {
 		while(phase != null) {
 			torrentStatus = phase.getId();
 			log.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
-			
-			for (int i = 0; i < peers.size(); i++) {
-				Peer peer = peers.get(i);
-				
-				if (peer == null) {
-					continue;
-				}
-				
-				peer.onTorrentPhaseChange();
+			synchronized (this) {
+				peers.forEach(p -> p.onTorrentPhaseChange());	
 			}
-			
 			phase.preprocess();
 			while (!phase.isDone() || torrentHaltingOperations > 0) {
 				processPeers();
@@ -215,19 +207,13 @@ public class Torrent implements Runnable {
 	 * Checks if the peers are still connected
 	 */
 	private void cleanPeerList() {
-		for (int i = 0; i < peers.size(); i++) {
-			Peer p = peers.get(i);
-			if (p == null)
-				continue;
-			if (p.getBitTorrentSocket().closed()) {
-				p.cancelAllPieces();
-				synchronized (this) {
-					peers.remove(i--);
-				}
-				continue;
-			} else {
-				p.checkDisconnect();
-			}
+		synchronized (this) {
+			peers.stream().
+				filter(p -> p.getBitTorrentSocket().closed()).
+				forEach(p -> p.cancelAllPieces());
+			peers.removeIf(p -> p == null || p.getBitTorrentSocket().closed());
+			peers.forEach(p -> p.checkDisconnect());
+			
 		}
 	}
 
@@ -238,29 +224,30 @@ public class Torrent implements Runnable {
 		if (files == null)
 			return;
 		List<Piece> neededPieces = files.getNeededPieces().collect(Collectors.toList());
-		for (int i = 0; i < peers.size(); i++) {
-			Peer p = peers.get(i);
-			boolean hasNoPieces = true;
-			for (int j = 0; j < neededPieces.size(); j++) {
-				if (p.hasPiece(neededPieces.get(j).getIndex())) {
-					hasNoPieces = false;
-					if (!p.isInterested(PeerDirection.Upload)) {
-						p.getBitTorrentSocket().queueMessage(new MessageInterested());
-						p.setInterested(PeerDirection.Upload, true);
+		synchronized (this) {
+			for (Peer p : peers) {
+				boolean hasNoPieces = true;
+				for (int j = 0; j < neededPieces.size(); j++) {
+					if (p.hasPiece(neededPieces.get(j).getIndex())) {
+						hasNoPieces = false;
+						if (!p.isInterested(PeerDirection.Upload)) {
+							p.getBitTorrentSocket().queueMessage(new MessageInterested());
+							p.setInterested(PeerDirection.Upload, true);
+						}
+						break;
 					}
-					break;
 				}
-			}
-			if (hasNoPieces && p.isInterested(PeerDirection.Upload)) {
-				p.getBitTorrentSocket().queueMessage(new MessageUninterested());
-				p.setInterested(PeerDirection.Upload, false);
-			}
-			if (p.isInterested(PeerDirection.Download) && p.isChoked(PeerDirection.Upload)) {
-				p.getBitTorrentSocket().queueMessage(new MessageUnchoke());
-				p.setChoked(PeerDirection.Upload, false);
-			} else if (!p.isInterested(PeerDirection.Download) && !p.isChoked(PeerDirection.Upload)) {
-				p.getBitTorrentSocket().queueMessage(new MessageChoke());
-				p.setChoked(PeerDirection.Upload, true);
+				if (hasNoPieces && p.isInterested(PeerDirection.Upload)) {
+					p.getBitTorrentSocket().queueMessage(new MessageUninterested());
+					p.setInterested(PeerDirection.Upload, false);
+				}
+				if (p.isInterested(PeerDirection.Download) && p.isChoked(PeerDirection.Upload)) {
+					p.getBitTorrentSocket().queueMessage(new MessageUnchoke());
+					p.setChoked(PeerDirection.Upload, false);
+				} else if (!p.isInterested(PeerDirection.Download) && !p.isChoked(PeerDirection.Upload)) {
+					p.getBitTorrentSocket().queueMessage(new MessageChoke());
+					p.setChoked(PeerDirection.Upload, true);
+				}
 			}
 		}
 	}
@@ -327,28 +314,11 @@ public class Torrent implements Runnable {
 		ioManager.addTask(task);
 	}
 
-	/**
-	 * Broadcasts a have message to all peers and updates the have states for myClient
-	 * 
-	 * @param pieceIndex The index of the piece to be broadcasted
-	 */
-	public void broadcastHave(int pieceIndex) {
-		MessageHave have = new MessageHave(pieceIndex);
-		downloadedBytes += files.getPiece(pieceIndex).getSize();
-		files.havePiece(pieceIndex);
-		for (int i = 0; i < peers.size(); i++) {
-			Peer p = peers.get(i);
-			if (!p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()) {
-				p.getBitTorrentSocket().queueMessage(have);
-			}
-		}
-	}
-
 	public void broadcastMessage(IMessage m) {
-		for (int i = 0; i < peers.size(); i++) {
-			Peer peer = peers.get(i);
-			if (!peer.getBitTorrentSocket().closed() && peer.getBitTorrentSocket().getPassedHandshake())
-				peer.getBitTorrentSocket().queueMessage(m);
+		synchronized (this) {			
+			peers.stream().
+				filter(p -> !p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()).
+				forEach(p -> p.getBitTorrentSocket().queueMessage(m));
 		}
 	}
 
@@ -366,7 +336,10 @@ public class Torrent implements Runnable {
 					return false; 
 				}
 			}).
-			forEach(p -> files.havePiece(p.getIndex())
+			forEach(p -> {
+				files.havePiece(p.getIndex());
+				broadcastMessage(new MessageHave(p.getIndex()));
+			}
 		);
 		log.info("Checking progress done");
 	}
@@ -426,8 +399,8 @@ public class Torrent implements Runnable {
 	}
 
 	public void pollRates() {
-		for (int i = 0; i < peers.size(); i++) {
-			peers.get(i).getBitTorrentSocket().pollRates();
+		synchronized (this) {
+			peers.forEach(p -> p.getBitTorrentSocket().pollRates());
 		}
 	}
 	
@@ -440,18 +413,24 @@ public class Torrent implements Runnable {
 	}
 	
 	public int getDownloadRate() {
-		return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getDownloadRate()).sum();
+		synchronized (this) {
+			return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getDownloadRate()).sum();
+		}
 	}
 
 	public int getUploadRate() {
-		return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getUploadRate()).sum();
+		synchronized (this) {
+			return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getUploadRate()).sum();
+		}
 	}
 
 	public int getSeedCount() {
 		if (torrentStatus == STATE_DOWNLOAD_METADATA)
 			return 0;
 		
-		return (int) peers.stream().filter(p -> p.countHavePieces() == files.getPieceCount()).count();
+		synchronized (this) {
+			return (int) peers.stream().filter(p -> p.countHavePieces() == files.getPieceCount()).count();
+		}
 	}
 
 	public int getLeecherCount() {
@@ -489,16 +468,21 @@ public class Torrent implements Runnable {
 	 */
 	public ArrayList<Peer> getDownloadablePeers() {
 		ArrayList<Peer> leechers = new ArrayList<Peer>();
-		for (int i = 0; i < peers.size(); i++) {
-			Peer p = peers.get(i);
-			if (p == null)
-				continue;
-			if (torrentStatus == STATE_DOWNLOAD_METADATA) {
-				if (p.getExtensions().hasExtension(UTMetadata.NAME))
-					leechers.add(p);
-			} else {
-				if (p.countHavePieces() > 0 && !p.isChoked(PeerDirection.Download) && p.getFreeWorkTime() > 0)
-					leechers.add(p);
+		synchronized (this) {
+			for (Peer peer : peers) {
+				if (peer.countHavePieces() == 0) {
+					continue;
+				}
+				
+				if (torrentStatus == STATE_DOWNLOAD_METADATA) {
+					if (peer.getExtensions().hasExtension(UTMetadata.NAME)) {
+						leechers.add(peer);
+					}
+				} else {
+					if (!peer.isChoked(PeerDirection.Download) && peer.getFreeWorkTime() > 0) {
+						leechers.add(peer);
+					}
+				}
 			}
 		}
 		return leechers;
