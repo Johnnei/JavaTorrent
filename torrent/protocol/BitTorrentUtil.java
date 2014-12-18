@@ -40,10 +40,7 @@ public class BitTorrentUtil {
 		} else {
 			message = new MessageExtension(
 				BitTorrent.EXTENDED_MESSAGE_HANDSHAKE, 
-				new MessageHandshake(
-					//peer.getTorrent().getFiles().getMetadataSize()
-					0 // TODO Correctly implement the metadata size again.
-				)
+				new MessageHandshake((int) peer.getTorrent().getMetadata().getTotalFileSize())
 			);
 		}
 		
