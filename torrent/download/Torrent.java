@@ -440,36 +440,18 @@ public class Torrent implements Runnable {
 	}
 	
 	public int getDownloadRate() {
-		int dlRate = 0;
-		for (int i = 0; i < peers.size(); i++) {
-			dlRate += peers.get(i).getBitTorrentSocket().getDownloadRate();
-		}
-		return dlRate;
+		return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getDownloadRate()).sum();
 	}
 
 	public int getUploadRate() {
-		int ulRate = 0;
-		for (int i = 0; i < peers.size(); i++) {
-			ulRate += peers.get(i).getBitTorrentSocket().getUploadRate();
-		}
-		return ulRate;
+		return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getUploadRate()).sum();
 	}
 
 	public int getSeedCount() {
 		if (torrentStatus == STATE_DOWNLOAD_METADATA)
 			return 0;
-		int seeds = 0;
-		if (files == null || peers == null)
-			return 0;
-		for (int i = 0; i < peers.size(); i++) {
-			Peer p = peers.get(i);
-			if (p == null)
-				continue;
-			if (p.countHavePieces() == files.getPieceCount())
-				++seeds;
-		}
-
-		return seeds;
+		
+		return (int) peers.stream().filter(p -> p.countHavePieces() == files.getPieceCount()).count();
 	}
 
 	public int getLeecherCount() {
