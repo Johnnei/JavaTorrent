@@ -2,7 +2,10 @@ package torrent.download.tracker;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.download.Torrent;
@@ -32,10 +35,13 @@ public class PeerConnector implements Runnable {
 	
 	private final int maxPeers;
 	
+	private Logger log;
+	
 	public PeerConnector(TrackerManager manager, int maxConnecting) {
 		this.manager = manager;
 		this.maxPeers = maxConnecting;
 		peers = new LinkedList<>();
+		log = ConsoleLogger.createLogger("PeerConnector", Level.INFO);
 	}
 
 	/**
@@ -55,7 +61,6 @@ public class PeerConnector implements Runnable {
 
 	public void run() {
 		while (true) {
-			
 			if (peers.isEmpty()) {
 				ThreadUtils.wait(PEER_JOB_NOTIFY);
 			}
@@ -92,8 +97,9 @@ public class PeerConnector implements Runnable {
 				Peer peer = new Peer(peerSocket, peerInfo.getTorrent());
 				peer.getExtensions().register(handshake.getPeerExtensionBytes());
 				BitTorrentUtil.onPostHandshake(peer);
+				log.fine(String.format("Connected with %s:%d", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort()));
 			} catch (IOException e) {
-				System.err.println(String.format("[PeerConnector] Failed to connect to peer (%s:%d): %s", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort(), e.getMessage()));
+				log.fine(String.format("Failed to connect to peer (%s:%d): %s", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort(), e.getMessage()));
 				if (peerSocket != null) {
 					peerSocket.close();
 				}
