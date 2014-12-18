@@ -77,13 +77,15 @@ public class Bencode {
 	}
 
 	public String decodeString() throws InvalidObjectException {
-		String data[] = bencoded.split(":");
-		int totalLength = data[0].length() + 1;
+		String data[] = bencoded.split(":", 2);
+		int headerLength = data[0].length() + 1; // Integer in base-10 string and 1 char for colon
 		if (isInt(data[0])) {
-			int length = Integer.parseInt(data[0]);
-			String string = bencoded.substring(totalLength, totalLength + length);
-			totalLength += length;
-			bencoded = bencoded.substring(totalLength);
+			// Read string
+			int stringLength = Integer.parseInt(data[0]);
+			String string = data[1].substring(0, stringLength);
+			
+			// Consume information from bencoded string
+			bencoded = bencoded.substring(headerLength + stringLength);
 			return string;
 		} else {
 			throw new InvalidObjectException("The next item in the bencoded string is not a String. " + bencoded);
