@@ -45,7 +45,7 @@ public interface IMessage {
 	/**
 	 * Sets the read duration of this message
 	 * 
-	 * @param duration TODO
+	 * @param duration The duration in milliseconds it took to read this message
 	 */
 	public void setReadDuration(int duration);
 
