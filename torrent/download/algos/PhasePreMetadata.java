@@ -41,6 +41,7 @@ public class PhasePreMetadata extends AMetadataPhase {
 	public void postprocess() {
 		MetadataFile metadata = new MetadataFile(torrent, metadataSize);
 		torrent.setFiles(metadata);
+		torrent.setMetadata(metadata);
 	}
 	
 	public void setMetadataSize(int metadataSize) {
