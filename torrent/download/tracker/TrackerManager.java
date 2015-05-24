@@ -1,7 +1,6 @@
 package torrent.download.tracker;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -131,7 +130,7 @@ public class TrackerManager implements Runnable {
 	 * @param torrent the torrent which the tracker must support
 	 * @return a collection of trackers which support the given torrent
 	 */
-	public Collection<Tracker> getTrackersFor(Torrent torrent) {
+	public List<Tracker> getTrackersFor(Torrent torrent) {
 		return trackerList.stream().filter(tracker -> tracker.hasTorrent(torrent)).collect(Collectors.toList());
 	}
 	
