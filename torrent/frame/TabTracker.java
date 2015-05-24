@@ -12,16 +12,13 @@ import torrent.frame.controls.TableBase;
 public class TabTracker extends TableBase {
 
 	public static final long serialVersionUID = 1L;
-	private Torrent torrent;
+	private TorrentFrame torrentFrame;
 	private TrackerManager trackerManager;
 
-	public TabTracker(TrackerManager trackerManager) {
+	public TabTracker(TorrentFrame torrentFrame, TrackerManager trackerManager) {
 		super(25);
 		this.trackerManager = trackerManager;
-	}
-
-	public void setTorrent(Torrent torrent) {
-		this.torrent = torrent;
+		this.torrentFrame = torrentFrame;
 	}
 
 	@Override
@@ -35,6 +32,8 @@ public class TabTracker extends TableBase {
 
 	@Override
 	protected void paintData(Graphics g) {
+		Torrent torrent = torrentFrame.getSelectedTorrent();
+		
 		if (torrent != null) {
 			Collection<Tracker> trackers = trackerManager.getTrackersFor(torrent);
 			int count = 0;

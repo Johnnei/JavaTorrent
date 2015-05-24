@@ -11,14 +11,11 @@ import torrent.util.StringUtil;
 public class TabFiles extends TableBase {
 
 	public static final long serialVersionUID = 1L;
-	private Torrent torrent;
+	private TorrentFrame torrentFrame;
 
-	public TabFiles() {
+	public TabFiles(TorrentFrame torrentFrame) {
 		super(25);
-	}
-
-	public void setTorrent(Torrent torrent) {
-		this.torrent = torrent;
+		this.torrentFrame = torrentFrame;
 	}
 
 	@Override
@@ -30,6 +27,7 @@ public class TabFiles extends TableBase {
 
 	@Override
 	protected void paintData(Graphics g) {
+		Torrent torrent = torrentFrame.getSelectedTorrent();
 		if (torrent == null || torrent.getFiles() == null) {
 			return;
 		}

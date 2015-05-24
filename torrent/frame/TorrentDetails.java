@@ -5,7 +5,6 @@ import java.awt.event.KeyEvent;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
-import torrent.download.Torrent;
 import torrent.download.tracker.TrackerManager;
 
 public class TorrentDetails extends JTabbedPane {
@@ -20,12 +19,12 @@ public class TorrentDetails extends JTabbedPane {
 	private TabPieces tabPieces;
 	private TabPeers tabPeers;
 
-	public TorrentDetails(TrackerManager manager) {
-		tabGeneral = new TabGeneral(manager);
-		tabFiles = new TabFiles();
-		tabTracker = new TabTracker(manager);
-		tabPieces = new TabPieces();
-		tabPeers = new TabPeers();
+	public TorrentDetails(TorrentFrame frame, TrackerManager manager) {
+		tabGeneral = new TabGeneral(frame, manager);
+		tabFiles = new TabFiles(frame);
+		tabTracker = new TabTracker(frame, manager);
+		tabPieces = new TabPieces(frame);
+		tabPeers = new TabPeers(frame);
 
 		addTab("General", tabGeneral);
 		addTab("Files", tabFiles);
@@ -42,13 +41,4 @@ public class TorrentDetails extends JTabbedPane {
 		setMnemonicAt(4, KeyEvent.VK_5);
 		setMnemonicAt(5, KeyEvent.VK_6);
 	}
-
-	public void setTorrent(Torrent torrent) {
-		tabGeneral.setTorrent(torrent);
-		tabFiles.setTorrent(torrent);
-		tabTracker.setTorrent(torrent);
-		tabPieces.setTorrent(torrent);
-		tabPeers.setTorrent(torrent);
-	}
-
 }

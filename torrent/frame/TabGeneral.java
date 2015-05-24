@@ -13,16 +13,13 @@ public class TabGeneral extends JPanel {
 
 	public static final long serialVersionUID = 1L;
 
-	private Torrent torrent;
+	private TorrentFrame torrentFrame;
 	
 	private TrackerManager trackerManager;
 	
-	public TabGeneral(TrackerManager trackerManager) {
+	public TabGeneral(TorrentFrame torrentFrame, TrackerManager trackerManager) {
 		this.trackerManager = trackerManager;
-	}
-
-	public void setTorrent(Torrent torrent) {
-		this.torrent = torrent;
+		this.torrentFrame = torrentFrame;
 	}
 
 	public void paintComponent(Graphics g) {
@@ -39,6 +36,7 @@ public class TabGeneral extends JPanel {
 		String download = "Download Speed: ";
 		String upload = "Upload Speed: ";
 
+		Torrent torrent = torrentFrame.getSelectedTorrent();
 		if (torrent != null) {
 			name += torrent.getDisplayName();
 			hash += torrent.getHash();

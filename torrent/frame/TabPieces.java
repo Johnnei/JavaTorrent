@@ -14,14 +14,11 @@ import torrent.util.StringUtil;
 public class TabPieces extends TableBase {
 
 	public static final long serialVersionUID = 1L;
-	private Torrent torrent;
+	private TorrentFrame torrentFrame;
 
-	public TabPieces() {
+	public TabPieces(TorrentFrame torrentFrame) {
 		super(20);
-	}
-
-	public void setTorrent(Torrent torrent) {
-		this.torrent = torrent;
+		this.torrentFrame = torrentFrame;
 	}
 
 	public Color getForegroundColor() {
@@ -41,6 +38,8 @@ public class TabPieces extends TableBase {
 
 	@Override
 	protected void paintData(Graphics g) {
+		Torrent torrent = torrentFrame.getSelectedTorrent();
+		
 		if (torrent == null)
 			return;
 		if (torrent.getDownloadStatus() != Torrent.STATE_DOWNLOAD_DATA)

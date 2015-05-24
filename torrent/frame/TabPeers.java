@@ -16,14 +16,11 @@ import torrent.util.StringUtil;
 public class TabPeers extends TableBase {
 
 	public static final long serialVersionUID = 1L;
-	private Torrent torrent;
+	private TorrentFrame torrentFrame;
 
-	public TabPeers() {
+	public TabPeers(TorrentFrame torrentFrame) {
 		super(20);
-	}
-
-	public void setTorrent(Torrent torrent) {
-		this.torrent = torrent;
+		this.torrentFrame = torrentFrame;
 	}
 
 	protected void paintHeader(Graphics g) {
@@ -39,6 +36,8 @@ public class TabPeers extends TableBase {
 	}
 	
 	protected void paintData(Graphics g) {
+		Torrent torrent = torrentFrame.getSelectedTorrent();
+		
 		if (torrent != null) {
 			// Sort
 			List<Peer> peers;
