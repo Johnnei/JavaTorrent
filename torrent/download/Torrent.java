@@ -2,7 +2,6 @@ package torrent.download;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -52,7 +51,7 @@ public class Torrent implements Runnable {
 	/**
 	 * All connected peers
 	 */
-	private Collection<Peer> peers;
+	private List<Peer> peers;
 	
 	private boolean keepDownloading;
 	
@@ -442,7 +441,7 @@ public class Torrent implements Runnable {
 		}
 	}
 
-	public Collection<Peer> getPeers() {
+	public List<Peer> getPeers() {
 		return peers;
 	}
 

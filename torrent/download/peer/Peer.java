@@ -92,7 +92,9 @@ public class Peer implements Comparable<Peer> {
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
-		haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8)); // TODO Make sure this is correct after torrent state change
+		if (torrent.getFiles() != null) { 
+			haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+		}
 		requestLimit = 1;
 	}
 
@@ -418,6 +420,9 @@ public class Peer implements Comparable<Peer> {
 	 * @return returns the amount of pieces which this peer has
 	 */
 	public int countHavePieces() {
+		if (haveState == null) {
+			return 0;
+		}
 		return haveState.countHavePieces();
 	}
 

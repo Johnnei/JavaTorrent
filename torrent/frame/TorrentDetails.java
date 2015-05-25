@@ -8,6 +8,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 
 import torrent.download.tracker.TrackerManager;
+import torrent.frame.table.PeerTableModel;
 import torrent.frame.table.TrackerTableModel;
 
 public class TorrentDetails extends JTabbedPane {
@@ -19,13 +20,11 @@ public class TorrentDetails extends JTabbedPane {
 	private TabGeneral tabGeneral;
 	private TabFiles tabFiles;
 	private TabPieces tabPieces;
-	private TabPeers tabPeers;
 
 	public TorrentDetails(TorrentFrame frame, TrackerManager manager) {
 		tabGeneral = new TabGeneral(frame, manager);
 		tabFiles = new TabFiles(frame);
 		tabPieces = new TabPieces(frame);
-		tabPeers = new TabPeers(frame);
 
 		addTab("General", tabGeneral);
 		addTab("Files", tabFiles);
@@ -34,7 +33,9 @@ public class TorrentDetails extends JTabbedPane {
 		trackerTable.setFillsViewportHeight(true);
 		addTab("Trackers", new JScrollPane(trackerTable));
 		
-		addTab("Peers", tabPeers);
+		JTable peerTable = new JTable(new PeerTableModel(frame));
+		peerTable.setFillsViewportHeight(true);
+		addTab("Peers", new JScrollPane(peerTable));
 		addTab("Pieces", tabPieces);
 		addTab("Log", new JPanel());
 
