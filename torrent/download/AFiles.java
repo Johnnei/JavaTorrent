@@ -1,6 +1,5 @@
 package torrent.download;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
@@ -119,7 +118,7 @@ public abstract class AFiles {
 	
 	public abstract byte[] getBitfieldBytes() throws UnsupportedOperationException;
 	
-	public Collection<FileInfo> getFiles() {
+	public List<FileInfo> getFiles() {
 		return fileInfos;
 	}
 

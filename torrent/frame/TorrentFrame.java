@@ -4,11 +4,14 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.Timer;
 
@@ -16,12 +19,15 @@ import torrent.JavaTorrent;
 import torrent.TorrentManager;
 import torrent.download.Torrent;
 import torrent.download.tracker.TrackerManager;
+import torrent.frame.table.FilesTableModel;
+import torrent.frame.table.PeerTableModel;
+import torrent.frame.table.PiecesTableModel;
 import torrent.frame.table.TorrentTableModel;
+import torrent.frame.table.TrackerTableModel;
 
 public class TorrentFrame extends JFrame implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
-	private TorrentDetails details;
 	private JTable torrentList;
 	private MenubarPanel menubar;
 	private List<Torrent> torrents;
@@ -37,7 +43,7 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		setLocationRelativeTo(null);
 		setPreferredSize(new Dimension(getWidth() + getInsets().left + getInsets().right, getHeight() + getInsets().top + getInsets().bottom));
 
-		details = new TorrentDetails(this, trackerManager);
+		JTabbedPane details = createDetailsView(trackerManager);
 		details.setPreferredSize(new Dimension(getWidth(), 350));
 
 		torrentList = new JTable(new TorrentTableModel(torrents));
@@ -51,6 +57,41 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		pack();
 		updateTimer = new Timer(1000, this);
 		updateTimer.start();
+	}
+	
+	private JTabbedPane createDetailsView(TrackerManager trackerManager) {
+		JTabbedPane detailsPane = new JTabbedPane();
+		detailsPane.addTab("General", new TabGeneral(this, trackerManager));
+		
+		JTable filesTable = new JTable(new FilesTableModel(this));
+		filesTable.setFillsViewportHeight(true);
+		detailsPane.addTab("Files", new JScrollPane(filesTable));
+		
+		JTable trackerTable = new JTable(new TrackerTableModel(this, trackerManager));
+		trackerTable.setFillsViewportHeight(true);
+		detailsPane.addTab("Trackers", new JScrollPane(trackerTable));
+		
+		JTable peerTable = new JTable(new PeerTableModel(this));
+		peerTable.setFillsViewportHeight(true);
+		detailsPane.addTab("Peers", new JScrollPane(peerTable));
+		
+		
+		JTable piecesTable = new JTable(new PiecesTableModel(this));
+		piecesTable.setFillsViewportHeight(true);
+		detailsPane.addTab("Pieces", new JScrollPane(piecesTable));
+		
+		
+		detailsPane.addTab("Log", new JPanel());
+
+		// Hotkeys
+		detailsPane.setMnemonicAt(0, KeyEvent.VK_1);
+		detailsPane.setMnemonicAt(1, KeyEvent.VK_2);
+		detailsPane.setMnemonicAt(2, KeyEvent.VK_3);
+		detailsPane.setMnemonicAt(3, KeyEvent.VK_4);
+		detailsPane.setMnemonicAt(4, KeyEvent.VK_5);
+		detailsPane.setMnemonicAt(5, KeyEvent.VK_6);
+		
+		return detailsPane;
 	}
 	
 	public void updateData() {
