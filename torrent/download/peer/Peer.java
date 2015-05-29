@@ -94,6 +94,8 @@ public class Peer implements Comparable<Peer> {
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFiles() != null) { 
 			haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+		} else {
+			haveState = new Bitfield(0);
 		}
 		requestLimit = 1;
 	}
@@ -232,8 +234,7 @@ public class Peer implements Comparable<Peer> {
 				Object[] keys = myClient.getKeySet().toArray();
 				for (int i = 0; i < keys.length; i++) {
 					Job job = (Job) keys[i];
-					torrent.getFiles().getPiece(job.getPieceIndex())
-							.reset(job.getBlockIndex());
+					torrent.getFiles().getPiece(job.getPieceIndex()).reset(job.getBlockIndex());
 				}
 				myClient.clearJobs();
 			}
