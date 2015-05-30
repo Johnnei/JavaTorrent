@@ -44,7 +44,7 @@ public class DiskJobCheckHash extends DiskJob {
 			torrent.getLogger().warning(String.format("IO error while checking hash on piece %d: %s. Requeuing task.", pieceIndex, e.getMessage()));
 			return;
 		}
-		torrent.addToHaltingOperations(-1);
+		torrent.finishHaltingOperations(1);
 	}
 
 	@Override

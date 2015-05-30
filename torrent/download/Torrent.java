@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -101,7 +102,7 @@ public class Torrent implements Runnable {
 	/**
 	 * Remembers if the torrent is collecting a piece or checking the hash so we can wait until all pieces are written to the hdd before continuing
 	 */
-	private int torrentHaltingOperations;
+	private AtomicInteger torrentHaltingOperations;
 
 	/**
 	 * IOManager to manage the transaction between the hdd and the programs so none of the actual network thread need to get block for that
@@ -179,7 +180,7 @@ public class Torrent implements Runnable {
 				peers.forEach(p -> p.onTorrentPhaseChange());	
 			}
 			phase.preprocess();
-			while (!phase.isDone() || torrentHaltingOperations > 0) {
+			while (!phase.isDone() || torrentHaltingOperations.get() > 0) {
 				processPeers();
 				phase.process();
 				ioManager.processTask(this);
@@ -298,12 +299,20 @@ public class Torrent implements Runnable {
 		addDiskJob(new DiskJobStoreBlock(index, blockIndex, data));
 	}
 
+	public void addToHaltingOperations(int newTasks) {
+		for (int i = 0; i < newTasks; i++) {
+			torrentHaltingOperations.incrementAndGet();
+		}
+		
+	}
+
+
 	/**
 	 * Called by IOManager to notify the torrent that we processed the collectingPiece
 	 */
-	public void addToHaltingOperations(int i) {
-		synchronized (this) {
-			torrentHaltingOperations += i;
+	public void finishHaltingOperations(int completedTasks) {
+		for (int i = 0; i < completedTasks; i++) {
+			torrentHaltingOperations.decrementAndGet();
 		}
 	}
 
