@@ -11,8 +11,8 @@ public class FilesTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 1L;
 	private static final int COL_NAME = 0;
-	private static final int COL_SIZE = 1;
-	private static final int COL_PIECES = 2;
+	private static final int COL_SIZE = 2;
+	private static final int COL_PIECES = 1;
 	
 	private static final String[] headers = {
 		"Filename",

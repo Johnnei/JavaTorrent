@@ -22,6 +22,7 @@ import torrent.download.tracker.TrackerManager;
 import torrent.frame.table.FilesTableModel;
 import torrent.frame.table.PeerTableModel;
 import torrent.frame.table.PiecesTableModel;
+import torrent.frame.table.ProgressCellRenderer;
 import torrent.frame.table.TorrentTableModel;
 import torrent.frame.table.TrackerTableModel;
 
@@ -47,6 +48,7 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		details.setPreferredSize(new Dimension(getWidth(), 350));
 
 		torrentList = new JTable(new TorrentTableModel(torrents));
+		torrentList.setDefaultRenderer(Double.class, new ProgressCellRenderer());
 		torrentList.setFillsViewportHeight(true);
 		menubar = new MenubarPanel(this, torrentManager, trackerManager);
 

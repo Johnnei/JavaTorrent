@@ -3,6 +3,7 @@ package torrent.frame.table;
 import java.util.List;
 
 import torrent.download.Torrent;
+import torrent.util.StringUtil;
 
 public class TorrentTableModel extends GenericTableModel<Torrent> {
 	
@@ -27,9 +28,9 @@ public class TorrentTableModel extends GenericTableModel<Torrent> {
 			case COL_PROGRESS:
 				return torrent.getProgress();
 			case COL_DOWNLOAD_SPEED:
-				return torrent.getDownloadRate();
+				return String.format("%s/s", StringUtil.compactByteSize(torrent.getDownloadRate()));
 			case COL_UPLOAD_SPEED:
-				return torrent.getUploadRate();
+				return String.format("%s/s", StringUtil.compactByteSize(torrent.getUploadRate()));
 			case COL_SEEDERS:
 				return torrent.getSeedCount();
 			case COL_LEECHERS:
@@ -37,6 +38,15 @@ public class TorrentTableModel extends GenericTableModel<Torrent> {
 			default:
 				throw new IllegalArgumentException(String.format("Column %d is outside of the column range", column));
 		}
+	}
+	
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		if (columnIndex == COL_PROGRESS) {
+			return Double.class;
+		}
+		
+		return super.getColumnClass(columnIndex);
 	}
 
 }
