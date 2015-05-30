@@ -1,5 +1,8 @@
 package torrent.frame.table;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.swing.table.AbstractTableModel;
 
 import torrent.download.Torrent;
@@ -24,6 +27,8 @@ public class PiecesTableModel extends AbstractTableModel {
 
 	private TorrentFrame torrentFrame;
 	
+	private List<Piece> pieces;
+	
 	public PiecesTableModel(TorrentFrame torrentFrame) {
 		this.torrentFrame = torrentFrame;
 	}
@@ -36,7 +41,18 @@ public class PiecesTableModel extends AbstractTableModel {
 			return 0;
 		}
 		
-		return torrent.getFiles().getPieceCount();
+		// Cache this information to prevent race conditions
+		pieces = torrent.getFiles().getNeededPieces().filter(p -> p.isStarted()).collect(Collectors.toList());
+		return pieces.size();
+	}
+	
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		if (columnIndex == COL_PROGRESS) {
+			return Piece.class;
+		}
+		
+		return super.getColumnClass(columnIndex);
 	}
 
 	@Override
@@ -51,7 +67,7 @@ public class PiecesTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		Piece piece = torrentFrame.getSelectedTorrent().getFiles().getPiece(rowIndex);
+		Piece piece = pieces.get(rowIndex);
 		
 		switch (columnIndex) {
 		case COL_PIECE_NUM:

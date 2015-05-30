@@ -18,9 +18,11 @@ import javax.swing.Timer;
 import torrent.JavaTorrent;
 import torrent.TorrentManager;
 import torrent.download.Torrent;
+import torrent.download.files.Piece;
 import torrent.download.tracker.TrackerManager;
 import torrent.frame.table.FilesTableModel;
 import torrent.frame.table.PeerTableModel;
+import torrent.frame.table.PieceCellRenderer;
 import torrent.frame.table.PiecesTableModel;
 import torrent.frame.table.ProgressCellRenderer;
 import torrent.frame.table.TorrentTableModel;
@@ -80,6 +82,7 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		
 		JTable piecesTable = new JTable(new PiecesTableModel(this));
 		piecesTable.setFillsViewportHeight(true);
+		piecesTable.setDefaultRenderer(Piece.class, new PieceCellRenderer());
 		detailsPane.addTab("Pieces", new JScrollPane(piecesTable));
 		
 		
