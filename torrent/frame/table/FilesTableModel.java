@@ -16,7 +16,7 @@ public class FilesTableModel extends AbstractTableModel {
 	
 	private static final String[] headers = {
 		"Filename",
-		"Pieces",
+		"Progress",
 		"Size"
 	};
 	
@@ -46,6 +46,14 @@ public class FilesTableModel extends AbstractTableModel {
 	public String getColumnName(int column) {
 		return headers[column];
 	}
+	
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		if (columnIndex == COL_PIECES) {
+			return Double.class;
+		}
+		return super.getColumnClass(columnIndex);
+	}
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
@@ -56,7 +64,7 @@ public class FilesTableModel extends AbstractTableModel {
 			case COL_NAME:
 				return file.getFilename();
 			case COL_PIECES:
-				return String.format("%d/%d", file.getPieceHaveCount(), file.getPieceCount());
+				return file.getPieceHaveCount() * 100d / file.getPieceCount();
 			case COL_SIZE:
 				return StringUtil.compactByteSize(file.getSize());
 			default:

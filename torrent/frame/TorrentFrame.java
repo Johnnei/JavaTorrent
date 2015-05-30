@@ -69,6 +69,7 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		
 		JTable filesTable = new JTable(new FilesTableModel(this));
 		filesTable.setFillsViewportHeight(true);
+		filesTable.setDefaultRenderer(Double.class, new ProgressCellRenderer());
 		detailsPane.addTab("Files", new JScrollPane(filesTable));
 		
 		JTable trackerTable = new JTable(new TrackerTableModel(this, trackerManager));
@@ -84,7 +85,6 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		piecesTable.setFillsViewportHeight(true);
 		piecesTable.setDefaultRenderer(Piece.class, new PieceCellRenderer());
 		detailsPane.addTab("Pieces", new JScrollPane(piecesTable));
-		
 		
 		detailsPane.addTab("Log", new JPanel());
 
