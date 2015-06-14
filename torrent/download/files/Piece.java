@@ -210,7 +210,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return If this piece is completed
 	 */
 	public boolean isDone() {
-		return !blocks.stream().filter(b -> !b.isDone()).findAny().isPresent();
+		return blocks.stream().allMatch(b -> b.isDone());
 	}
 
 	/**
@@ -219,7 +219,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return true if any progress is found
 	 */
 	public boolean isStarted() {
-		return blocks.stream().filter(b -> b.isStarted()).findAny().isPresent();
+		return blocks.stream().anyMatch(b -> b.isStarted());
 	}
 
 	@Override

@@ -31,9 +31,9 @@ public class DiskJobStoreBlock extends DiskJob {
 		} catch (IOException e) {
 			torrent.getLogger().warning(String.format("IO error while saving piece %d block %d: %s. Requeueing write task.", pieceIndex, blockIndex, e.getMessage()));
 			torrent.addDiskJob(this);
-			
+			return;
 		}
-		torrent.addToHaltingOperations(-1);
+		torrent.finishHaltingOperations(1);
 	}
 
 	@Override

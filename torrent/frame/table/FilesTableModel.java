@@ -64,7 +64,7 @@ public class FilesTableModel extends AbstractTableModel {
 			case COL_NAME:
 				return file.getFilename();
 			case COL_PIECES:
-				return file.getPieceHaveCount() * 100d / file.getPieceCount();
+				return torrent.getFiles().getHavePieceCountForFile(file) * 100d / file.getPieceCount();
 			case COL_SIZE:
 				return StringUtil.compactByteSize(file.getSize());
 			default:

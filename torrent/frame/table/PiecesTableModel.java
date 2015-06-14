@@ -8,6 +8,7 @@ import javax.swing.table.AbstractTableModel;
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
 import torrent.frame.TorrentFrame;
+import torrent.util.StringUtil;
 
 public class PiecesTableModel extends AbstractTableModel {
 
@@ -77,7 +78,7 @@ public class PiecesTableModel extends AbstractTableModel {
 		case COL_PROGRESS:
 			return piece;
 		case COL_SIZE:
-			return piece.getSize();
+			return StringUtil.compactByteSize(piece.getSize());
 		default:
 			throw new IllegalArgumentException(String.format("Column %d is outside of the column range", columnIndex));
 		}

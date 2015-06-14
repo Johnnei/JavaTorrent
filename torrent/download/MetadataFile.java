@@ -5,7 +5,6 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
-import org.johnnei.utils.JMath;
 import org.johnnei.utils.config.Config;
 
 import torrent.TorrentException;
@@ -21,11 +20,11 @@ public class MetadataFile extends AFiles {
 	private int fileSize;
 	
 	public MetadataFile(Torrent torrent, int fileSize) {
-		fileInfos = new ArrayList<>();
-		fileInfos.add(new FileInfo(fileSize, 0, Config.getConfig().getTorrentFileFor(torrent), JMath.ceilDivision(fileSize, BLOCK_SIZE)));
+		this.fileInfos = new ArrayList<>();
+		this.fileInfos.add(new FileInfo(fileSize, 0, Config.getConfig().getTorrentFileFor(torrent), 1));
 		this.fileSize = fileSize;
-		pieces = new ArrayList<>(1);
-		pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
+		this.pieces = new ArrayList<>(1);
+		this.pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
 	}
 
 	@Override
@@ -35,8 +34,9 @@ public class MetadataFile extends AFiles {
 
 	@Override
 	public void havePiece(int pieceIndex) throws NoSuchElementException {
-		for (int i = 0; i < pieces.get(pieceIndex).getBlockCount(); i++) {
-			pieces.get(pieceIndex).setDone(i);
+		Piece piece = pieces.get(pieceIndex);
+		for (int i = 0; i < piece.getBlockCount(); i++) {
+			piece.setDone(i);
 		}
 	}
 	

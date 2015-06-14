@@ -131,13 +131,6 @@ public class Files extends AFiles {
 				pieces.get(pieceIndex).setDone(i);
 			}
 		}
-		long pieceOffset = pieceIndex * getPieceSize();
-		long pieceEndOffset = pieceOffset + getPieceSize();
-		for (FileInfo f : fileInfos) {
-			if (f.getFirstByteOffset() + f.getSize() >= pieceOffset && f.getFirstByteOffset() < pieceEndOffset) {
-				f.addPiece(pieceIndex);
-			}
-		}
 	}
 
 	public int getBitfieldSize() {

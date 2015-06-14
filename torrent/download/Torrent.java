@@ -135,6 +135,7 @@ public class Torrent implements Runnable {
 		this.manager = manager;
 		this.btihHash = btihHash;
 		torrentStatus = STATE_DOWNLOAD_METADATA;
+		torrentHaltingOperations = new AtomicInteger();
 		downloadedBytes = 0L;
 		peers = new LinkedList<Peer>();
 		keepDownloading = true;
@@ -280,10 +281,10 @@ public class Torrent implements Runnable {
 	}
 
 	public double getProgress() {
-		if (files == null || files.getPieceCount() == 0) {
+		if (files == null || files.getPieceCount() == 0 || phase.getId() == STATE_DOWNLOAD_METADATA) {
 			return 0D;
 		}
-		return 100D * (files.countCompletedPieces() / (double) files.getPieceCount());
+		return (files.countCompletedPieces() * 100d) / files.getPieceCount();
 	}
 
 	/**
@@ -303,7 +304,6 @@ public class Torrent implements Runnable {
 		for (int i = 0; i < newTasks; i++) {
 			torrentHaltingOperations.incrementAndGet();
 		}
-		
 	}
 
 

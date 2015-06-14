@@ -72,7 +72,23 @@ public abstract class AFiles {
 	public abstract int getBlockSize();
 	
 	public boolean isDone() {
-		return !pieces.stream().filter(p -> !p.isDone()).findAny().isPresent();
+		return pieces.stream().allMatch(p -> p.isDone());
+	}
+	
+	/**
+	 * Calculates the amount of pieces which have been completed for a given file.
+	 * @param fileInfo
+	 * @return
+	 */
+	public int getHavePieceCountForFile(FileInfo fileInfo) {
+		int firstPiece = (int)(fileInfo.getFirstByteOffset() / getPieceSize());
+		int pieceCount = fileInfo.getPieceCount();
+
+		return (int) pieces.stream()
+				.skip(firstPiece)
+				.limit(pieceCount)
+				.filter(p -> p.isDone())
+				.count();
 	}
 	
 	/**
