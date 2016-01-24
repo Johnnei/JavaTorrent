@@ -1,0 +1,33 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.johnnei</groupId>
+  <artifactId>javatorrent</artifactId>
+  <version>0.05.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>JavaTorrent</name>
+  <description>BitTorrent Protocol implementation as library and GUI</description>
+  <modules>
+    <module>bittorrent</module>
+    <module>gui</module>
+    <module>common</module>
+  </modules>
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-bittorrent</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

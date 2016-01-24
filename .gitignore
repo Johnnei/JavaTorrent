@@ -1,5 +1,6 @@
 .classpath
 .project
+.settings/**
 
 *.class
 
@@ -7,3 +8,4 @@
 *.jar
 *.war
 *.ear
+/bin/
