@@ -9,6 +9,8 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Random;
 
+import org.johnnei.javatorrent.network.protocol.ISocket;
+import org.johnnei.javatorrent.network.protocol.TcpSocket;
 import org.johnnei.javatorrent.network.protocol.utp.ConnectionState;
 import org.johnnei.javatorrent.network.protocol.utp.UdpMultiplexer;
 import org.johnnei.javatorrent.network.protocol.utp.UtpClient;
@@ -23,8 +25,6 @@ import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.UtpProtocol;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.network.Stream;
-import torrent.network.protocol.ISocket;
-import torrent.network.protocol.TcpSocket;
 import torrent.util.tree.BinarySearchTree;
 
 public class UtpSocket implements ISocket, Comparable<UtpSocket> {

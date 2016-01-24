@@ -5,9 +5,10 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.johnnei.javatorrent.network.protocol.ISocket;
+import org.johnnei.javatorrent.network.protocol.TcpSocket;
+
 import torrent.download.tracker.TrackerManager;
-import torrent.network.protocol.ISocket;
-import torrent.network.protocol.TcpSocket;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.BitTorrentHandshake;
 import torrent.protocol.IMessage;

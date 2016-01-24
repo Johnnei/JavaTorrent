@@ -1,4 +1,4 @@
-package torrent.network.protocol;
+package org.johnnei.javatorrent.network.protocol;
 
 import java.io.IOException;
 import java.io.InputStream;

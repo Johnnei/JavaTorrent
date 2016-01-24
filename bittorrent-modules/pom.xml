@@ -7,6 +7,6 @@
     <version>0.05.0-SNAPSHOT</version>
   </parent>
   <artifactId>javatorrent-bittorrent-modules</artifactId>
-  <name>JavaTorrent Modularization</name>
+  <name>JavaTorrent BitTorrent Modularization</name>
   <description>Contains the base classes/interface for a module. It also contains the mandatory extensions.</description>
 </project>
