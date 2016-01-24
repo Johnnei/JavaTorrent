@@ -13,9 +13,11 @@ import java.util.logging.Logger;
  * A Formatter which is used for the {@link Logger} instances to log data to the console.
  * @author Johnnei
  *
+ * @deprecated Use SLF4J instead
  */
+@Deprecated
 public class ConsoleLogger extends Formatter {
-	
+
 	/**
 	 * Creates a logger based on the name.<br/>
 	 * The logger will only output if the logged message is at least the given minLevel.<br/>
@@ -26,7 +28,7 @@ public class ConsoleLogger extends Formatter {
 	 */
 	public static Logger createLogger(String name, Level minLevel) {
 		Logger logger = Logger.getLogger(name);
-		
+
 		if (logger.getHandlers().length == 0) {
 			// This logger has no handlers/formatters, Create the handler
 			logger.setUseParentHandlers(false);
@@ -53,7 +55,7 @@ public class ConsoleLogger extends Formatter {
 		sb.append("] ");
 		sb.append(record.getMessage());
 		sb.append(System.lineSeparator());
-		
+
 		if (record.getThrown() != null) {
 			sb.append("Stacktrace:" + System.lineSeparator());
 			for (StackTraceElement stackTrace : record.getThrown().getStackTrace()) {
@@ -61,7 +63,7 @@ public class ConsoleLogger extends Formatter {
 				sb.append(System.lineSeparator());
 			}
 		}
-		
+
 		return sb.toString();
 	}
 

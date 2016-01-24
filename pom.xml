@@ -17,6 +17,10 @@
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <dependency.org.slf4j.slf4j-api>1.7.13</dependency.org.slf4j.slf4j-api>
+    <dependency.org.apache.logging.log4j.log4j-api>2.5</dependency.org.apache.logging.log4j.log4j-api>
+    <dependency.org.apache.logging.log4j.log4j-slf4j-impl>2.5</dependency.org.apache.logging.log4j.log4j-slf4j-impl>
+    <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -39,6 +43,26 @@
         <groupId>org.johnnei</groupId>
         <artifactId>javatorrent-common</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${dependency.org.slf4j.slf4j-api}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${dependency.org.apache.logging.log4j.log4j-api}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${dependency.org.apache.logging.log4j.log4j-slf4j-impl}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${dependency.org.apache.logging.log4j.log4j-core}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
