@@ -6,7 +6,7 @@
     <artifactId>javatorrent</artifactId>
     <version>0.05.0-SNAPSHOT</version>
   </parent>
-  <artifactId>javatorrent-common</artifactId>
-  <name>JavaTorrent Common Utilities</name>
-  <description>Utility classes which are use in several modules</description>
+  <artifactId>javatorrent-bittorrent-modules</artifactId>
+  <name>JavaTorrent Modularization</name>
+  <description>Contains the base classes/interface for a module. It also contains the mandatory extensions.</description>
 </project>

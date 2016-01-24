@@ -1,11 +1,12 @@
-package torrent.network.protocol.utp;
+package org.johnnei.javatorrent.network.protocol.utp;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketData;
+
 import torrent.network.Stream;
-import torrent.network.protocol.utp.packet.PacketData;
 
 public class UtpInputStream extends InputStream {
 

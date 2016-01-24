@@ -1,4 +1,4 @@
-package torrent.network.protocol.utp.packet;
+package org.johnnei.javatorrent.torrent.network.protocol.utp.packet;
 
 
 public class PacketSynResponse extends PacketState {

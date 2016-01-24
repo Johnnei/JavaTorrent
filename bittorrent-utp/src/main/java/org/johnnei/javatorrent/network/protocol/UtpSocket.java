@@ -1,4 +1,4 @@
-package torrent.network.protocol;
+package org.johnnei.javatorrent.network.protocol;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,20 +9,22 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Random;
 
+import org.johnnei.javatorrent.network.protocol.utp.ConnectionState;
+import org.johnnei.javatorrent.network.protocol.utp.UdpMultiplexer;
+import org.johnnei.javatorrent.network.protocol.utp.UtpClient;
+import org.johnnei.javatorrent.network.protocol.utp.UtpInputStream;
+import org.johnnei.javatorrent.network.protocol.utp.UtpOutputStream;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketFin;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSample;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketState;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSyn;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.UtpProtocol;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.network.Stream;
-import torrent.network.protocol.utp.ConnectionState;
-import torrent.network.protocol.utp.UdpMultiplexer;
-import torrent.network.protocol.utp.UtpClient;
-import torrent.network.protocol.utp.UtpInputStream;
-import torrent.network.protocol.utp.UtpOutputStream;
-import torrent.network.protocol.utp.packet.Packet;
-import torrent.network.protocol.utp.packet.PacketFin;
-import torrent.network.protocol.utp.packet.PacketSample;
-import torrent.network.protocol.utp.packet.PacketState;
-import torrent.network.protocol.utp.packet.PacketSyn;
-import torrent.network.protocol.utp.packet.UtpProtocol;
+import torrent.network.protocol.ISocket;
+import torrent.network.protocol.TcpSocket;
 import torrent.util.tree.BinarySearchTree;
 
 public class UtpSocket implements ISocket, Comparable<UtpSocket> {

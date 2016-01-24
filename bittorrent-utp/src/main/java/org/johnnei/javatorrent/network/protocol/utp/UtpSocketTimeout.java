@@ -1,4 +1,4 @@
-package torrent.network.protocol.utp;
+package org.johnnei.javatorrent.network.protocol.utp;
 
 import org.johnnei.utils.ThreadUtils;
 

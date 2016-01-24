@@ -1,4 +1,4 @@
-package torrent.network.protocol.utp;
+package org.johnnei.javatorrent.network.protocol.utp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -7,12 +7,12 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.johnnei.javatorrent.network.protocol.UtpSocket;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
 import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.config.Config;
 
 import torrent.network.Stream;
-import torrent.network.protocol.UtpSocket;
-import torrent.network.protocol.utp.packet.Packet;
 import torrent.util.tree.BinarySearchTree;
 
 public class UdpMultiplexer extends Thread {

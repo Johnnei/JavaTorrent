@@ -2,8 +2,8 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>javatorrent-bittorrent</artifactId>
-  <name>JavaTorrent</name>
-  <description>BitTorrent Protocol implementation as library and GUI</description>
+  <name>JavaTorrent BitTorrent Protocol Core</name>
+  <description>BitTorrent protocol core components</description>
   <parent>
     <groupId>org.johnnei</groupId>
     <version>0.05.0-SNAPSHOT</version>

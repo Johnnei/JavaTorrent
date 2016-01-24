@@ -1,13 +1,13 @@
-package torrent.network.protocol.utp;
+package org.johnnei.javatorrent.network.protocol.utp;
 
 import java.util.HashMap;
 
-import torrent.network.protocol.utp.packet.Packet;
-import torrent.network.protocol.utp.packet.PacketData;
-import torrent.network.protocol.utp.packet.PacketFin;
-import torrent.network.protocol.utp.packet.PacketReset;
-import torrent.network.protocol.utp.packet.PacketState;
-import torrent.network.protocol.utp.packet.PacketSyn;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketData;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketFin;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketReset;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketState;
+import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSyn;
 
 public class UtpPacketFactory {
 	private HashMap<Integer, Packet> idToPacket;

@@ -1,7 +1,8 @@
-package torrent.network.protocol.utp.packet;
+package org.johnnei.javatorrent.torrent.network.protocol.utp.packet;
+
+import org.johnnei.javatorrent.network.protocol.UtpSocket;
 
 import torrent.network.Stream;
-import torrent.network.protocol.UtpSocket;
 
 public abstract class Packet implements Comparable<Packet> {
 	
