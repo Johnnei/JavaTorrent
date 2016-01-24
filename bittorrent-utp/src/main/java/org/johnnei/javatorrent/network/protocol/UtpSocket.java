@@ -9,8 +9,6 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Random;
 
-import org.johnnei.javatorrent.network.protocol.ISocket;
-import org.johnnei.javatorrent.network.protocol.TcpSocket;
 import org.johnnei.javatorrent.network.protocol.utp.ConnectionState;
 import org.johnnei.javatorrent.network.protocol.utp.UdpMultiplexer;
 import org.johnnei.javatorrent.network.protocol.utp.UtpClient;
@@ -83,7 +81,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	 * The size of packets
 	 */
 	private int packetSize;
-	
+
 	/**
 	 * Creates a sample socket for comparison
 	 * @param connectionId
@@ -92,7 +90,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		peerClient = new UtpClient();
 		peerClient.setConnectionId(connectionId);
 	}
-	
+
 	public UtpSocket() {
 		connectionState = ConnectionState.CONNECTING;
 		lastInteraction = System.currentTimeMillis();
@@ -105,7 +103,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		timeout = 1000;
 		packetSize = 150;
 	}
-	
+
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
 		//System.out.println("[uTP] Connecting to " + endpoint);
@@ -148,16 +146,6 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	}
 
 	@Override
-	public ISocket getFallbackSocket() {
-		return new TcpSocket();
-	}
-
-	@Override
-	public boolean canFallback() {
-		return true;
-	}
-
-	@Override
 	public boolean isClosed() {
 		return connectionState == ConnectionState.CLOSED;
 	}
@@ -171,11 +159,11 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	public boolean isOutputShutdown() {
 		return connectionState == ConnectionState.DISCONNECTING || connectionState == ConnectionState.CLOSED;
 	}
-	
+
 	public UtpClient getMyClient() {
 		return myClient;
 	}
-	
+
 	public UtpClient getPeerClient() {
 		return peerClient;
 	}
@@ -184,7 +172,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	public int compareTo(UtpSocket otherSocket) {
 		return peerClient.getConnectionId() - otherSocket.getPeerClient().getConnectionId();
 	}
-	
+
 	/**
 	 * Gets the sequence number and then advances it to the next number
 	 * @return
@@ -208,14 +196,15 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	}
 
 	public void setAcknowledgeNumber(int acknowledgeNumber, boolean needAck) {
-		if(acknowledgeNumber > this.acknowledgeNumber)
+		if(acknowledgeNumber > this.acknowledgeNumber) {
 			this.acknowledgeNumber = acknowledgeNumber;
+		}
 		if(needAck) {
 			//System.out.println(myClient.getConnectionId() + "| Ack Send: " + acknowledgeNumber);
 			sendPacket(new PacketState(acknowledgeNumber));
 		}
 	}
-	
+
 	/**
 	 * Acknowledges the packet<br/>
 	 * Removes the packet from packetsInflight, if it did remove one it will also reduce the number of bytesInFlight
@@ -230,7 +219,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 			updateTimeoutRTT(p);
 		}
 	}
-	
+
 	/**
 	 * Updates the RTT based on a RTT
 	 * @param packet The acked packet
@@ -247,11 +236,11 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 			setTimeout((int)(roundTripTime + roundTripTimeVariance * 4));
 		}
 	}
-	
+
 	private void setTimeout(int timeout) {
 		this.timeout = Math.max(500, timeout);
 	}
-	
+
 	/**
 	 * Adds this packet to the queue and then tries to send all packets in the queue
 	 * @param packet
@@ -261,7 +250,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		packetQueue.addLast(packet);
 		sendPacketQueue();
 	}
-	
+
 	private synchronized void sendPacketQueue() {
 		while(!packetQueue.isEmpty()) {
 			Packet packet = packetQueue.removeFirst();
@@ -272,7 +261,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 			}
 		}
 	}
-	
+
 	/**
 	 * Sends a packet to the peer<br/>
 	 * Checks with windows should be applied before calling this function
@@ -298,14 +287,15 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		}
 		updateLastInteraction();
 	}
-	
+
 	public void updateLastInteraction() {
 		lastInteraction = System.currentTimeMillis();
 	}
-	
+
 	public void checkTimeouts() {
-		if(connectionState == ConnectionState.CONNECTING)
+		if(connectionState == ConnectionState.CONNECTING) {
 			return;
+		}
 		if(System.currentTimeMillis() - lastInteraction >= timeout) {
 			if(lastTimeout == lastInteraction) {
 				setTimeout(2 * timeout);
@@ -331,7 +321,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	public boolean isConnecting() {
 		return connectionState == ConnectionState.CONNECTING;
 	}
-	
+
 	@Override
 	public String toString() {
 		return socketAddress.toString().substring(1);
@@ -341,7 +331,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	public void flush() throws IOException {
 		outStream.flush();
 	}
-	
+
 	public void setFinalPacket(int seqNr) {
 		finalAckNumber = seqNr;
 	}
@@ -361,7 +351,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	public void setUtpInputNumber(int sequenceNumber) {
 		inStream.setSequenceNumber(sequenceNumber);
 	}
-	
+
 	public int getPacketSize() {
 		return packetSize;
 	}

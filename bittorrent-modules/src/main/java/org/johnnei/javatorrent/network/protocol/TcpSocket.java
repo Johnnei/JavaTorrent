@@ -9,11 +9,11 @@ import java.net.Socket;
 public class TcpSocket implements ISocket {
 
 	private Socket socket;
-	
+
 	public TcpSocket() {
 		socket = new Socket();
 	}
-	
+
 	/**
 	 * Creates a TcpSocket on a pre-connected socket
 	 * @param socket
@@ -21,7 +21,7 @@ public class TcpSocket implements ISocket {
 	public TcpSocket(Socket socket) {
 		this.socket = socket;
 	}
-	
+
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
 		socket.connect(endpoint, 10_000);
@@ -43,16 +43,6 @@ public class TcpSocket implements ISocket {
 	}
 
 	@Override
-	public ISocket getFallbackSocket() {
-		return null;
-	}
-
-	@Override
-	public boolean canFallback() {
-		return false;
-	}
-
-	@Override
 	public boolean isClosed() {
 		return socket.isClosed() || !socket.isConnected();
 	}
@@ -66,7 +56,7 @@ public class TcpSocket implements ISocket {
 	public boolean isOutputShutdown() {
 		return socket.isOutputShutdown();
 	}
-	
+
 	@Override
 	public String toString() {
 		return socket.getRemoteSocketAddress().toString().substring(1);

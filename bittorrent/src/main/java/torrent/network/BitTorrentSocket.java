@@ -3,10 +3,11 @@ package torrent.network;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Queue;
 
+import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.javatorrent.network.protocol.ISocket;
-import org.johnnei.javatorrent.network.protocol.TcpSocket;
 
 import torrent.download.tracker.TrackerManager;
 import torrent.protocol.BitTorrent;
@@ -72,21 +73,22 @@ public class BitTorrentSocket {
 		createIOStreams();
 	}
 
-	public void connect(InetSocketAddress address) throws IOException {
+	public void connect(ConnectionDegradation degradation, InetSocketAddress address) throws IOException {
 		if (socket != null) {
 			return;
 		}
 
 		BitTorrentSocketException exception = new BitTorrentSocketException("Failed to connect to end point.");
-		socket = new TcpSocket();
+		socket = degradation.createPreferedSocket();
 		while (socket != null && (socket.isClosed() || socket.isConnecting())) {
 			try {
 				socket.connect(address);
 				createIOStreams();
 			} catch (IOException e) {
 				exception.addConnectionFailure(socket, e);
-				if (socket.canFallback()) {
-					socket = socket.getFallbackSocket();
+				Optional<ISocket> fallbackSocket = degradation.degradeSocket(socket);
+				if (fallbackSocket.isPresent()) {
+					socket = fallbackSocket.get();
 				} else {
 					throw exception;
 				}

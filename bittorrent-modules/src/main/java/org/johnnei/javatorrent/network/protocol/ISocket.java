@@ -10,8 +10,8 @@ import java.net.InetSocketAddress;
  * @author Johnnei
  *
  */
-public interface ISocket {
-	
+public interface ISocket extends AutoCloseable {
+
 	/**
 	 * Connects the underlaying Socket to the endpoint
 	 * @param endpoint The Address to connect to
@@ -30,48 +30,38 @@ public interface ISocket {
 	 * @throws IOException when the stream could not be created
 	 */
 	public OutputStream getOutputStream() throws IOException;
+
 	/**
-	 * Formally closes the connection 
+	 * Formally closes the connection
 	 * @throws IOException When the connection could not be closed
 	 */
+	@Override
 	public void close() throws IOException;
-	/**
-	 * Creates a fallback socket based on the given information on this socket
-	 * @return A new socket on which a connection might be established
-	 */
-	public ISocket getFallbackSocket();
-	
-	/**
-	 * Check if this socket protocol has a fallback protocol<br/>
-	 * Example: uTP may fallback to TCP
-	 * @return If there is a fallback protocol
-	 */
-	public boolean canFallback();
-	
+
 	/**
 	 * Checks if this socket is connecting
 	 * @return true if the socket is connecting
 	 */
 	public boolean isConnecting();
-	
+
 	/**
 	 * Checks if the connection has been closed
 	 * @return true if the connection is closing/closed
 	 */
 	public boolean isClosed();
-	
+
 	/**
 	 * Checks if there will be no more data incoming
 	 * @return true if EOF has been found
 	 */
 	public boolean isInputShutdown();
-	
+
 	/**
 	 * Checks if no more data can be send on this socket
 	 * @return true if EOF has been send
 	 */
 	public boolean isOutputShutdown();
-	
+
 	/**
 	 * Forces the socket to send all data<br/>
 	 * Only supported in {@link UtpSocket}

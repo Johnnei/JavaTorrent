@@ -3,6 +3,7 @@ package torrent.download.tracker;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
@@ -10,40 +11,40 @@ import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
 
 public class PeerConnectorPool {
-	
+
 	private List<PeerConnector> connectors;
-	
-	public PeerConnectorPool(TrackerManager manager) {
+
+	public PeerConnectorPool(ConnectionDegradation connectionDegradation, TrackerManager manager) {
 		connectors = new LinkedList<>();
 		final int connectorCount = Config.getConfig().getInt("peer-max_concurrent_connecting");
 		final int peerLimitPerConnector = Config.getConfig().getInt("peer-max_connecting") / connectorCount;
-		
+
 		for (int i = 0; i < connectorCount; i++) {
-			PeerConnector connector = new PeerConnector(manager, peerLimitPerConnector);
+			PeerConnector connector = new PeerConnector(connectionDegradation, manager, peerLimitPerConnector);
 			connectors.add(connector);
 			Thread thread = new Thread(connector, String.format("Peer Connector #%d", i));
 			thread.setDaemon(true);
 			thread.start();
 		}
 	}
-	
+
 	/**
 	 * Queues a peer to be connected
 	 * @param p the peer to be connected
 	 */
 	public void addPeer(PeerConnectInfo peer) {
 		PeerConnector connector = connectors.stream().max((a, b) -> a.getFreeCapacity() - b.getFreeCapacity()).get();
-		
+
 		if (connector.getFreeCapacity() == 0) {
 			System.err.println("[PeerConnectorPool] Overflowing in peers. Can't distribute peers!");
 			// TODO Implement a backlog of peers
 			return;
 		}
-		
+
 		connector.addPeer(peer);
 		ThreadUtils.notify(connector.PEER_JOB_NOTIFY);
 	}
-	
+
 	public int getFreeCapacity() {
 		return connectors.stream().mapToInt(PeerConnector::getFreeCapacity).sum();
 	}
@@ -51,6 +52,6 @@ public class PeerConnectorPool {
 	public int getConnectingCountFor(Torrent torrent) {
 		return connectors.stream().mapToInt(c -> c.getConnectingCountFor(torrent)).sum();
 	}
-	
+
 
 }
