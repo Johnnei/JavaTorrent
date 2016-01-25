@@ -1,7 +1,5 @@
 package torrent.download.algos;
 
-import torrent.download.Torrent;
-
 public class BurstPeerManager implements IPeerManager {
 
 	private int maxPeers;
@@ -13,14 +11,12 @@ public class BurstPeerManager implements IPeerManager {
 	}
 
 	@Override
-	public int getMaxPeers(byte torrentState) {
-		if (torrentState == Torrent.STATE_DOWNLOAD_METADATA)
-			return (int) Math.ceil(maxPeers * 0.5D);
+	public int getMaxPeers() {
 		return maxPeers;
 	}
 
 	@Override
-	public int getAnnounceWantAmount(byte torrentState, int connected) {
+	public int getAnnounceWantAmount(int connected) {
 		return (int) ((maxPeers - connected) * burstRate);
 	}
 
@@ -30,9 +26,7 @@ public class BurstPeerManager implements IPeerManager {
 	}
 
 	@Override
-	public int getMaxPendingPeers(byte torrentState) {
-		if (torrentState == Torrent.STATE_DOWNLOAD_METADATA)
-			return (int) Math.ceil(maxPeers * 0.5D);
+	public int getMaxPendingPeers() {
 		return (int) Math.ceil(maxPeers * burstRate);
 	}
 

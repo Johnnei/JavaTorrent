@@ -14,14 +14,15 @@ public class TabGeneral extends JPanel {
 	public static final long serialVersionUID = 1L;
 
 	private TorrentFrame torrentFrame;
-	
+
 	private TrackerManager trackerManager;
-	
+
 	public TabGeneral(TorrentFrame torrentFrame, TrackerManager trackerManager) {
 		this.trackerManager = trackerManager;
 		this.torrentFrame = torrentFrame;
 	}
 
+	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		String name = "Name: ";
@@ -40,7 +41,7 @@ public class TabGeneral extends JPanel {
 		if (torrent != null) {
 			name += torrent.getDisplayName();
 			hash += torrent.getHash();
-			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+			if (torrent.isDownloadingMetadata()) {
 				totalSize += "Retrieving metadata";
 				pieces += "Retrieving metadata";
 				leftSize += "Retrieving metadata";
@@ -65,12 +66,14 @@ public class TabGeneral extends JPanel {
 		g.setColor(Color.GRAY);
 		g.drawRect(10, 10, getWidth() - 20, 10);
 		if (torrent != null) {
-			if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA)
+			if (torrent.isDownloadingMetadata()) {
 				g.setColor(Color.ORANGE);
-			else
+			} else {
 				g.setColor(Color.GREEN);
-		} else
+			}
+		} else {
 			g.setColor(Color.GREEN);
+		}
 		double pixelsPerPercentage = (getWidth() - 21) * 0.01;
 		g.fillRect(11, 11, (int) (progress * pixelsPerPercentage), 9);
 

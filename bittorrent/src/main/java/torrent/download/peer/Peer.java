@@ -15,19 +15,19 @@ import torrent.protocol.messages.MessageKeepAlive;
 public class Peer implements Comparable<Peer> {
 
 	private Torrent torrent;
-	
+
 	/**
 	 * Client information about the connected peer
 	 * This will contain the requests the endpoint made of us
 	 */
 	private Client peerClient;
-	
+
 	/**
 	 * Client information about me retrieved from the connected peer<br/>
-	 * This will contain the requests we made to the endpoint 
+	 * This will contain the requests we made to the endpoint
 	 */
 	private Client myClient;
-	
+
 	/**
 	 * The current Threads status
 	 */
@@ -40,42 +40,42 @@ public class Peer implements Comparable<Peer> {
 	private long lastActivity;
 
 	private String clientName;
-	
+
 	/**
 	 * The count of messages which are still being processed by the IOManager
 	 */
 	private int pendingMessages;
-	
+
 	/**
 	 * The amount of errors the client made<br/>
 	 * If the amount reaches 5 the client will be disconnected on the next
 	 * peerCheck
 	 */
 	private int strikes;
-	
+
 	private Logger log;
-	
+
 	/**
 	 * The pieces this peer has
 	 */
 	private Bitfield haveState;
-	
+
 	/**
 	 * The extensions which are supported by this peer
 	 */
 	private Extensions extensions;
-	
+
 	/**
 	 * The absolute maximum amount of requests which the peer can support<br/>
 	 * Default value will be {@link Integer#MAX_VALUE}
 	 */
 	private int absoluteRequestLimit;
-	
+
 	/**
 	 * The amount of requests we think this peer can handle at most at the same time.
 	 */
 	private int requestLimit;
-	
+
 	/**
 	 * The bittorrent client which handles this peer's socket information and input/outputstreams
 	 */
@@ -92,7 +92,7 @@ public class Peer implements Comparable<Peer> {
 		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
-		if (torrent.getFiles() != null) { 
+		if (torrent.getFiles() != null) {
 			haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
 		} else {
 			haveState = new Bitfield(0);
@@ -102,7 +102,7 @@ public class Peer implements Comparable<Peer> {
 
 	public void connect() {
 		setStatus("Connecting...");
-		
+
 	}
 
 	public void checkDisconnect() {
@@ -112,16 +112,14 @@ public class Peer implements Comparable<Peer> {
 		}
 		int inactiveSeconds = (int) ((System.currentTimeMillis() - lastActivity) / 1000);
 		if (inactiveSeconds > 30) {
-			if (myClient.getQueueSize() > 0) { // We are not receiving a single
-												// byte in the last 30(!)
-												// seconds
-				// Let's try (max twice) if we can wake'm up by sending them a
-				// keepalive
+			// We are not receiving a single byte in the last 30(!) seconds.
+			if (myClient.getQueueSize() > 0) {
+				// Let's try (max twice) if we can wake'm up by sending them a keepalive
 				addStrike(2);
 				getBitTorrentSocket().queueMessage(new MessageKeepAlive());
 				updateLastActivity();
 				return;
-			} else if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA) {
+			} else if (torrent.isDownloadingMetadata()) {
 				updateLastActivity();
 			}
 		}
@@ -132,17 +130,19 @@ public class Peer implements Comparable<Peer> {
 			}
 		}
 
-		if (inactiveSeconds > 90) {// 1.5 Minute, We are getting close to
-									// timeout D:
+		if (inactiveSeconds > 90) {
+			// 1.5 Minute, We are getting close to timeout D:
 			if (myClient.isInterested()) {
 				getBitTorrentSocket().queueMessage(new MessageKeepAlive());
 			}
 		}
-		if (inactiveSeconds > 180) {// 3 Minutes, We've hit the timeout mark
+
+		if (inactiveSeconds > 180) {
+			// 3 Minutes, We've hit the timeout mark
 			socket.close();
 		}
 	}
-	
+
 	/**
 	 * Adds a download or upload job to the peer
 	 * @param job
@@ -151,7 +151,7 @@ public class Peer implements Comparable<Peer> {
 	public void addJob(Job job, PeerDirection type) {
 		getClientByDirection(type).addJob(job);
 	}
-	
+
 	/**
 	 * Removes the download or upload job from the peer
 	 * @param job
@@ -160,10 +160,10 @@ public class Peer implements Comparable<Peer> {
 	public void removeJob(Job job, PeerDirection type) {
 		getClientByDirection(type).removeJob(job);
 	}
-	
+
 	/**
 	 * Add a value to the pending Messages count
-	 * 
+	 *
 	 * @param i
 	 *            The count to add
 	 */
@@ -199,12 +199,12 @@ public class Peer implements Comparable<Peer> {
 	public void updateLastActivity() {
 		lastActivity = System.currentTimeMillis();
 	}
-	
+
 	/**
 	 * A callback method which gets invoked when the torrent starts a new phase
 	 */
 	public void onTorrentPhaseChange() {
-		if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+		if (torrent.isDownloadingMetadata()) {
 			haveState.setSize(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
 		}
 	}
@@ -246,9 +246,9 @@ public class Peer implements Comparable<Peer> {
 	 * @param pieceIndex the piece to marked as "have"
 	 */
 	public void havePiece(int pieceIndex) {
-		haveState.havePiece(pieceIndex, torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_METADATA);
+		haveState.havePiece(pieceIndex, torrent.isDownloadingMetadata());
 	}
-	
+
 	/**
 	 * Checks if the peer has the piece with the given index
 	 * @param pieceIndex the piece to check for
@@ -260,7 +260,7 @@ public class Peer implements Comparable<Peer> {
 
 	/**
 	 * Sets the torrent
-	 * 
+	 *
 	 * @param torrent
 	 * @throws IllegalStateException
 	 *             if the peer is already bound to a torrent
@@ -285,17 +285,17 @@ public class Peer implements Comparable<Peer> {
 	public int compareTo(Peer p) {
 		int myValue = getCompareValue();
 		int theirValue = p.getCompareValue();
-		
+
 		return myValue - theirValue;
 	}
-	
+
 	private int getCompareValue() {
 		return (getWorkQueueSize(PeerDirection.Download) * 5000) + haveState.countHavePieces() + socket.getDownloadRate();
 	}
 
 	/**
 	 * Adds an amount of strikes to the peer
-	 * 
+	 *
 	 * @param i
 	 */
 	public synchronized void addStrike(int i) {
@@ -305,7 +305,7 @@ public class Peer implements Comparable<Peer> {
 			strikes += i;
 		}
 	}
-	
+
 	/**
 	 * Sets the amount of requests this peer can support at most
 	 * @param absoluteRequestLimit
@@ -313,7 +313,7 @@ public class Peer implements Comparable<Peer> {
 	public void setAbsoluteRequestLimit(int absoluteRequestLimit) {
 		this.absoluteRequestLimit = absoluteRequestLimit;
 	}
-	
+
 	/**
 	 * Sets the amount of requests we think this peer can handle properly.<br/>
 	 * This amount will be limited by {@link #absoluteRequestLimit}
@@ -324,23 +324,23 @@ public class Peer implements Comparable<Peer> {
 			// This wouldn't make any sense
 			return;
 		}
-		
+
 		this.requestLimit = Math.min(requestLimit, absoluteRequestLimit);
 	}
-	
+
 	public void setChoked(PeerDirection direction, boolean choked) {
 		Client client = getClientByDirection(direction);
-		
+
 		if (choked) {
 			client.choke();
 		} else {
 			client.unchoke();
 		}
 	}
-	
+
 	public void setInterested(PeerDirection direction, boolean interested) {
 		Client client = getClientByDirection(direction);
-		
+
 		if (interested) {
 			client.interested();
 		} else {
@@ -362,7 +362,7 @@ public class Peer implements Comparable<Peer> {
 	 * Adds flags to a string based on the state of a peer<br/>
 	 * Possible Flags:<br/>
 	 * U - Uses uTP T - Uses TCP I - Is Interested C - Is Choked
-	 * 
+	 *
 	 * @return
 	 */
 	public String getFlags() {
@@ -375,11 +375,11 @@ public class Peer implements Comparable<Peer> {
 		}
 		return flags;
 	}
-	
+
 	public Logger getLogger() {
 		return log;
 	}
-	
+
 	/**
 	 * Gets the extensions which are supported by this peer
 	 * @return the extensions of this peer
@@ -387,7 +387,7 @@ public class Peer implements Comparable<Peer> {
 	public Extensions getExtensions() {
 		return extensions;
 	}
-	
+
 	/**
 	 * Gets the amount of requests we are allowed to make to this peer
 	 * @return the maximum amount of concurrent requests we can make to this peer
@@ -395,27 +395,27 @@ public class Peer implements Comparable<Peer> {
 	public int getRequestLimit() {
 		return requestLimit;
 	}
-	
+
 	public boolean isInterested(PeerDirection direction) {
 		return getClientByDirection(direction).isInterested();
 	}
-	
+
 	public boolean isChoked(PeerDirection direction) {
 		return getClientByDirection(direction).isChoked();
 	}
-	
+
 	private Client getClientByDirection(PeerDirection type) {
 		switch (type) {
 		case Download:
 			return myClient;
-			
+
 		case Upload:
 			return peerClient;
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Gets the amount of pieces this peer has
 	 * @return returns the amount of pieces which this peer has
@@ -442,16 +442,16 @@ public class Peer implements Comparable<Peer> {
 		if (myClient.getQueueSize() == 0 || pendingMessages > 0) {
 			return;
 		}
-		
+
 		Job request = peerClient.getNextJob();
 		peerClient.removeJob(request);
 		addToPendingMessages(1);
-		
+
 		DiskJob sendBlock = new DiskJobSendBlock(this,
 			request.getPieceIndex(), request.getBlockIndex(),
 			request.getLength()
 		);
-		
+
 		torrent.addDiskJob(sendBlock);
 	}
 

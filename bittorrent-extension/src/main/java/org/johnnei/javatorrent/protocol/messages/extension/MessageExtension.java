@@ -1,0 +1,88 @@
+package org.johnnei.javatorrent.protocol.messages.extension;
+
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.network.protocol.IMessage;
+import org.johnnei.javatorrent.protocol.IExtension;
+import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import torrent.download.peer.Peer;
+
+public class MessageExtension implements IMessage {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MessageExtension.class);
+
+	private final ExtensionModule extensionModule;
+
+	private int extensionId;
+	private IMessage message;
+
+	public MessageExtension(int extensionId, IMessage message) {
+		this.extensionModule = null;
+		this.extensionId = extensionId;
+		this.message = message;
+	}
+
+	public MessageExtension(ExtensionModule extensionModule) {
+		this.extensionModule = extensionModule;
+	}
+
+	@Override
+	public void write(OutStream outStream) {
+		outStream.writeByte(extensionId);
+		message.write(outStream);
+	}
+
+	@Override
+	public void read(InStream inStream) {
+		extensionId = inStream.readByte();
+		if (extensionId == Protocol.EXTENDED_MESSAGE_HANDSHAKE) {
+			message = extensionModule.createHandshakeMessage();
+		} else {
+			IExtension extension = extensionModule.getExtensionById(extensionId)
+					.orElseThrow(() -> new IllegalArgumentException(String.format("Unknown extension with id %d", extensionId)));
+			try {
+				message = extension.getMessage(inStream);
+			} catch (Exception e) {
+				LOGGER.warn(String.format("Failed to read extension message in extension %s.", extension.getExtensionName()), e);
+				return;
+			}
+		}
+		message.read(inStream);
+	}
+
+	@Override
+	public void process(Peer peer) {
+		if (message == null) {
+			LOGGER.error("Processing extended message without message. (ID: " + extensionId + ")");
+			peer.getBitTorrentSocket().close();
+		}
+		message.process(peer);
+	}
+
+	@Override
+	public int getLength() {
+		return 2 + message.getLength();
+	}
+
+	@Override
+	public int getId() {
+		return Protocol.MESSAGE_EXTENDED_MESSAGE;
+	}
+
+	@Override
+	public void setReadDuration(int duration) {
+	}
+
+	@Override
+	public String toString() {
+		if (message != null) {
+			return "Extension " + message.toString();
+		} else {
+			return "Extension";
+		}
+	}
+
+}

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.TcpSocket;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
@@ -18,15 +19,18 @@ import torrent.util.StringUtil;
 
 public class PeerConnectionAccepter extends Thread {
 
+	private final TorrentClient torrentClient;
+
 	private ServerSocket serverSocket;
 
 	private TorrentManager torrentManager;
 
 	private TrackerManager trackerManager;
 
-	public PeerConnectionAccepter(TorrentManager manager, TrackerManager trackerManager) throws IOException {
+	public PeerConnectionAccepter(TorrentClient torrentClient, TorrentManager manager, TrackerManager trackerManager) throws IOException {
 		super("Peer connector");
 		setDaemon(true);
+		this.torrentClient = torrentClient;
 		this.torrentManager = manager;
 		this.trackerManager = trackerManager;
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
@@ -38,7 +42,7 @@ public class PeerConnectionAccepter extends Thread {
 			try {
 				Socket tcpSocket = serverSocket.accept();
 
-				BitTorrentSocket peerSocket = new BitTorrentSocket(new TcpSocket(tcpSocket));
+				BitTorrentSocket peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory(), new TcpSocket(tcpSocket));
 
 				long handshakeStart = System.currentTimeMillis();
 				while (!peerSocket.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {

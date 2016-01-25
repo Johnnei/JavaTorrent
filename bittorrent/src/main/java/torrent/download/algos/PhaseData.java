@@ -1,36 +1,33 @@
 package torrent.download.algos;
 
 import java.util.ArrayList;
+import java.util.Collection;
+
+import org.johnnei.javatorrent.network.protocol.IMessage;
 
 import torrent.download.Torrent;
 import torrent.download.files.Block;
 import torrent.download.files.Piece;
 import torrent.download.peer.Job;
-import torrent.download.peer.PeerDirection;
 import torrent.download.peer.Peer;
+import torrent.download.peer.PeerDirection;
 import torrent.download.tracker.TrackerConnection;
 import torrent.download.tracker.TrackerManager;
-import torrent.protocol.IMessage;
 import torrent.protocol.messages.MessageRequest;
 
 public class PhaseData implements IDownloadPhase {
 
 	private Torrent torrent;
 	private TrackerManager trackerManager;
-	
+
 	public PhaseData(TrackerManager trackerManager, Torrent torrent) {
 		this.trackerManager = trackerManager;
 		this.torrent = torrent;
 	}
-	
+
 	@Override
 	public boolean isDone() {
 		return torrent.getFiles().isDone();
-	}
-
-	@Override
-	public IDownloadPhase nextPhase() {
-		return new PhaseUpload(torrent);
 	}
 
 	@Override
@@ -56,19 +53,20 @@ public class PhaseData implements IDownloadPhase {
 	}
 
 	@Override
-	public void preprocess() {
+	public void onPhaseEnter() {
 		torrent.checkProgress();
 		torrent.setDownloadRegulator(new FullPieceSelect(torrent));
 	}
 
 	@Override
-	public void postprocess() {
+	public void onPhaseExit() {
 		trackerManager.getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).setEvent(TrackerConnection.EVENT_COMPLETED));
 		torrent.getLogger().info("Download completed");
 	}
 
 	@Override
-	public byte getId() {
-		return Torrent.STATE_DOWNLOAD_DATA;
+	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

@@ -3,7 +3,7 @@ package torrent.download.tracker;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +38,12 @@ public class PeerConnector implements Runnable {
 
 	private final int maxPeers;
 
+	private final TorrentClient torrentClient;
 
-	private final ConnectionDegradation connectionDegradation;
-
-	public PeerConnector(ConnectionDegradation connectionDegradation, TrackerManager manager, int maxConnecting) {
+	public PeerConnector(TorrentClient torrentClient, TrackerManager manager, int maxConnecting) {
 		this.manager = manager;
 		this.maxPeers = maxConnecting;
-		this.connectionDegradation = connectionDegradation;
+		this.torrentClient = torrentClient;
 		peers = new LinkedList<>();
 	}
 
@@ -82,8 +81,8 @@ public class PeerConnector implements Runnable {
 			}
 
 			try {
-				peerSocket = new BitTorrentSocket();
-				peerSocket.connect(connectionDegradation, peerInfo.getAddress());
+				peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory());
+				peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
 				peerSocket.sendHandshake(manager.getPeerId(), peerInfo.getTorrent().getHashArray());
 
 				long timeWaited = 0;

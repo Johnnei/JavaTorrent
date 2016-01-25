@@ -27,7 +27,7 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 	}
 
 	@Override
-	public void preprocess() {
+	public void onPhaseEnter() {
 		File file = Config.getConfig().getTorrentFileFor(torrent.getHash());
 		if(!file.exists()) {
 			return;
@@ -43,11 +43,6 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 			}
 		} catch (IOException e) {
 		}
-	}
-
-	@Override
-	public byte getId() {
-		return Torrent.STATE_DOWNLOAD_METADATA;
 	}
 
 }

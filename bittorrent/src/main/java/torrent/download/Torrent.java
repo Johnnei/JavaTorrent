@@ -4,33 +4,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.utils.ConsoleLogger;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
 import torrent.TorrentException;
-import torrent.TorrentManager;
 import torrent.download.algos.BurstPeerManager;
 import torrent.download.algos.FullPieceSelect;
 import torrent.download.algos.IDownloadPhase;
 import torrent.download.algos.IDownloadRegulator;
 import torrent.download.algos.IPeerManager;
-import torrent.download.algos.PhasePreMetadata;
 import torrent.download.files.Piece;
 import torrent.download.files.disk.DiskJob;
 import torrent.download.files.disk.DiskJobStoreBlock;
 import torrent.download.files.disk.IOManager;
 import torrent.download.peer.Peer;
 import torrent.download.peer.PeerDirection;
-import torrent.download.tracker.TrackerManager;
 import torrent.encoding.SHA1;
-import torrent.protocol.IMessage;
-import torrent.protocol.UTMetadata;
 import torrent.protocol.messages.MessageChoke;
 import torrent.protocol.messages.MessageHave;
 import torrent.protocol.messages.MessageInterested;
@@ -53,28 +51,24 @@ public class Torrent implements Runnable {
 	 * All connected peers
 	 */
 	private List<Peer> peers;
-	
+
 	private boolean keepDownloading;
-	
+
 	/**
 	 * The current status
 	 */
 	private String status;
-	
+
 	/**
 	 * Contains all data of the actual torrent
 	 */
 	private AFiles files;
-	
+
 	/**
 	 * Contains the information about the metadata backing this torrent.
 	 */
-	private MetadataFile metadata;
-	
-	/**
-	 * The current state of the torrent
-	 */
-	private byte torrentStatus;
+	private Optional<MetadataFile> metadata;
+
 	/**
 	 * Regulates the selection of pieces and the peers to download the pieces
 	 */
@@ -112,29 +106,24 @@ public class Torrent implements Runnable {
 	 * The phase in which the torrent currently is
 	 */
 	private IDownloadPhase phase;
-	
+
 	/**
-	 * The manager which takes care of all torrents and trackers
+	 * The torrent client which created this Torrent object.
 	 */
-	private TorrentManager manager;
-	
+	private TorrentClient torrentClient;
+
 	private Logger log;
-	
+
 	/**
 	 * The thread on which the torrent is being processed
 	 */
 	private Thread thread;
 
-	public static final byte STATE_DOWNLOAD_METADATA = 0;
-	public static final byte STATE_DOWNLOAD_DATA = 1;
-	public static final byte STATE_UPLOAD = 2;
-
-	public Torrent(TorrentManager manager, TrackerManager trackerManager, byte[] btihHash, String displayName) {
+	public Torrent(TorrentClient torrentClient, byte[] btihHash, String displayName) {
 		log = ConsoleLogger.createLogger(String.format("Torrent %s", StringUtil.byteArrayToString(btihHash)), Level.INFO);
 		this.displayName = displayName;
-		this.manager = manager;
+		this.torrentClient = torrentClient;
 		this.btihHash = btihHash;
-		torrentStatus = STATE_DOWNLOAD_METADATA;
 		torrentHaltingOperations = new AtomicInteger();
 		downloadedBytes = 0L;
 		peers = new LinkedList<Peer>();
@@ -143,8 +132,8 @@ public class Torrent implements Runnable {
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
 		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
-		phase = new PhasePreMetadata(trackerManager, this);
-		
+		phase = torrentClient.getPhaseRegulator().createInitialPhase(torrentClient, this);
+
 		thread = new Thread(this, displayName);
 	}
 
@@ -164,31 +153,31 @@ public class Torrent implements Runnable {
 			peers.add(peer);
 		}
 	}
-	
+
 	/**
 	 * Registers the torrent and starts downloading it
 	 */
 	public void start() {
-		manager.addTorrent(this);
+		torrentClient.getTorrentManager().addTorrent(this);
 		thread.start();
 	}
 
+	@Override
 	public void run() {
 		while(phase != null) {
-			torrentStatus = phase.getId();
 			log.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
 			synchronized (this) {
-				peers.forEach(p -> p.onTorrentPhaseChange());	
+				peers.forEach(p -> p.onTorrentPhaseChange());
 			}
-			phase.preprocess();
+			phase.onPhaseEnter();
 			while (!phase.isDone() || torrentHaltingOperations.get() > 0) {
 				processPeers();
 				phase.process();
 				ioManager.processTask(this);
 				ThreadUtils.sleep(25);
 			}
-			phase.postprocess();
-			phase = phase.nextPhase();
+			phase.onPhaseExit();
+			phase = torrentClient.getPhaseRegulator().createNextPhase(phase, torrentClient, this).orElse(null);
 		}
 		log.info("Torrent has finished");
 	}
@@ -217,7 +206,7 @@ public class Torrent implements Runnable {
 				forEach(p -> p.cancelAllPieces());
 			peers.removeIf(p -> p == null || p.getBitTorrentSocket().closed());
 			peers.forEach(p -> p.checkDisconnect());
-			
+
 		}
 	}
 
@@ -225,8 +214,9 @@ public class Torrent implements Runnable {
 	 * Updates the interested states
 	 */
 	private void updatePeers() {
-		if (files == null)
+		if (files == null) {
 			return;
+		}
 		List<Piece> neededPieces = files.getNeededPieces().collect(Collectors.toList());
 		synchronized (this) {
 			for (Peer p : peers) {
@@ -276,12 +266,30 @@ public class Torrent implements Runnable {
 		return status;
 	}
 
-	public byte getDownloadStatus() {
-		return torrentStatus;
+	public IDownloadPhase getDownloadPhase() {
+		return phase;
+	}
+
+	/**
+	 * If the Torrent should be downloading the metadata information.
+	 * Depending on the installed modules the torrent might be stuck at this point.
+	 * BEP 10 and UT_METADATA extension must be available to download metadata.
+	 * @return
+	 */
+	public boolean isDownloadingMetadata() {
+		if (!metadata.isPresent()) {
+			return true;
+		}
+
+		if (!metadata.get().isDone()) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public double getProgress() {
-		if (files == null || files.getPieceCount() == 0 || phase.getId() == STATE_DOWNLOAD_METADATA) {
+		if (isDownloadingMetadata() || files == null || files.getPieceCount() == 0) {
 			return 0D;
 		}
 		return (files.countCompletedPieces() * 100d) / files.getPieceCount();
@@ -289,7 +297,7 @@ public class Torrent implements Runnable {
 
 	/**
 	 * Tells the torrent to save a block of data
-	 * 
+	 *
 	 * @param index The piece index
 	 * @param offset The offset within the piece
 	 * @param data The bytes to be stored
@@ -318,7 +326,7 @@ public class Torrent implements Runnable {
 
 	/**
 	 * Adds a task to the IOManager of this torrent
-	 * 
+	 *
 	 * @param task The task to add
 	 */
 	public void addDiskJob(DiskJob task) {
@@ -326,7 +334,7 @@ public class Torrent implements Runnable {
 	}
 
 	public void broadcastMessage(IMessage m) {
-		synchronized (this) {			
+		synchronized (this) {
 			peers.stream().
 				filter(p -> !p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()).
 				forEach(p -> p.getBitTorrentSocket().queueMessage(m));
@@ -344,7 +352,7 @@ public class Torrent implements Runnable {
 					return p.checkHash();
 				} catch (IOException | TorrentException e) {
 					log.warning(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
-					return false; 
+					return false;
 				}
 			}).
 			forEach(p -> {
@@ -354,33 +362,29 @@ public class Torrent implements Runnable {
 		);
 		log.info("Checking progress done");
 	}
-	
+
 	/**
 	 * Adds the amount of bytes to the uploaded count
-	 * 
+	 *
 	 * @param l The amount of bytes to add
 	 */
 	public void addUploadedBytes(long l) {
 		uploadedBytes += l;
 	}
-	
+
 	public void setFiles(AFiles files) {
 		this.files = files;
 	}
-	
+
 	/**
 	 * Sets the associated metadata file of the torrent
 	 * @param metadata the metadata which is backing this torrent
 	 */
 	public void setMetadata(MetadataFile metadata) {
-		this.metadata = metadata;
+		this.metadata = Optional.of(metadata);
 	}
-	
-	public MetadataFile getMetadata() throws IllegalStateException {
-		if (getDownloadStatus() == STATE_DOWNLOAD_METADATA) {
-			throw new IllegalStateException("Torrent is still downloading the associated metadata file.");
-		}
-		
+
+	public Optional<MetadataFile> getMetadata() {
 		return metadata;
 	}
 
@@ -391,22 +395,22 @@ public class Torrent implements Runnable {
 
 	/**
 	 * Checks if the tracker needs to announce
-	 * 
+	 *
 	 * @return true if we need more peers
 	 */
 	public boolean needAnnounce() {
 		int peersPerThread = Config.getConfig().getInt("peer-max_connecting") / Config.getConfig().getInt("peer-max_concurrent_connecting");
 		boolean needEnoughPeers = peersWanted() >= peersPerThread;
-		boolean notExceedMaxPendingPeers = peers.size() < peerManager.getMaxPendingPeers(torrentStatus);
+		boolean notExceedMaxPendingPeers = peers.size() < peerManager.getMaxPendingPeers();
 		return needEnoughPeers && notExceedMaxPendingPeers;
 	}
 
 	public int getMaxPeers() {
-		return peerManager.getMaxPeers(torrentStatus);
+		return peerManager.getMaxPeers();
 	}
 
 	public int peersWanted() {
-		return peerManager.getAnnounceWantAmount(torrentStatus, peers.size());
+		return peerManager.getAnnounceWantAmount(peers.size());
 	}
 
 	public void pollRates() {
@@ -414,7 +418,7 @@ public class Torrent implements Runnable {
 			peers.forEach(p -> p.getBitTorrentSocket().pollRates());
 		}
 	}
-	
+
 	/**
 	 * Gets the files which are being downloaded within this torrent
 	 * @return
@@ -422,7 +426,7 @@ public class Torrent implements Runnable {
 	public AFiles getFiles() {
 		return files;
 	}
-	
+
 	public int getDownloadRate() {
 		synchronized (this) {
 			return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getDownloadRate()).sum();
@@ -436,9 +440,10 @@ public class Torrent implements Runnable {
 	}
 
 	public int getSeedCount() {
-		if (torrentStatus == STATE_DOWNLOAD_METADATA)
+		if (isDownloadingMetadata()) {
 			return 0;
-		
+		}
+
 		synchronized (this) {
 			return (int) peers.stream().filter(p -> p.countHavePieces() == files.getPieceCount()).count();
 		}
@@ -456,16 +461,16 @@ public class Torrent implements Runnable {
 
 	/**
 	 * The amount of bytes downloaded
-	 * 
+	 *
 	 * @return
 	 */
 	public long getDownloadedBytes() {
 		return downloadedBytes;
 	}
-	
+
 	/**
 	 * The amount of bytes we have uploaded this session
-	 * 
+	 *
 	 * @return
 	 */
 	public long getUploadedBytes() {
@@ -473,10 +478,11 @@ public class Torrent implements Runnable {
 	}
 
 	/**
-	 * Gets all lecheers which: has atleast 1 piece and has us unchoked
-	 * 
+	 * Gets all leechers which: has atleast 1 piece and has us unchoked
+	 *
 	 * @return
 	 */
+	@Deprecated
 	public ArrayList<Peer> getDownloadablePeers() {
 		ArrayList<Peer> leechers = new ArrayList<Peer>();
 		synchronized (this) {
@@ -484,21 +490,15 @@ public class Torrent implements Runnable {
 				if (peer.countHavePieces() == 0) {
 					continue;
 				}
-				
-				if (torrentStatus == STATE_DOWNLOAD_METADATA) {
-					if (peer.getExtensions().hasExtension(UTMetadata.NAME)) {
-						leechers.add(peer);
-					}
-				} else {
-					if (!peer.isChoked(PeerDirection.Download) && peer.getFreeWorkTime() > 0) {
-						leechers.add(peer);
-					}
+
+				if (!peer.isChoked(PeerDirection.Download) && peer.getFreeWorkTime() > 0) {
+					leechers.add(peer);
 				}
 			}
 		}
 		return leechers;
 	}
-	
+
 	/**
 	 * The regulator which is managing this download
 	 * @return The current assigned regulator
@@ -516,19 +516,10 @@ public class Torrent implements Runnable {
 			return false;
 		}
 	}
-	
+
+	@Deprecated
 	public Logger getLogger() {
 		return log;
-	}
-
-	public void setMetadataSize(int i) {
-		if (phase.getId() != STATE_DOWNLOAD_METADATA) {
-			return;
-		}
-		
-		if (phase instanceof PhasePreMetadata) {
-			((PhasePreMetadata)phase).setMetadataSize(i);
-		}
 	}
 
 	public void setDownloadRegulator(IDownloadRegulator downloadRegulator) {

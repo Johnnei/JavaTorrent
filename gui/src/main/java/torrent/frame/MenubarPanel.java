@@ -8,10 +8,10 @@ import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import torrent.TorrentManager;
+import org.johnnei.javatorrent.TorrentClient;
+
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
-import torrent.download.tracker.TrackerManager;
 import torrent.frame.controls.ImageButton;
 import torrent.frame.popup.AddTorrentFrame;
 import torrent.frame.popup.ConfigPopup;
@@ -19,21 +19,20 @@ import torrent.frame.popup.ConfigPopup;
 public class MenubarPanel extends JPanel implements ActionListener {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
 	private JButton addTorrentButton;
 	private JButton configButton;
-	private TorrentFrame owner;
-	
-	private TorrentManager torrentManager;
-	private TrackerManager trackerManager;
 
-	public MenubarPanel(TorrentFrame owner, TorrentManager torrentManager, TrackerManager trackerManager) {
+	private final TorrentFrame owner;
+
+	private final TorrentClient torrentClient;
+
+	public MenubarPanel(TorrentFrame owner, TorrentClient torrentClient) {
+		this.torrentClient = torrentClient;
 		this.owner = owner;
-		this.torrentManager = torrentManager;
-		this.trackerManager = trackerManager;
 		setPreferredSize(new Dimension(1280, 40));
 		setLayout(null);
 		try {
@@ -61,7 +60,7 @@ public class MenubarPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(addTorrentButton)) {
-			AddTorrentFrame addTorrent = new AddTorrentFrame(owner, torrentManager, trackerManager);
+			AddTorrentFrame addTorrent = new AddTorrentFrame(owner, torrentClient);
 			if (addTorrent.isOk()) {
 				MagnetLink link = addTorrent.getMagnetLink();
 				Torrent torrent = link.getTorrent();

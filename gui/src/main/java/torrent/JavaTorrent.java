@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
-import torrent.download.tracker.TrackerManager;
 import torrent.frame.TorrentFrame;
 
 public class JavaTorrent extends Thread {
@@ -32,23 +31,12 @@ public class JavaTorrent extends Thread {
 				.createDefaultBuilder()
 				.build();
 
-		// Initialise managers
-
-		TorrentManager torrentManager = new TorrentManager();
-		TrackerManager trackerManager = new TrackerManager(torrentClient.getConnectionDegradation());
-
-		Thread trackerManagerThread = new Thread(trackerManager, "Tracker manager");
-		trackerManagerThread.setDaemon(true);
-		trackerManagerThread.start();
-
-		torrentManager.startListener(trackerManager);
-
-		TorrentFrame frame= new TorrentFrame(torrentManager, trackerManager);
+		TorrentFrame frame= new TorrentFrame(torrentClient);
 		boolean showGui = true;
 		for(int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			if(arg.startsWith("magnet")) {
-				MagnetLink magnet = new MagnetLink(arg, torrentManager, trackerManager);
+				MagnetLink magnet = new MagnetLink(arg, torrentClient);
 				if (magnet.isDownloadable()) {
 					Torrent torrent = magnet.getTorrent();
 					torrent.start();

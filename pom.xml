@@ -9,8 +9,9 @@
   <description>BitTorrent Protocol implementation as library and GUI</description>
   <modules>
     <module>common</module>
-    <module>bittorrent-modules</module>
     <module>bittorrent</module>
+    <module>bittorrent-extension</module>
+    <module>bittorrent-extension-ut-metadata</module>
     <module>bittorrent-utp</module>
     <module>gui</module>
   </modules>
@@ -31,12 +32,12 @@
       </dependency>
       <dependency>
         <groupId>org.johnnei</groupId>
-        <artifactId>javatorrent-bittorrent-modules</artifactId>
+        <artifactId>javatorrent-bittorrent-utp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.johnnei</groupId>
-        <artifactId>javatorrent-bittorrent-utp</artifactId>
+        <artifactId>javatorrent-bittorrent-extension</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

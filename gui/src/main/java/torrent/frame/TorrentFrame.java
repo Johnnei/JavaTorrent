@@ -15,9 +15,9 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.Timer;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.Version;
 
-import torrent.TorrentManager;
 import torrent.download.Torrent;
 import torrent.download.files.Piece;
 import torrent.download.tracker.TrackerManager;
@@ -37,7 +37,7 @@ public class TorrentFrame extends JFrame implements ActionListener {
 	private List<Torrent> torrents;
 	private Timer updateTimer;
 
-	public TorrentFrame(TorrentManager torrentManager, TrackerManager trackerManager) {
+	public TorrentFrame(TorrentClient torrentClient) {
 		torrents = new ArrayList<Torrent>();
 
 		setPreferredSize(new Dimension(1280, 720));
@@ -47,13 +47,13 @@ public class TorrentFrame extends JFrame implements ActionListener {
 		setLocationRelativeTo(null);
 		setPreferredSize(new Dimension(getWidth() + getInsets().left + getInsets().right, getHeight() + getInsets().top + getInsets().bottom));
 
-		JTabbedPane details = createDetailsView(trackerManager);
+		JTabbedPane details = createDetailsView(torrentClient.getTrackerManager());
 		details.setPreferredSize(new Dimension(getWidth(), 350));
 
 		torrentList = new JTable(new TorrentTableModel(torrents));
 		torrentList.setDefaultRenderer(Double.class, new ProgressCellRenderer());
 		torrentList.setFillsViewportHeight(true);
-		menubar = new MenubarPanel(this, torrentManager, trackerManager);
+		menubar = new MenubarPanel(this, torrentClient);
 
 		add(menubar, BorderLayout.NORTH);
 		add(new JScrollPane(torrentList), BorderLayout.CENTER);

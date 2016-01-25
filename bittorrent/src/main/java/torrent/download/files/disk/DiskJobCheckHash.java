@@ -9,9 +9,9 @@ import torrent.util.StringUtil;
 
 /**
  * A job to check the hash of a piece for a given torrent
- * 
+ *
  * @author Johnnei
- * 
+ *
  */
 public class DiskJobCheckHash extends DiskJob {
 
@@ -28,7 +28,8 @@ public class DiskJobCheckHash extends DiskJob {
 	public void process(Torrent torrent) {
 		try {
 			if (torrent.getFiles().getPiece(pieceIndex).checkHash()) {
-				if (torrent.getDownloadStatus() == Torrent.STATE_DOWNLOAD_DATA) {
+				if (!torrent.isDownloadingMetadata()) {
+					// Why the heck is this here?!
 					torrent.getFiles().havePiece(pieceIndex);
 					torrent.broadcastMessage(new MessageHave(pieceIndex));
 				}

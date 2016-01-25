@@ -1,43 +1,42 @@
 package torrent.download.algos;
 
+import java.util.Collection;
+
+import torrent.download.peer.Peer;
+
 /**
  * A phase in the download which will be regulated by this phase
  * @author Johnnei
  *
  */
 public interface IDownloadPhase {
-	
+
 	/**
 	 * Checks if the phase has been finished
 	 * @return true if the phase can be ended
 	 */
 	public boolean isDone();
-	
-	/**
-	 * The follow-up phase<br/>
-	 * If this phase {@link #isDone()} it should be updated to the {@link IDownloadPhase} given by this function
-	 * @return
-	 */
-	public IDownloadPhase nextPhase();
-	
+
 	/**
 	 * Processing the phase of the torrent
 	 */
 	public void process();
-	
+
 	/**
 	 * Prepare the phase
 	 */
-	public void preprocess();
-	
+	public void onPhaseEnter();
+
 	/**
 	 * Clean up the phase
 	 */
-	public void postprocess();
-	
+	public void onPhaseExit();
+
 	/**
-	 * The number identifying this phase
-	 * @return
+	 * Filters the connected peer to just those which can benefit us in this phase.
+	 * @param peers The list of available peers
+	 * @return The list of peers which are useful.
 	 */
-	public byte getId();
+	public Collection<Peer> getRelevantPeers(Collection<Peer> peers);
+
 }

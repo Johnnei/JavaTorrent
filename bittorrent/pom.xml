@@ -15,10 +15,6 @@
       <artifactId>javatorrent-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.johnnei</groupId>
-      <artifactId>javatorrent-bittorrent-modules</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>

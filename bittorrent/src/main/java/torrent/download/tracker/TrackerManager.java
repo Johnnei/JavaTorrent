@@ -6,8 +6,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.Version;
-import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.utils.ThreadUtils;
 
 import torrent.download.Torrent;
@@ -25,10 +25,10 @@ public class TrackerManager implements Runnable {
 	private ArrayList<Tracker> trackerList;
 	private int transactionId;
 
-	public TrackerManager(ConnectionDegradation connectionDegradation) {
+	public TrackerManager(TorrentClient torrentClient) {
 		trackerList = new ArrayList<>();
 		transactionId = new Random().nextInt();
-		peerConnectorPool = new PeerConnectorPool(connectionDegradation, this);
+		peerConnectorPool = new PeerConnectorPool(torrentClient, this);
 
 		char[] version = Version.BUILD.split(" ")[1].replace(".", "").toCharArray();
 		peerId = new byte[20];

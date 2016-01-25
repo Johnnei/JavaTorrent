@@ -6,14 +6,18 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Queue;
 
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.network.protocol.ISocket;
 
 import torrent.download.tracker.TrackerManager;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.BitTorrentHandshake;
-import torrent.protocol.IMessage;
+import torrent.protocol.MessageFactory;
 import torrent.protocol.MessageUtils;
+import torrent.protocol.messages.MessageKeepAlive;
 
 public class BitTorrentSocket {
 
@@ -27,6 +31,8 @@ public class BitTorrentSocket {
 	private ByteInputStream inStream;
 
 	private ByteOutputStream outStream;
+
+	private final MessageFactory messageFactory;
 
 	/**
 	 * The amount of bytes read in the last second
@@ -62,13 +68,14 @@ public class BitTorrentSocket {
 	 */
 	private long lastBufferCreate;
 
-	public BitTorrentSocket() {
+	public BitTorrentSocket(MessageFactory messageFactory) {
+		this.messageFactory = messageFactory;
 		messageQueue = new LinkedList<>();
 		blockQueue = new LinkedList<>();
 	}
 
-	public BitTorrentSocket(ISocket socket) throws IOException {
-		this();
+	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) throws IOException {
+		this(messageFactory);
 		this.socket = socket;
 		createIOStreams();
 	}
@@ -117,8 +124,19 @@ public class BitTorrentSocket {
 		outStream = new ByteOutputStream(socket.getOutputStream());
 	}
 
-	public IMessage readMessage() throws IOException {
-		return MessageUtils.getUtils().readMessage(this);
+	public IMessage readMessage() {
+		InStream stream = getBufferedMessage();
+		int duration = getBufferLifetime();
+		int length = stream.readInt();
+		if (length == 0) {
+			return new MessageKeepAlive();
+		}
+
+		int id = stream.readByte();
+		IMessage message = messageFactory.createById(id);
+		message.setReadDuration(duration);
+		message.read(stream);
+		return message;
 	}
 
 	/**
@@ -240,7 +258,7 @@ public class BitTorrentSocket {
 		return bufferSize - buffer.size() == 0;
 	}
 
-	public InStream getBufferedMessage() {
+	private InStream getBufferedMessage() {
 		InStream inStream = new InStream(buffer.toByteArray());
 		buffer = null;
 		return inStream;
@@ -251,7 +269,7 @@ public class BitTorrentSocket {
 	 *
 	 * @return
 	 */
-	public int getBufferLifetime() {
+	private int getBufferLifetime() {
 		return (int) (System.currentTimeMillis() - lastBufferCreate);
 	}
 

@@ -1,9 +1,10 @@
 package torrent.protocol.messages;
 
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.network.protocol.IMessage;
+
 import torrent.download.peer.Peer;
-import torrent.network.InStream;
-import torrent.network.OutStream;
-import torrent.protocol.IMessage;
 
 public class MessageKeepAlive implements IMessage {
 

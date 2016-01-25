@@ -4,32 +4,29 @@ public interface IPeerManager {
 
 	/**
 	 * The maximum amount of peers allowed
-	 * 
-	 * @param torrentState
+	 *
 	 * @return
 	 */
-	public int getMaxPeers(byte torrentState);
+	public int getMaxPeers();
 
 	/**
 	 * The maximum amount of peers allowed including those which are still handshaking/connecting
-	 * 
-	 * @param torrentState
+	 *
 	 * @return
 	 */
-	public int getMaxPendingPeers(byte torrentState);
+	public int getMaxPendingPeers();
 
 	/**
 	 * Returns the amount of peers we want to recieve from the tracker
-	 * 
-	 * @param torrentState The current torrent state
+	 *
 	 * @param connected The current amount of connected peers
 	 * @return
 	 */
-	public int getAnnounceWantAmount(byte torrentState, int connected);
+	public int getAnnounceWantAmount(int connected);
 
 	/**
 	 * Gets the name of the Peer Manager
-	 * 
+	 *
 	 * @return
 	 */
 	public String getName();

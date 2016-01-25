@@ -8,12 +8,12 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
-import torrent.network.InStream;
-import torrent.network.OutStream;
 import torrent.network.UdpUtils;
 
 public class TrackerConnection {

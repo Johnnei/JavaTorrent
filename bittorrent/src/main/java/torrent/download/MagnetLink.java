@@ -3,10 +3,9 @@ package torrent.download;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.utils.ConsoleLogger;
 
-import torrent.TorrentManager;
-import torrent.download.tracker.TrackerManager;
 import torrent.util.StringUtil;
 
 public class MagnetLink {
@@ -15,25 +14,22 @@ public class MagnetLink {
 	 * The resulting torrent from this Magnet link
 	 */
 	private Torrent torrent;
-	
+
 	private TorrentBuilder torrentBuilder;
-	
-	private TorrentManager torrentManager;
-	
-	private TrackerManager trackerManager;
-	
+
+	private final TorrentClient torrentClient;
+
 	private Logger log;
-	
-	public MagnetLink(String magnetLink, TorrentManager torrentManager, TrackerManager trackerManager) {
+
+	public MagnetLink(String magnetLink, TorrentClient torrentClient) {
+		this.torrentClient = torrentClient;
 		this.torrentBuilder = new TorrentBuilder();
 		this.log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
-		this.torrentManager = torrentManager;
-		this.trackerManager = trackerManager;
-		
+
 		if (!magnetLink.startsWith("magnet:?")) {
 			return;
 		}
-		
+
 		String[] linkData = magnetLink.split("\\?")[1].split("&");
 		for (int i = 0; i < linkData.length; i++) {
 			String[] data = linkData[i].split("=");
@@ -76,12 +72,12 @@ public class MagnetLink {
 	public Torrent getTorrent() throws IllegalStateException {
 		if (torrent == null) {
 			try {
-				torrent = torrentBuilder.build(torrentManager, trackerManager);
+				torrent = torrentBuilder.build(torrentClient);
 			} catch (IllegalStateException e) {
 				log.warning("Failed to build torrent from magnet link: " + e.getMessage());
 			}
 		}
-		
+
 		return torrent;
 	}
 

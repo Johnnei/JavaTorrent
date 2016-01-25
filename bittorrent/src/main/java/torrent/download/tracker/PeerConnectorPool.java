@@ -3,7 +3,7 @@ package torrent.download.tracker;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
 
@@ -14,13 +14,13 @@ public class PeerConnectorPool {
 
 	private List<PeerConnector> connectors;
 
-	public PeerConnectorPool(ConnectionDegradation connectionDegradation, TrackerManager manager) {
+	public PeerConnectorPool(TorrentClient torrentClient, TrackerManager manager) {
 		connectors = new LinkedList<>();
 		final int connectorCount = Config.getConfig().getInt("peer-max_concurrent_connecting");
 		final int peerLimitPerConnector = Config.getConfig().getInt("peer-max_connecting") / connectorCount;
 
 		for (int i = 0; i < connectorCount; i++) {
-			PeerConnector connector = new PeerConnector(connectionDegradation, manager, peerLimitPerConnector);
+			PeerConnector connector = new PeerConnector(torrentClient, manager, peerLimitPerConnector);
 			connectors.add(connector);
 			Thread thread = new Thread(connector, String.format("Peer Connector #%d", i));
 			thread.setDaemon(true);

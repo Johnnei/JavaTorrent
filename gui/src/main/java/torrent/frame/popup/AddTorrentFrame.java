@@ -9,26 +9,24 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 
-import torrent.TorrentManager;
+import org.johnnei.javatorrent.TorrentClient;
+
 import torrent.download.MagnetLink;
-import torrent.download.tracker.TrackerManager;
 
 public class AddTorrentFrame extends JPopup {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	private JTextArea magnetLink;
 	private JButton okButton;
-	
-	private TorrentManager torrentManager;
-	private TrackerManager trackerManager;
 
-	public AddTorrentFrame(JFrame owner, TorrentManager torrentManager, TrackerManager trackerManager) {
+	private final TorrentClient torrentClient;
+
+	public AddTorrentFrame(JFrame owner, TorrentClient torrentClient) {
 		super(owner);
-		this.torrentManager = torrentManager;
-		this.trackerManager = trackerManager;
+		this.torrentClient = torrentClient;
 		magnetLink = new JTextArea();
 		magnetLink.setPreferredSize(new Dimension(600, 24));
 		okButton = createButton("Add");
@@ -44,7 +42,7 @@ public class AddTorrentFrame extends JPopup {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(okButton)) {
-			MagnetLink mlink = new MagnetLink(magnetLink.getText(), torrentManager, trackerManager);
+			MagnetLink mlink = new MagnetLink(magnetLink.getText(), torrentClient);
 			if (mlink.isDownloadable()) {
 				setOk(true);
 				setVisible(false);
@@ -55,7 +53,7 @@ public class AddTorrentFrame extends JPopup {
 	}
 
 	public MagnetLink getMagnetLink() {
-		return new MagnetLink(magnetLink.getText(), torrentManager, trackerManager);
+		return new MagnetLink(magnetLink.getText(), torrentClient);
 	}
 
 }
