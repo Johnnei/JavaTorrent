@@ -22,7 +22,7 @@ public class ConnectionDegradation {
 
 	private Map<Class<? extends ISocket>, Class<ISocket>> socketDegradation;
 
-	private Map<Class<? extends ISocket>, Supplier<ISocket>> socketSuppliers;
+	private Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
 
 	private ConnectionDegradation(Builder builder) {
 		preferedType = builder.preferedType;
@@ -58,14 +58,14 @@ public class ConnectionDegradation {
 
 		private Map<Class<? extends ISocket>, Class<ISocket>> socketDegradation;
 
-		private Map<Class<? extends ISocket>, Supplier<ISocket>> socketSuppliers;
+		private Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
 
 		public Builder() {
 			socketDegradation = new HashMap<>();
 			socketSuppliers = new HashMap<>();
 		}
 
-		public Builder registerDefaultConnectionType(Class<? extends ISocket> socketType, Supplier<ISocket> supplier, Optional<Class<ISocket>> fallbackType) {
+		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<ISocket>> fallbackType) {
 			Objects.requireNonNull(socketType, "Socket type can not be null");
 			if (preferedType != null) {
 				LOGGER.warn(String.format("Overriding existing default connection type: %s.", preferedType.getSimpleName()));
@@ -76,7 +76,7 @@ public class ConnectionDegradation {
 			return this;
 		}
 
-		public Builder registerConnectionType(Class<? extends ISocket> socketType, Supplier<ISocket> supplier, Optional<Class<ISocket>> fallbackType) {
+		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<ISocket>> fallbackType) {
 			Objects.requireNonNull(socketType, "Socket type can not be null");
 			Objects.requireNonNull(supplier, "Socket supplier can not be null");
 
