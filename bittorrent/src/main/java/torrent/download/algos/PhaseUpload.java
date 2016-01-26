@@ -2,14 +2,19 @@ package torrent.download.algos;
 
 import java.util.Collection;
 
+import org.johnnei.javatorrent.TorrentClient;
+
 import torrent.download.Torrent;
 import torrent.download.peer.Peer;
 
 public class PhaseUpload implements IDownloadPhase {
 
+	private TorrentClient torrentClient;
+
 	private Torrent torrent;
 
-	public PhaseUpload(Torrent torrent) {
+	public PhaseUpload(TorrentClient torrentClient, Torrent torrent) {
+		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 	}
 

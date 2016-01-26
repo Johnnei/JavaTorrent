@@ -6,7 +6,7 @@
     <version>0.05.0-SNAPSHOT</version>
   </parent>
   <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
-  <name>JavaTorrent Module: ut_metadata</name>
+  <name>JavaTorrent Module: ut_metadata (BEP #9)</name>
   <description>ut_metadata implementation for JavaTorrent</description>
   <dependencies>
     <dependency>

@@ -20,6 +20,20 @@
       <artifactId>javatorrent-common</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.johnnei</groupId>
+      <artifactId>javatorrent-bittorrent-tracker-udp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.johnnei</groupId>
+      <artifactId>javatorrent-bittorrent-extension</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.johnnei</groupId>
+      <artifactId>
+        javatorrent-bittorrent-extension-ut-metadata
+      </artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>

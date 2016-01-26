@@ -36,8 +36,8 @@ public class MenubarPanel extends JPanel implements ActionListener {
 		setPreferredSize(new Dimension(1280, 40));
 		setLayout(null);
 		try {
-			addTorrentButton = createButton(5, 1, 125, "Add Torrent", "/res/download.png");
-			configButton = createButton(135, 1, 150, "Change Settings", "/res/settings.png");
+			addTorrentButton = createButton(5, 1, 125, "Add Torrent", "/download.png");
+			configButton = createButton(135, 1, 150, "Change Settings", "/settings.png");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

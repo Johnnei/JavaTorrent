@@ -1,35 +1,23 @@
 package org.johnnei.javatorrent;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Objects;
 
+import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
-import org.johnnei.javatorrent.network.protocol.TcpSocket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import torrent.TorrentManager;
 import torrent.download.tracker.TrackerFactory;
 import torrent.download.tracker.TrackerManager;
-import torrent.protocol.BitTorrent;
 import torrent.protocol.MessageFactory;
-import torrent.protocol.messages.MessageBitfield;
-import torrent.protocol.messages.MessageBlock;
-import torrent.protocol.messages.MessageCancel;
-import torrent.protocol.messages.MessageChoke;
-import torrent.protocol.messages.MessageHave;
-import torrent.protocol.messages.MessageInterested;
-import torrent.protocol.messages.MessageRequest;
-import torrent.protocol.messages.MessageUnchoke;
-import torrent.protocol.messages.MessageUninterested;
 
 /**
  * The Torrent Client is the main entry point for the configuration and initiation of downloads/uploads.
  *
  */
 public class TorrentClient {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentClient.class);
 
 	private ConnectionDegradation connectionDegradation;
 
@@ -44,9 +32,9 @@ public class TorrentClient {
 	private PhaseRegulator phaseRegulator;
 
 	private TorrentClient(Builder builder) {
-		connectionDegradation = builder.connectionDegradation;
+		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		messageFactory = builder.messageFactoryBuilder.build();
-		phaseRegulator = builder.phaseRegulator;
+		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
 
 		torrentManager = new TorrentManager(this);
 		trackerManager = new TrackerManager(this, builder.trackerFactory);
@@ -88,37 +76,31 @@ public class TorrentClient {
 
 		private ConnectionDegradation connectionDegradation;
 
-		private MessageFactory.Builder messageFactoryBuilder;
+		private final MessageFactory.Builder messageFactoryBuilder;
 
 		private PhaseRegulator phaseRegulator;
 
 		private TrackerFactory trackerFactory;
 
-		/**
-		 * Creates a builder with all default modules configured.
-		 */
-		public static Builder createDefaultBuilder() {
-			LOGGER.debug("Configuring connection degradation to only support TCP");
-			Builder builder = new Builder()
-					.setConnectionDegradation(new ConnectionDegradation.Builder()
-							.registerDefaultConnectionType(TcpSocket.class, () -> new TcpSocket(), Optional.empty())
-							.build());
-
-			return builder;
-		}
+		private final Collection<IModule> modules;
 
 		public Builder() {
-			messageFactoryBuilder = new MessageFactory.Builder()
-				// Register BitTorrent messages
-				.registerMessage(BitTorrent.MESSAGE_BITFIELD, () -> new MessageBitfield())
-				.registerMessage(BitTorrent.MESSAGE_CANCEL, () -> new MessageCancel())
-				.registerMessage(BitTorrent.MESSAGE_CHOKE, () -> new MessageChoke())
-				.registerMessage(BitTorrent.MESSAGE_HAVE, () -> new MessageHave())
-				.registerMessage(BitTorrent.MESSAGE_INTERESTED, () -> new MessageInterested())
-				.registerMessage(BitTorrent.MESSAGE_PIECE, () -> new MessageBlock())
-				.registerMessage(BitTorrent.MESSAGE_REQUEST, () -> new MessageRequest())
-				.registerMessage(BitTorrent.MESSAGE_UNCHOKE, () -> new MessageUnchoke())
-				.registerMessage(BitTorrent.MESSAGE_UNINTERESTED, () -> new MessageUninterested());
+			messageFactoryBuilder = new MessageFactory.Builder();
+			modules = new ArrayList<>();
+		}
+
+		public Builder registerModule(IModule module) {
+			for (Class<IModule> dependingModule : module.getDependsOn()) {
+				if (!modules.stream().anyMatch(m -> m.getClass().equals(dependingModule))) {
+					throw new IllegalStateException(String.format("Depeding module %s is missing.", dependingModule.getSimpleName()));
+				}
+			}
+
+			modules.add(module);
+			module.getMessages().forEach(messageFactoryBuilder::registerMessage);
+
+			// TODO Enable the reserved bits
+			return this;
 		}
 
 		public Builder setPhaseRegulator(PhaseRegulator phaseRegulator) {

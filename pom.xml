@@ -47,6 +47,16 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-bittorrent-tracker-udp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${dependency.org.slf4j.slf4j-api}</version>

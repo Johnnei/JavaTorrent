@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.download.algos;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
@@ -18,14 +19,11 @@ import torrent.download.files.Piece;
 import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
 import torrent.download.peer.PeerDirection;
-import torrent.download.tracker.TrackerManager;
 
 public class PhaseMetadata extends AMetadataPhase {
 
-	public PhaseMetadata(TrackerManager trackerManager, Torrent torrent) {
-		super(trackerManager, torrent);
-		this.trackerManager = trackerManager;
-		this.torrent = torrent;
+	public PhaseMetadata(TorrentClient torrentClient, Torrent torrent) {
+		super(torrentClient, torrent);
 		foundMatchingFile = false;
 	}
 

@@ -3,20 +3,20 @@ package org.johnnei.javatorrent.download.algos;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.utils.config.Config;
 
 import torrent.download.MetadataFile;
 import torrent.download.Torrent;
 import torrent.download.algos.AMetadataPhase;
 import torrent.download.peer.Peer;
-import torrent.download.tracker.TrackerManager;
 
 public class PhasePreMetadata extends AMetadataPhase {
 
 	private int metadataSize;
 
-	public PhasePreMetadata(TrackerManager trackerManager, Torrent torrent) {
-		super(trackerManager, torrent);
+	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent) {
+		super(torrentClient, torrent);
 	}
 
 	@Override

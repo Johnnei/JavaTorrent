@@ -4,10 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
-import torrent.download.tracker.TrackerManager;
 import torrent.encoding.SHA1;
 
 public abstract class AMetadataPhase implements IDownloadPhase {
@@ -19,10 +19,10 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 	 */
 	protected boolean foundMatchingFile;
 
-	protected TrackerManager trackerManager;
+	protected TorrentClient torrentClient;
 
-	public AMetadataPhase(TrackerManager trackerManager, Torrent torrent) {
-		this.trackerManager = trackerManager;
+	public AMetadataPhase(TorrentClient torrentClient, Torrent torrent) {
+		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 	}
 

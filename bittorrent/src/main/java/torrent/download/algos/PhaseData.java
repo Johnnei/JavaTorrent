@@ -3,6 +3,7 @@ package torrent.download.algos;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 
 import torrent.download.Torrent;
@@ -12,16 +13,15 @@ import torrent.download.peer.Job;
 import torrent.download.peer.Peer;
 import torrent.download.peer.PeerDirection;
 import torrent.download.tracker.TrackerEvent;
-import torrent.download.tracker.TrackerManager;
 import torrent.protocol.messages.MessageRequest;
 
 public class PhaseData implements IDownloadPhase {
 
 	private Torrent torrent;
-	private TrackerManager trackerManager;
+	private TorrentClient torrentClient;
 
-	public PhaseData(TrackerManager trackerManager, Torrent torrent) {
-		this.trackerManager = trackerManager;
+	public PhaseData(TorrentClient torrentClient, Torrent torrent) {
+		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 	}
 
@@ -60,7 +60,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void onPhaseExit() {
-		trackerManager.getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).setEvent(TrackerEvent.EVENT_COMPLETED));
+		torrentClient.getTrackerManager().getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).setEvent(TrackerEvent.EVENT_COMPLETED));
 		torrent.getLogger().info("Download completed");
 	}
 

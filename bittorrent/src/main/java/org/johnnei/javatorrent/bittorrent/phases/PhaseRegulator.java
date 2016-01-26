@@ -21,12 +21,12 @@ public class PhaseRegulator {
 
 	private Map<Class<? extends IDownloadPhase>, Class<? extends IDownloadPhase>> downloadPhasesOrder;
 
-	private Map<Class<? extends IDownloadPhase>, BiFunction<TorrentClient, Torrent, IDownloadPhase>> phaseSupplier;
+	private Map<Class<? extends IDownloadPhase>, BiFunction<TorrentClient, Torrent, ? extends IDownloadPhase>> phaseSupplier;
 
 	private PhaseRegulator(Builder builder) {
 		initialPhase = builder.initialPhase;
 		downloadPhasesOrder = builder.downloadPhasesOrder;
-		phaseSupplier = builder.phaseSupplier;
+		phaseSupplier = builder.phaseSuppliers;
 	}
 
 	public IDownloadPhase createInitialPhase(TorrentClient torrentClient, Torrent torrent) {
@@ -47,25 +47,26 @@ public class PhaseRegulator {
 
 		private Map<Class<? extends IDownloadPhase>, Class<? extends IDownloadPhase>> downloadPhasesOrder;
 
-		private Map<Class<? extends IDownloadPhase>, BiFunction<TorrentClient, Torrent, IDownloadPhase>> phaseSupplier;
+		private Map<Class<? extends IDownloadPhase>, BiFunction<TorrentClient, Torrent, ? extends IDownloadPhase>> phaseSuppliers;
 
 		public Builder() {
 			downloadPhasesOrder = new HashMap<>();
-			phaseSupplier = new HashMap<>();
+			phaseSuppliers = new HashMap<>();
 		}
 
-		public <T extends IDownloadPhase> void registerInitialPhase(
-				Class<T> phase, BiFunction<TorrentClient, Torrent, Class<T>> phaseSupplier, Optional<Class<? extends IDownloadPhase>> nextPhase) {
+		public <T extends IDownloadPhase> Builder registerInitialPhase(
+				Class<T> phase, BiFunction<TorrentClient, Torrent, T> phaseSupplier, Optional<Class<? extends IDownloadPhase>> nextPhase) {
 			if (initialPhase != null) {
 				LOGGER.warn(String.format("Overriding initial download phase from %s to %s", initialPhase.getSimpleName(), phase.getSimpleName()));
 			}
 
 			initialPhase = phase;
 			registerPhase(phase, phaseSupplier, nextPhase);
+			return this;
 		}
 
-		public <T extends IDownloadPhase> void registerPhase(
-				Class<T> phase, BiFunction<TorrentClient, Torrent, Class<T>> phaseSupplier, Optional<Class<? extends IDownloadPhase>> nextPhase) {
+		public <T extends IDownloadPhase> Builder registerPhase(
+				Class<T> phase, BiFunction<TorrentClient, Torrent, T> phaseSupplier, Optional<Class<? extends IDownloadPhase>> nextPhase) {
 			Objects.requireNonNull(phase, "Phase is required.");
 			Objects.requireNonNull(phaseSupplier, "Phase supplier is required.");
 			Objects.requireNonNull(nextPhase, "Next phase should be Optional.empty() when not applicable.");
@@ -77,6 +78,9 @@ public class PhaseRegulator {
 			if (nextPhase.isPresent()) {
 				downloadPhasesOrder.put(phase, nextPhase.get());
 			}
+
+			this.phaseSuppliers.put(phase, phaseSupplier);
+			return this;
 		}
 
 		public PhaseRegulator build() {
@@ -93,7 +97,7 @@ public class PhaseRegulator {
 			Class<? extends IDownloadPhase> phase = initialPhase;
 
 			while (phase != null) {
-				if (!phaseSupplier.containsKey(phase)) {
+				if (!phaseSuppliers.containsKey(phase)) {
 					throw new IllegalArgumentException(String.format("Missing supplier for download phase: %s", phase.getSimpleName()));
 				}
 
@@ -101,10 +105,12 @@ public class PhaseRegulator {
 				phase = downloadPhasesOrder.get(phase);
 			}
 
-			LOGGER.warn(String.format(
-				"Download phases chain does not contain all registered types. Registered: %d, in chain: %d.",
-				phaseSupplier.size(),
-				phasesSeenCount));
+			if (phasesSeenCount != phaseSuppliers.size()) {
+				LOGGER.warn(String.format(
+					"Download phases chain does not contain all registered types. Registered: %d, in chain: %d.",
+					phaseSuppliers.size(),
+					phasesSeenCount));
+			}
 		}
 	}
 

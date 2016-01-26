@@ -1,12 +1,23 @@
 package torrent;
 
+import java.util.Optional;
+
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.download.algos.PhaseMetadata;
+import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
+import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.network.protocol.TcpSocket;
+import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
+import org.johnnei.javatorrent.protocol.messages.ut_metadata.UTMetadataExtension;
 import org.johnnei.utils.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import torrent.download.MagnetLink;
 import torrent.download.Torrent;
+import torrent.download.algos.PhaseData;
+import torrent.download.algos.PhaseUpload;
 import torrent.frame.TorrentFrame;
 
 public class JavaTorrent extends Thread {
@@ -27,8 +38,19 @@ public class JavaTorrent extends Thread {
 	public static void main(String[] args) {
 		loadDefaultConfig();
 
-		TorrentClient torrentClient = TorrentClient.Builder
-				.createDefaultBuilder()
+		TorrentClient torrentClient = new TorrentClient.Builder()
+				.setConnectionDegradation(new ConnectionDegradation.Builder()
+						.registerDefaultConnectionType(TcpSocket.class, TcpSocket::new, Optional.empty())
+						.build())
+				.registerModule(new ExtensionModule.Builder()
+						.registerExtension(new UTMetadataExtension())
+						.build())
+				.setPhaseRegulator(new PhaseRegulator.Builder()
+						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, Optional.of(PhaseMetadata.class))
+						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, Optional.of(PhaseData.class))
+						.registerPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseUpload.class))
+						.registerPhase(PhaseUpload.class, PhaseUpload::new, Optional.empty())
+						.build())
 				.build();
 
 		TorrentFrame frame= new TorrentFrame(torrentClient);

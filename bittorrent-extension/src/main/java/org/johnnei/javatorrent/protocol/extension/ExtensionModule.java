@@ -98,6 +98,10 @@ public class ExtensionModule implements IModule {
 			extensionsByName.put(extension.getExtensionName(), extension);
 			return this;
 		}
+
+		public ExtensionModule build() {
+			return new ExtensionModule(this);
+		}
 	}
 
 }

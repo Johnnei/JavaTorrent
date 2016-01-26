@@ -6,9 +6,19 @@ import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.network.protocol.IMessage;
 
+import torrent.protocol.messages.MessageBitfield;
+import torrent.protocol.messages.MessageBlock;
+import torrent.protocol.messages.MessageCancel;
+import torrent.protocol.messages.MessageChoke;
+import torrent.protocol.messages.MessageHave;
+import torrent.protocol.messages.MessageInterested;
+import torrent.protocol.messages.MessageRequest;
+import torrent.protocol.messages.MessageUnchoke;
+import torrent.protocol.messages.MessageUninterested;
+
 public class MessageFactory {
 
-	private Map<Integer, Supplier<IMessage>> messageSuppliers;
+	private final Map<Integer, Supplier<IMessage>> messageSuppliers;
 
 	private MessageFactory(Builder builder) {
 		messageSuppliers = builder.messageSuppliers;
@@ -33,6 +43,17 @@ public class MessageFactory {
 
 		public Builder() {
 			messageSuppliers = new HashMap<>();
+
+			// Register BitTorrent messages
+			registerMessage(BitTorrent.MESSAGE_BITFIELD, () -> new MessageBitfield());
+			registerMessage(BitTorrent.MESSAGE_CANCEL, () -> new MessageCancel());
+			registerMessage(BitTorrent.MESSAGE_CHOKE, () -> new MessageChoke());
+			registerMessage(BitTorrent.MESSAGE_HAVE, () -> new MessageHave());
+			registerMessage(BitTorrent.MESSAGE_INTERESTED, () -> new MessageInterested());
+			registerMessage(BitTorrent.MESSAGE_PIECE, () -> new MessageBlock());
+			registerMessage(BitTorrent.MESSAGE_REQUEST, () -> new MessageRequest());
+			registerMessage(BitTorrent.MESSAGE_UNCHOKE, () -> new MessageUnchoke());
+			registerMessage(BitTorrent.MESSAGE_UNINTERESTED, () -> new MessageUninterested());
 		}
 
 		public Builder registerMessage(int id, Supplier<IMessage> messageSupplier) {
