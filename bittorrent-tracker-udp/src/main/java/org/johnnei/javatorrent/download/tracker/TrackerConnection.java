@@ -1,4 +1,4 @@
-package torrent.download.tracker;
+package org.johnnei.javatorrent.download.tracker;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -14,6 +14,12 @@ import org.johnnei.utils.config.Config;
 
 import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
+import torrent.download.tracker.PeerConnector;
+import torrent.download.tracker.PeerConnectorPool;
+import torrent.download.tracker.TorrentInfo;
+import torrent.download.tracker.TrackerEvent;
+import torrent.download.tracker.TrackerException;
+import torrent.download.tracker.TrackerManager;
 import torrent.network.UdpUtils;
 
 public class TrackerConnection {
@@ -23,16 +29,11 @@ public class TrackerConnection {
 	public static final int ACTION_SCRAPE = 2;
 	public static final int ACTION_ERROR = 3;
 	public static final int ACTION_TRANSACTION_ID_ERROR = 256;
-	
-	public static final int EVENT_NONE = 0; 
-	public static final int EVENT_COMPLETED = 1;
-	public static final int EVENT_STARTED = 2;
-	public static final int EVENT_STOPPED = 3;
-	
+
 	public static final long NO_CONNECTION_ID = 0x41727101980L;
 
 	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
-	
+
 	private Logger log;
 
 	private InetAddress address;
@@ -44,12 +45,12 @@ public class TrackerConnection {
 	private int action;
 
 	private String status;
-	
+
 	/**
 	 * The pool of {@link PeerConnector} which will connect peers for us
 	 */
 	private PeerConnectorPool connectorPool;
-	
+
 	private TrackerManager manager;
 
 	public TrackerConnection(Logger log, String url, PeerConnectorPool connectorPool, TrackerManager manager) {
@@ -114,7 +115,7 @@ public class TrackerConnection {
 	/**
 	 * Announces the torrent to the tracker and returns the announceInterval
 	 * @param torrentInfo the torrent to announce
-	 * @return The interval report by tracker or {@link Tracker#DEFAULT_ANNOUNCE_INTERVAL} on error
+	 * @return The interval report by tracker or {@link UdpTracker#DEFAULT_ANNOUNCE_INTERVAL} on error
 	 */
 	public int announce(TorrentInfo torrentInfo) throws TrackerException {
 		int connectorCapacity = connectorPool.getFreeCapacity();
@@ -122,7 +123,7 @@ public class TrackerConnection {
 			log.info("Ignored announce, connector is full.");
 			return (int) TimeUnit.SECONDS.toMillis(30);
 		}
-		
+
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
 		int transactionId = manager.getTransactionId();
@@ -139,10 +140,10 @@ public class TrackerConnection {
 			outStream.writeLong(0); // Bytes left
 		}
 		outStream.writeLong(torrent.getUploadedBytes()); // Uploaded bytes
-		int event = torrentInfo.getEvent();
-		outStream.writeInt(event);
-		if(event != EVENT_NONE) {
-			torrentInfo.setEvent(EVENT_NONE);
+		TrackerEvent event = torrentInfo.getEvent();
+		outStream.writeInt(event.getId());
+		if(event != TrackerEvent.EVENT_NONE) {
+			torrentInfo.setEvent(TrackerEvent.EVENT_NONE);
 		}
 		outStream.writeInt(0); // Use sender ip
 		outStream.writeInt(new Random().nextInt());
@@ -153,8 +154,9 @@ public class TrackerConnection {
 			UdpUtils.write(socket, address, port, outStream);
 			InStream inStream = UdpUtils.read(socket);
 			action = inStream.readInt();
-			if (transactionId != inStream.readInt())
+			if (transactionId != inStream.readInt()) {
 				action = ACTION_TRANSACTION_ID_ERROR;
+			}
 			if (action != ACTION_ANNOUNCE) {
 				String error = inStream.readString(inStream.available());
 				log.warning(String.format("Announce failed with error: %d, Message: %s", action, error));
@@ -170,13 +172,14 @@ public class TrackerConnection {
 				byte[] address = new byte[4];
 				inStream.readFully(address);
 				int port = inStream.readUnsignedShort();
-				if (isEmptyIP(address))
+				if (isEmptyIP(address)) {
 					continue;
-				
+				}
+
 				InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(address), port);
 				PeerConnectInfo peerInfo = new PeerConnectInfo(torrent, socketAddress);
-				
-				connectorPool.addPeer(peerInfo);
+
+				connectorPool.connectPeer(peerInfo);
 			}
 			setStatus("Announced");
 			return announceInterval;
@@ -226,8 +229,9 @@ public class TrackerConnection {
 
 	private boolean isEmptyIP(byte[] address) {
 		for (int i = 0; i < address.length; i++) {
-			if (address[i] != 0)
+			if (address[i] != 0) {
 				return false;
+			}
 		}
 		return true;
 	}
@@ -244,7 +248,7 @@ public class TrackerConnection {
 	public String getStatus() {
 		return status;
 	}
-	
+
 	public InetAddress getAddress() {
 		return address;
 	}

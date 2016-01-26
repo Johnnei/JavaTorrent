@@ -12,6 +12,7 @@
     <module>bittorrent</module>
     <module>bittorrent-extension</module>
     <module>bittorrent-extension-ut-metadata</module>
+    <module>bittorrent-tracker-udp</module>
     <module>bittorrent-utp</module>
     <module>gui</module>
   </modules>

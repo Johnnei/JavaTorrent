@@ -2,7 +2,6 @@ package torrent.download.tracker;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -20,12 +19,15 @@ import torrent.download.peer.Peer;
  */
 public class TrackerManager implements Runnable {
 
+	private final TrackerFactory trackerFactory;
+
 	private byte[] peerId;
-	private PeerConnectorPool peerConnectorPool;
-	private ArrayList<Tracker> trackerList;
+	private IPeerConnector peerConnectorPool;
+	private List<ITracker> trackerList;
 	private int transactionId;
 
-	public TrackerManager(TorrentClient torrentClient) {
+	public TrackerManager(TorrentClient torrentClient, TrackerFactory trackerFactory) {
+		this.trackerFactory = trackerFactory;
 		trackerList = new ArrayList<>();
 		transactionId = new Random().nextInt();
 		peerConnectorPool = new PeerConnectorPool(torrentClient, this);
@@ -49,36 +51,20 @@ public class TrackerManager implements Runnable {
 	public void run() {
 		while(true) {
 			for(int i = 0; i < trackerList.size(); i++) {
-				Tracker tracker = trackerList.get(i);
+				ITracker tracker = trackerList.get(i);
 
-				if (!tracker.isValid()) {
-					continue;
-				}
+				List<TorrentInfo> torrentList = tracker.getTorrents();
+				for(TorrentInfo torrentInfo : torrentList) {
+					Torrent torrent = torrentInfo.getTorrent();
 
-				if (tracker.isConnected()) {
-					List<TorrentInfo> torrentList = tracker.getTorrents();
-					for(TorrentInfo torrentInfo : torrentList) {
-						Torrent torrent = torrentInfo.getTorrent();
-
-						if (!tracker.canAnnounce(torrent)) {
-							// Tracker is still on timeout
-							continue;
-						}
-
-						//Check if torrent needs announce, else scrape
-						if(torrent.needAnnounce()) {
-							tracker.announce(torrent);
-						}
+					if (!tracker.canAnnounce(torrent)) {
+						// Tracker is still on timeout
+						continue;
 					}
-				} else {
-					tracker.connect();
-				}
 
-				if(tracker.isValid()) {
-					if(tracker.isConnected()) {
-
-					} else {
-						tracker.connect();
+					//Check if torrent needs announce, else scrape
+					if(torrent.needAnnounce()) {
+						tracker.announce(torrent);
 					}
 				}
 			}
@@ -92,13 +78,7 @@ public class TrackerManager implements Runnable {
 	 * @param tracker The tracker url
 	 */
 	public void addTorrent(Torrent torrent, String trackerUrl) {
-		Tracker tracker = new Tracker(trackerUrl, peerConnectorPool, this);
-
-		if (!tracker.isValid()) {
-			return;
-		}
-
-		tracker = findTracker(tracker);
+		ITracker tracker = getTrackerFor(trackerUrl);
 		tracker.addTorrent(torrent);
 	}
 
@@ -107,15 +87,8 @@ public class TrackerManager implements Runnable {
 	 * @param tracker The tracker to find
 	 * @return the tracker
 	 */
-	private Tracker findTracker(Tracker tracker) {
-		Optional<Tracker> optionalTracker = trackerList.stream().filter(t -> t.getInetAddress().equals(tracker.getInetAddress())).findAny();
-
-		if (optionalTracker.isPresent()) {
-			return optionalTracker.get();
-		}
-
-		trackerList.add(tracker);
-		return tracker;
+	private ITracker getTrackerFor(String trackerUrl) {
+		return trackerFactory.getTrackerFor(trackerUrl);
 	}
 
 	public int getTransactionId() {
@@ -131,12 +104,15 @@ public class TrackerManager implements Runnable {
 	 * @param torrent the torrent which the tracker must support
 	 * @return a collection of trackers which support the given torrent
 	 */
-	public List<Tracker> getTrackersFor(Torrent torrent) {
-		return trackerList.stream().filter(tracker -> tracker.hasTorrent(torrent)).collect(Collectors.toList());
+	public List<ITracker> getTrackersFor(Torrent torrent) {
+		return trackerList.stream()
+				.filter(tracker -> tracker.hasTorrent(torrent))
+				.collect(Collectors.toList());
 	}
 
 	/**
 	 * Gets the peer ID associated to this tracker manager
+	 *
 	 * @return
 	 */
 	public byte[] getPeerId() {

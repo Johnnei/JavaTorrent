@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import torrent.TorrentManager;
+import torrent.download.tracker.TrackerFactory;
 import torrent.download.tracker.TrackerManager;
 import torrent.protocol.BitTorrent;
 import torrent.protocol.MessageFactory;
@@ -48,7 +49,7 @@ public class TorrentClient {
 		phaseRegulator = builder.phaseRegulator;
 
 		torrentManager = new TorrentManager(this);
-		trackerManager = new TrackerManager(this);
+		trackerManager = new TrackerManager(this, builder.trackerFactory);
 
 		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
 		trackerManagerThread.setDaemon(true);
@@ -91,6 +92,8 @@ public class TorrentClient {
 
 		private PhaseRegulator phaseRegulator;
 
+		private TrackerFactory trackerFactory;
+
 		/**
 		 * Creates a builder with all default modules configured.
 		 */
@@ -125,6 +128,11 @@ public class TorrentClient {
 
 		public Builder setConnectionDegradation(ConnectionDegradation connectionDegradation) {
 			this.connectionDegradation = connectionDegradation;
+			return this;
+		}
+
+		public Builder setTrackerFactory(TrackerFactory trackerFactory) {
+			this.trackerFactory = trackerFactory;
 			return this;
 		}
 

@@ -10,7 +10,7 @@ import org.johnnei.utils.config.Config;
 import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
 
-public class PeerConnectorPool {
+public class PeerConnectorPool implements IPeerConnector {
 
 	private List<PeerConnector> connectors;
 
@@ -28,11 +28,11 @@ public class PeerConnectorPool {
 		}
 	}
 
-	/**
-	 * Queues a peer to be connected
-	 * @param p the peer to be connected
+	/* (non-Javadoc)
+	 * @see torrent.download.tracker.IPeerConnector#connectPeer(torrent.download.peer.PeerConnectInfo)
 	 */
-	public void addPeer(PeerConnectInfo peer) {
+	@Override
+	public void connectPeer(PeerConnectInfo peer) {
 		PeerConnector connector = connectors.stream().max((a, b) -> a.getFreeCapacity() - b.getFreeCapacity()).get();
 
 		if (connector.getFreeCapacity() == 0) {
@@ -49,6 +49,10 @@ public class PeerConnectorPool {
 		return connectors.stream().mapToInt(PeerConnector::getFreeCapacity).sum();
 	}
 
+	/* (non-Javadoc)
+	 * @see torrent.download.tracker.IPeerConnector#getConnectingCountFor(torrent.download.Torrent)
+	 */
+	@Override
 	public int getConnectingCountFor(Torrent torrent) {
 		return connectors.stream().mapToInt(c -> c.getConnectingCountFor(torrent)).sum();
 	}
