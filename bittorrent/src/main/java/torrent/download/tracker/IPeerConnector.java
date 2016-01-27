@@ -13,4 +13,10 @@ public interface IPeerConnector {
 
 	int getConnectingCountFor(Torrent torrent);
 
+	/**
+	 * Calculates how many peers can be accepted by {@link #connectPeer(PeerConnectInfo)} without discarding any.
+	 * @return The amount of acceptable peers.
+	 */
+	int getAvailableCapacity();
+
 }

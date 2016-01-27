@@ -41,6 +41,23 @@ public class PhaseRegulator {
 		return Optional.of(phaseSupplier.get(downloadPhasesOrder.get(phase)).apply(torrentClient, torrent));
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder stringBuilder = new StringBuilder("PhaseRegulator[");
+		Class<? extends IDownloadPhase> type = initialPhase;
+		while (type != null) {
+			stringBuilder.append(type.getSimpleName());
+
+			type = downloadPhasesOrder.get(type);
+
+			if (type != null) {
+				stringBuilder.append(" -> ");
+			}
+		}
+		stringBuilder.append("]");
+		return stringBuilder.toString();
+	}
+
 	public static class Builder {
 
 		private Class<? extends IDownloadPhase> initialPhase;

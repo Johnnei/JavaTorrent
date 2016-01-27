@@ -5,23 +5,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.johnnei.utils.ConsoleLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import torrent.download.Torrent;
+import torrent.download.tracker.IPeerConnector;
 import torrent.download.tracker.ITracker;
-import torrent.download.tracker.PeerConnectorPool;
 import torrent.download.tracker.TorrentInfo;
 import torrent.download.tracker.TrackerException;
-import torrent.download.tracker.TrackerManager;
 
 public class UdpTracker implements ITracker {
 
 	public static final int SCRAPE_INTERVAL = 10000;
 	public static final int DEFAULT_ANNOUNCE_INTERVAL = 30000;
 	public static final int CONNECTION_DURATION = 300000; //5 minutes
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UdpTracker.class);
 
 	private TrackerConnection connection;
 	/**
@@ -46,14 +46,8 @@ public class UdpTracker implements ITracker {
 	 */
 	private int errorCount;
 
-	/**
-	 * The logger of this tracker
-	 */
-	private Logger log;
-
-	public UdpTracker(String url, PeerConnectorPool peerConnectorPool, TrackerManager manager) {
-		log = ConsoleLogger.createLogger(String.format("Tracker %s", url), Level.INFO);
-		connection = new TrackerConnection(log, url, peerConnectorPool, manager);
+	public UdpTracker(String url, IPeerConnector peerConnector) {
+		connection = new TrackerConnection(url, peerConnector);
 		torrentMap = new HashMap<>();
 		announceInterval = DEFAULT_ANNOUNCE_INTERVAL;
 		lastScrapeTime = System.currentTimeMillis() - SCRAPE_INTERVAL;
@@ -139,7 +133,7 @@ public class UdpTracker implements ITracker {
 	}
 
 	public void onError(Exception e) {
-		log.warning(e.getMessage());
+		LOGGER.warn(e.getMessage(), e);
 		errorCount++;
 	}
 

@@ -14,15 +14,23 @@ import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
 import org.johnnei.javatorrent.protocol.messages.extension.Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import torrent.download.peer.Peer;
 
 public class ExtensionModule implements IModule {
 
-	private Map<Integer, IExtension> extensionsById;
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionModule.class);
+
+	private final Map<Integer, IExtension> extensionsById;
 
 	private ExtensionModule(Builder builder) {
 		extensionsById = Collections.unmodifiableMap(builder.extensionsById);
+
+		LOGGER.info(String.format("Configured Extension Protocols: %s", extensionsById.values().stream()
+				.map(e -> e.getExtensionName())
+				.reduce((a, b) -> a + ", " + b).orElse("")));
 	}
 
 	public MessageHandshake createHandshakeMessage() {

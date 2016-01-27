@@ -18,11 +18,11 @@ public class ConnectionDegradation {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionDegradation.class);
 
-	private Class<? extends ISocket> preferedType;
+	private final Class<? extends ISocket> preferedType;
 
-	private Map<Class<? extends ISocket>, Class<ISocket>> socketDegradation;
+	private final Map<Class<? extends ISocket>, Class<ISocket>> socketDegradation;
 
-	private Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
+	private final Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
 
 	private ConnectionDegradation(Builder builder) {
 		preferedType = builder.preferedType;
@@ -50,6 +50,23 @@ public class ConnectionDegradation {
 
 		Class<ISocket> fallbackType = socketDegradation.get(socket.getClass());
 		return Optional.of(socketSuppliers.get(fallbackType).get());
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder stringBuilder = new StringBuilder("ConnectionDegradation[");
+		Class<? extends ISocket> type = preferedType;
+		while (type != null) {
+			stringBuilder.append(type.getSimpleName());
+
+			type = socketDegradation.get(type);
+
+			if (type != null) {
+				stringBuilder.append(" -> ");
+			}
+		}
+		stringBuilder.append("]");
+		return stringBuilder.toString();
 	}
 
 	public static class Builder {

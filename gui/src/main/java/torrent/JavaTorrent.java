@@ -6,6 +6,7 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.download.algos.PhaseMetadata;
 import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
+import org.johnnei.javatorrent.download.tracker.UdpTracker;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.javatorrent.network.protocol.TcpSocket;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
@@ -18,6 +19,7 @@ import torrent.download.MagnetLink;
 import torrent.download.Torrent;
 import torrent.download.algos.PhaseData;
 import torrent.download.algos.PhaseUpload;
+import torrent.download.tracker.TrackerFactory;
 import torrent.frame.TorrentFrame;
 
 public class JavaTorrent extends Thread {
@@ -50,6 +52,9 @@ public class JavaTorrent extends Thread {
 						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, Optional.of(PhaseData.class))
 						.registerPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseUpload.class))
 						.registerPhase(PhaseUpload.class, PhaseUpload::new, Optional.empty())
+						.build())
+				.setTrackerFactory(new TrackerFactory.Builder()
+						.registerProtocol("udp", UdpTracker::new)
 						.build())
 				.build();
 

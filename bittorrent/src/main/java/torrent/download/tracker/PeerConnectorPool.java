@@ -6,11 +6,15 @@ import java.util.List;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.utils.ThreadUtils;
 import org.johnnei.utils.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
 
 public class PeerConnectorPool implements IPeerConnector {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PeerConnectorPool.class);
 
 	private List<PeerConnector> connectors;
 
@@ -19,7 +23,10 @@ public class PeerConnectorPool implements IPeerConnector {
 		final int connectorCount = Config.getConfig().getInt("peer-max_concurrent_connecting");
 		final int peerLimitPerConnector = Config.getConfig().getInt("peer-max_connecting") / connectorCount;
 
+		LOGGER.info(
+				String.format("Starting PeerConnector pool with %d connectors with a queue limit of %d peers each.", connectorCount, peerLimitPerConnector));
 		for (int i = 0; i < connectorCount; i++) {
+			LOGGER.trace(String.format("Starting PeerConnector thread #%d", i));
 			PeerConnector connector = new PeerConnector(torrentClient, manager, peerLimitPerConnector);
 			connectors.add(connector);
 			Thread thread = new Thread(connector, String.format("Peer Connector #%d", i));
@@ -45,7 +52,11 @@ public class PeerConnectorPool implements IPeerConnector {
 		ThreadUtils.notify(connector.PEER_JOB_NOTIFY);
 	}
 
-	public int getFreeCapacity() {
+	/* (non-Javadoc)
+	 * @see torrent.download.tracker.IPeerConnector#getAvailableCapacity()
+	 */
+	@Override
+	public int getAvailableCapacity() {
 		return connectors.stream().mapToInt(PeerConnector::getFreeCapacity).sum();
 	}
 

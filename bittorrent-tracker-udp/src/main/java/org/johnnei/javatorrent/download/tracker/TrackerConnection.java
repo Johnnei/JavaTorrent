@@ -6,16 +6,17 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.utils.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import torrent.download.Torrent;
 import torrent.download.peer.PeerConnectInfo;
+import torrent.download.tracker.IPeerConnector;
 import torrent.download.tracker.PeerConnector;
-import torrent.download.tracker.PeerConnectorPool;
 import torrent.download.tracker.TorrentInfo;
 import torrent.download.tracker.TrackerEvent;
 import torrent.download.tracker.TrackerException;
@@ -23,6 +24,8 @@ import torrent.download.tracker.TrackerManager;
 import torrent.network.UdpUtils;
 
 public class TrackerConnection {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TrackerConnection.class);
 
 	public static final int ACTION_CONNECT = 0;
 	public static final int ACTION_ANNOUNCE = 1;
@@ -33,8 +36,6 @@ public class TrackerConnection {
 	public static final long NO_CONNECTION_ID = 0x41727101980L;
 
 	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
-
-	private Logger log;
 
 	private InetAddress address;
 	private String name;
@@ -49,14 +50,12 @@ public class TrackerConnection {
 	/**
 	 * The pool of {@link PeerConnector} which will connect peers for us
 	 */
-	private PeerConnectorPool connectorPool;
+	private IPeerConnector peerConnector;
 
 	private TrackerManager manager;
 
-	public TrackerConnection(Logger log, String url, PeerConnectorPool connectorPool, TrackerManager manager) {
-		this.connectorPool = connectorPool;
-		this.manager = manager;
-		this.log = log;
+	public TrackerConnection(String url, IPeerConnector peerConnector) {
+		this.peerConnector = peerConnector;
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
 		if (!urlData[0].equals("udp")) {
@@ -70,7 +69,7 @@ public class TrackerConnection {
 			} catch (Exception e) {
 				address = null;
 				status = "Failed to parse address";
-				log.warning(String.format("Failed to resolve tracker: %s", e.getMessage()));
+				LOGGER.warn(String.format("Failed to resolve tracker: %s", e.getMessage()), e);
 			}
 		}
 	}
@@ -118,9 +117,9 @@ public class TrackerConnection {
 	 * @return The interval report by tracker or {@link UdpTracker#DEFAULT_ANNOUNCE_INTERVAL} on error
 	 */
 	public int announce(TorrentInfo torrentInfo) throws TrackerException {
-		int connectorCapacity = connectorPool.getFreeCapacity();
+		int connectorCapacity = peerConnector.getAvailableCapacity();
 		if (connectorCapacity == 0) {
-			log.info("Ignored announce, connector is full.");
+			LOGGER.info("Ignored announce, connector is full.");
 			return (int) TimeUnit.SECONDS.toMillis(30);
 		}
 
@@ -159,7 +158,7 @@ public class TrackerConnection {
 			}
 			if (action != ACTION_ANNOUNCE) {
 				String error = inStream.readString(inStream.available());
-				log.warning(String.format("Announce failed with error: %d, Message: %s", action, error));
+				LOGGER.warn(String.format("Announce failed with error: %d, Message: %s", action, error));
 				setStatus("Announce failed");
 				handleError(error);
 				throw new TrackerException("Tracker responded with an error: " + error);
@@ -179,7 +178,7 @@ public class TrackerConnection {
 				InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(address), port);
 				PeerConnectInfo peerInfo = new PeerConnectInfo(torrent, socketAddress);
 
-				connectorPool.connectPeer(peerInfo);
+				peerConnector.connectPeer(peerInfo);
 			}
 			setStatus("Announced");
 			return announceInterval;

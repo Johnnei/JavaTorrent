@@ -7,6 +7,8 @@ import java.util.Objects;
 import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import torrent.TorrentManager;
 import torrent.download.tracker.TrackerFactory;
@@ -18,6 +20,8 @@ import torrent.protocol.MessageFactory;
  *
  */
 public class TorrentClient {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentClient.class);
 
 	private ConnectionDegradation connectionDegradation;
 
@@ -33,14 +37,21 @@ public class TorrentClient {
 
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
+		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
 		messageFactory = builder.messageFactoryBuilder.build();
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
+		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
 
 		torrentManager = new TorrentManager(this);
-		trackerManager = new TrackerManager(this, builder.trackerFactory);
+		trackerManager = new TrackerManager(this, Objects.requireNonNull(builder.trackerFactory, "At least one tracker protocol must be configured."));
+		LOGGER.info(String.format("Configured trackers: %s", builder.trackerFactory));
 
 		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
 		trackerManagerThread.setDaemon(true);
+
+		LOGGER.info(String.format("Configured modules: %s", builder.modules.stream()
+				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
+				.reduce((a, b) -> a + ", " + b).orElse("")));
 	}
 
 	public void start() {

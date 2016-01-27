@@ -61,11 +61,26 @@ public class TrackerFactory {
 				.collect(Collectors.toList());
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder stringBuilder = new StringBuilder("TrackerFactory[");
+		stringBuilder.append("protocols=[");
+		stringBuilder.append(trackerSuppliers.keySet().stream().reduce((a, b) -> a + ", " + b).orElse(""));
+		stringBuilder.append("], instances=[");
+		stringBuilder.append(trackerInstances.keySet().stream().reduce((a, b) -> a + ", " + b).orElse(""));
+		stringBuilder.append("]]");
+		return stringBuilder.toString();
+	}
+
 	public static class Builder {
 
 		private Map<String, BiFunction<String, IPeerConnector, ITracker>> trackerSuppliers;
 
 		private IPeerConnector peerConnector;
+
+		public Builder() {
+			trackerSuppliers = new HashMap<>();
+		}
 
 		public Builder registerProtocol(String protocol, BiFunction<String, IPeerConnector, ITracker> supplier) {
 			if (trackerSuppliers.containsKey(protocol)) {
@@ -83,6 +98,10 @@ public class TrackerFactory {
 		}
 
 		public TrackerFactory build() {
+			if (trackerSuppliers.isEmpty()) {
+				throw new IllegalArgumentException("At least one tracker protocol must be configured.");
+			}
+
 			return new TrackerFactory(this);
 		}
 
