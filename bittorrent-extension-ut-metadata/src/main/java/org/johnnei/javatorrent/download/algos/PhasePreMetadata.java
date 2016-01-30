@@ -4,12 +4,11 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.utils.config.Config;
-
-import torrent.download.MetadataFile;
-import torrent.download.Torrent;
-import torrent.download.algos.AMetadataPhase;
-import torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.MetadataFile;
+import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.algos.AMetadataPhase;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.utils.config.Config;
 
 public class PhasePreMetadata extends AMetadataPhase {
 

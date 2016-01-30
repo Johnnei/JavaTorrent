@@ -10,12 +10,11 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.UTMetadata;
-
-import torrent.download.MetadataFile;
-import torrent.download.algos.IDownloadPhase;
-import torrent.download.peer.Peer;
-import torrent.encoding.Bencode;
-import torrent.encoding.Bencoder;
+import org.johnnei.javatorrent.torrent.download.MetadataFile;
+import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.encoding.Bencode;
+import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 
 public class UTMetadataExtension implements IExtension {
 

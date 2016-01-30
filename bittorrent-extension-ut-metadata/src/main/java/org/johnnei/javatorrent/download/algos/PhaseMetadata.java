@@ -8,17 +8,16 @@ import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
-import org.johnnei.utils.config.Config;
-
-import torrent.download.Files;
-import torrent.download.Torrent;
-import torrent.download.algos.AMetadataPhase;
-import torrent.download.algos.MetadataSelect;
-import torrent.download.files.Block;
-import torrent.download.files.Piece;
-import torrent.download.peer.Job;
-import torrent.download.peer.Peer;
-import torrent.download.peer.PeerDirection;
+import org.johnnei.javatorrent.torrent.download.Files;
+import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.algos.AMetadataPhase;
+import org.johnnei.javatorrent.torrent.download.algos.MetadataSelect;
+import org.johnnei.javatorrent.torrent.download.files.Block;
+import org.johnnei.javatorrent.torrent.download.files.Piece;
+import org.johnnei.javatorrent.torrent.download.peer.Job;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
+import org.johnnei.javatorrent.utils.config.Config;
 
 public class PhaseMetadata extends AMetadataPhase {
 

@@ -9,19 +9,18 @@ import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.utils.config.Config;
+import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
+import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
+import org.johnnei.javatorrent.torrent.download.tracker.PeerConnector;
+import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.network.UdpUtils;
+import org.johnnei.javatorrent.utils.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import torrent.download.Torrent;
-import torrent.download.peer.PeerConnectInfo;
-import torrent.download.tracker.IPeerConnector;
-import torrent.download.tracker.PeerConnector;
-import torrent.download.tracker.TorrentInfo;
-import torrent.download.tracker.TrackerEvent;
-import torrent.download.tracker.TrackerException;
-import torrent.download.tracker.TrackerManager;
-import torrent.network.UdpUtils;
 
 public class TrackerConnection {
 

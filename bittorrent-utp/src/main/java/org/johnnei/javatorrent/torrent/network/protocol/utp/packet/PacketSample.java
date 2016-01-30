@@ -1,8 +1,7 @@
 package org.johnnei.javatorrent.torrent.network.protocol.utp.packet;
 
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
-
-import torrent.network.Stream;
+import org.johnnei.javatorrent.torrent.network.Stream;
 
 /**
  * A sample packet which is used for comparing packets

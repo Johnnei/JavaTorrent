@@ -5,9 +5,8 @@ import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
-
-import torrent.download.peer.Peer;
-import torrent.encoding.Bencoder;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 
 public interface IExtension {
 

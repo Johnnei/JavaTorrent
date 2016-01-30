@@ -5,10 +5,9 @@ import java.io.IOException;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageData;
-
-import torrent.download.Torrent;
-import torrent.download.files.disk.DiskJob;
-import torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
 
 public class DiskJobSendMetadataBlock extends DiskJob {
 

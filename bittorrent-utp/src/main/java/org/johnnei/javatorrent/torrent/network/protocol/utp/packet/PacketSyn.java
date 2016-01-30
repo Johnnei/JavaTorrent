@@ -4,8 +4,7 @@ import java.util.Random;
 
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
 import org.johnnei.javatorrent.network.protocol.utp.ConnectionState;
-
-import torrent.network.Stream;
+import org.johnnei.javatorrent.torrent.network.Stream;
 
 public class PacketSyn extends Packet {
 	

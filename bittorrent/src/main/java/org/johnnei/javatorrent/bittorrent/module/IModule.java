@@ -6,8 +6,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.network.protocol.IMessage;
-
-import torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
 
 public interface IModule {
 

@@ -1,6 +1,6 @@
 package org.johnnei.javatorrent.network.protocol.utp;
 
-import org.johnnei.utils.ThreadUtils;
+import org.johnnei.javatorrent.utils.ThreadUtils;
 
 public class UtpSocketTimeout extends Thread {
 

@@ -3,10 +3,9 @@ package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.UTMetadata;
-
-import torrent.download.peer.Job;
-import torrent.download.peer.Peer;
-import torrent.download.peer.PeerDirection;
+import org.johnnei.javatorrent.torrent.download.peer.Job;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
 
 public class MessageData extends Message {
 

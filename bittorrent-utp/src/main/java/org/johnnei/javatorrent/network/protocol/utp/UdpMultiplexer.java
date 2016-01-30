@@ -8,12 +8,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
+import org.johnnei.javatorrent.torrent.network.Stream;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
-import org.johnnei.utils.ConsoleLogger;
-import org.johnnei.utils.config.Config;
-
-import torrent.network.Stream;
-import torrent.util.tree.BinarySearchTree;
+import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
+import org.johnnei.javatorrent.utils.ConsoleLogger;
+import org.johnnei.javatorrent.utils.config.Config;
 
 public class UdpMultiplexer extends Thread {
 

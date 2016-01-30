@@ -3,8 +3,7 @@ package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 import org.johnnei.javatorrent.download.files.disk.DiskJobSendMetadataBlock;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
-
-import torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
 
 public class MessageRequest extends Message {
 

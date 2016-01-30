@@ -10,10 +10,9 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.IExtension;
-
-import torrent.download.peer.Peer;
-import torrent.encoding.Bencode;
-import torrent.encoding.Bencoder;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.encoding.Bencode;
+import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 
 public class MessageHandshake implements IMessage {
 

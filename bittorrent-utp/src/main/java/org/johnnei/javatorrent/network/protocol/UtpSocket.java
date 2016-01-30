@@ -14,16 +14,15 @@ import org.johnnei.javatorrent.network.protocol.utp.UdpMultiplexer;
 import org.johnnei.javatorrent.network.protocol.utp.UtpClient;
 import org.johnnei.javatorrent.network.protocol.utp.UtpInputStream;
 import org.johnnei.javatorrent.network.protocol.utp.UtpOutputStream;
+import org.johnnei.javatorrent.torrent.network.Stream;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketFin;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSample;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketState;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSyn;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.UtpProtocol;
-import org.johnnei.utils.ThreadUtils;
-
-import torrent.network.Stream;
-import torrent.util.tree.BinarySearchTree;
+import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
+import org.johnnei.javatorrent.utils.ThreadUtils;
 
 public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 

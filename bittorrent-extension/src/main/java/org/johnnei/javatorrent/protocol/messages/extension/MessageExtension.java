@@ -5,10 +5,9 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import torrent.download.peer.Peer;
 
 public class MessageExtension implements IMessage {
 

@@ -6,14 +6,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
+import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
+import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import torrent.download.Torrent;
-import torrent.download.tracker.IPeerConnector;
-import torrent.download.tracker.ITracker;
-import torrent.download.tracker.TorrentInfo;
-import torrent.download.tracker.TrackerException;
 
 public class UdpTracker implements ITracker {
 

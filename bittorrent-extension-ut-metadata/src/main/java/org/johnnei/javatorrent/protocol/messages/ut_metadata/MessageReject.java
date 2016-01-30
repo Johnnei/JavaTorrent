@@ -1,10 +1,9 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
 import org.johnnei.javatorrent.protocol.UTMetadata;
-
-import torrent.download.peer.Job;
-import torrent.download.peer.PeerDirection;
-import torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.Job;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
 
 public class MessageReject extends Message {
 

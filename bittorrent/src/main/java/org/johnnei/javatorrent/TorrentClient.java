@@ -7,13 +7,12 @@ import java.util.Objects;
 import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.torrent.TorrentManager;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.protocol.MessageFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import torrent.TorrentManager;
-import torrent.download.tracker.TrackerFactory;
-import torrent.download.tracker.TrackerManager;
-import torrent.protocol.MessageFactory;
 
 /**
  * The Torrent Client is the main entry point for the configuration and initiation of downloads/uploads.

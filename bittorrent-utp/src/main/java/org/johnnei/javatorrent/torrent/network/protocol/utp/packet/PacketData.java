@@ -4,8 +4,7 @@ import java.io.IOException;
 
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
 import org.johnnei.javatorrent.network.protocol.utp.UtpInputStream;
-
-import torrent.network.Stream;
+import org.johnnei.javatorrent.torrent.network.Stream;
 
 public class PacketData extends Packet {
 	

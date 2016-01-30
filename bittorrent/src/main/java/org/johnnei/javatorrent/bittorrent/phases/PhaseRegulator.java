@@ -7,11 +7,10 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import torrent.download.Torrent;
-import torrent.download.algos.IDownloadPhase;
 
 public class PhaseRegulator {
 

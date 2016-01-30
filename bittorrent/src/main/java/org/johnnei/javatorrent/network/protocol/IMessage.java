@@ -2,8 +2,7 @@ package org.johnnei.javatorrent.network.protocol;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-
-import torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
 
 public interface IMessage {
 

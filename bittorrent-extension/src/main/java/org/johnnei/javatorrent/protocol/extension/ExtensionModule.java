@@ -14,10 +14,9 @@ import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
 import org.johnnei.javatorrent.protocol.messages.extension.Protocol;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import torrent.download.peer.Peer;
 
 public class ExtensionModule implements IModule {
 
