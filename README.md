@@ -1,13 +1,13 @@
 JavaTorrent
 ===========
 
-Java Torrent is a BitTorrent Protocol implementation in Java which aims to have a minimal console approach whilst having a fully featured GUI.
+Java Torrent is a BitTorrent Protocol implementation in Java which aims to provide a highly configurable BitTorrent library and an optional GUI experience build directly on top of this library.
 
 Implemented standard features:
 
 BEP | Description | Implemented 
 ---:| ----------- | ----------- 
-3   | BitTorrent Protocol | Fully 
+3   | BitTorrent Protocol | Fully excluding HTTP Trackers
 9 | Metadata sending | Fully
 10 | Extension Protocol | Fully
 15 | UDP Trackers | Functional (Optimizations pending)
