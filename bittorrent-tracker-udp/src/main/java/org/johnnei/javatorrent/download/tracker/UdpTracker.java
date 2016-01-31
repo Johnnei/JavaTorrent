@@ -14,7 +14,6 @@ import org.johnnei.javatorrent.async.CallbackFuture;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
 import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,18 +147,16 @@ public class UdpTracker implements ITracker {
 		TorrentInfo torrentInfo = torrentMap.get(torrent);
 
 		if(torrentInfo.getTimeSinceLastAnnouce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
-			// We're not allowed to scrape yet
+			// We're not allowed to announce yet
 			return;
 		}
 
-		try {
-			announceInterval = connection.announce(torrentInfo);
-			torrentInfo.updateAnnounceTime();
-			errorCount = Math.max(errorCount - 1, 0);
-		} catch (TrackerException e) {
-			LOGGER.warn(String.format("Announce of %s failed.", torrent.getHash()), e);
-			errorCount++;
-		}
+		torrentClient.getExecutorService()
+			.submit(new CallbackFuture<Void>(() -> {
+				announceInterval = connection.announce(torrentInfo);
+				torrentInfo.updateAnnounceTime();
+				return null;
+			}, this::trackerCallback));
 	}
 
 	public int getErrorCount() {
