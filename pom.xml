@@ -19,11 +19,25 @@
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <plugin.org.codehaus.mojo.sonar-maven-plugin>2.7.1</plugin.org.codehaus.mojo.sonar-maven-plugin>
     <dependency.org.slf4j.slf4j-api>1.7.13</dependency.org.slf4j.slf4j-api>
     <dependency.org.apache.logging.log4j.log4j-api>2.5</dependency.org.apache.logging.log4j.log4j-api>
     <dependency.org.apache.logging.log4j.log4j-slf4j-impl>2.5</dependency.org.apache.logging.log4j.log4j-slf4j-impl>
     <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
+    <dependency.junit.junit>4.12</dependency.junit.junit>
+    <dependency.org.easymock.easymock>3.4</dependency.org.easymock.easymock>
   </properties>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>${plugin.org.codehaus.mojo.sonar-maven-plugin}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -75,6 +89,20 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
         <version>${dependency.org.apache.logging.log4j.log4j-core}</version>
+      </dependency>
+      
+      <!-- Test Dependencies -->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${dependency.junit.junit}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <version>${dependency.org.easymock.easymock}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

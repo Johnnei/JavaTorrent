@@ -33,14 +33,11 @@ public class PeerConnector implements Runnable {
 	 */
 	private LinkedList<PeerConnectInfo> peers;
 
-	private final TrackerManager manager;
-
 	private final int maxPeers;
 
 	private final TorrentClient torrentClient;
 
-	public PeerConnector(TorrentClient torrentClient, TrackerManager manager, int maxConnecting) {
-		this.manager = manager;
+	public PeerConnector(TorrentClient torrentClient, int maxConnecting) {
 		this.maxPeers = maxConnecting;
 		this.torrentClient = torrentClient;
 		peers = new LinkedList<>();
@@ -82,7 +79,7 @@ public class PeerConnector implements Runnable {
 			try {
 				peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory());
 				peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
-				peerSocket.sendHandshake(manager.getPeerId(), peerInfo.getTorrent().getHashArray());
+				peerSocket.sendHandshake(torrentClient.getTrackerManager().getPeerId(), peerInfo.getTorrent().getHashArray());
 
 				long timeWaited = 0;
 				while (!peerSocket.canReadMessage() && timeWaited < 10_000) {

@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.torrent;
 
 import java.util.Optional;
+import java.util.concurrent.Executors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
@@ -15,6 +16,7 @@ import org.johnnei.javatorrent.torrent.download.MagnetLink;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseData;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseUpload;
+import org.johnnei.javatorrent.torrent.download.tracker.PeerConnectorPool;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
 import org.johnnei.javatorrent.torrent.frame.TorrentFrame;
 import org.johnnei.javatorrent.utils.config.Config;
@@ -55,6 +57,8 @@ public class JavaTorrent extends Thread {
 				.setTrackerFactory(new TrackerFactory.Builder()
 						.registerProtocol("udp", UdpTracker::new)
 						.build())
+				.setPeerConnector(PeerConnectorPool::new)
+				.setExecutorService(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)))
 				.build();
 
 		TorrentFrame frame= new TorrentFrame(torrentClient);

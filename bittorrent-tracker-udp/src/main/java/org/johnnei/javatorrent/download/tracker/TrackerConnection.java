@@ -79,7 +79,7 @@ public class TrackerConnection {
 
 	public void connect() throws TrackerException {
 		setStatus("Connecting");
-		int transactionId = manager.getTransactionId();
+		int transactionId = manager.createUniqueTransactionId();
 		OutStream outStream = new OutStream();
 		try {
 			outStream.writeLong(connectionId);
@@ -124,7 +124,7 @@ public class TrackerConnection {
 
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
-		int transactionId = manager.getTransactionId();
+		int transactionId = manager.createUniqueTransactionId();
 		OutStream outStream = new OutStream();
 		outStream.writeLong(connectionId);
 		outStream.writeInt(ACTION_ANNOUNCE);
@@ -190,7 +190,7 @@ public class TrackerConnection {
 	public void scrape(TorrentInfo torrentInfo) throws TrackerException {
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Scraping");
-		int transactionId = manager.getTransactionId();
+		int transactionId = manager.createUniqueTransactionId();
 		OutStream outStream = new OutStream();
 		outStream.writeLong(connectionId);
 		outStream.writeInt(ACTION_SCRAPE);

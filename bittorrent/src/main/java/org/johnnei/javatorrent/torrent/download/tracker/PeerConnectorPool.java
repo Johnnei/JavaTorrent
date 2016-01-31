@@ -17,7 +17,7 @@ public class PeerConnectorPool implements IPeerConnector {
 
 	private List<PeerConnector> connectors;
 
-	public PeerConnectorPool(TorrentClient torrentClient, TrackerManager manager) {
+	public PeerConnectorPool(TorrentClient torrentClient) {
 		connectors = new LinkedList<>();
 		final int connectorCount = Config.getConfig().getInt("peer-max_concurrent_connecting");
 		final int peerLimitPerConnector = Config.getConfig().getInt("peer-max_connecting") / connectorCount;
@@ -26,7 +26,7 @@ public class PeerConnectorPool implements IPeerConnector {
 				String.format("Starting PeerConnector pool with %d connectors with a queue limit of %d peers each.", connectorCount, peerLimitPerConnector));
 		for (int i = 0; i < connectorCount; i++) {
 			LOGGER.trace(String.format("Starting PeerConnector thread #%d", i));
-			PeerConnector connector = new PeerConnector(torrentClient, manager, peerLimitPerConnector);
+			PeerConnector connector = new PeerConnector(torrentClient, peerLimitPerConnector);
 			connectors.add(connector);
 			Thread thread = new Thread(connector, String.format("Peer Connector #%d", i));
 			thread.setDaemon(true);

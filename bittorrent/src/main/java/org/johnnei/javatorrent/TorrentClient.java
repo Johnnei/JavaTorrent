@@ -3,11 +3,14 @@ package org.johnnei.javatorrent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.javatorrent.torrent.TorrentManager;
+import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.protocol.MessageFactory;
@@ -30,9 +33,11 @@ public class TorrentClient {
 
 	private TrackerManager trackerManager;
 
-	private Thread trackerManagerThread;
-
 	private PhaseRegulator phaseRegulator;
+
+	private IPeerConnector peerConnector;
+
+	private ExecutorService executorService;
 
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
@@ -40,13 +45,14 @@ public class TorrentClient {
 		messageFactory = builder.messageFactoryBuilder.build();
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
 		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
+		executorService = Objects.requireNonNull(builder.executorService, "Executor service is required to process torrent tasks.");
+
+		peerConnector = Objects.requireNonNull(builder.peerConnector.apply(this), "Peer connector required to allow external connections");
+		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
 
 		torrentManager = new TorrentManager(this);
-		trackerManager = new TrackerManager(this, Objects.requireNonNull(builder.trackerFactory, "At least one tracker protocol must be configured."));
+		trackerManager = new TrackerManager(peerConnector, Objects.requireNonNull(builder.trackerFactory, "At least one tracker protocol must be configured."));
 		LOGGER.info(String.format("Configured trackers: %s", builder.trackerFactory));
-
-		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
-		trackerManagerThread.setDaemon(true);
 
 		LOGGER.info(String.format("Configured modules: %s", builder.modules.stream()
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
@@ -54,7 +60,6 @@ public class TorrentClient {
 	}
 
 	public void start() {
-		trackerManagerThread.start();
 		torrentManager.startListener(trackerManager);
 	}
 
@@ -82,6 +87,10 @@ public class TorrentClient {
 		return phaseRegulator;
 	}
 
+	public ExecutorService getExecutorService() {
+		return executorService;
+	}
+
 	public static class Builder {
 
 		private ConnectionDegradation connectionDegradation;
@@ -93,6 +102,10 @@ public class TorrentClient {
 		private TrackerFactory trackerFactory;
 
 		private final Collection<IModule> modules;
+
+		private Function<TorrentClient, IPeerConnector> peerConnector;
+
+		private ExecutorService executorService;
 
 		public Builder() {
 			messageFactoryBuilder = new MessageFactory.Builder();
@@ -125,6 +138,16 @@ public class TorrentClient {
 
 		public Builder setTrackerFactory(TrackerFactory trackerFactory) {
 			this.trackerFactory = trackerFactory;
+			return this;
+		}
+
+		public Builder setPeerConnector(Function<TorrentClient, IPeerConnector> peerConnector) {
+			this.peerConnector = peerConnector;
+			return this;
+		}
+
+		public Builder setExecutorService(ExecutorService executorService) {
+			this.executorService = executorService;
 			return this;
 		}
 

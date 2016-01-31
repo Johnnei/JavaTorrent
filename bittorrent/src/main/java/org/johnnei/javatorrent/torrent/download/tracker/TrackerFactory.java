@@ -1,7 +1,7 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -54,7 +54,7 @@ public class TrackerFactory {
 		return trackerSuppliers.get(protocol).apply(trackerUrl, peerConnector);
 	}
 
-	public Collection<ITracker> getTrackingsHavingTorrent(Torrent torrent) {
+	public List<ITracker> getTrackingsHavingTorrent(Torrent torrent) {
 		return trackerInstances.values().stream()
 				.filter(tracker -> tracker.hasTorrent(torrent))
 				.collect(Collectors.toList());
