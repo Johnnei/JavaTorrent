@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.torrent;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.TcpSocket;
@@ -20,18 +21,19 @@ public class PeerConnectionAccepter extends Thread {
 
 	private final TorrentClient torrentClient;
 
+	private final TorrentManager torrentManager;
+
+	private final TrackerManager trackerManager;
+
 	private ServerSocket serverSocket;
 
-	private TorrentManager torrentManager;
 
-	private TrackerManager trackerManager;
-
-	public PeerConnectionAccepter(TorrentClient torrentClient, TorrentManager manager, TrackerManager trackerManager) throws IOException {
+	public PeerConnectionAccepter(TorrentClient torrentClient) throws IOException {
 		super("Peer connector");
 		setDaemon(true);
 		this.torrentClient = torrentClient;
-		this.torrentManager = manager;
-		this.trackerManager = trackerManager;
+		this.torrentManager = torrentClient.getTorrentManager();
+		this.trackerManager = torrentClient.getTrackerManager();
 		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
 	}
 
@@ -54,18 +56,17 @@ public class PeerConnectionAccepter extends Thread {
 
 				BitTorrentHandshake handshake = peerSocket.readHandshake();
 
-				Torrent torrent = torrentManager.getTorrent(StringUtil.byteArrayToString(handshake.getTorrentHash()));
-
-				if (torrent == null) {
+				Optional<Torrent> torrent = torrentManager.getTorrent(StringUtil.byteArrayToString(handshake.getTorrentHash()));
+				if (!torrent.isPresent()) {
 					// We don't know the torrent the peer is downloading
 					peerSocket.close();
 					continue;
 				}
 
-				Peer peer = new Peer(peerSocket, torrent);
+				Peer peer = new Peer(peerSocket, torrent.get());
 				peer.getExtensions().register(handshake.getPeerExtensionBytes());
-				peer.setTorrent(torrent);
-				peerSocket.sendHandshake(trackerManager.getPeerId(), torrent.getHashArray());
+				peer.setTorrent(torrent.get());
+				peerSocket.sendHandshake(trackerManager.getPeerId(), torrent.get().getHashArray());
 				BitTorrentUtil.onPostHandshake(peer);
 			} catch (IOException e) {
 			}

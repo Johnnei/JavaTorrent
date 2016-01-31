@@ -15,6 +15,10 @@ import org.johnnei.javatorrent.torrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUninterested;
 
+/**
+ * The factory which maps the message IDs to the {@link IMessage} instances.
+ *
+ */
 public class MessageFactory {
 
 	private final Map<Integer, Supplier<IMessage>> messageSuppliers;

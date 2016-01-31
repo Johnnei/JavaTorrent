@@ -1,41 +1,60 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import org.johnnei.javatorrent.torrent.download.Torrent;
 
 public class TorrentInfo {
+
+	public static final Duration DEFAULT_ANNOUNCE_INTERVAL = Duration.of(30, ChronoUnit.SECONDS);
+
+	/**
+	 * The clock instance to obtain the time
+	 */
+	private Clock clock;
 
 	/**
 	 * The torrent for which this info is being stored
 	 */
 	private Torrent torrent;
+
 	/**
 	 * The timestamp of the last announce
 	 */
-	private long lastAnnounceTime;
+	private LocalDateTime lastAnnounceTime;
+
 	/**
 	 * The amount of seeders as reported by the tracker
 	 */
 	private int seeders;
+
 	/**
 	 * The amount of leechers as reported by the tracker
 	 */
 	private int leechers;
+
 	/**
 	 * The amount of times this torrent has been download as reported by the tracker
 	 */
 	private int downloaded;
+
 	/**
 	 * The current event
 	 */
 	private TrackerEvent event;
 
-	public TorrentInfo(Torrent torrent) {
+	public TorrentInfo(Torrent torrent, Clock clock) {
 		this.torrent = torrent;
+		this.clock = clock;
 		this.event = TrackerEvent.EVENT_STARTED;
+		lastAnnounceTime = LocalDateTime.now(clock).minus(DEFAULT_ANNOUNCE_INTERVAL);
 	}
 
 	public void updateAnnounceTime() {
-		lastAnnounceTime = System.currentTimeMillis();
+		lastAnnounceTime = LocalDateTime.now(clock);
 	}
 
 	public void setEvent(TrackerEvent event) {
@@ -59,6 +78,7 @@ public class TorrentInfo {
 
 	/**
 	 * The amount of seeders as reported by the tracker
+	 *
 	 * @return the amount of seeders
 	 */
 	public int getSeeders() {
@@ -67,6 +87,7 @@ public class TorrentInfo {
 
 	/**
 	 * The amount of leechers as reported by the tracker
+	 *
 	 * @return the amount of leechers
 	 */
 	public int getLeechers() {
@@ -76,6 +97,7 @@ public class TorrentInfo {
 	/**
 	 * The amount of times this torrent has been downloaded<br/>
 	 * If the tracker returns 0 it will return N/A as the tracker apparently doesn't support it
+	 *
 	 * @return the count of times downloaded or N/A if not reported
 	 */
 	public String getDownloadCount() {
@@ -84,14 +106,16 @@ public class TorrentInfo {
 
 	/**
 	 * The time since the last announce
-	 * @return milliseconds since last announce
+	 *
+	 * @return The duration since last announce
 	 */
-	public int getTimeSinceLastAnnouce() {
-		return (int)(System.currentTimeMillis() - lastAnnounceTime);
+	public Duration getTimeSinceLastAnnouce() {
+		return Duration.between(lastAnnounceTime, LocalDateTime.now(clock));
 	}
 
 	/**
 	 * Gets the associated torrent
+	 *
 	 * @return The torrent with this info
 	 */
 	public Torrent getTorrent() {

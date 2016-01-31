@@ -1,56 +1,74 @@
 package org.johnnei.javatorrent.download.tracker;
 
-import java.net.InetAddress;
-import java.util.ArrayList;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
+import java.util.concurrent.Future;
 
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.async.CallbackFuture;
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
 import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
 import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Manages the interaction with an UDP tracker
+ *
+ */
 public class UdpTracker implements ITracker {
 
-	public static final int SCRAPE_INTERVAL = 10000;
-	public static final int DEFAULT_ANNOUNCE_INTERVAL = 30000;
-	public static final int CONNECTION_DURATION = 300000; //5 minutes
+	private static final int DEFAULT_SCRAPE_INTERVAL = 10000;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpTracker.class);
 
+	private final TorrentClient torrentClient;
+
+	/**
+	 * The clock instance to obtain the time
+	 */
+	private Clock clock;
+
 	private TrackerConnection connection;
+
 	/**
 	 * A hashmap containing all torrents which this tracker is supposed to know
 	 */
-	private HashMap<String, TorrentInfo> torrentMap;
+	private Map<Torrent, TorrentInfo> torrentMap;
+
 	/**
 	 * The timestamp of the last scrape
 	 */
-	private long lastScrapeTime;
+	private LocalDateTime lastScrapeTime;
+
 	/**
 	 * The minimum announce interval as requested by the tracker
 	 */
 	private int announceInterval;
-	/**
-	 * The time when the last connection id has been requested
-	 */
-	private long connectionTime;
+
 	/**
 	 * The amount of tracker errors detected<br/>
 	 * Successful operation decrease errorCount by 1 to a minimum of 0
 	 */
 	private int errorCount;
 
-	public UdpTracker(String url, IPeerConnector peerConnector) {
-		connection = new TrackerConnection(url, peerConnector);
+	public UdpTracker(String url, TorrentClient torrentClient) {
+		this(url, torrentClient, Clock.systemDefaultZone());
+	}
+
+	public UdpTracker(String url, TorrentClient torrentClient, Clock clock) {
+		this.torrentClient = torrentClient;
+		this.clock = clock;
+		connection = new TrackerConnection(url, torrentClient);
 		torrentMap = new HashMap<>();
-		announceInterval = DEFAULT_ANNOUNCE_INTERVAL;
-		lastScrapeTime = System.currentTimeMillis() - SCRAPE_INTERVAL;
-		connectionTime = System.currentTimeMillis() - CONNECTION_DURATION;
+		announceInterval = (int) TorrentInfo.DEFAULT_ANNOUNCE_INTERVAL.toMillis();
+		lastScrapeTime = LocalDateTime.now(clock).minus(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS);
 	}
 
 	/* (non-Javadoc)
@@ -60,7 +78,7 @@ public class UdpTracker implements ITracker {
 	public void addTorrent(Torrent torrent) {
 		if(!torrentMap.containsKey(torrent.getHash())) {
 			synchronized (this) {
-				torrentMap.put(torrent.getHash(), new TorrentInfo(torrent));
+				torrentMap.put(torrent, new TorrentInfo(torrent, clock));
 			}
 		}
 	}
@@ -81,10 +99,7 @@ public class UdpTracker implements ITracker {
 	@Override
 	public TorrentInfo getInfo(Torrent torrent) {
 		synchronized (this) {
-			Iterator<Entry<String, TorrentInfo>> iterator = torrentMap.entrySet().iterator();
-			while(iterator.hasNext()) {
-				Entry<String, TorrentInfo> entry = iterator.next();
-				TorrentInfo torrentInfo = entry.getValue();
+			for (TorrentInfo torrentInfo : torrentMap.values()) {
 				if(torrentInfo.getTorrent().equals(torrent)) {
 					return torrentInfo;
 				}
@@ -99,20 +114,29 @@ public class UdpTracker implements ITracker {
 	 */
 	@Override
 	public void scrape() {
-		if(System.currentTimeMillis() - lastScrapeTime >= SCRAPE_INTERVAL) {
-			synchronized (this) {
-				Iterator<Entry<String, TorrentInfo>> iterator = torrentMap.entrySet().iterator();
-				while(iterator.hasNext()) {
-					Entry<String, TorrentInfo> entry = iterator.next();
-					TorrentInfo torrentInfo = entry.getValue();
-					try {
-						connection.scrape(torrentInfo);
-						onSucces();
-					} catch (TrackerException e) {
-						onError(e);
-					}
-				}
+		if(Duration.between(lastScrapeTime, LocalDateTime.now(clock)).compareTo(Duration.of(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS)) < 0) {
+			// We're not allowed to scrape yet
+			return;
+		}
+
+		synchronized (this) {
+			for (TorrentInfo torrentInfo : torrentMap.values()) {
+				torrentClient.getExecutorService()
+						.submit(new CallbackFuture<Void>(() -> {
+							connection.scrape(Collections.singletonList(torrentInfo));
+							return null;
+						}, this::trackerCallback));
 			}
+		}
+	}
+
+	private void trackerCallback(Future<Void> task) {
+		try {
+			task.get();
+			errorCount = Math.max(errorCount - 1, 0);
+		} catch (Exception e) {
+			LOGGER.warn("Request failed.", e);
+			errorCount++;
 		}
 	}
 
@@ -121,60 +145,25 @@ public class UdpTracker implements ITracker {
 	 */
 	@Override
 	public void announce(Torrent torrent) {
-		TorrentInfo torrentInfo = torrentMap.get(torrent.getHash());
+		TorrentInfo torrentInfo = torrentMap.get(torrent);
+
+		if(torrentInfo.getTimeSinceLastAnnouce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
+			// We're not allowed to scrape yet
+			return;
+		}
+
 		try {
-			connection.announce(torrentInfo);
+			announceInterval = connection.announce(torrentInfo);
 			torrentInfo.updateAnnounceTime();
-			onSucces();
+			errorCount = Math.max(errorCount - 1, 0);
 		} catch (TrackerException e) {
-			onError(e);
+			LOGGER.warn(String.format("Announce of %s failed.", torrent.getHash()), e);
+			errorCount++;
 		}
 	}
 
-	public void onError(Exception e) {
-		LOGGER.warn(e.getMessage(), e);
-		errorCount++;
-	}
-
-	public void onSucces() {
-		errorCount = Math.max(errorCount - 1, 0);
-	}
-
-	/**
-	 * Checks if this tracker still validates to be checked<br/>
-	 * @return true if less than 3 errors occured
-	 */
-	public boolean isValid() {
-		return errorCount < 3 && connection.getAddress() != null;
-	}
-
-	/* (non-Javadoc)
-	 * @see torrent.download.tracker.ITracker#canAnnounce(torrent.download.Torrent)
-	 */
-	@Override
-	public boolean canAnnounce(Torrent torrent) {
-		TorrentInfo torrentInfo = torrentMap.get(torrent.getHash());
-		return torrentInfo.getTimeSinceLastAnnouce() >= announceInterval;
-	}
-
-	public boolean isConnected() {
-		return (System.currentTimeMillis() - connectionTime) <= CONNECTION_DURATION && connection.isConnected();
-	}
-
-	/* (non-Javadoc)
-	 * @see torrent.download.tracker.ITracker#getTorrents()
-	 */
-	@Override
-	public ArrayList<TorrentInfo> getTorrents() {
-		ArrayList<TorrentInfo> torrents = new ArrayList<>(torrentMap.size());
-
-		synchronized (this) {
-			for (Entry<String, TorrentInfo> entry : torrentMap.entrySet()) {
-				torrents.add(entry.getValue());
-			}
-		}
-
-		return torrents;
+	public int getErrorCount() {
+		return errorCount;
 	}
 
 	@Override
@@ -185,19 +174,6 @@ public class UdpTracker implements ITracker {
 	@Override
 	public String getStatus() {
 		return connection.getStatus();
-	}
-
-	public InetAddress getInetAddress() {
-		return connection.getAddress();
-	}
-
-	public void connect() {
-		try {
-			connection.connect();
-			connectionTime = System.currentTimeMillis();
-		} catch (TrackerException e) {
-			onError(e);
-		}
 	}
 
 }

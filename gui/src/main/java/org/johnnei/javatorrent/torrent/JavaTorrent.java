@@ -14,6 +14,7 @@ import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.UTMetadataExtension;
 import org.johnnei.javatorrent.torrent.download.MagnetLink;
 import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.algos.BurstPeerManager;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseData;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseUpload;
 import org.johnnei.javatorrent.torrent.download.tracker.PeerConnectorPool;
@@ -55,10 +56,10 @@ public class JavaTorrent extends Thread {
 						.registerPhase(PhaseUpload.class, PhaseUpload::new, Optional.empty())
 						.build())
 				.setTrackerFactory(new TrackerFactory.Builder()
-						.registerProtocol("udp", UdpTracker::new)
-						.build())
+						.registerProtocol("udp", UdpTracker::new))
 				.setPeerConnector(PeerConnectorPool::new)
 				.setExecutorService(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)))
+				.setPeerManager(new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio")))
 				.build();
 
 		TorrentFrame frame= new TorrentFrame(torrentClient);

@@ -4,35 +4,41 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
-import org.johnnei.javatorrent.torrent.download.tracker.PeerConnector;
 import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.network.UdpUtils;
 import org.johnnei.javatorrent.utils.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Handles the interaction with an UDP tracker endpoint
+ *
+ * @since 0.5
+ */
 public class TrackerConnection {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TrackerConnection.class);
 
-	public static final int ACTION_CONNECT = 0;
-	public static final int ACTION_ANNOUNCE = 1;
-	public static final int ACTION_SCRAPE = 2;
-	public static final int ACTION_ERROR = 3;
-	public static final int ACTION_TRANSACTION_ID_ERROR = 256;
+	private static final int CONNECTION_DURATION = 300000; //5 minutes
 
-	public static final long NO_CONNECTION_ID = 0x41727101980L;
+	private static final int ACTION_CONNECT = 0;
+	private static final int ACTION_ANNOUNCE = 1;
+	private static final int ACTION_SCRAPE = 2;
+	private static final int ACTION_ERROR = 3;
+	private static final int ACTION_TRANSACTION_ID_ERROR = 256;
+
+	private static final long NO_CONNECTION_ID = 0x41727101980L;
 
 	public static final String ERROR_CONNECTION_ID = "Connection ID missmatch.";
 
@@ -46,18 +52,13 @@ public class TrackerConnection {
 
 	private String status;
 
-	/**
-	 * The pool of {@link PeerConnector} which will connect peers for us
-	 */
-	private IPeerConnector peerConnector;
+	private final TorrentClient torrentClient;
 
-	private TrackerManager manager;
-
-	public TrackerConnection(String url, IPeerConnector peerConnector) {
-		this.peerConnector = peerConnector;
+	public TrackerConnection(String url, TorrentClient torrentClient) {
+		this.torrentClient = torrentClient;
 		connectionId = NO_CONNECTION_ID;
 		String[] urlData = url.split(":");
-		if (!urlData[0].equals("udp")) {
+		if (!"udp".equals(urlData[0])) {
 			System.err.println("Only UDP trackers are supported: " + url);
 		} else {
 			try {
@@ -73,13 +74,9 @@ public class TrackerConnection {
 		}
 	}
 
-	public boolean isConnected() {
-		return connectionId != NO_CONNECTION_ID;
-	}
-
 	public void connect() throws TrackerException {
 		setStatus("Connecting");
-		int transactionId = manager.createUniqueTransactionId();
+		int transactionId = torrentClient.getTrackerManager().createUniqueTransactionId();
 		OutStream outStream = new OutStream();
 		try {
 			outStream.writeLong(connectionId);
@@ -116,7 +113,7 @@ public class TrackerConnection {
 	 * @return The interval report by tracker or {@link UdpTracker#DEFAULT_ANNOUNCE_INTERVAL} on error
 	 */
 	public int announce(TorrentInfo torrentInfo) throws TrackerException {
-		int connectorCapacity = peerConnector.getAvailableCapacity();
+		int connectorCapacity = torrentClient.getPeerConnector().getAvailableCapacity();
 		if (connectorCapacity == 0) {
 			LOGGER.info("Ignored announce, connector is full.");
 			return (int) TimeUnit.SECONDS.toMillis(30);
@@ -124,13 +121,13 @@ public class TrackerConnection {
 
 		Torrent torrent = torrentInfo.getTorrent();
 		setStatus("Announcing");
-		int transactionId = manager.createUniqueTransactionId();
+		int transactionId = torrentClient.getTrackerManager().createUniqueTransactionId();
 		OutStream outStream = new OutStream();
 		outStream.writeLong(connectionId);
 		outStream.writeInt(ACTION_ANNOUNCE);
 		outStream.writeInt(transactionId);
 		outStream.writeByte(torrent.getHashArray());
-		outStream.writeByte(manager.getPeerId());
+		outStream.writeByte(torrentClient.getTrackerManager().getPeerId());
 		outStream.writeLong(torrent.getDownloadedBytes()); // Downloaded Bytes
 		if (torrent.getFiles() != null) {
 			outStream.writeLong(torrent.getFiles().countRemainingBytes()); // Bytes left
@@ -177,25 +174,26 @@ public class TrackerConnection {
 				InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(address), port);
 				PeerConnectInfo peerInfo = new PeerConnectInfo(torrent, socketAddress);
 
-				peerConnector.connectPeer(peerInfo);
+				torrentClient.getPeerConnector().connectPeer(peerInfo);
 			}
 			setStatus("Announced");
 			return announceInterval;
 		} catch (IOException e) {
 			setStatus("Announce failed");
-			throw new TrackerException("Tracker Packet got lost");
+			throw new TrackerException("Tracker Packet got lost", e);
 		}
 	}
 
-	public void scrape(TorrentInfo torrentInfo) throws TrackerException {
-		Torrent torrent = torrentInfo.getTorrent();
+	public void scrape(List<TorrentInfo> torrentInfos) throws TrackerException {
 		setStatus("Scraping");
-		int transactionId = manager.createUniqueTransactionId();
+		int transactionId = torrentClient.getTrackerManager().createUniqueTransactionId();
 		OutStream outStream = new OutStream();
 		outStream.writeLong(connectionId);
 		outStream.writeInt(ACTION_SCRAPE);
 		outStream.writeInt(transactionId);
-		outStream.writeByte(torrent.getHashArray());
+		torrentInfos.stream()
+				.map(torrentInfo -> torrentInfo.getTorrent().getHashArray())
+				.forEach(outStream::writeByte);
 		try {
 			UdpUtils.write(socket, address, port, outStream);
 			InStream inStream = UdpUtils.read(socket);
@@ -203,10 +201,12 @@ public class TrackerConnection {
 			if (inStream.readInt() != transactionId) {
 				action = ACTION_TRANSACTION_ID_ERROR;
 			} if (action == ACTION_SCRAPE) {
-				int seeders = inStream.readInt();
-				int downloaded = inStream.readInt();
-				int leechers = inStream.readInt();
-				torrentInfo.setInfo(seeders, leechers, downloaded);
+				for (TorrentInfo torrentInfo : torrentInfos) {
+					int seeders = inStream.readInt();
+					int downloaded = inStream.readInt();
+					int leechers = inStream.readInt();
+					torrentInfo.setInfo(seeders, leechers, downloaded);
+				}
 				setStatus("Scraped");
 			} else {
 				String error = inStream.readString(inStream.available());
@@ -215,7 +215,7 @@ public class TrackerConnection {
 				throw new TrackerException("Tracker responded with an error: " + error);
 			}
 		} catch (IOException e) {
-			throw new TrackerException("Tracker Packet got lost");
+			throw new TrackerException("Tracker Packet got lost", e);
 		}
 	}
 

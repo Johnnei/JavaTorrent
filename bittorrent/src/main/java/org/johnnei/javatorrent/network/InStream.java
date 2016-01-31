@@ -5,26 +5,26 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 public class InStream {
-	
+
 	/**
 	 * The byte array reader
 	 */
 	private ByteArrayInputStream buffer;
-	
+
 	/**
 	 * The wrapper around the {@link #buffer} which provides data-type access.
 	 */
 	private DataInputStream in;
-	
+
 	/**
 	 * The total amount of supplied bytes
 	 */
 	private int length;
-	
+
 	public InStream(byte[] data) {
 		this(data, 0, data.length);
 	}
-	
+
 	public InStream(byte[] data, int offset, int length) {
 		buffer = new ByteArrayInputStream(data, offset, length);
 		in = new DataInputStream(buffer);
@@ -72,7 +72,7 @@ public class InStream {
 			in.readFully(b, off, len);
 		} catch (IOException e) { /* Ignore */ }
 	}
-	
+
 	public byte[] readFully(int len) {
 		byte[] array = new byte[len];
 		readFully(array);
@@ -127,7 +127,7 @@ public class InStream {
 			return in.skipBytes(n);
 		} catch (IOException e) { /* Ignore */ return 0; }
 	}
-	
+
 	public void moveBack(int n) {
 		int offset = length - buffer.available() - n;
 		buffer.reset();
@@ -139,7 +139,7 @@ public class InStream {
 			return in.available();
 		} catch (IOException e) { /* Ignore */ return -1; }
 	}
-	
+
 	public String readString(int length) {
 		StringBuilder builder = new StringBuilder(length);
 		for (int i = 0; i < length; i++) {

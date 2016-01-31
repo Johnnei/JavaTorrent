@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +20,13 @@ public class TrackerFactory {
 	 */
 	private final Map<String, ITracker> trackerInstances;
 
-	private final Map<String, BiFunction<String, IPeerConnector, ITracker>> trackerSuppliers;
+	private final Map<String, BiFunction<String, TorrentClient, ITracker>> trackerSuppliers;
 
-	private final IPeerConnector peerConnector;
+	private final TorrentClient torrentClient;
 
 	private TrackerFactory(Builder builder) {
 		trackerSuppliers = builder.trackerSuppliers;
-		peerConnector = builder.peerConnector;
+		torrentClient = builder.torrentClient;
 		trackerInstances = new HashMap<>();
 	}
 
@@ -51,7 +52,7 @@ public class TrackerFactory {
 			throw new IllegalArgumentException(String.format("Unsupported protocol: %s", protocol));
 		}
 
-		return trackerSuppliers.get(protocol).apply(trackerUrl, peerConnector);
+		return trackerSuppliers.get(protocol).apply(trackerUrl, torrentClient);
 	}
 
 	public List<ITracker> getTrackingsHavingTorrent(Torrent torrent) {
@@ -73,15 +74,15 @@ public class TrackerFactory {
 
 	public static class Builder {
 
-		private Map<String, BiFunction<String, IPeerConnector, ITracker>> trackerSuppliers;
+		private Map<String, BiFunction<String, TorrentClient, ITracker>> trackerSuppliers;
 
-		private IPeerConnector peerConnector;
+		private TorrentClient torrentClient;
 
 		public Builder() {
 			trackerSuppliers = new HashMap<>();
 		}
 
-		public Builder registerProtocol(String protocol, BiFunction<String, IPeerConnector, ITracker> supplier) {
+		public Builder registerProtocol(String protocol, BiFunction<String, TorrentClient, ITracker> supplier) {
 			if (trackerSuppliers.containsKey(protocol)) {
 				LOGGER.warn(String.format("Overriding existing %s protocol implementation", protocol));
 			}
@@ -91,8 +92,8 @@ public class TrackerFactory {
 			return this;
 		}
 
-		public Builder setPeerConnector(IPeerConnector peerConnector) {
-			this.peerConnector = peerConnector;
+		public Builder setTorrentClient(TorrentClient torrentClient) {
+			this.torrentClient = torrentClient;
 			return this;
 		}
 

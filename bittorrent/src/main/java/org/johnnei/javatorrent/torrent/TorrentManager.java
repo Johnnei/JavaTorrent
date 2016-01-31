@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.torrent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.PeersReadRunnable;
@@ -51,7 +52,7 @@ public class TorrentManager {
 		}
 
 		try {
-			connectorThread = new PeerConnectionAccepter(torrentClient, this, trackerManager);
+			connectorThread = new PeerConnectionAccepter(torrentClient);
 			connectorThread.start();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -64,14 +65,20 @@ public class TorrentManager {
 		}
 	}
 
-	public Torrent getTorrent(String hash) {
+	/**
+	 * Gets the torrent associated with the given hash.
+	 * @param hash The BTIH of the torrent
+	 * @return The torrent if known.
+	 */
+	public Optional<Torrent> getTorrent(String hash) {
 		for (int i = 0; i < activeTorrents.size(); i++) {
-			Torrent t = activeTorrents.get(i);
-			if (t.getHash().equals(hash)) {
-				return t;
+			Torrent torrent = activeTorrents.get(i);
+			if (torrent.getHash().equalsIgnoreCase(hash)) {
+				return Optional.of(torrent);
 			}
 		}
-		return null;
+
+		return Optional.empty();
 	}
 
 	/**

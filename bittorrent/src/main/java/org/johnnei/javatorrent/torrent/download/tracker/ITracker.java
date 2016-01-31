@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
-import java.util.ArrayList;
-
 import org.johnnei.javatorrent.torrent.download.Torrent;
 
 public interface ITracker {
@@ -25,19 +23,6 @@ public interface ITracker {
 	 * @param torrent The torrent for which an announce event is being requested.
 	 */
 	void announce(Torrent torrent);
-
-	/**
-	 * Checks if the tracker is not on timeout for the given torrent
-	 * @param torrent the torrent which needs announcing
-	 * @return
-	 *
-	 * @deprecated The announce calls are no longer mandatory to be honored.
-	 */
-	@Deprecated
-	boolean canAnnounce(Torrent torrent);
-
-	@Deprecated
-	ArrayList<TorrentInfo> getTorrents();
 
 	void scrape();
 

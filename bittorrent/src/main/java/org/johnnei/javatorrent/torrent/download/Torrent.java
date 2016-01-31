@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.torrent.download;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +14,6 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.torrent.TorrentException;
-import org.johnnei.javatorrent.torrent.download.algos.BurstPeerManager;
 import org.johnnei.javatorrent.torrent.download.algos.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadRegulator;
@@ -24,7 +24,6 @@ import org.johnnei.javatorrent.torrent.download.files.disk.DiskJobStoreBlock;
 import org.johnnei.javatorrent.torrent.download.files.disk.IOManager;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
-import org.johnnei.javatorrent.torrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageInterested;
@@ -130,7 +129,7 @@ public class Torrent implements Runnable {
 		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
 		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
+		peerManager = torrentClient.getPeerManager();
 		phase = torrentClient.getPhaseRegulator().createInitialPhase(torrentClient, this);
 
 		thread = new Thread(this, displayName);
@@ -507,13 +506,29 @@ public class Torrent implements Runnable {
 	}
 
 	@Override
-	public boolean equals(Object object) {
-		if(object instanceof Torrent) {
-			Torrent torrent = (Torrent)object;
-			return SHA1.match(btihHash, torrent.btihHash);
-		} else {
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(btihHash);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
 			return false;
 		}
+		if (!(obj instanceof Torrent)) {
+			return false;
+		}
+		Torrent other = (Torrent) obj;
+		if (!Arrays.equals(btihHash, other.btihHash)) {
+			return false;
+		}
+		return true;
 	}
 
 	@Deprecated
