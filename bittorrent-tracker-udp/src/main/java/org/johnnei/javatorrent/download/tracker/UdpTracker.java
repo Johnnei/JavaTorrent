@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Future;
 
 import org.johnnei.javatorrent.TorrentClient;
@@ -96,15 +97,10 @@ public class UdpTracker implements ITracker {
 	 * @return The info or null if not found
 	 */
 	@Override
-	public TorrentInfo getInfo(Torrent torrent) {
+	public Optional<TorrentInfo> getInfo(Torrent torrent) {
 		synchronized (this) {
-			for (TorrentInfo torrentInfo : torrentMap.values()) {
-				if(torrentInfo.getTorrent().equals(torrent)) {
-					return torrentInfo;
-				}
-			}
+			return Optional.ofNullable(torrentMap.get(torrent));
 		}
-		return null;
 	}
 
 	/**

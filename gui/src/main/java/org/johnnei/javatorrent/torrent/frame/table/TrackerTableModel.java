@@ -63,11 +63,11 @@ public class TrackerTableModel extends AbstractTableModel {
 			case COL_STATUS:
 				return item.getStatus();
 			case COL_SEEDERS:
-				return item.getInfo(torrentFrame.getSelectedTorrent()).getSeeders();
+				return item.getInfo(torrentFrame.getSelectedTorrent()).get().getSeeders();
 			case COL_LEECHERS:
-				return item.getInfo(torrentFrame.getSelectedTorrent()).getLeechers();
+				return item.getInfo(torrentFrame.getSelectedTorrent()).get().getLeechers();
 			case COL_COMPLETED:
-				return item.getInfo(torrentFrame.getSelectedTorrent()).getDownloadCount();
+				return item.getInfo(torrentFrame.getSelectedTorrent()).get().getDownloadCount();
 			default:
 				throw new IllegalArgumentException(String.format("Column %d is outside of the column range", columnIndex));
 		}

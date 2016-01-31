@@ -59,7 +59,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrentClient.getTrackerManager().getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).setEvent(TrackerEvent.EVENT_COMPLETED));
+		torrentClient.getTrackerManager().getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).get().setEvent(TrackerEvent.EVENT_COMPLETED));
 		torrent.getLogger().info("Download completed");
 	}
 

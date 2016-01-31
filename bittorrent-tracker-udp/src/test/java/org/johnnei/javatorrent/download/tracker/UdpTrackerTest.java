@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 import org.easymock.EasyMock;
@@ -27,6 +28,8 @@ import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
 import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
+import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -73,7 +76,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 		expect(torrentClientMock.getExecutorService()).andStubReturn(service);
 		expect(torrentClientMock.getPeerManager()).andStubReturn(peerManagerMock);
 		expect(torrentClientMock.getPhaseRegulator()).andStubReturn(phaseRegulatorMock);
-		expect(phaseRegulatorMock.createInitialPhase(eq(torrentClientMock), notNull())).andReturn(downloadPhaseMock);
+		expect(phaseRegulatorMock.createInitialPhase(eq(torrentClientMock), notNull())).andStubReturn(downloadPhaseMock);
 	}
 
 	@Test
@@ -92,6 +95,26 @@ public class UdpTrackerTest extends EasyMockSupport {
 
 		assertEquals("Announce interval got ignored.", (Integer) interval, Whitebox.<Integer>getInternalState(cut, "announceInterval"));
 		assertEquals("Error count got increased on succes", 0, cut.getErrorCount());
+	}
+
+	@Test
+	public void testGetInfo() {
+		replayAll();
+
+		Torrent torrentOne = createTorrent(torrentClientMock);
+		Torrent torrentTwo = createTorrent(torrentClientMock);
+		Torrent torrentThree = createTorrent(torrentClientMock);
+
+		cut.addTorrent(torrentOne);
+		cut.addTorrent(torrentTwo);
+
+		TorrentInfo torrentInfoOne = cut.getInfo(torrentOne).orElseThrow(() -> new AssertionError("Null on existing torrent"));
+		assertEquals("Torrent info did not match torrent", torrentOne, torrentInfoOne.getTorrent());
+
+		TorrentInfo torrentInfoTwo = cut.getInfo(torrentTwo).orElseThrow(() -> new AssertionError("Null on existing torrent"));
+		assertEquals("Torrent info did not match torrent", torrentTwo, torrentInfoTwo.getTorrent());
+
+		Assert.assertEquals("Torrent info returned for not registered torrent", Optional.empty(), cut.getInfo(torrentThree));
 	}
 
 	@Test

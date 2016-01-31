@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
+import java.util.Optional;
+
 import org.johnnei.javatorrent.torrent.download.Torrent;
 
 public interface ITracker {
@@ -26,7 +28,14 @@ public interface ITracker {
 
 	void scrape();
 
-	TorrentInfo getInfo(Torrent torrent);
+	/**
+	 * Retrieves the torrent information which is stored for this tracker.
+	 * @param torrent The torrent which the information should be retrieved
+	 * @return The torrent info or empty if not registered.
+	 *
+	 * @since 0.5
+	 */
+	Optional<TorrentInfo> getInfo(Torrent torrent);
 
 	/**
 	 * Returns the a user friendly name for the current action which the being executed.
