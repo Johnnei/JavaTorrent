@@ -16,7 +16,7 @@ import org.johnnei.javatorrent.torrent.download.MagnetLink;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.algos.BurstPeerManager;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseData;
-import org.johnnei.javatorrent.torrent.download.algos.PhaseUpload;
+import org.johnnei.javatorrent.torrent.download.algos.PhaseSeed;
 import org.johnnei.javatorrent.torrent.download.tracker.PeerConnectorPool;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
 import org.johnnei.javatorrent.torrent.frame.TorrentFrame;
@@ -52,8 +52,8 @@ public class JavaTorrent extends Thread {
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, Optional.of(PhaseMetadata.class))
 						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, Optional.of(PhaseData.class))
-						.registerPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseUpload.class))
-						.registerPhase(PhaseUpload.class, PhaseUpload::new, Optional.empty())
+						.registerPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseSeed.class))
+						.registerPhase(PhaseSeed.class, PhaseSeed::new, Optional.empty())
 						.build())
 				.setTrackerFactory(new TrackerFactory.Builder()
 						.registerProtocol("udp", UdpTracker::new))

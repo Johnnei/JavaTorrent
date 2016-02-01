@@ -8,15 +8,15 @@ import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PhaseUpload implements IDownloadPhase {
+public class PhaseSeed implements IDownloadPhase {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseUpload.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseSeed.class);
 
 	private TorrentClient torrentClient;
 
 	private Torrent torrent;
 
-	public PhaseUpload(TorrentClient torrentClient, Torrent torrent) {
+	public PhaseSeed(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 	}
@@ -46,7 +46,6 @@ public class PhaseUpload implements IDownloadPhase {
 
 	@Override
 	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
