@@ -13,8 +13,12 @@ import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.encoding.Bencode;
 import org.johnnei.javatorrent.torrent.encoding.Bencoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessageHandshake implements IMessage {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MessageHandshake.class);
 
 	private String bencodedHandshake;
 
@@ -74,8 +78,7 @@ public class MessageHandshake implements IMessage {
 				peer.setClientName((String) v);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			peer.getLogger().severe("Extension handshake error: " + e.getMessage());
+			LOGGER.error("Extension handshake error", e);
 			peer.getBitTorrentSocket().close();
 		}
 	}

@@ -18,8 +18,12 @@ import org.johnnei.javatorrent.torrent.download.peer.Job;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
 import org.johnnei.javatorrent.utils.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PhaseMetadata extends AMetadataPhase {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseMetadata.class);
 
 	public PhaseMetadata(TorrentClient torrentClient, Torrent torrent) {
 		super(torrentClient, torrent);
@@ -60,7 +64,7 @@ public class PhaseMetadata extends AMetadataPhase {
 	@Override
 	public void onPhaseExit() {
 		torrent.setFiles(new Files(Config.getConfig().getTorrentFileFor(torrent.getHash())));
-		torrent.getLogger().info("Metadata download completed");
+		LOGGER.info("Metadata download completed");
 	}
 
 	@Override

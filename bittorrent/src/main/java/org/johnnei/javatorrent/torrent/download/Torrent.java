@@ -7,8 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
@@ -30,11 +28,14 @@ import org.johnnei.javatorrent.torrent.protocol.messages.MessageInterested;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
-import org.johnnei.javatorrent.utils.ConsoleLogger;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 import org.johnnei.javatorrent.utils.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Torrent implements Runnable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Torrent.class);
 
 	/**
 	 * The display name of this torrent
@@ -110,15 +111,12 @@ public class Torrent implements Runnable {
 	 */
 	private TorrentClient torrentClient;
 
-	private Logger log;
-
 	/**
 	 * The thread on which the torrent is being processed
 	 */
 	private Thread thread;
 
 	public Torrent(TorrentClient torrentClient, byte[] btihHash, String displayName) {
-		log = ConsoleLogger.createLogger(String.format("Torrent %s", StringUtil.byteArrayToString(btihHash)), Level.INFO);
 		this.displayName = displayName;
 		this.torrentClient = torrentClient;
 		this.btihHash = btihHash;
@@ -144,7 +142,7 @@ public class Torrent implements Runnable {
 	public void addPeer(Peer peer) {
 		if (hasPeer(peer)) {
 			peer.getBitTorrentSocket().close();
-			log.fine("Filtered duplicate Peer: " + peer);
+			LOGGER.trace("Filtered duplicate Peer: " + peer);
 			return;
 		}
 		synchronized (this) {
@@ -163,7 +161,7 @@ public class Torrent implements Runnable {
 	@Override
 	public void run() {
 		while(phase != null) {
-			log.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
+			LOGGER.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
 			synchronized (this) {
 				peers.forEach(p -> p.onTorrentPhaseChange());
 			}
@@ -177,7 +175,7 @@ public class Torrent implements Runnable {
 			phase.onPhaseExit();
 			phase = torrentClient.getPhaseRegulator().createNextPhase(phase, torrentClient, this).orElse(null);
 		}
-		log.info("Torrent has finished");
+		LOGGER.info("Torrent has finished");
 	}
 
 	/**
@@ -343,13 +341,13 @@ public class Torrent implements Runnable {
 	 * Calculates the current progress based on all available files on the HDD
 	 */
 	public void checkProgress() {
-		log.info("Checking progress...");
+		LOGGER.info("Checking progress...");
 		files.pieces.stream().
 			filter(p -> {
 				try {
 					return p.checkHash();
 				} catch (IOException | TorrentException e) {
-					log.warning(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
+					LOGGER.warn(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
 					return false;
 				}
 			}).
@@ -358,7 +356,7 @@ public class Torrent implements Runnable {
 				broadcastMessage(new MessageHave(p.getIndex()));
 			}
 		);
-		log.info("Checking progress done");
+		LOGGER.info("Checking progress done");
 	}
 
 	/**
@@ -529,11 +527,6 @@ public class Torrent implements Runnable {
 			return false;
 		}
 		return true;
-	}
-
-	@Deprecated
-	public Logger getLogger() {
-		return log;
 	}
 
 	public void setDownloadRegulator(IDownloadRegulator downloadRegulator) {

@@ -13,8 +13,12 @@ import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PhaseData implements IDownloadPhase {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseData.class);
 
 	private Torrent torrent;
 	private TorrentClient torrentClient;
@@ -60,7 +64,7 @@ public class PhaseData implements IDownloadPhase {
 	@Override
 	public void onPhaseExit() {
 		torrentClient.getTrackerManager().getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).get().setEvent(TrackerEvent.EVENT_COMPLETED));
-		torrent.getLogger().info("Download completed");
+		LOGGER.info("Download completed");
 	}
 
 	@Override

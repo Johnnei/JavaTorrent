@@ -5,8 +5,12 @@ import java.util.Collection;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PhaseUpload implements IDownloadPhase {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseUpload.class);
 
 	private TorrentClient torrentClient;
 
@@ -37,7 +41,7 @@ public class PhaseUpload implements IDownloadPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrent.getLogger().info("Upload target reached");
+		LOGGER.info("Upload target reached");
 	}
 
 	@Override

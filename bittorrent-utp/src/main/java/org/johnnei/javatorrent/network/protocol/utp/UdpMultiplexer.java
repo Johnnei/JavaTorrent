@@ -4,24 +4,25 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
 import org.johnnei.javatorrent.torrent.network.Stream;
 import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
 import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
-import org.johnnei.javatorrent.utils.ConsoleLogger;
 import org.johnnei.javatorrent.utils.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UdpMultiplexer extends Thread {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(UdpMultiplexer.class);
+
 	private static UdpMultiplexer instance = new UdpMultiplexer();
-	
+
 	public static UdpMultiplexer getInstance() {
 		return instance;
 	}
-	
+
 	private final Object BST_LOCK = new Object();
 	/**
 	 * The Factory to create the packet instances<br/>
@@ -36,7 +37,7 @@ public class UdpMultiplexer extends Thread {
 	 * All {@link UtpSocket}s which have registered to listen for packets
 	 */
 	private BinarySearchTree<UtpSocket> utpSockets;
-	
+
 	private UdpMultiplexer() {
 		super("UdpMultiplexer");
 		utpSockets = new BinarySearchTree<>();
@@ -47,9 +48,9 @@ public class UdpMultiplexer extends Thread {
 			start();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}		
+		}
 	}
-	
+
 	/**
 	 * Registers a socket to the UdpMultiplexer<br/>
 	 * Packet received will only be directed to registered sockets
@@ -60,7 +61,7 @@ public class UdpMultiplexer extends Thread {
 			utpSockets.add(socket);
 		}
 	}
-	
+
 	/**
 	 * Removes a socket from the UdpMultiplexer
 	 * @param socket The socket to remove
@@ -70,7 +71,7 @@ public class UdpMultiplexer extends Thread {
 			utpSockets.remove(socket);
 		}
 	}
-	
+
 	public void updateTimeout() {
 		Iterator<UtpSocket> i;
 		synchronized (BST_LOCK) {
@@ -82,7 +83,7 @@ public class UdpMultiplexer extends Thread {
 			socket.checkDisconnect();
 		}
 	}
-	
+
 	/**
 	 * Tries to send the UdpPacket
 	 * @param packet The packet to send
@@ -97,11 +98,9 @@ public class UdpMultiplexer extends Thread {
 			return false;
 		}
 	}
-	
+
 	@Override
 	public void run() {
-		Logger log = ConsoleLogger.createLogger("UDP Multiplexer", Level.INFO);
-		
 		while(true) {
 			try {
 				byte[] dataBuffer = new byte[25600]; //25kB buffer
@@ -122,17 +121,17 @@ public class UdpMultiplexer extends Thread {
 							utpPacket.process(socket);
 						}
 					} catch (IllegalArgumentException e) {
-						log.fine(String.format("Invalid Packet of %d bytes with type %d (%s:%d)",
+						LOGGER.trace(String.format("Invalid Packet of %d bytes with type %d (%s:%d)",
 							packet.getLength(), type, packet.getAddress(), packet.getPort())
 						);
 					}
 				} else {
-					log.fine(String.format("Invalid Packet of %d bytes with version %d (%s:%d)",
+					LOGGER.trace(String.format("Invalid Packet of %d bytes with version %d (%s:%d)",
 						packet.getLength(), version, packet.getAddress(), packet.getPort())
 					);
 				}
 			} catch (IOException e) {
-				
+
 			}
 		}
 	}
