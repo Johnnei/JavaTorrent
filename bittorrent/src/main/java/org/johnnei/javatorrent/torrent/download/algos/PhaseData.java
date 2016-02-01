@@ -59,7 +59,7 @@ public class PhaseData implements IDownloadPhase {
 	@Override
 	public void onPhaseEnter() {
 		torrent.checkProgress();
-		torrent.setDownloadRegulator(new FullPieceSelect(torrent));
+		torrent.setPieceSelector(new FullPieceSelect(torrent));
 	}
 
 	@Override

@@ -14,7 +14,7 @@ import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.download.algos.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.algos.IDownloadRegulator;
+import org.johnnei.javatorrent.torrent.download.algos.IPieceSelector;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
@@ -71,7 +71,7 @@ public class Torrent implements Runnable {
 	/**
 	 * Regulates the selection of pieces and the peers to download the pieces
 	 */
-	private IDownloadRegulator downloadRegulator;
+	private IPieceSelector pieceSelector;
 	/**
 	 * Regulates the connection with peers
 	 */
@@ -126,7 +126,7 @@ public class Torrent implements Runnable {
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
-		downloadRegulator = new FullPieceSelect(this);
+		pieceSelector = new FullPieceSelect(this);
 		peerManager = torrentClient.getPeerManager();
 		phase = torrentClient.getPhaseRegulator().createInitialPhase(torrentClient, this);
 
@@ -499,8 +499,8 @@ public class Torrent implements Runnable {
 	 * The regulator which is managing this download
 	 * @return The current assigned regulator
 	 */
-	public IDownloadRegulator getDownloadRegulator() {
-		return downloadRegulator;
+	public IPieceSelector getDownloadRegulator() {
+		return pieceSelector;
 	}
 
 	@Override
@@ -529,8 +529,8 @@ public class Torrent implements Runnable {
 		return true;
 	}
 
-	public void setDownloadRegulator(IDownloadRegulator downloadRegulator) {
-		this.downloadRegulator = downloadRegulator;
+	public void setPieceSelector(IPieceSelector downloadRegulator) {
+		this.pieceSelector = downloadRegulator;
 	}
 
 }

@@ -53,7 +53,7 @@ public class StubEntity {
 
 		public AFilesStub(int pieceCount) {
 			fileInfos = new ArrayList<>();
-			fileInfos.add(new FileInfo(1, 0, new File("./mock.tmp"), pieceCount));
+			fileInfos.add(new FileInfo(1, 0, new File("./target/tmp/afilesstub.tmp"), pieceCount));
 			pieces = new ArrayList<>();
 			for (int i = 0; i < pieceCount; i++) {
 				pieces.add(new Piece(this, new byte[] {}, i, 1, 1));

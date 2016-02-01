@@ -58,7 +58,7 @@ public class PhaseMetadata extends AMetadataPhase {
 	@Override
 	public void onPhaseEnter() {
 		super.onPhaseEnter();
-		torrent.setDownloadRegulator(new MetadataSelect(torrent));
+		torrent.setPieceSelector(new MetadataSelect(torrent));
 	}
 
 	@Override

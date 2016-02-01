@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.torrent.download.algos;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
@@ -40,7 +41,7 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 			byte[] data = new byte[(int)fileAccess.length()];
 			fileAccess.seek(0);
 			fileAccess.read(data, 0, data.length);
-			if(SHA1.match(SHA1.hash(data), torrent.getHashArray())) {
+			if(Arrays.equals(SHA1.hash(data), torrent.getHashArray())) {
 				foundMatchingFile = true;
 				LOGGER.info("Found pre-downloaded Torrent file");
 			}

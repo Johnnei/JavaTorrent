@@ -1,13 +1,13 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrentUtil;
@@ -121,7 +121,7 @@ public class PeerConnector implements Runnable {
 	private BitTorrentHandshake checkHandshake(BitTorrentSocket peerSocket, byte[] torrentHash) throws IOException {
 		BitTorrentHandshake handshake = peerSocket.readHandshake();
 
-		if (!SHA1.match(torrentHash, handshake.getTorrentHash())) {
+		if (!Arrays.equals(torrentHash, handshake.getTorrentHash())) {
 			throw new IOException(String.format("Peer does not download the same torrent (Expected: %s, Got: %s)", StringUtil.byteArrayToString(torrentHash), StringUtil.byteArrayToString(handshake.getTorrentHash())));
 		}
 

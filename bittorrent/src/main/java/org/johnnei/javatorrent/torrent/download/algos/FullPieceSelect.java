@@ -12,11 +12,11 @@ import org.johnnei.javatorrent.torrent.download.peer.Peer;
  * An basic improvement on {@link RandomSelect} RandomSelect.<br/>
  * Select a started piece, if none available: select the most available<br/>
  * Peer selection works the same as in {@link RandomSelect}
- * 
+ *
  * @author Johnnei
- * 
+ *
  */
-public class FullPieceSelect implements IDownloadRegulator {
+public class FullPieceSelect implements IPieceSelector {
 
 	private Torrent torrent;
 
@@ -24,14 +24,9 @@ public class FullPieceSelect implements IDownloadRegulator {
 		this.torrent = torrent;
 	}
 
-	@Override
-	public String getName() {
-		return "Full Pieces first pass";
-	}
-
 	/**
 	 * Gets the most available not started piece
-	 * 
+	 *
 	 * @return
 	 */
 	private Piece getMostAvailable() {
@@ -42,8 +37,9 @@ public class FullPieceSelect implements IDownloadRegulator {
 		for (Piece piece : undownloaded) {
 			ArrayList<Peer> peers = torrent.getDownloadablePeers();
 			for (Peer p : peers) {
-				if (p.hasPiece(piece.getIndex()))
+				if (p.hasPiece(piece.getIndex())) {
 					availability[piece.getIndex()]++;
+				}
 				if (availability[piece.getIndex()] > max) {
 					if (piece.getRequestedCount() == 0) {
 						max = availability[piece.getIndex()];
@@ -52,9 +48,9 @@ public class FullPieceSelect implements IDownloadRegulator {
 				}
 			}
 		}
-		if (mostAvailable == null)
+		if (mostAvailable == null) {
 			return null;
-		else {
+		} else {
 			return mostAvailable;
 		}
 	}
