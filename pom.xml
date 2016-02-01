@@ -47,6 +47,12 @@
       </dependency>
       <dependency>
         <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-bittorrent</artifactId>
+        <type>test-jar</type>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.johnnei</groupId>
         <artifactId>javatorrent-bittorrent-utp</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -1,9 +1,7 @@
 package org.johnnei.javatorrent.download.tracker;
 
-import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
-import static org.easymock.EasyMock.notNull;
 import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -13,21 +11,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
 import org.easymock.EasyMock;
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.easymock.Mock;
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.test.ExecutorServiceMock;
+import org.johnnei.javatorrent.test.StubEntity;
 import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.test.Whitebox;
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
-import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
 import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,20 +33,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 
 	private UdpTracker cut;
 
-	@Mock
 	private TorrentClient torrentClientMock;
-
-	@Mock
-	private IPeerConnector peerConnectorMock;
-
-	@Mock
-	private IPeerManager peerManagerMock;
-
-	@Mock
-	private PhaseRegulator phaseRegulatorMock;
-
-	@Mock
-	private IDownloadPhase downloadPhaseMock;
 
 	@Mock
 	private TrackerConnection trackerConnectionMock;
@@ -66,17 +46,9 @@ public class UdpTrackerTest extends EasyMockSupport {
 	public void setUp() {
 		fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 		clock = new TestClock(fixedClock);
+		torrentClientMock = StubEntity.stubTorrentClient(this);
 		cut = new UdpTracker("udp://localhost:80", torrentClientMock, clock);
 		Whitebox.setInternalState(cut, "connection", trackerConnectionMock);
-
-		ExecutorService service = new ExecutorServiceMock();
-
-		// Setup getters
-		expect(torrentClientMock.getPeerConnector()).andStubReturn(peerConnectorMock);
-		expect(torrentClientMock.getExecutorService()).andStubReturn(service);
-		expect(torrentClientMock.getPeerManager()).andStubReturn(peerManagerMock);
-		expect(torrentClientMock.getPhaseRegulator()).andStubReturn(phaseRegulatorMock);
-		expect(phaseRegulatorMock.createInitialPhase(eq(torrentClientMock), notNull())).andStubReturn(downloadPhaseMock);
 	}
 
 	@Test

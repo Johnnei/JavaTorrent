@@ -4,8 +4,14 @@ import java.util.Random;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 
 public class DummyEntity {
+
+	public static Peer createPeer(Torrent torrent) {
+		return new Peer(new BitTorrentSocket(null), torrent);
+	}
 
 	public static Torrent createTorrent(TorrentClient torrentClient) {
 		Random random = new Random();

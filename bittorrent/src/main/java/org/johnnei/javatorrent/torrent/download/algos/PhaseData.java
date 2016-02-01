@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.torrent.download.algos;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.IMessage;
@@ -69,7 +70,10 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
-		// TODO Auto-generated method stub
-		return null;
+		Collection<Piece> neededPiece = torrent.getFiles().getNeededPieces().collect(Collectors.toList());
+
+		return peers.stream()
+				.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())))
+				.collect(Collectors.toList());
 	}
 }
