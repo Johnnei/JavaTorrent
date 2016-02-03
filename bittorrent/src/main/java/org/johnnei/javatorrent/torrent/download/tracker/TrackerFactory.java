@@ -3,11 +3,12 @@ package org.johnnei.javatorrent.torrent.download.tracker;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.utils.CheckedBiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,7 @@ public class TrackerFactory {
 	 */
 	private final Map<String, ITracker> trackerInstances;
 
-	private final Map<String, BiFunction<String, TorrentClient, ITracker>> trackerSuppliers;
+	private final Map<String, CheckedBiFunction<String, TorrentClient, ITracker, TrackerException>> trackerSuppliers;
 
 	private final TorrentClient torrentClient;
 
@@ -37,9 +38,9 @@ public class TrackerFactory {
 	 *
 	 * @throws IllegalArgumentException When the given tracker URL doesn't contain a protocol definition or an incomplete definition.
 	 */
-	public ITracker getTrackerFor(String trackerUrl) {
+	public Optional<ITracker> getTrackerFor(String trackerUrl) {
 		if (trackerInstances.containsKey(trackerUrl)) {
-			return trackerInstances.get(trackerUrl);
+			return Optional.of(trackerInstances.get(trackerUrl));
 		}
 
 		if (!trackerUrl.contains("://")) {
@@ -52,7 +53,12 @@ public class TrackerFactory {
 			throw new IllegalArgumentException(String.format("Unsupported protocol: %s", protocol));
 		}
 
-		return trackerSuppliers.get(protocol).apply(trackerUrl, torrentClient);
+		try {
+			return Optional.of(trackerSuppliers.get(protocol).apply(trackerUrl, torrentClient));
+		} catch (TrackerException e) {
+			LOGGER.warn(String.format("Failed create new tracker for url: %s", trackerUrl), e);
+			return Optional.empty();
+		}
 	}
 
 	public List<ITracker> getTrackingsHavingTorrent(Torrent torrent) {
@@ -74,7 +80,7 @@ public class TrackerFactory {
 
 	public static class Builder {
 
-		private Map<String, BiFunction<String, TorrentClient, ITracker>> trackerSuppliers;
+		private Map<String, CheckedBiFunction<String, TorrentClient, ITracker, TrackerException>> trackerSuppliers;
 
 		private TorrentClient torrentClient;
 
@@ -82,7 +88,7 @@ public class TrackerFactory {
 			trackerSuppliers = new HashMap<>();
 		}
 
-		public Builder registerProtocol(String protocol, BiFunction<String, TorrentClient, ITracker> supplier) {
+		public Builder registerProtocol(String protocol, CheckedBiFunction<String, TorrentClient, ITracker, TrackerException> supplier) {
 			if (trackerSuppliers.containsKey(protocol)) {
 				LOGGER.warn(String.format("Overriding existing %s protocol implementation", protocol));
 			}

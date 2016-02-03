@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.download.tracker;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -8,13 +10,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.async.CallbackFuture;
+import org.johnnei.javatorrent.download.tracker.udp.AnnounceRequest;
+import org.johnnei.javatorrent.download.tracker.udp.Connection;
+import org.johnnei.javatorrent.download.tracker.udp.ScrapeRequest;
+import org.johnnei.javatorrent.download.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
 import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
 import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +34,21 @@ public class UdpTracker implements ITracker {
 
 	private static final int DEFAULT_SCRAPE_INTERVAL = 10000;
 
+	public static final String STATE_ANNOUNCING = "Announcing";
+
+	public static final String STATE_SCRAPING = "Scraping";
+
+	public static final String STATE_CONNECTING = "Connecting";
+
+	public static final String STATE_IDLE = "Idle";
+
+	public static final String STATE_CRASHED = "Invalid tracker";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpTracker.class);
 
+	/**
+	 * The torrent client which created this tracker
+	 */
 	private final TorrentClient torrentClient;
 
 	/**
@@ -35,7 +56,10 @@ public class UdpTracker implements ITracker {
 	 */
 	private Clock clock;
 
-	private TrackerConnection connection;
+	/**
+	 * The UDP socket wrapper to interact with the tracker
+	 */
+	private UdpTrackerSocket trackerSocket;
 
 	/**
 	 * A hashmap containing all torrents which this tracker is supposed to know
@@ -53,22 +77,56 @@ public class UdpTracker implements ITracker {
 	private int announceInterval;
 
 	/**
-	 * The amount of tracker errors detected<br/>
-	 * Successful operation decrease errorCount by 1 to a minimum of 0
+	 * The endpoint at which the tracker is available
 	 */
-	private int errorCount;
+	private InetSocketAddress trackerAddress;
 
-	public UdpTracker(String url, TorrentClient torrentClient) {
-		this(url, torrentClient, Clock.systemDefaultZone());
+	/**
+	 * The current connection with the tracker
+	 */
+	private Connection activeConnection;
+
+	/**
+	 * The display name for the tracker
+	 */
+	private String name;
+
+	/**
+	 * The current status
+	 */
+	private String status;
+
+	public UdpTracker(TorrentClient torrentClient, UdpTrackerSocket trackerSocket, String url) throws TrackerException {
+		this(torrentClient, trackerSocket, url, Clock.systemDefaultZone());
 	}
 
-	public UdpTracker(String url, TorrentClient torrentClient, Clock clock) {
+	public UdpTracker(TorrentClient torrentClient, UdpTrackerSocket trackerSocket, String url, Clock clock) throws TrackerException {
 		this.torrentClient = torrentClient;
 		this.clock = clock;
-		connection = new TrackerConnection(url, torrentClient);
+		this.trackerSocket = trackerSocket;
+
 		torrentMap = new HashMap<>();
 		announceInterval = (int) TorrentInfo.DEFAULT_ANNOUNCE_INTERVAL.toMillis();
 		lastScrapeTime = LocalDateTime.now(clock).minus(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS);
+
+		// Parse URL
+		Pattern regex = Pattern.compile("udp://([^:]+):(\\d+)");
+		Matcher matcher = regex.matcher(url);
+
+		if (!matcher.matches()) {
+			throw new TrackerException(String.format("Tracker url doesn't match the expected format. URL: %s", url));
+		}
+
+		try {
+			InetAddress address = InetAddress.getByName(matcher.group(1));
+			int port = Integer.parseInt(matcher.group(2));
+			trackerAddress = new InetSocketAddress(address, port);
+			status = STATE_IDLE;
+		} catch (Exception e) {
+			name = "Unknown";
+			status = STATE_CRASHED;
+			LOGGER.warn(String.format("Failed to resolve tracker: %s", url), e);
+		}
 	}
 
 	/* (non-Javadoc)
@@ -103,6 +161,11 @@ public class UdpTracker implements ITracker {
 		}
 	}
 
+	@Override
+	public void connectPeer(PeerConnectInfo peer) {
+		torrentClient.getPeerConnector().connectPeer(peer);
+	}
+
 	/**
 	 * Scrapes all torrents for this tracker
 	 * TODO Improve the tracker implementation to allow multiple torrents to be scraped at once
@@ -115,23 +178,9 @@ public class UdpTracker implements ITracker {
 		}
 
 		synchronized (this) {
-			for (TorrentInfo torrentInfo : torrentMap.values()) {
-				torrentClient.getExecutorService()
-						.submit(new CallbackFuture<Void>(() -> {
-							connection.scrape(Collections.singletonList(torrentInfo));
-							return null;
-						}, this::trackerCallback));
-			}
-		}
-	}
-
-	private void trackerCallback(Future<Void> task) {
-		try {
-			task.get();
-			errorCount = Math.max(errorCount - 1, 0);
-		} catch (Exception e) {
-			LOGGER.warn("Request failed.", e);
-			errorCount++;
+			torrentMap.values().stream()
+					.map(torrentInfo -> torrentInfo.getTorrent())
+					.forEach(torrent -> trackerSocket.submitRequest(this, new ScrapeRequest(Collections.singletonList(torrent))));
 		}
 	}
 
@@ -147,26 +196,37 @@ public class UdpTracker implements ITracker {
 			return;
 		}
 
-		torrentClient.getExecutorService()
-			.submit(new CallbackFuture<Void>(() -> {
-				announceInterval = connection.announce(torrentInfo);
-				torrentInfo.updateAnnounceTime();
-				return null;
-			}, this::trackerCallback));
-	}
-
-	public int getErrorCount() {
-		return errorCount;
+		trackerSocket.submitRequest(this, new AnnounceRequest(torrentInfo, torrentClient.getTrackerManager().getPeerId()));
 	}
 
 	@Override
 	public String getName() {
-		return connection.getTrackerName();
+		return name;
 	}
 
 	@Override
 	public String getStatus() {
-		return connection.getStatus();
+		return status;
+	}
+
+	/**
+	 * Updates the connection
+	 * @param connection
+	 */
+	public void setConnection(Connection connection) {
+		this.activeConnection = connection;
+	}
+
+	public Connection getConnection() {
+		return activeConnection;
+	}
+
+	public void setAnnounceInterval(int interval) {
+		announceInterval = interval;
+	}
+
+	public InetSocketAddress getSocketAddress() {
+		return trackerAddress;
 	}
 
 }

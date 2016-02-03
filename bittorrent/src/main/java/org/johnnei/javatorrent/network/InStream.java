@@ -148,4 +148,12 @@ public class InStream {
 		return builder.toString();
 	}
 
+	public void mark() {
+		buffer.mark(buffer.available());
+	}
+
+	public void resetToMark() {
+		buffer.reset();
+	}
+
 }

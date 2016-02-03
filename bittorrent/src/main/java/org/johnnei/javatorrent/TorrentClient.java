@@ -5,17 +5,21 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.torrent.TorrentManager;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
 import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
 import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
 import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.protocol.MessageFactory;
+import org.johnnei.javatorrent.utils.CheckedBiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,6 +157,7 @@ public class TorrentClient {
 
 		public Builder() {
 			messageFactoryBuilder = new MessageFactory.Builder();
+			trackerFactoryBuilder = new TrackerFactory.Builder();
 			modules = new ArrayList<>();
 		}
 
@@ -164,9 +169,26 @@ public class TorrentClient {
 			}
 
 			modules.add(module);
-			module.getMessages().forEach(messageFactoryBuilder::registerMessage);
+			return this;
+		}
 
-			// TODO Enable the reserved bits
+		/**
+		 * Returns the list of reserved bits to enable to indicate that we support this extension.
+		 * The bit numbers are represented in the following order: Right to left, starting at zero.
+		 * For reference see BEP 10 which indicates that bit 20 must be enabled.
+		 * @param bit The bit to enable.
+		 */
+		public void enableExtensionBit(int bit) {
+			// TODO Implement
+		}
+
+		public Builder registerMessage(int id, Supplier<IMessage> messageSupplier) {
+			messageFactoryBuilder.registerMessage(id, messageSupplier);
+			return this;
+		}
+
+		public Builder registerTrackerProtocol(String protocol, CheckedBiFunction<String, TorrentClient, ITracker, TrackerException> supplier) {
+			trackerFactoryBuilder.registerProtocol(protocol, supplier);
 			return this;
 		}
 
@@ -177,11 +199,6 @@ public class TorrentClient {
 
 		public Builder setConnectionDegradation(ConnectionDegradation connectionDegradation) {
 			this.connectionDegradation = connectionDegradation;
-			return this;
-		}
-
-		public Builder setTrackerFactory(TrackerFactory.Builder trackerFactory) {
-			this.trackerFactoryBuilder = trackerFactory;
 			return this;
 		}
 

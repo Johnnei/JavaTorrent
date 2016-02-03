@@ -7,7 +7,6 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.download.algos.PhaseMetadata;
 import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
-import org.johnnei.javatorrent.download.tracker.UdpTracker;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.javatorrent.network.protocol.TcpSocket;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
@@ -18,7 +17,6 @@ import org.johnnei.javatorrent.torrent.download.algos.BurstPeerManager;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseData;
 import org.johnnei.javatorrent.torrent.download.algos.PhaseSeed;
 import org.johnnei.javatorrent.torrent.download.tracker.PeerConnectorPool;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
 import org.johnnei.javatorrent.torrent.frame.TorrentFrame;
 import org.johnnei.javatorrent.utils.config.Config;
 import org.slf4j.Logger;
@@ -55,8 +53,6 @@ public class JavaTorrent extends Thread {
 						.registerPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseSeed.class))
 						.registerPhase(PhaseSeed.class, PhaseSeed::new, Optional.empty())
 						.build())
-				.setTrackerFactory(new TrackerFactory.Builder()
-						.registerProtocol("udp", UdpTracker::new))
 				.setPeerConnector(PeerConnectorPool::new)
 				.setExecutorService(Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)))
 				.setPeerManager(new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio")))

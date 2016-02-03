@@ -2,7 +2,6 @@ package org.johnnei.javatorrent.test;
 
 import java.util.Random;
 
-import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
@@ -13,7 +12,7 @@ public class DummyEntity {
 		return new Peer(new BitTorrentSocket(null), torrent);
 	}
 
-	public static Torrent createTorrent(TorrentClient torrentClient) {
+	public static Torrent createTorrent() {
 		Random random = new Random();
 
 		byte[] hash = new byte[20];
@@ -21,7 +20,27 @@ public class DummyEntity {
 			hash[i] = (byte) (random.nextInt() & 0xff);
 		};
 
-		return new Torrent(torrentClient, hash, "Dummy Torrent");
+		return new Torrent.Builder()
+				.setHash(hash)
+				.setName("Dummy Torrent")
+				.build();
+	}
+
+	public static byte[] createPeerId() {
+		Random random = new Random();
+		byte[] peerId = new byte[20];
+		peerId[0] = '-';
+		peerId[1] = 'J';
+		peerId[2] = 'T';
+		peerId[3] = '0';
+		peerId[4] = '0';
+		peerId[5] = '1';
+		peerId[6] = '1';
+		peerId[7] = '-';
+		for (int i = 8; i < peerId.length; i++) {
+			peerId[i] = (byte) (random.nextInt() & 0xFF);
+		}
+		return peerId;
 	}
 
 }

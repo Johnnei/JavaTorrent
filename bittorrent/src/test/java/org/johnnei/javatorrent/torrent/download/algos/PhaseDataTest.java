@@ -42,7 +42,7 @@ public class PhaseDataTest extends EasyMockSupport {
 
 		replayAll();
 
-		Torrent torrent = DummyEntity.createTorrent(torrentClientMock);
+		Torrent torrent = DummyEntity.createTorrent();
 		torrent.setFiles(StubEntity.stubAFiles(5));
 
 		List<Peer> peerList = Arrays.asList(peerOne, peerTwo, peerThree, peerFour, peerFive);

@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.torrent.download.tracker;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
 
 public interface ITracker {
 
@@ -26,7 +27,16 @@ public interface ITracker {
 	 */
 	void announce(Torrent torrent);
 
+	/**
+	 * Requests a scrape off all known torrent in this tracker.
+	 */
 	void scrape();
+
+	/**
+	 * Dispatches the connecting of a peer by the tracker
+	 * @param peer The peer connection information
+	 */
+	public void connectPeer(PeerConnectInfo peer);
 
 	/**
 	 * Retrieves the torrent information which is stored for this tracker.

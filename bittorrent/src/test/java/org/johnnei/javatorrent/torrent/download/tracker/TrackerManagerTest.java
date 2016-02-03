@@ -7,6 +7,7 @@ import static org.easymock.EasyMock.same;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.easymock.EasyMockRunner;
@@ -81,7 +82,7 @@ public class TrackerManagerTest extends EasyMockSupport {
 		ITracker trackerMock = createMock(ITracker.class);
 		final String trackerUrl = "udp://localhost:80";
 
-		expect(trackerFactoryMock.getTrackerFor(eq(trackerUrl))).andReturn(trackerMock);
+		expect(trackerFactoryMock.getTrackerFor(eq(trackerUrl))).andReturn(Optional.of(trackerMock));
 		trackerMock.addTorrent(same(torrent));
 		expectLastCall();
 

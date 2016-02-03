@@ -14,8 +14,8 @@ import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.download.algos.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.algos.IPieceSelector;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
+import org.johnnei.javatorrent.torrent.download.algos.IPieceSelector;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJobStoreBlock;
@@ -116,6 +116,31 @@ public class Torrent implements Runnable {
 	 */
 	private Thread thread;
 
+	public Torrent(Builder builder) {
+		displayName = builder.displayName;
+		torrentClient = builder.torrentClient;
+		btihHash = builder.hash;
+		peerManager = builder.peerManager;
+		phase = builder.phase;
+		torrentHaltingOperations = new AtomicInteger();
+		downloadedBytes = 0L;
+		peers = new LinkedList<Peer>();
+		keepDownloading = true;
+		status = "Parsing Magnet Link";
+		ioManager = new IOManager();
+		pieceSelector = new FullPieceSelect(this);
+		thread = new Thread(this, displayName);
+	}
+
+	/**
+	 *
+	 * @param torrentClient
+	 * @param btihHash
+	 * @param displayName
+	 *
+	 * @deprecated Replaced by {@link #Torrent(Builder)}
+	 */
+	@Deprecated
 	public Torrent(TorrentClient torrentClient, byte[] btihHash, String displayName) {
 		this.displayName = displayName;
 		this.torrentClient = torrentClient;
@@ -531,6 +556,49 @@ public class Torrent implements Runnable {
 
 	public void setPieceSelector(IPieceSelector downloadRegulator) {
 		this.pieceSelector = downloadRegulator;
+	}
+
+	public static final class Builder {
+
+		private TorrentClient torrentClient;
+
+		private String displayName;
+
+		private IPeerManager peerManager;
+
+		private IDownloadPhase phase;
+
+		private byte[] hash;
+
+		public Builder setTorrentClient(TorrentClient torrentClient) {
+			this.torrentClient = torrentClient;
+			return this;
+		}
+
+		public Builder setHash(byte[] hash) {
+			this.hash = hash;
+			return this;
+		}
+
+		public Builder setName(String name) {
+			this.displayName = name;
+			return this;
+		}
+
+		public Builder setPeerManager(IPeerManager peerManager) {
+			this.peerManager = peerManager;
+			return this;
+		}
+
+		public Builder setInitialPhase(IDownloadPhase phase) {
+			this.phase = phase;
+			return this;
+		}
+
+		public Torrent build() {
+			return new Torrent(this);
+		}
+
 	}
 
 }

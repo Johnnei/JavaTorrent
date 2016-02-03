@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,13 +55,18 @@ public class TrackerManager {
 	}
 
 	/**
-	 * Adds the torrent to the tracker and registers the tracker
+	 * Adds the torrent to the tracker and registers the tracker.
+	 * If the tracker cannot be resolved this call will have no side-effects.
 	 * @param torrent The torrent to add
 	 * @param tracker The tracker url
 	 */
 	public void addTorrent(Torrent torrent, String trackerUrl) {
-		final ITracker tracker = getTrackerFor(trackerUrl);
-		tracker.addTorrent(torrent);
+		final Optional<ITracker> tracker = getTrackerFor(trackerUrl);
+		if (!tracker.isPresent()) {
+			return;
+		}
+
+		tracker.get().addTorrent(torrent);
 	}
 
 	/**
@@ -68,7 +74,7 @@ public class TrackerManager {
 	 * @param tracker The tracker to find
 	 * @return the tracker
 	 */
-	private ITracker getTrackerFor(String trackerUrl) {
+	private Optional<ITracker> getTrackerFor(String trackerUrl) {
 		return trackerFactory.getTrackerFor(trackerUrl);
 	}
 

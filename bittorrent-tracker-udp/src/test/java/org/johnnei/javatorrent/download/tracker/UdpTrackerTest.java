@@ -1,7 +1,11 @@
 package org.johnnei.javatorrent.download.tracker;
 
+import static org.easymock.EasyMock.and;
+import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.newCapture;
+import static org.easymock.EasyMock.notNull;
+import static org.easymock.EasyMock.same;
 import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -12,16 +16,19 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
 
-import org.easymock.EasyMock;
+import org.easymock.Capture;
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.easymock.Mock;
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.test.StubEntity;
+import org.johnnei.javatorrent.download.tracker.udp.IUdpTrackerPayload;
+import org.johnnei.javatorrent.download.tracker.udp.UdpTrackerSocket;
+import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestClock;
-import org.johnnei.javatorrent.test.Whitebox;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -36,46 +43,62 @@ public class UdpTrackerTest extends EasyMockSupport {
 	private TorrentClient torrentClientMock;
 
 	@Mock
-	private TrackerConnection trackerConnectionMock;
+	private UdpTrackerSocket udpTrackerSocketMock;
 
 	private TestClock clock;
 
 	private Clock fixedClock;
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
 		fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 		clock = new TestClock(fixedClock);
-		torrentClientMock = StubEntity.stubTorrentClient(this);
-		cut = new UdpTracker("udp://localhost:80", torrentClientMock, clock);
-		Whitebox.setInternalState(cut, "connection", trackerConnectionMock);
+		torrentClientMock = createMock(TorrentClient.class);
+		cut = new UdpTracker(torrentClientMock, udpTrackerSocketMock, "udp://localhost:80", clock);
 	}
 
 	@Test
 	public void testAnnounce() throws Exception {
-		final int interval = 12345;
-		expect(trackerConnectionMock.announce(EasyMock.notNull())).andReturn(interval);
+		Capture<IUdpTrackerPayload> payloadCapture = newCapture();
+		udpTrackerSocketMock.submitRequest(same(cut), and(capture(payloadCapture), notNull()));
+
+		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
+		expect(torrentClientMock.getTrackerManager()).andStubReturn(trackerManagerMock);
+		expect(trackerManagerMock.getPeerId()).andReturn(DummyEntity.createPeerId());
 
 		replayAll();
 
-		Torrent torrent = createTorrent(torrentClientMock);
+		Torrent torrent = createTorrent();
 
 		cut.addTorrent(torrent);
 		cut.announce(torrent);
 
 		verifyAll();
-
-		assertEquals("Announce interval got ignored.", (Integer) interval, Whitebox.<Integer>getInternalState(cut, "announceInterval"));
-		assertEquals("Error count got increased on succes", 0, cut.getErrorCount());
+		assertEquals("Incorrect Tracker request type", TrackerAction.ANNOUNCE, payloadCapture.getValue().getAction());
 	}
+
+	@Test
+	public void testAnnounceWithinInterval() throws Exception {
+		replayAll();
+
+		Torrent torrent = createTorrent();
+
+		cut.addTorrent(torrent);
+		// Move clock back to simulate that we're still in the interval period
+		clock.setClock(Clock.offset(fixedClock, Duration.ofSeconds(-10)));
+		cut.announce(torrent);
+
+		verifyAll();
+	}
+
 
 	@Test
 	public void testGetInfo() {
 		replayAll();
 
-		Torrent torrentOne = createTorrent(torrentClientMock);
-		Torrent torrentTwo = createTorrent(torrentClientMock);
-		Torrent torrentThree = createTorrent(torrentClientMock);
+		Torrent torrentOne = createTorrent();
+		Torrent torrentTwo = createTorrent();
+		Torrent torrentThree = createTorrent();
 
 		cut.addTorrent(torrentOne);
 		cut.addTorrent(torrentTwo);
@@ -90,44 +113,24 @@ public class UdpTrackerTest extends EasyMockSupport {
 	}
 
 	@Test
-	public void testAnnounceWithinInterval() throws Exception {
-		replayAll();
-
-		Torrent torrent = createTorrent(torrentClientMock);
-
-		cut.addTorrent(torrent);
-
-		// Move clock back to simulate that we're still in the interval period
-		clock.setClock(Clock.offset(fixedClock, Duration.ofSeconds(-10)));
-
-		cut.announce(torrent);
-
-		verifyAll();
-
-		assertEquals("Error count got increased on succes", 0, cut.getErrorCount());
-	}
-
-	@Test
 	public void testScrape() throws Exception {
-		trackerConnectionMock.scrape(EasyMock.notNull());
-		expectLastCall();
-
+		Capture<IUdpTrackerPayload> payloadCapture = newCapture();
+		udpTrackerSocketMock.submitRequest(same(cut), and(capture(payloadCapture), notNull()));
 		replayAll();
 
-		Torrent torrent = createTorrent(torrentClientMock);
+		Torrent torrent = createTorrent();
 
 		cut.addTorrent(torrent);
 		cut.scrape();
 
 		verifyAll();
-
-		assertEquals("Error count got increased on succes", 0, cut.getErrorCount());
+		assertEquals("Incorrect Tracker request type", TrackerAction.SCRAPE, payloadCapture.getValue().getAction());
 	}
 
 	@Test
 	public void testScrapeWithinInterval() {
 		replayAll();
-		Torrent torrent = createTorrent(torrentClientMock);
+		Torrent torrent = createTorrent();
 
 		// Move clock back to simulate that we're still in the interval period
 		clock.setClock(Clock.offset(fixedClock, Duration.ofSeconds(-10)));
@@ -137,6 +140,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 
 		verifyAll();
 	}
+
 
 	@Ignore("Feature not yet supported")
 	@Test
