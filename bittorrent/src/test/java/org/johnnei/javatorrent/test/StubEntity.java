@@ -18,7 +18,7 @@ import org.johnnei.javatorrent.torrent.download.FileInfo;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
-import org.johnnei.javatorrent.torrent.download.tracker.IPeerConnector;
+import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
 
 public class StubEntity {
 

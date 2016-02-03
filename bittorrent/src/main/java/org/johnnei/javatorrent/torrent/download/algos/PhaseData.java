@@ -12,8 +12,8 @@ import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.download.peer.Job;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageRequest;
+import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.download.tracker;
+package org.johnnei.javatorrent.torrent.tracker;
 
 public class TrackerException extends Exception {
 

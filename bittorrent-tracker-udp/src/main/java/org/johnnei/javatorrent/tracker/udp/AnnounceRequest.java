@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.download.tracker.udp;
+package org.johnnei.javatorrent.tracker.udp;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -8,14 +8,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
-import org.johnnei.javatorrent.download.tracker.UdpTracker;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.johnnei.javatorrent.utils.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

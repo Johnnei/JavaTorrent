@@ -1,17 +1,17 @@
-package org.johnnei.javatorrent.download.tracker.udp;
+package org.johnnei.javatorrent.tracker.udp;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.download.tracker.UdpTracker;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

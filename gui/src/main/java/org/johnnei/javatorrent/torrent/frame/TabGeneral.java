@@ -6,7 +6,7 @@ import java.awt.Graphics;
 import javax.swing.JPanel;
 
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
 
 public class TabGeneral extends JPanel {

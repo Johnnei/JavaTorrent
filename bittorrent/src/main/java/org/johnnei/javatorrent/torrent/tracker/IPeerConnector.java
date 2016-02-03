@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.download.tracker;
+package org.johnnei.javatorrent.torrent.tracker;
 
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;

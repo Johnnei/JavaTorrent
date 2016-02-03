@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.download.tracker;
+package org.johnnei.javatorrent.torrent.tracker;
 
 import java.util.stream.Stream;
 

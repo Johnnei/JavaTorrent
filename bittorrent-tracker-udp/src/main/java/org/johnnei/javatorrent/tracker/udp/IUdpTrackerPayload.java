@@ -1,10 +1,10 @@
-package org.johnnei.javatorrent.download.tracker.udp;
+package org.johnnei.javatorrent.tracker.udp;
 
-import org.johnnei.javatorrent.download.tracker.UdpTracker;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.tracker.UdpTracker;
 
 public interface IUdpTrackerPayload {
 

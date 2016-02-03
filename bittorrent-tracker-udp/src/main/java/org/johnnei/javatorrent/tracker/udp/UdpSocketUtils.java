@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.download.tracker.udp;
+package org.johnnei.javatorrent.tracker.udp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

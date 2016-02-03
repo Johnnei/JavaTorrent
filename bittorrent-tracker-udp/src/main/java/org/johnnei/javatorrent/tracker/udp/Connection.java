@@ -1,10 +1,10 @@
-package org.johnnei.javatorrent.download.tracker.udp;
+package org.johnnei.javatorrent.tracker.udp;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
 
 public class Connection {
 

@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.download.tracker;
+package org.johnnei.javatorrent.tracker;
 
 import static org.easymock.EasyMock.and;
 import static org.easymock.EasyMock.capture;
@@ -21,14 +21,15 @@ import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.easymock.Mock;
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.download.tracker.udp.IUdpTrackerPayload;
-import org.johnnei.javatorrent.download.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.tracker.UdpTracker;
+import org.johnnei.javatorrent.tracker.udp.IUdpTrackerPayload;
+import org.johnnei.javatorrent.tracker.udp.UdpTrackerSocket;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;

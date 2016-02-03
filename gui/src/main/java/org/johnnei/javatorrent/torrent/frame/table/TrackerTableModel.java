@@ -3,9 +3,9 @@ package org.johnnei.javatorrent.torrent.frame.table;
 import javax.swing.table.AbstractTableModel;
 
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.frame.TorrentFrame;
+import org.johnnei.javatorrent.torrent.tracker.ITracker;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 
 public class TrackerTableModel extends AbstractTableModel {
 

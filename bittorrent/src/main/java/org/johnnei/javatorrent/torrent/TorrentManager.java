@@ -9,7 +9,7 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.PeersReadRunnable;
 import org.johnnei.javatorrent.torrent.download.PeersWriterRunnable;
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 
 public class TorrentManager {
 

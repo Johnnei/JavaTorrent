@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.download.tracker;
+package org.johnnei.javatorrent.tracker;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -14,15 +14,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.download.tracker.udp.AnnounceRequest;
-import org.johnnei.javatorrent.download.tracker.udp.Connection;
-import org.johnnei.javatorrent.download.tracker.udp.ScrapeRequest;
-import org.johnnei.javatorrent.download.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
-import org.johnnei.javatorrent.torrent.download.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.tracker.ITracker;
+import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.tracker.udp.AnnounceRequest;
+import org.johnnei.javatorrent.tracker.udp.Connection;
+import org.johnnei.javatorrent.tracker.udp.ScrapeRequest;
+import org.johnnei.javatorrent.tracker.udp.UdpTrackerSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

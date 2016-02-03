@@ -19,7 +19,6 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.frame.table.FilesTableModel;
 import org.johnnei.javatorrent.torrent.frame.table.PeerTableModel;
 import org.johnnei.javatorrent.torrent.frame.table.PieceCellRenderer;
@@ -27,6 +26,7 @@ import org.johnnei.javatorrent.torrent.frame.table.PiecesTableModel;
 import org.johnnei.javatorrent.torrent.frame.table.ProgressCellRenderer;
 import org.johnnei.javatorrent.torrent.frame.table.TorrentTableModel;
 import org.johnnei.javatorrent.torrent.frame.table.TrackerTableModel;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 
 public class TorrentFrame extends JFrame implements ActionListener {
 

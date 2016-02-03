@@ -11,12 +11,12 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.network.protocol.ISocket;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.torrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.torrent.protocol.MessageUtils;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageKeepAlive;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 
 public class BitTorrentSocket {
 
