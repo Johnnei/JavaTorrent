@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.torrent.download.peer;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 import org.johnnei.javatorrent.torrent.download.Torrent;
 
@@ -47,18 +48,12 @@ public class PeerConnectInfo {
 			return false;
 		}
 		PeerConnectInfo other = (PeerConnectInfo) obj;
-		if (address == null) {
-			if (other.address != null) {
-				return false;
-			}
-		} else if (!address.equals(other.address)) {
+
+		if (!Objects.equals(address, other.address)) {
 			return false;
 		}
-		if (torrent == null) {
-			if (other.torrent != null) {
-				return false;
-			}
-		} else if (!torrent.equals(other.torrent)) {
+
+		if (!Objects.equals(torrent, other.torrent)) {
 			return false;
 		}
 		return true;
