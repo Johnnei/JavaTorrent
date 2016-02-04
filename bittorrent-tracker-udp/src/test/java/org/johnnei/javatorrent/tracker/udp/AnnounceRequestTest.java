@@ -165,6 +165,40 @@ public class AnnounceRequestTest extends EasyMockSupport {
 	}
 
 	@Test
+	public void testReadBrokenResponse() throws Exception {
+		byte[] inputData = new byte[] {
+				// Interval: 30 seconds
+				0x00, 0x00, 0x75, 0x30,
+				// 5 leechers
+				0x00, 0x00, 0x00, 0x05,
+				// 42 seeders
+				0x00, 0x00, 0x00, 0x2A,
+				// Peer: 0.0.0.0:0
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				// Peer: 127.0.0.1:27960
+				0x7F, 0x00, 0x00, 0x01, (byte) 0x6D
+		};
+
+		InStream inStream = new InStream(inputData);
+		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		AnnounceRequest request = new AnnounceRequest(info, DummyEntity.createPeerId(), 27960);
+
+		request.readResponse(inStream);
+
+		UdpTracker trackerMock = createMock(UdpTracker.class);
+		trackerMock.setAnnounceInterval(eq(30_000));
+
+		replayAll();
+
+		request.process(trackerMock);
+
+		verifyAll();
+
+		assertEquals("Incorrect leechers amount", 5, info.getLeechers());
+		assertEquals("Incorrect seeders amount", 42, info.getSeeders());
+	}
+
+	@Test
 	public void testGetAction() {
 		AnnounceRequest request = new AnnounceRequest(
 				new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone()),
