@@ -25,7 +25,7 @@ public class ConnectionRequest implements IUdpTrackerPayload {
 
 	@Override
 	public void readResponse(InStream inStream) throws TrackerException {
-		/* Message has no payload */
+		connectionId = inStream.readLong();
 	}
 
 	@Override
