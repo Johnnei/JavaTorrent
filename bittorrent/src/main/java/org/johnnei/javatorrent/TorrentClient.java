@@ -47,6 +47,8 @@ public class TorrentClient {
 
 	private ExecutorService executorService;
 
+	private int downloadPort;
+
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
@@ -71,6 +73,8 @@ public class TorrentClient {
 		LOGGER.info(String.format("Configured modules: %s", builder.modules.stream()
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
 				.reduce((a, b) -> a + ", " + b).orElse("")));
+
+		downloadPort = builder.downloadPort;
 	}
 
 	public void start() {
@@ -137,6 +141,14 @@ public class TorrentClient {
 		return peerManager;
 	}
 
+	/**
+	 * Gets the port at which we are listening for peers
+	 * @return The port at which we are listening
+	 */
+	public int getDownloadPort() {
+		return downloadPort;
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -154,6 +166,8 @@ public class TorrentClient {
 		private ExecutorService executorService;
 
 		private IPeerManager peerManager;
+
+		private int downloadPort;
 
 		public Builder() {
 			messageFactoryBuilder = new MessageFactory.Builder();
@@ -214,6 +228,16 @@ public class TorrentClient {
 
 		public Builder setPeerManager(IPeerManager peerManager) {
 			this.peerManager = peerManager;
+			return this;
+		}
+
+		/**
+		 * Sets the download port at which we are listening
+		 * @param downloadPort The port at which we are listening
+		 * @return The modified instance
+		 */
+		public Builder setDownloadPort(int downloadPort) {
+			this.downloadPort = downloadPort;
 			return this;
 		}
 

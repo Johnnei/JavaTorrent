@@ -27,7 +27,6 @@ import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
-import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.johnnei.javatorrent.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.tracker.udp.UdpTrackerSocket;
 import org.junit.Assert;
@@ -65,6 +64,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 
 		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
 		expect(torrentClientMock.getTrackerManager()).andStubReturn(trackerManagerMock);
+		expect(torrentClientMock.getDownloadPort()).andStubReturn(27960);
 		expect(trackerManagerMock.getPeerId()).andReturn(DummyEntity.createPeerId());
 
 		replayAll();

@@ -12,16 +12,19 @@ public class DummyEntity {
 		return new Peer(new BitTorrentSocket(null), torrent);
 	}
 
-	public static Torrent createTorrent() {
+	public static byte[] createRandomBytes(int amount) {
 		Random random = new Random();
 
-		byte[] hash = new byte[20];
-		for (int i = 0; i < hash.length; i++) {
-			hash[i] = (byte) (random.nextInt() & 0xff);
+		byte[] bytes = new byte[20];
+		for (int i = 0; i < bytes.length; i++) {
+			bytes[i] = (byte) (random.nextInt() & 0xff);
 		};
+		return bytes;
+	}
 
+	public static Torrent createTorrent() {
 		return new Torrent.Builder()
-				.setHash(hash)
+				.setHash(createRandomBytes(20))
 				.setName("Dummy Torrent")
 				.build();
 	}

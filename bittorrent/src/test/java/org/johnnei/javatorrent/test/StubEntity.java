@@ -49,6 +49,10 @@ public class StubEntity {
 		return new AFilesStub(pieceCount);
 	}
 
+	public static IPeerManager stubPeerManager() {
+		return new PeerManagerStub();
+	}
+
 	private static final class AFilesStub extends AFiles {
 
 		public AFilesStub(int pieceCount) {
@@ -87,6 +91,31 @@ public class StubEntity {
 		@Override
 		public byte[] getBitfieldBytes() throws UnsupportedOperationException {
 			throw new UnsupportedOperationException();
+		}
+
+	}
+
+
+	private static class PeerManagerStub implements IPeerManager {
+
+		@Override
+		public int getMaxPeers() {
+			return 5;
+		}
+
+		@Override
+		public int getMaxPendingPeers() {
+			return 2;
+		}
+
+		@Override
+		public int getAnnounceWantAmount(int connected) {
+			return 3;
+		}
+
+		@Override
+		public String getName() {
+			return "PMStub";
 		}
 
 	}

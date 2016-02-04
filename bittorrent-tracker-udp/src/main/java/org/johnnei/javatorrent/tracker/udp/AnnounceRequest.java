@@ -16,7 +16,6 @@ import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
-import org.johnnei.javatorrent.utils.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +30,8 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 	private final byte[] peerId;
 
+	private final int downloadPort;
+
 	// Response
 	private Collection<SocketInfo> sockets;
 
@@ -40,10 +41,11 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 	private int interval;
 
-	public AnnounceRequest(TorrentInfo torrentInfo, byte[] peerId) {
+	public AnnounceRequest(TorrentInfo torrentInfo, byte[] peerId, int downloadPort) {
 		this.torrentInfo = Objects.requireNonNull(torrentInfo);
 		this.torrent = torrentInfo.getTorrent();
 		this.peerId = Objects.requireNonNull(peerId);
+		this.downloadPort = downloadPort;
 		if (peerId.length != 20) {
 			throw new IllegalArgumentException(String.format("Given peer ID is %d bytes instead of the expected 20.", peerId.length));
 		}
@@ -80,7 +82,7 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 		// Request as much as we want for the torrent
 		outStream.writeInt(torrent.peersWanted());
-		outStream.writeShort(Config.getConfig().getInt("download-port"));
+		outStream.writeShort(downloadPort);
 		// No extensions as defined in BEP #41
 		outStream.writeShort(0);
 	}
