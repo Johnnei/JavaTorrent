@@ -114,6 +114,7 @@ public class UdpTracker implements ITracker {
 		}
 
 		try {
+			name = matcher.group(1);
 			InetAddress address = InetAddress.getByName(matcher.group(1));
 			int port = Integer.parseInt(matcher.group(2));
 			trackerAddress = new InetSocketAddress(address, port);
@@ -130,8 +131,8 @@ public class UdpTracker implements ITracker {
 	 */
 	@Override
 	public void addTorrent(Torrent torrent) {
-		if(!torrentMap.containsKey(torrent.getHash())) {
-			synchronized (this) {
+		synchronized (this) {
+			if(!torrentMap.containsKey(torrent.getHash())) {
 				torrentMap.put(torrent, new TorrentInfo(torrent, clock));
 			}
 		}
@@ -142,7 +143,9 @@ public class UdpTracker implements ITracker {
 	 */
 	@Override
 	public boolean hasTorrent(Torrent torrent) {
-		return torrentMap.containsKey(torrent.getHash());
+		synchronized (this) {
+			return torrentMap.containsKey(torrent);
+		}
 	}
 
 	/**
@@ -185,7 +188,11 @@ public class UdpTracker implements ITracker {
 	 */
 	@Override
 	public void announce(Torrent torrent) {
-		TorrentInfo torrentInfo = torrentMap.get(torrent);
+		TorrentInfo torrentInfo;
+
+		synchronized (this) {
+			torrentInfo = torrentMap.get(torrent);
+		}
 
 		if(torrentInfo.getTimeSinceLastAnnouce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
 			// We're not allowed to announce yet

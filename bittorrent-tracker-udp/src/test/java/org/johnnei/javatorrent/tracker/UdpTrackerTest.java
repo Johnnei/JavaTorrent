@@ -8,6 +8,8 @@ import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
 import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.time.Clock;
@@ -26,6 +28,7 @@ import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.torrent.tracker.TrackerException;
 import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.tracker.udp.UdpTrackerSocket;
@@ -60,6 +63,43 @@ public class UdpTrackerTest extends EasyMockSupport {
 				.setUrl("udp://localhost:80")
 				.setClock(clock)
 				.build();
+	}
+
+	@Test(expected=TrackerException.class)
+	public void testUdpTrackerConstructorWithIncorrectProtocol() throws Exception {
+		new UdpTracker.Builder()
+			.setUrl("http://localhost:80")
+			.build();
+	}
+
+	@Test
+	public void testUdpTrackerConstructorWithIncorrectDomain() throws Exception {
+		UdpTracker tracker = new UdpTracker.Builder()
+			.setUrl("udp://127.0.0.0.1:80")
+			.build();
+
+		assertEquals("Incorrect name", "Unknown", tracker.getName());
+		assertEquals("Incorrect state", "Invalid tracker", tracker.getStatus());
+	}
+
+	@Test
+	public void testAddAndHasTorrent() {
+		Torrent torrent = createTorrent();
+
+		replayAll();
+
+		assertFalse("Has torrent before adding", cut.hasTorrent(torrent));
+		cut.addTorrent(torrent);
+		assertTrue("Doesn't have torrent after adding", cut.hasTorrent(torrent));
+
+		TorrentInfo info = cut.getInfo(torrent).get();
+		info.setInfo(5, 6);
+
+		cut.addTorrent(torrent);
+
+		info = cut.getInfo(torrent).get();
+		assertEquals("Incorrect seeder count (Torrent info got overwritten)", 5, info.getSeeders());
+		assertEquals("Incorrect leechers count (Torrent info got overwritten)", 6, info.getLeechers());
 	}
 
 	@Test

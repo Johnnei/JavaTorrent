@@ -205,7 +205,12 @@ public class UdpTrackerSocket implements Runnable {
 
 	public void shutdown() {
 		keepRunning = false;
-		newWork.signalAll();
+		taskLock.lock();
+		try {
+			newWork.signalAll();
+		} finally {
+			taskLock.unlock();
+		}
 	}
 
 	private int peekTransactionId(InStream inStream) {

@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.tracker;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +39,7 @@ public class UdpTrackerModule implements IModule {
 	}
 
 	@Override
-	public void onPostHandshake(Peer peer) throws IOException {
+	public void onPostHandshake(Peer peer) {
 	}
 
 	@Override
