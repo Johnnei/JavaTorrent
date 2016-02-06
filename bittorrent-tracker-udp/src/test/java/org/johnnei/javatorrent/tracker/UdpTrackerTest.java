@@ -7,6 +7,7 @@ import static org.easymock.EasyMock.newCapture;
 import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
 import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
+import static org.johnnei.javatorrent.test.TestUtils.assertEqualsMethod;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -81,6 +82,24 @@ public class UdpTrackerTest extends EasyMockSupport {
 		assertEquals("Incorrect connection id", 0x41727101980L, tracker.getConnection().getId());
 		assertEquals("Incorrect name", "Unknown", tracker.getName());
 		assertEquals("Incorrect state", "Invalid tracker", tracker.getStatus());
+	}
+
+	@Test
+	public void testEqualsAndHashCode() throws Exception {
+		UdpTracker tracker = new UdpTracker.Builder()
+				.setUrl("udp://127.0.0.1:80")
+				.build();
+		UdpTracker trackerTwo = new UdpTracker.Builder()
+				.setUrl("udp://127.0.0.1:80")
+				.build();
+		UdpTracker trackerThree = new UdpTracker.Builder()
+				.setUrl("udp://127.0.0.1:8080")
+				.build();
+
+		assertEqualsMethod(tracker);
+		assertTrue("Trackers with same URL didn't match", tracker.equals(trackerTwo));
+		assertEquals("Trackers with same URL procuded different hash", tracker.hashCode(), trackerTwo.hashCode());
+		assertFalse("Trackers with different URL matched", tracker.equals(trackerThree));
 	}
 
 	@Test

@@ -1,9 +1,9 @@
 package org.johnnei.javatorrent.tracker.udp;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.johnnei.javatorrent.test.TestUtils.assertEqualsMethod;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -51,9 +51,7 @@ public class TrackerRequestTest {
 	public void testEqualsHashcode() {
 		TrackerRequest requestTwo = new TrackerRequest(tracker, 3, messageStub);
 		TrackerRequest requestThree = new TrackerRequest(tracker, 7, messageStub);
-		assertTrue("Same request instance aren't equal", request.equals(request));
-		assertFalse("Request equals with null", request.equals(null));
-		assertFalse("Request matches with non request", request.equals(7));
+		assertEqualsMethod(request);
 		assertEquals("Requests with same transaction ids didn't match", request, requestThree);
 		assertEquals("Requests with same transaction ids didn't match", request.hashCode(), requestThree.hashCode());
 		assertNotEquals("Requests with different transaction ids mustn't match", request, requestTwo);

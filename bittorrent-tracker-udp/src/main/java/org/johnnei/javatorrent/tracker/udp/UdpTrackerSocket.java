@@ -101,6 +101,9 @@ public class UdpTrackerSocket implements Runnable {
 		}
 	}
 
+	/**
+	 * Runs the UDP Tracker worker thread until {@link #shutdown()} is invoked
+	 */
 	@Override
 	public void run() {
 		while (keepRunning) {
@@ -151,9 +154,7 @@ public class UdpTrackerSocket implements Runnable {
 				if (!isConnectRequestQueued(request.tracker)) {
 					// No connect request has been sent or current one is expired.
 					// Reset it to a new connect-state connection and submit connection request.
-					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug(String.format("Refreshing connection ID for tracker: %s.", request.tracker));
-					}
+					LOGGER.debug("Refreshing connection ID for tracker: {}.", request.tracker);
 					request.tracker.setConnection(new Connection(clock));
 					submitRequest(request.tracker, new ConnectionRequest(clock));
 				}
@@ -173,9 +174,7 @@ public class UdpTrackerSocket implements Runnable {
 			}
 
 			// Send package
-			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace(String.format("Sending tracker request: %s", wrappedRequest));
-			}
+			LOGGER.trace("Sending tracker request: {}", wrappedRequest);
 			try {
 				socketUtils.write(udpSocket, request.tracker.getSocketAddress(), outStream);
 				// When the write call completed successfully we will remove the request from the queue

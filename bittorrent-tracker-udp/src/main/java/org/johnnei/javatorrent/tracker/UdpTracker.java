@@ -100,7 +100,7 @@ public class UdpTracker implements ITracker {
 	private String status;
 
 	private UdpTracker(Builder builder) throws TrackerException {
-		this.url = builder.trackerUrl;
+		this.url = Objects.requireNonNull(builder.trackerUrl, "Tracker URL must be given");
 		this.torrentClient = builder.torrentClient;
 		this.clock = builder.clock;
 		this.trackerSocket = builder.socket;
@@ -226,7 +226,7 @@ public class UdpTracker implements ITracker {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((url == null) ? 0 : url.hashCode());
+		result = prime * result + url.hashCode();
 		return result;
 	}
 
@@ -246,10 +246,10 @@ public class UdpTracker implements ITracker {
 
 		UdpTracker other = (UdpTracker) obj;
 		if (Objects.equals(url, other.url)) {
-				return false;
+			return true;
 		}
 
-		return true;
+		return false;
 	}
 
 	/**
