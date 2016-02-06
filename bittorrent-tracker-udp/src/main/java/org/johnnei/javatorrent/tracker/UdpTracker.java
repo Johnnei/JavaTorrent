@@ -132,7 +132,7 @@ public class UdpTracker implements ITracker {
 	@Override
 	public void addTorrent(Torrent torrent) {
 		synchronized (this) {
-			if(!torrentMap.containsKey(torrent.getHash())) {
+			if(!torrentMap.containsKey(torrent)) {
 				torrentMap.put(torrent, new TorrentInfo(torrent, clock));
 			}
 		}
