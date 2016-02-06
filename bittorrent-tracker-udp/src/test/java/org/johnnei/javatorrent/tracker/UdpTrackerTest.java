@@ -54,7 +54,12 @@ public class UdpTrackerTest extends EasyMockSupport {
 		fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 		clock = new TestClock(fixedClock);
 		torrentClientMock = createMock(TorrentClient.class);
-		cut = new UdpTracker(torrentClientMock, udpTrackerSocketMock, "udp://localhost:80", clock);
+		cut = new UdpTracker.Builder()
+				.setTorrentClient(torrentClientMock)
+				.setSocket(udpTrackerSocketMock)
+				.setUrl("udp://localhost:80")
+				.setClock(clock)
+				.build();
 	}
 
 	@Test

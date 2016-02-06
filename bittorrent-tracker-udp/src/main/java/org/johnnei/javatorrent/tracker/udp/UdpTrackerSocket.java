@@ -67,12 +67,12 @@ public class UdpTrackerSocket implements Runnable {
 	 */
 	private final Condition newWork;
 
-	public UdpTrackerSocket(TrackerManager trackerManager, Clock clock) throws TrackerException {
+	public UdpTrackerSocket(TrackerManager trackerManager, int listeningPort, Clock clock) throws TrackerException {
 		this.newWork = taskLock.newCondition();
 		this.trackerManager = trackerManager;
 		this.clock = clock;
 		try {
-			udpSocket = new DatagramSocket();
+			udpSocket = new DatagramSocket(listeningPort);
 			udpSocket.setSoTimeout((int) Duration.of(5, ChronoUnit.SECONDS).toMillis());
 		} catch (SocketException e) {
 			throw new TrackerException("Failed to create UDP Socket", e);
@@ -122,7 +122,7 @@ public class UdpTrackerSocket implements Runnable {
 	@Override
 	public void run() {
 		while (keepRunning) {
-			doCycle();
+			processWork();
 			waitForWork();
 		}
 	}
@@ -144,7 +144,7 @@ public class UdpTrackerSocket implements Runnable {
 		}
 	}
 
-	private void doCycle() {
+	private void processWork() {
 		if (!unsentRequests.isEmpty()) {
 			sendRequests();
 		}

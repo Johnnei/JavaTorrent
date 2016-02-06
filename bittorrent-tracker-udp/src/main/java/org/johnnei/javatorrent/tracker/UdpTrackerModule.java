@@ -22,7 +22,11 @@ public class UdpTrackerModule implements IModule {
 
 	@Override
 	public void configureTorrentClient(TorrentClient.Builder builder) {
-		builder.registerTrackerProtocol("udp", (trackerUrl, torrentClient) -> new UdpTracker(torrentClient, socket, trackerUrl));
+		builder.registerTrackerProtocol("udp", (trackerUrl, torrentClient) -> new UdpTracker.Builder()
+				.setTorrentClient(torrentClient)
+				.setSocket(socket)
+				.setUrl(trackerUrl)
+				.build());
 	}
 
 	@Override
@@ -41,7 +45,7 @@ public class UdpTrackerModule implements IModule {
 
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws Exception {
-		socket = new UdpTrackerSocket(torrentClient.getTrackerManager(), Clock.systemDefaultZone());
+		socket = new UdpTrackerSocket(torrentClient.getTrackerManager(), trackerPort, Clock.systemDefaultZone());
 		Thread thread = new Thread(socket, "UdpTracker Worker Thread");
 		thread.setDaemon(true);
 		thread.start();

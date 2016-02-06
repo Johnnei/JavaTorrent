@@ -96,14 +96,10 @@ public class UdpTracker implements ITracker {
 	 */
 	private String status;
 
-	public UdpTracker(TorrentClient torrentClient, UdpTrackerSocket trackerSocket, String url) throws TrackerException {
-		this(torrentClient, trackerSocket, url, Clock.systemDefaultZone());
-	}
-
-	public UdpTracker(TorrentClient torrentClient, UdpTrackerSocket trackerSocket, String url, Clock clock) throws TrackerException {
-		this.torrentClient = torrentClient;
-		this.clock = clock;
-		this.trackerSocket = trackerSocket;
+	public UdpTracker(Builder builder) throws TrackerException {
+		this.torrentClient = builder.torrentClient;
+		this.clock = builder.clock;
+		this.trackerSocket = builder.socket;
 
 		torrentMap = new HashMap<>();
 		announceInterval = (int) TorrentInfo.DEFAULT_ANNOUNCE_INTERVAL.toMillis();
@@ -111,10 +107,10 @@ public class UdpTracker implements ITracker {
 
 		// Parse URL
 		Pattern regex = Pattern.compile("udp://([^:]+):(\\d+)");
-		Matcher matcher = regex.matcher(url);
+		Matcher matcher = regex.matcher(builder.trackerUrl);
 
 		if (!matcher.matches()) {
-			throw new TrackerException(String.format("Tracker url doesn't match the expected format. URL: %s", url));
+			throw new TrackerException(String.format("Tracker url doesn't match the expected format. URL: %s", builder.trackerUrl));
 		}
 
 		try {
@@ -125,7 +121,7 @@ public class UdpTracker implements ITracker {
 		} catch (Exception e) {
 			name = "Unknown";
 			status = STATE_CRASHED;
-			LOGGER.warn(String.format("Failed to resolve tracker: %s", url), e);
+			LOGGER.warn(String.format("Failed to resolve tracker: %s", builder.trackerUrl), e);
 		}
 	}
 
@@ -227,6 +223,51 @@ public class UdpTracker implements ITracker {
 
 	public InetSocketAddress getSocketAddress() {
 		return trackerAddress;
+	}
+
+	public static final class Builder {
+
+		private Clock clock;
+
+		private UdpTrackerSocket socket;
+
+		private String trackerUrl;
+
+		private TorrentClient torrentClient;
+
+		public Builder() {
+			clock = Clock.systemDefaultZone();
+		}
+
+		public Builder setTorrentClient(TorrentClient torrentClient) {
+			this.torrentClient = torrentClient;
+			return this;
+		}
+
+		/**
+		 * Sets the clock to use as time reference. By default {@link Clock#systemDefaultZone()}.
+		 * @param clock
+		 * @return
+		 */
+		public Builder setClock(Clock clock) {
+			this.clock = clock;
+			return this;
+		}
+
+		public Builder setSocket(UdpTrackerSocket socket) {
+			this.socket = socket;
+			return this;
+		}
+
+		public Builder setUrl(String trackerUrl) {
+			this.trackerUrl = trackerUrl;
+			return this;
+		}
+
+		public UdpTracker build() throws TrackerException {
+			return new UdpTracker(this);
+		}
+
 	}
 
 }
