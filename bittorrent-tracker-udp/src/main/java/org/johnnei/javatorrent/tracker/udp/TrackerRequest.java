@@ -26,6 +26,7 @@ public class TrackerRequest {
 	private final int transactionId;
 
 	public TrackerRequest(final UdpTracker tracker, final int transactionId, final IUdpTrackerPayload message) {
+		this.tracker = Objects.requireNonNull(tracker);
 		this.transactionId = transactionId;
 		this.message = Objects.requireNonNull(message);
 	}
@@ -33,10 +34,9 @@ public class TrackerRequest {
 	/**
 	 * Writes the request
 	 * @param outStream The stream to write on
-	 * @param connection The connection to use
 	 */
-	public void writeRequest(OutStream outStream, Connection connection) {
-		outStream.writeLong(connection.getId());
+	public void writeRequest(OutStream outStream) {
+		outStream.writeLong(tracker.getConnection().getId());
 		outStream.writeInt(message.getAction().getId());
 		outStream.writeInt(transactionId);
 		message.writeRequest(outStream);
@@ -49,17 +49,17 @@ public class TrackerRequest {
 	 */
 	public void readResponse(InStream inStream) throws TrackerException {
 		TrackerAction action = TrackerAction.of(inStream.readInt());
+		if (action == TrackerAction.ERROR) {
+			String error = inStream.readString(inStream.available());
+			throw new TrackerException(String.format("Tracker responded with an error: %s", error));
+		}
+
 		int responseTransactionId = inStream.readInt();
 		if (responseTransactionId != transactionId) {
 			throw new TrackerException(String.format(
 					"Expected transaction id %d but found %d, rejecting response.",
 					transactionId,
 					responseTransactionId));
-		}
-
-		if (action == TrackerAction.ERROR) {
-			String error = inStream.readString(inStream.available());
-			throw new TrackerException(String.format("Tracker responded with an error: %s", error));
 		}
 
 		message.readResponse(inStream);

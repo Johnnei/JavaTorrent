@@ -160,7 +160,7 @@ public class UdpTrackerSocket implements Runnable {
 			try {
 				// Send request
 				OutStream outStream = new OutStream();
-				wrappedRequest.writeRequest(outStream, request.tracker.getConnection());
+				wrappedRequest.writeRequest(outStream);
 
 				// List this packet as sent before the actual write to prevent race conditions
 				synchronized (lock) {
