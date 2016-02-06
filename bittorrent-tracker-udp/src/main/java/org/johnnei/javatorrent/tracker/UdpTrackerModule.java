@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.tracker;
 
-import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,7 +43,10 @@ public class UdpTrackerModule implements IModule {
 
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws Exception {
-		socket = new UdpTrackerSocket(torrentClient.getTrackerManager(), trackerPort, Clock.systemDefaultZone());
+		socket = new UdpTrackerSocket.Builder()
+				.setTrackerManager(torrentClient.getTrackerManager())
+				.setSocketPort(trackerPort)
+				.build();
 		Thread thread = new Thread(socket, "UdpTracker Worker Thread");
 		thread.setDaemon(true);
 		thread.start();

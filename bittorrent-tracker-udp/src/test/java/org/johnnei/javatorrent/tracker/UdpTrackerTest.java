@@ -78,6 +78,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 			.setUrl("udp://127.0.0.0.1:80")
 			.build();
 
+		assertEquals("Incorrect connection id", 0x41727101980L, tracker.getConnection().getId());
 		assertEquals("Incorrect name", "Unknown", tracker.getName());
 		assertEquals("Incorrect state", "Invalid tracker", tracker.getStatus());
 	}

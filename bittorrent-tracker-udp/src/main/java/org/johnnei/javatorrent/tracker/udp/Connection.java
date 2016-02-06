@@ -62,6 +62,12 @@ public class Connection {
 		return true;
 	}
 
+
+	@Override
+	public String toString() {
+		return "Connection [creationTime=" + creationTime + ", connnectionId=" + Long.toHexString(connnectionId).toUpperCase() + "]";
+	}
+
 	/**
 	 * The ID of the connection with the tracker
 	 * @return The connection ID

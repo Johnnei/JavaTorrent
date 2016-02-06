@@ -6,10 +6,11 @@ import java.net.SocketException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,11 +32,11 @@ public class UdpTrackerSocket implements Runnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpTrackerSocket.class);
 
-	private final Clock clock;
+	private final Clock clock = Clock.systemDefaultZone();
 
 	private final TrackerManager trackerManager;
 
-	private boolean keepRunning = true;
+	private volatile boolean keepRunning = true;
 
 	/**
 	 * The lock protecting the state of the tracker request map {@link #pendingRespones} and {@link #unsentRequests}
@@ -51,7 +52,7 @@ public class UdpTrackerSocket implements Runnable {
 	/**
 	 * Requests which are waiting for a connection id to arrive
 	 */
-	private Queue<UnsetRequest> unsentRequests;
+	private Collection<UnsetRequest> unsentRequests;
 
 	private UdpSocketUtils socketUtils;
 
@@ -67,19 +68,18 @@ public class UdpTrackerSocket implements Runnable {
 	 */
 	private final Condition newWork;
 
-	public UdpTrackerSocket(TrackerManager trackerManager, int listeningPort, Clock clock) throws TrackerException {
-		this.newWork = taskLock.newCondition();
-		this.trackerManager = trackerManager;
-		this.clock = clock;
+	private UdpTrackerSocket(Builder builder) throws TrackerException {
+		newWork = taskLock.newCondition();
+		trackerManager = builder.trackerManager;
+		socketUtils = builder.socketUtils;
 		try {
-			udpSocket = new DatagramSocket(listeningPort);
+			udpSocket = new DatagramSocket(builder.socketPort);
 			udpSocket.setSoTimeout((int) Duration.of(5, ChronoUnit.SECONDS).toMillis());
 		} catch (SocketException e) {
 			throw new TrackerException("Failed to create UDP Socket", e);
 		}
 		pendingRespones = new HashMap<>();
-		unsentRequests = new ConcurrentLinkedQueue<>();
-		socketUtils = new UdpSocketUtils();
+		unsentRequests = new LinkedList<>();
 	}
 
 	/**
@@ -88,27 +88,9 @@ public class UdpTrackerSocket implements Runnable {
 	 * @param request The request to send
 	 */
 	public void submitRequest(UdpTracker tracker, IUdpTrackerPayload request) {
-		if (!tracker.getConnection().isValidFor(request.getAction(), clock)) {
-			// Need to obtain a new connection token first.
-			synchronized (lock) {
-				LOGGER.debug(String.format("Postponing request of %s, refresh of Connection ID required..", request));
-				if (pendingRespones.values().stream()
-						.filter(pendingRequest -> pendingRequest.getTracker().equals(tracker))
-						.noneMatch(pendingRequest -> pendingRequest.getAction() == TrackerAction.CONNECT)) {
-					// No connect request has been sent yet, submit one.
-					tracker.setConnection(new Connection(clock));
-					submitRequest(tracker, new ConnectionRequest(clock));
-				}
-
-				// Queue the request until we receive a new connection id
-				unsentRequests.add(new UnsetRequest(tracker, request));
-				return;
-			}
-		}
-
-		final TrackerRequest wrappedRequest = new TrackerRequest(tracker, trackerManager.createUniqueTransactionId(), request);
+		// Queue the request for sending
 		synchronized (lock) {
-			pendingRespones.put(wrappedRequest.getTransactionId(), wrappedRequest);
+			unsentRequests.add(new UnsetRequest(tracker, request));
 		}
 
 		taskLock.lock();
@@ -136,6 +118,10 @@ public class UdpTrackerSocket implements Runnable {
 			return;
 		}
 
+		if (!keepRunning) {
+			return;
+		}
+
 		taskLock.lock();
 		try {
 			newWork.awaitUninterruptibly();
@@ -155,28 +141,77 @@ public class UdpTrackerSocket implements Runnable {
 	}
 
 	private void sendRequests() {
-		for (UnsetRequest request : unsentRequests) {
-			TrackerRequest wrappedRequest = new TrackerRequest(request.tracker, trackerManager.createUniqueTransactionId(), request.payload);
-			try {
-				// Send request
-				OutStream outStream = new OutStream();
-				wrappedRequest.writeRequest(outStream);
-
-				// List this packet as sent before the actual write to prevent race conditions
-				synchronized (lock) {
-					pendingRespones.put(wrappedRequest.getTransactionId(), wrappedRequest);
+		Collection<UnsetRequest> unsentRequestsCopy;
+		synchronized (lock) {
+			unsentRequestsCopy = new ArrayList<>(unsentRequests);
+		}
+		for (UnsetRequest request : unsentRequestsCopy) {
+			if (!request.tracker.getConnection().isValidFor(request.payload.getAction(), clock)) {
+				// Need to obtain a new connection token first.
+				if (!isConnectRequestQueued(request.tracker)) {
+					// No connect request has been sent or current one is expired.
+					// Reset it to a new connect-state connection and submit connection request.
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug(String.format("Refreshing connection ID for tracker: %s.", request.tracker));
+					}
+					request.tracker.setConnection(new Connection(clock));
+					submitRequest(request.tracker, new ConnectionRequest(clock));
 				}
 
-				// Send package
+				// Don't sent this request just yet as the connection isn't valid
+				continue;
+			}
+
+			TrackerRequest wrappedRequest = new TrackerRequest(request.tracker, trackerManager.createUniqueTransactionId(), request.payload);
+			// Send request
+			OutStream outStream = new OutStream();
+			wrappedRequest.writeRequest(outStream);
+
+			// List this packet as sent before the actual write to prevent race conditions
+			synchronized (lock) {
+				pendingRespones.put(wrappedRequest.getTransactionId(), wrappedRequest);
+			}
+
+			// Send package
+			if (LOGGER.isTraceEnabled()) {
+				LOGGER.trace(String.format("Sending tracker request: %s", wrappedRequest));
+			}
+			try {
 				socketUtils.write(udpSocket, request.tracker.getSocketAddress(), outStream);
+				// When the write call completed successfully we will remove the request from the queue
+				synchronized (lock) {
+					unsentRequests.remove(request);
+				}
 			} catch (IOException e) {
-				LOGGER.warn(String.format("Tracker request failed to write: %s, resubmitting request.", wrappedRequest), e);
+				LOGGER.warn(String.format("Tracker request failed to write: %s, resubmitted request.", wrappedRequest), e);
 				synchronized (lock) {
 					pendingRespones.remove(wrappedRequest.getTransactionId());
 				}
-				submitRequest(request.tracker, request.payload);
 			}
 		}
+	}
+
+	/**
+	 * Checks if one of the queues contains a {@link TrackerAction#CONNECT} request.
+	 * @param tracker
+	 * @return
+	 */
+	private boolean isConnectRequestQueued(UdpTracker tracker) {
+		synchronized (lock) {
+			if (pendingRespones.values().stream()
+					.filter(pendingRequest -> pendingRequest.getTracker().equals(tracker))
+					.anyMatch(pendingRequest -> pendingRequest.getAction() == TrackerAction.CONNECT)) {
+				return true;
+			}
+
+			if (unsentRequests.stream()
+					.filter(unsentRequest -> unsentRequest.tracker.equals(tracker))
+					.anyMatch(unsetRequest -> unsetRequest.payload.getAction() == TrackerAction.CONNECT)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private void receiveResponse() {
@@ -188,14 +223,14 @@ public class UdpTrackerSocket implements Runnable {
 
 			synchronized (lock) {
 				response = pendingRespones.remove(transactionId);
-				if (response == null) {
-					LOGGER.warn(String.format("Received response with an unknown transaction id: %d", transactionId));
-					return;
-				}
-
-				response.readResponse(inStream);
-				response.process();
 			}
+			if (response == null) {
+				LOGGER.warn(String.format("Received response with an unknown transaction id: %d", transactionId));
+				return;
+			}
+
+			response.readResponse(inStream);
+			response.process();
 		} catch (IOException e) {
 			LOGGER.warn(String.format("Tracker request failed to read.", response), e);
 		} catch (TrackerException e) {
@@ -234,6 +269,34 @@ public class UdpTrackerSocket implements Runnable {
 			this.payload = payload;
 		}
 
+	}
+
+	public static final class Builder {
+
+		private TrackerManager trackerManager;
+
+		private UdpSocketUtils socketUtils;
+
+		private int socketPort;
+
+		public Builder setTrackerManager(TrackerManager trackerManager) {
+			this.trackerManager = trackerManager;
+			return this;
+		}
+
+		public Builder setSocketUtils(UdpSocketUtils socketUtils) {
+			this.socketUtils = socketUtils;
+			return this;
+		}
+
+		public Builder setSocketPort(int socketPort) {
+			this.socketPort = socketPort;
+			return this;
+		}
+
+		public UdpTrackerSocket build() throws TrackerException {
+			return new UdpTrackerSocket(this);
+		}
 	}
 
 }

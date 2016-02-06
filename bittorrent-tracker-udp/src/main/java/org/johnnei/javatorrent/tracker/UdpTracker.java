@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +46,8 @@ public class UdpTracker implements ITracker {
 	public static final String STATE_CRASHED = "Invalid tracker";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpTracker.class);
+
+	private final String url;
 
 	/**
 	 * The torrent client which created this tracker
@@ -96,11 +99,13 @@ public class UdpTracker implements ITracker {
 	 */
 	private String status;
 
-	public UdpTracker(Builder builder) throws TrackerException {
+	private UdpTracker(Builder builder) throws TrackerException {
+		this.url = builder.trackerUrl;
 		this.torrentClient = builder.torrentClient;
 		this.clock = builder.clock;
 		this.trackerSocket = builder.socket;
 
+		activeConnection = new Connection(clock);
 		torrentMap = new HashMap<>();
 		announceInterval = (int) TorrentInfo.DEFAULT_ANNOUNCE_INTERVAL.toMillis();
 		lastScrapeTime = LocalDateTime.now(clock).minus(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS);
@@ -212,11 +217,49 @@ public class UdpTracker implements ITracker {
 		return status;
 	}
 
+	@Override
+	public String toString() {
+		return "UdpTracker [name=" + name + ", status=" + status + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((url == null) ? 0 : url.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (obj == null) {
+			return false;
+		}
+
+		if (!(obj instanceof UdpTracker)) {
+			return false;
+		}
+
+		UdpTracker other = (UdpTracker) obj;
+		if (Objects.equals(url, other.url)) {
+				return false;
+		}
+
+		return true;
+	}
+
 	/**
 	 * Updates the connection
 	 * @param connection
 	 */
 	public void setConnection(Connection connection) {
+		if (LOGGER.isTraceEnabled()) {
+			LOGGER.trace(String.format("Received new connection: %s", connection));
+		}
 		this.activeConnection = connection;
 	}
 
