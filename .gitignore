@@ -9,3 +9,6 @@
 *.war
 *.ear
 /bin/
+
+# Maven #
+**/target/**
