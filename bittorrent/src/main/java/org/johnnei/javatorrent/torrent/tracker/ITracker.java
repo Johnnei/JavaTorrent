@@ -23,17 +23,19 @@ public interface ITracker {
 	/**
 	 * Requests the tracker to execute an announce event.
 	 * In case the tracker cannot immediately execute the request the call may be ignored or postponed.
+	 * This call must return immediately.
 	 * @param torrent The torrent for which an announce event is being requested.
 	 */
 	void announce(Torrent torrent);
 
 	/**
 	 * Requests a scrape off all known torrent in this tracker.
+	 * This call must return immediately.
 	 */
 	void scrape();
 
 	/**
-	 * Dispatches the connecting of a peer by the tracker
+	 * Dispatches the connecting of a peer by the tracker. This call must return immediately.
 	 * @param peer The peer connection information
 	 */
 	public void connectPeer(PeerConnectInfo peer);

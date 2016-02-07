@@ -63,15 +63,19 @@ public class UdpTrackerModuleTest extends EasyMockSupport {
 		replayAll();
 
 		cut.onBuild(torrentClientMock);
-		cut.onShutdown();
 
-		verifyAll();
+		try {
+			verifyAll();
 
-		assertEquals("Incorrect port stored", port, (int) Whitebox.getInternalState(cut, "trackerPort"));
-		UdpTrackerSocket trackerSocket = Whitebox.getInternalState(cut, "socket");
-		DatagramSocket socket = Whitebox.getInternalState(trackerSocket, "udpSocket");
+			assertEquals("Incorrect port stored", port, (int) Whitebox.getInternalState(cut, "trackerPort"));
+			UdpTrackerSocket trackerSocket = Whitebox.getInternalState(cut, "socket");
+			DatagramSocket socket = Whitebox.getInternalState(trackerSocket, "udpSocket");
 
-		assertEquals("Iconrrect port being used", port, socket.getLocalPort());
+			assertEquals("Incorrect port being used", port, socket.getLocalPort());
+		} finally {
+			// Clean up the socket after the test to prevent retaining a bound socket.
+			cut.onShutdown();
+		}
 	}
 
 	@Test

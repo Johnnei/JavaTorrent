@@ -6,8 +6,12 @@ import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.notNull;
 import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -19,6 +23,8 @@ import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.test.RulePrintTestCase;
+import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
@@ -26,14 +32,16 @@ import org.johnnei.javatorrent.torrent.tracker.TrackerException;
 import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(EasyMockRunner.class)
 public class UdpTrackerSocketTest extends EasyMockSupport {
+
+	@Rule
+	public RulePrintTestCase printCases = new RulePrintTestCase();
 
 	private Thread thread;
 
@@ -49,6 +57,10 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 
 	private UdpTrackerSocket cut;
 
+	private int readAttempt;
+
+	// Locks to delay the assertions until the worker thread has completed its work.
+
 	private Lock resultLock;
 
 	private Condition condition;
@@ -63,18 +75,23 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 	 */
 	private Thread testThread;
 
+	private TestClock testClock;
+
 	@Before
 	public void setUp() throws Exception {
 		// Thread sync
 		resultLock = new ReentrantLock();
 		condition = resultLock.newCondition();
 		testThread = Thread.currentThread();
+		testClock = new TestClock(Clock.systemDefaultZone());
 
 		// Prepare context
+		readAttempt = 0;
 		cut = new UdpTrackerSocket.Builder()
 				.setTrackerManager(trackerManagerMock)
 				.setSocketPort(27500)
 				.setSocketUtils(utilsMock)
+				.setClock(testClock)
 				.build();
 		tracker = new UdpTracker.Builder()
 				.setSocket(cut)
@@ -90,9 +107,6 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 			testThread.interrupt();
 		});
 		thread.start();
-
-		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
-		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
 	}
 
 	@After
@@ -138,6 +152,9 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 
 		ScrapeRequest scrapeMessage = new ScrapeRequest(Collections.singletonList(torrent));
 
+		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+
 		utilsMock.write(isA(DatagramSocket.class), notNull(), isA(OutStream.class));
 		expectLastCall().times(2);
 
@@ -168,10 +185,98 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 		assertEquals("Incorrect seeder count", "3", info.getDownloadCount());
 	}
 
-	@Ignore("Feature not implemented yet")
 	@Test
-	public void testPacketTimeouts() {
-		Assert.fail();
+	public void testPacketTimeouts() throws Exception {
+		InStream connectResponse = new InStream(new byte[] {
+				// Action
+				0x00, 0x00, 0x00, 0x00,
+				// Transaction ID
+				0x00, 0x00, 0x00, 0x01,
+				// Connection ID
+				0x01, 0x23, 0x45, 0x67, (byte) 0x89, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF
+		});
+
+		Torrent torrent = createTorrent();
+		tracker.addTorrent(torrent);
+
+		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+
+		utilsMock.write(isA(DatagramSocket.class), notNull(), isA(OutStream.class));
+		expectLastCall().times(3);
+
+		expect(utilsMock.read(isA(DatagramSocket.class))).andAnswer(() -> {
+			testClock.setClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(16)));
+			throw new SocketTimeoutException();
+		});
+
+		expect(utilsMock.read(isA(DatagramSocket.class))).andAnswer(() -> {
+			testClock.setClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(60)));
+			throw new SocketTimeoutException();
+		});
+
+		expect(utilsMock.read(isA(DatagramSocket.class))).andReturn(connectResponse);
+
+		replayAll();
+
+		cut.submitRequest(tracker, new MessageWrapper(resultLock, condition, new ConnectionRequest(Clock.systemDefaultZone())));
+
+		resultLock.lock();
+		try {
+			// Await at most 10 seconds as the test fakes the time passing by offset
+			condition.await(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new AssertionError("Worker thread failed.", threadException);
+		} finally {
+			resultLock.unlock();
+		}
+
+		verifyAll();
+
+		assertEquals("Invalid connection id", 81985529216486895L, tracker.getConnection().getId());
+	}
+
+	@Test
+	public void testPacketFullyTimedout() throws Exception {
+		Torrent torrent = createTorrent();
+		tracker.addTorrent(torrent);
+
+		tracker = new UdpTrackerWrapper(new UdpTracker.Builder()
+				.setSocket(cut)
+				.setTorrentClient(torrentClientMock)
+				.setUrl("udp://localhost:80"),
+				resultLock, condition);
+
+		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+
+		utilsMock.write(isA(DatagramSocket.class), notNull(), isA(OutStream.class));
+		expectLastCall().times(9);
+
+		expect(utilsMock.read(isA(DatagramSocket.class))).andAnswer(() -> {
+			Duration newOffset = Duration.ofSeconds((readAttempt + 1) + (15 * (int) Math.pow(2, readAttempt)));
+			++readAttempt;
+
+			testClock.setClock(Clock.offset(Clock.systemDefaultZone(), newOffset));
+			throw new SocketTimeoutException();
+		}).times(9);
+
+		replayAll();
+
+		// Test with a connection request to prevent connection ID timeouts to cause extra calls.
+		cut.submitRequest(tracker, new MessageWrapper(resultLock, condition, new ConnectionRequest(Clock.systemDefaultZone())));
+
+		resultLock.lock();
+		try {
+			// Await at most 10 seconds as the test fakes the time passing by offset
+			condition.await(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new AssertionError("Worker thread failed.", threadException);
+		} finally {
+			resultLock.unlock();
+		}
+
+		verifyAll();
+
+		assertTrue("Expected packet failure", ((UdpTrackerWrapper)tracker).failed);
 	}
 
 	private static final class MessageWrapper implements IUdpTrackerPayload {
@@ -222,6 +327,35 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 		@Override
 		public String toString() {
 			return message.toString();
+		}
+
+	}
+
+	private static class UdpTrackerWrapper extends UdpTracker {
+
+		private final Lock lock;
+
+		private final Condition condition;
+
+		private boolean failed;
+
+		public UdpTrackerWrapper(UdpTracker.Builder builder, Lock lock, Condition condition) throws TrackerException {
+			super(builder);
+			this.lock = lock;
+			this.condition = condition;
+		}
+
+		@Override
+		public void onRequestFailed(IUdpTrackerPayload payload) {
+			super.onRequestFailed(payload);
+			failed = true;
+
+			lock.lock();
+			try {
+				condition.signalAll();
+			} finally {
+				lock.unlock();
+			}
 		}
 
 	}

@@ -5,6 +5,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -32,14 +34,15 @@ public class UdpTrackerSocket implements Runnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpTrackerSocket.class);
 
-	private final Clock clock = Clock.systemDefaultZone();
+	private final Clock clock;
 
 	private final TrackerManager trackerManager;
 
 	private volatile boolean keepRunning = true;
 
 	/**
-	 * The lock protecting the state of the tracker request map {@link #pendingRespones} and {@link #unsentRequests}
+	 * The lock protecting the state of the tracker request map {@link #pendingRespones} and
+	 * {@link #unsentRequests}
 	 */
 	private final Object lock = new Object();
 
@@ -47,7 +50,7 @@ public class UdpTrackerSocket implements Runnable {
 	 * Map containing all tracker requests which didn't have a response yet.
 	 * Mapped: TransactionID to request
 	 */
-	private Map<Integer, TrackerRequest> pendingRespones;
+	private Map<Integer, SentRequest> pendingRespones;
 
 	/**
 	 * Requests which are waiting for a connection id to arrive
@@ -69,6 +72,7 @@ public class UdpTrackerSocket implements Runnable {
 	private final Condition newWork;
 
 	private UdpTrackerSocket(Builder builder) throws TrackerException {
+		clock = builder.clock;
 		newWork = taskLock.newCondition();
 		trackerManager = builder.trackerManager;
 		socketUtils = builder.socketUtils;
@@ -84,6 +88,7 @@ public class UdpTrackerSocket implements Runnable {
 
 	/**
 	 * Submits the request to be send to the tracker.
+	 *
 	 * @param tracker The tracker which is sending this request
 	 * @param request The request to send
 	 */
@@ -106,9 +111,14 @@ public class UdpTrackerSocket implements Runnable {
 	 */
 	@Override
 	public void run() {
-		while (keepRunning) {
-			processWork();
-			waitForWork();
+		try {
+			while (keepRunning) {
+				processWork();
+				waitForWork();
+			}
+		} finally {
+			// Always clean up the socket
+			udpSocket.close();
 		}
 	}
 
@@ -138,6 +148,11 @@ public class UdpTrackerSocket implements Runnable {
 			sendRequests();
 		}
 
+		Collection<SentRequest> timedoutRequests = findTimedoutRequests();
+		if (!timedoutRequests.isEmpty()) {
+			resendRequests(timedoutRequests);
+		}
+
 		if (!pendingRespones.isEmpty()) {
 			receiveResponse();
 		}
@@ -149,40 +164,25 @@ public class UdpTrackerSocket implements Runnable {
 			unsentRequestsCopy = new ArrayList<>(unsentRequests);
 		}
 		for (UnsetRequest request : unsentRequestsCopy) {
-			if (!request.tracker.getConnection().isValidFor(request.payload.getAction(), clock)) {
-				// Need to obtain a new connection token first.
-				if (!isConnectRequestQueued(request.tracker)) {
-					// No connect request has been sent or current one is expired.
-					// Reset it to a new connect-state connection and submit connection request.
-					LOGGER.debug("Refreshing connection ID for tracker: {}.", request.tracker);
-					request.tracker.setConnection(new Connection(clock));
-					submitRequest(request.tracker, new ConnectionRequest(clock));
-				}
-
-				// Don't sent this request just yet as the connection isn't valid
+			if (!canSendRequest(request.tracker, request.payload.getAction())) {
 				continue;
 			}
 
 			TrackerRequest wrappedRequest = new TrackerRequest(request.tracker, trackerManager.createUniqueTransactionId(), request.payload);
-			// Send request
-			OutStream outStream = new OutStream();
-			wrappedRequest.writeRequest(outStream);
 
 			// List this packet as sent before the actual write to prevent race conditions
 			synchronized (lock) {
-				pendingRespones.put(wrappedRequest.getTransactionId(), wrappedRequest);
+				pendingRespones.put(wrappedRequest.getTransactionId(), new SentRequest(wrappedRequest, clock));
 			}
 
-			// Send package
-			LOGGER.trace("Sending tracker request: {}", wrappedRequest);
 			try {
-				socketUtils.write(udpSocket, request.tracker.getSocketAddress(), outStream);
+				writeRequest(wrappedRequest);
 				// When the write call completed successfully we will remove the request from the queue
 				synchronized (lock) {
 					unsentRequests.remove(request);
 				}
 			} catch (IOException e) {
-				LOGGER.warn(String.format("Tracker request failed to write: %s, resubmitted request.", wrappedRequest), e);
+				LOGGER.warn("Tracker request failed to write: {}, resubmitted request.", wrappedRequest, e);
 				synchronized (lock) {
 					pendingRespones.remove(wrappedRequest.getTransactionId());
 				}
@@ -190,16 +190,74 @@ public class UdpTrackerSocket implements Runnable {
 		}
 	}
 
+	private Collection<SentRequest> findTimedoutRequests() {
+		synchronized (lock) {
+			return pendingRespones.values().stream()
+					.filter(SentRequest::isTimedout)
+					.collect(Collectors.toList());
+		}
+	}
+
+	private void resendRequests(Collection<SentRequest> timedoutRequests) {
+		for (SentRequest pendingResponse : timedoutRequests) {
+			if (pendingResponse.attempt == 8) {
+				LOGGER.warn("Tracker failed to respond to {} after 8 attempts. Discarding request.", pendingResponse.request);
+				synchronized (lock) {
+					pendingRespones.remove(pendingResponse.request.getTransactionId());
+				}
+				pendingResponse.request.onFailure();
+				continue;
+			}
+
+			if (!canSendRequest(pendingResponse.request.getTracker(), pendingResponse.request.getAction())) {
+				continue;
+			}
+
+			try {
+				writeRequest(pendingResponse.request);
+				pendingResponse.attempt++;
+			} catch (IOException e) {
+				LOGGER.warn("Tracker request failed to write: {}. Delayed resend of timedout request.", pendingResponse.request, e);
+			}
+		}
+	}
+
+	private boolean canSendRequest(UdpTracker tracker, TrackerAction action) {
+		if (tracker.getConnection().isValidFor(action, clock)) {
+			return true;
+		}
+
+		// Need to obtain a new connection token first.
+		if (!isConnectRequestQueued(tracker)) {
+			// No connect request has been sent or current one is expired.
+			// Reset it to a new connect-state connection and submit connection request.
+			LOGGER.debug("Refreshing connection ID for tracker: {}.", tracker);
+			tracker.setConnection(new Connection(clock));
+			submitRequest(tracker, new ConnectionRequest(clock));
+		}
+
+		// Don't sent this request just yet as the connection isn't valid
+		return false;
+	}
+
+	private void writeRequest(TrackerRequest wrappedRequest) throws IOException {
+		LOGGER.trace("Sending tracker request: {}.", wrappedRequest);
+		OutStream outStream = new OutStream();
+		wrappedRequest.writeRequest(outStream);
+		socketUtils.write(udpSocket, wrappedRequest.getTracker().getSocketAddress(), outStream);
+	}
+
 	/**
 	 * Checks if one of the queues contains a {@link TrackerAction#CONNECT} request.
+	 *
 	 * @param tracker
 	 * @return
 	 */
 	private boolean isConnectRequestQueued(UdpTracker tracker) {
 		synchronized (lock) {
 			if (pendingRespones.values().stream()
-					.filter(pendingRequest -> pendingRequest.getTracker().equals(tracker))
-					.anyMatch(pendingRequest -> pendingRequest.getAction() == TrackerAction.CONNECT)) {
+					.filter(pendingRequest -> pendingRequest.request.getTracker().equals(tracker))
+					.anyMatch(pendingRequest -> pendingRequest.request.getAction() == TrackerAction.CONNECT)) {
 				return true;
 			}
 
@@ -214,26 +272,27 @@ public class UdpTrackerSocket implements Runnable {
 	}
 
 	private void receiveResponse() {
-		TrackerRequest response = null;
+		SentRequest sentRequest = null;
 		try {
 			// Read packet and find the corresponding request
 			InStream inStream = socketUtils.read(udpSocket);
 			int transactionId = peekTransactionId(inStream);
 
 			synchronized (lock) {
-				response = pendingRespones.remove(transactionId);
+				sentRequest = pendingRespones.remove(transactionId);
 			}
-			if (response == null) {
+
+			if (sentRequest == null) {
 				LOGGER.warn(String.format("Received response with an unknown transaction id: %d", transactionId));
 				return;
 			}
 
-			response.readResponse(inStream);
-			response.process();
+			sentRequest.request.readResponse(inStream);
+			sentRequest.request.process();
 		} catch (IOException e) {
-			LOGGER.warn(String.format("Tracker request failed to read.", response), e);
+			LOGGER.warn("Tracker request failed to read.", e);
 		} catch (TrackerException e) {
-			LOGGER.warn(String.format("Failed to process tracker response for %s", response), e);
+			LOGGER.warn(String.format("Failed to process tracker response for %s", sentRequest.request), e);
 		}
 	}
 
@@ -270,6 +329,35 @@ public class UdpTrackerSocket implements Runnable {
 
 	}
 
+	private static final class SentRequest {
+
+		private final TrackerRequest request;
+
+		private final Clock clock;
+
+		private LocalDateTime sentTime;
+
+		private int attempt;
+
+		public SentRequest(TrackerRequest request, Clock clock) {
+			this.request = request;
+			this.clock = clock;
+			sentTime = LocalDateTime.ofInstant(clock.instant(), clock.getZone());
+		}
+
+		public boolean isTimedout() {
+			Duration timeoutPeriod = Duration.ofSeconds(15 * (int) Math.pow(2, attempt));
+			Duration timeSinceRequest = Duration.between(sentTime, LocalDateTime.now(clock));
+			if (timeSinceRequest.minus(timeoutPeriod).isNegative()) {
+				LOGGER.trace("Request not timed out: {}, Sent: {}", LocalDateTime.now(clock), sentTime);
+				// There is still some time left before the timeout hits
+				return false;
+			}
+
+			return true;
+		}
+	}
+
 	public static final class Builder {
 
 		private TrackerManager trackerManager;
@@ -277,6 +365,17 @@ public class UdpTrackerSocket implements Runnable {
 		private UdpSocketUtils socketUtils;
 
 		private int socketPort;
+
+		private Clock clock;
+
+		public Builder() {
+			clock = Clock.systemDefaultZone();
+		}
+
+		public Builder setClock(Clock clock) {
+			this.clock = clock;
+			return this;
+		}
 
 		public Builder setTrackerManager(TrackerManager trackerManager) {
 			this.trackerManager = trackerManager;

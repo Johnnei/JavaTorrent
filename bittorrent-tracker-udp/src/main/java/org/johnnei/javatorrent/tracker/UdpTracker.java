@@ -22,6 +22,7 @@ import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.torrent.tracker.TrackerException;
 import org.johnnei.javatorrent.tracker.udp.AnnounceRequest;
 import org.johnnei.javatorrent.tracker.udp.Connection;
+import org.johnnei.javatorrent.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.tracker.udp.ScrapeRequest;
 import org.johnnei.javatorrent.tracker.udp.UdpTrackerSocket;
 import org.slf4j.Logger;
@@ -99,7 +100,7 @@ public class UdpTracker implements ITracker {
 	 */
 	private String status;
 
-	private UdpTracker(Builder builder) throws TrackerException {
+	protected UdpTracker(Builder builder) throws TrackerException {
 		this.url = Objects.requireNonNull(builder.trackerUrl, "Tracker URL must be given");
 		this.torrentClient = builder.torrentClient;
 		this.clock = builder.clock;
@@ -205,6 +206,14 @@ public class UdpTracker implements ITracker {
 		}
 
 		trackerSocket.submitRequest(this, new AnnounceRequest(torrentInfo, torrentClient.getTrackerManager().getPeerId(), torrentClient.getDownloadPort()));
+	}
+
+	/**
+	 * Gets called by the underlying {@link #trackerSocket} if a request caused {@link #announce(Torrent)} or {@link #scrape()} fails.
+	 * @param payload
+	 */
+	public void onRequestFailed(IUdpTrackerPayload payload) {
+		LOGGER.warn("Failed to execute {}.", payload);
 	}
 
 	@Override

@@ -8,6 +8,10 @@ import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.torrent.tracker.TrackerException;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 
+/**
+ * Represents a request to a tracker.
+ *
+ */
 public class TrackerRequest {
 
 	/**
@@ -25,6 +29,12 @@ public class TrackerRequest {
 	 */
 	private final int transactionId;
 
+	/**
+	 * Creates a new request for an {@link UdpTracker}
+	 * @param tracker The tracker for whom this request will be executed
+	 * @param transactionId The assigned transaction id
+	 * @param message The payload of the actual request.
+	 */
 	public TrackerRequest(final UdpTracker tracker, final int transactionId, final IUdpTrackerPayload message) {
 		this.tracker = Objects.requireNonNull(tracker);
 		this.transactionId = transactionId;
@@ -65,15 +75,24 @@ public class TrackerRequest {
 		message.readResponse(inStream);
 	}
 
+	/**
+	 * Processes the received response
+	 */
 	public void process() {
 		message.process(tracker);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
 		return "TrackerRequest [transactionId=" + transactionId + ", message=" + message + "]";
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -82,6 +101,9 @@ public class TrackerRequest {
 		return result;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -100,16 +122,35 @@ public class TrackerRequest {
 		return true;
 	}
 
+	/**
+	 * Gets the action type of this request
+	 * @return The action
+	 */
 	public TrackerAction getAction() {
 		return message.getAction();
 	}
 
+	/**
+	 * Gets the assigned transaction id for this request
+	 * @return The transaction id
+	 */
 	public int getTransactionId() {
 		return transactionId;
 	}
 
+	/**
+	 * Gets the tracker for which this request will be executed.
+	 * @return The tracker
+	 */
 	public UdpTracker getTracker() {
 		return tracker;
+	}
+
+	/**
+	 * Called when the request must be reported to the tracker as failed.
+	 */
+	public void onFailure() {
+		tracker.onRequestFailed(message);
 	}
 
 }
