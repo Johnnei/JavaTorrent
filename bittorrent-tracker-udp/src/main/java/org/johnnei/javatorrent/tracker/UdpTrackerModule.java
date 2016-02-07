@@ -39,6 +39,7 @@ public class UdpTrackerModule implements IModule {
 
 	@Override
 	public void onPostHandshake(Peer peer) {
+		/* UDP Tracker support is not announced in the handshake */
 	}
 
 	@Override

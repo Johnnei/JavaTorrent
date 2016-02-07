@@ -11,6 +11,7 @@ import org.johnnei.javatorrent.network.OutStream;
 public class UdpSocketUtils {
 
 	public UdpSocketUtils() {
+		/* Utility class which needs to be mockable for the sake of testability */
 	}
 
 	/**

@@ -89,17 +89,17 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 	@Override
 	public void readResponse(InStream inStream) {
-		final int BYTES_PER_PEER = 6;
+		final int bytesPerPeer = 6;
 
 		interval = inStream.readInt();
 		leechers = inStream.readInt();
 		seeders = inStream.readInt();
 
-		if (inStream.available() % BYTES_PER_PEER != 0) {
+		if (inStream.available() % bytesPerPeer != 0) {
 			LOGGER.warn(String.format("Peer information bytes aren't divisible by 6: %d", inStream.available()));
 		}
 
-		while (inStream.available() >= BYTES_PER_PEER) {
+		while (inStream.available() >= bytesPerPeer) {
 			byte[] ip = inStream.readFully(4);
 			int port = inStream.readUnsignedShort();
 			sockets.add(new SocketInfo(ip, port));

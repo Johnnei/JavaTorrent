@@ -252,7 +252,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 		expectLastCall().times(9);
 
 		expect(utilsMock.read(isA(DatagramSocket.class))).andAnswer(() -> {
-			Duration newOffset = Duration.ofSeconds((readAttempt + 1) + (15 * (int) Math.pow(2, readAttempt)));
+			Duration newOffset = Duration.ofSeconds((readAttempt + 1) + (15L * (int) Math.pow(2, readAttempt)));
 			++readAttempt;
 
 			testClock.setClock(Clock.offset(Clock.systemDefaultZone(), newOffset));

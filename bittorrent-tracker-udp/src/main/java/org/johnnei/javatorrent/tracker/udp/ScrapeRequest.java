@@ -37,11 +37,11 @@ public class ScrapeRequest implements IUdpTrackerPayload {
 
 	@Override
 	public void readResponse(InStream inStream) throws TrackerException {
-		final int BYTES_PER_TORRENT = 12;
-		if (inStream.available() / BYTES_PER_TORRENT != torrents.size()) {
+		final int bytesPerTorrent = 12;
+		if (inStream.available() / bytesPerTorrent != torrents.size()) {
 			throw new TrackerException(String.format(
 					"Incorrect amount of bytes returned. Expected: %d, Got: %d",
-					BYTES_PER_TORRENT * torrents.size(),
+					bytesPerTorrent * torrents.size(),
 					inStream.available()));
 		}
 

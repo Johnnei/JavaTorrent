@@ -280,7 +280,7 @@ public class UdpTrackerSocket implements Runnable {
 	}
 
 	private void receiveResponse() {
-		SentRequest sentRequest = null;
+		SentRequest sentRequest;
 		InStream inStream = null;
 		try {
 			// Read packet and find the corresponding request
@@ -358,7 +358,7 @@ public class UdpTrackerSocket implements Runnable {
 		}
 
 		public boolean isTimedout() {
-			Duration timeoutPeriod = Duration.ofSeconds(15 * (int) Math.pow(2, attempt));
+			Duration timeoutPeriod = Duration.ofSeconds(15L * (int) Math.pow(2, attempt));
 			Duration timeSinceRequest = Duration.between(sentTime, LocalDateTime.now(clock));
 			if (timeSinceRequest.minus(timeoutPeriod).isNegative()) {
 				LOGGER.trace("Request not timed out: {}, Sent: {}", LocalDateTime.now(clock), sentTime);
