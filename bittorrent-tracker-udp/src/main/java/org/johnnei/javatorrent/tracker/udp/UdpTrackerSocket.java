@@ -200,16 +200,7 @@ public class UdpTrackerSocket implements Runnable {
 
 	private void resendRequests(Collection<SentRequest> timedoutRequests) {
 		for (SentRequest pendingResponse : timedoutRequests) {
-			if (pendingResponse.attempt == 8) {
-				LOGGER.warn("Tracker failed to respond to {} after 8 attempts. Discarding request.", pendingResponse.request);
-				synchronized (lock) {
-					pendingRespones.remove(pendingResponse.request.getTransactionId());
-				}
-				pendingResponse.request.onFailure();
-				continue;
-			}
-
-			if (!canSendRequest(pendingResponse.request.getTracker(), pendingResponse.request.getAction())) {
+			if (!canResendRequest(pendingResponse)) {
 				continue;
 			}
 
@@ -220,6 +211,23 @@ public class UdpTrackerSocket implements Runnable {
 				LOGGER.warn("Tracker request failed to write: {}. Delayed resend of timedout request.", pendingResponse.request, e);
 			}
 		}
+	}
+
+	private boolean canResendRequest(SentRequest pendingResponse) {
+		if (pendingResponse.attempt == 8) {
+			LOGGER.warn("Tracker failed to respond to {} after 8 attempts. Discarding request.", pendingResponse.request);
+			synchronized (lock) {
+				pendingRespones.remove(pendingResponse.request.getTransactionId());
+			}
+			pendingResponse.request.onFailure();
+			return false;
+		}
+
+		if (!canSendRequest(pendingResponse.request.getTracker(), pendingResponse.request.getAction())) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private boolean canSendRequest(UdpTracker tracker, TrackerAction action) {
@@ -273,26 +281,30 @@ public class UdpTrackerSocket implements Runnable {
 
 	private void receiveResponse() {
 		SentRequest sentRequest = null;
+		InStream inStream = null;
 		try {
 			// Read packet and find the corresponding request
-			InStream inStream = socketUtils.read(udpSocket);
-			int transactionId = peekTransactionId(inStream);
-
-			synchronized (lock) {
-				sentRequest = pendingRespones.remove(transactionId);
-			}
-
-			if (sentRequest == null) {
-				LOGGER.warn(String.format("Received response with an unknown transaction id: %d", transactionId));
-				return;
-			}
-
-			sentRequest.request.readResponse(inStream);
-			sentRequest.request.process();
+			inStream = socketUtils.read(udpSocket);
 		} catch (IOException e) {
 			LOGGER.warn("Tracker request failed to read.", e);
+			return;
+		}
+
+		int transactionId = peekTransactionId(inStream);
+
+		synchronized (lock) {
+			sentRequest = pendingRespones.remove(transactionId);
+		}
+
+		if (sentRequest == null) {
+			LOGGER.warn("Received response with an unknown transaction id: {}", transactionId);
+			return;
+		}
+		try {
+			sentRequest.request.readResponse(inStream);
+			sentRequest.request.process();
 		} catch (TrackerException e) {
-			LOGGER.warn(String.format("Failed to process tracker response for %s", sentRequest.request), e);
+			LOGGER.warn("Failed to process tracker response for {}", sentRequest.request, e);
 		}
 	}
 
