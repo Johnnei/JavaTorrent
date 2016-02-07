@@ -1,13 +1,13 @@
 package org.johnnei.javatorrent.torrent.download;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
-import org.johnnei.javatorrent.utils.ConsoleLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MagnetLink {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MagnetLink.class);
 
 	/**
 	 * The resulting torrent from this Magnet link
@@ -18,12 +18,9 @@ public class MagnetLink {
 
 	private final TorrentClient torrentClient;
 
-	private Logger log;
-
 	public MagnetLink(String magnetLink, TorrentClient torrentClient) {
 		this.torrentClient = torrentClient;
 		this.torrentBuilder = new TorrentBuilder();
-		this.log = ConsoleLogger.createLogger("JavaTorrent", Level.INFO);
 
 		if (!magnetLink.startsWith("magnet:?")) {
 			return;
@@ -46,13 +43,13 @@ public class MagnetLink {
 			case "xt":
 				String[] subdata = data[1].split(":");
 				if (subdata.length < 3) {
-					log.warning("XT from MagnetLink is incomplete");
+					LOGGER.error("XT from MagnetLink is incomplete");
 				} else if (!subdata[0].equals("urn")) {
-					log.warning("[XT] Expected a URN at position 0");
+					LOGGER.error("[XT] Expected a URN at position 0");
 				} else if (!subdata[1].equals("btih")) {
-					log.warning("[XT] Unsupported Hashing: " + subdata[1]);
+					LOGGER.error("[XT] Unsupported Hashing: " + subdata[1]);
 				} else if (subdata[2].length() != 40) {
-					log.warning("[XT] Invalid Hash length: " + subdata[2].length());
+					LOGGER.error("[XT] Invalid Hash length: " + subdata[2].length());
 				} else {
 					byte[] hash = new byte[20];
 					for (int j = 0; j < subdata[2].length() / 2; j++) {
@@ -63,7 +60,7 @@ public class MagnetLink {
 				break;
 
 			default:
-				log.fine("Unhandled Magnet Data: " + linkData[i]);
+				LOGGER.warn("Unhandled Magnet Data: " + linkData[i]);
 			}
 		}
 	}
@@ -73,7 +70,7 @@ public class MagnetLink {
 			try {
 				torrent = torrentBuilder.build(torrentClient);
 			} catch (IllegalStateException e) {
-				log.warning("Failed to build torrent from magnet link: " + e.getMessage());
+				LOGGER.warn("Failed to build torrent from magnet link: " + e.getMessage());
 			}
 		}
 

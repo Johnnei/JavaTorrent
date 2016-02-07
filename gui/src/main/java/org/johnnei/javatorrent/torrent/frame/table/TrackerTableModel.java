@@ -3,9 +3,9 @@ package org.johnnei.javatorrent.torrent.frame.table;
 import javax.swing.table.AbstractTableModel;
 
 import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.tracker.ITracker;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.frame.TorrentFrame;
+import org.johnnei.javatorrent.torrent.tracker.ITracker;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 
 public class TrackerTableModel extends AbstractTableModel {
 
@@ -63,11 +63,11 @@ public class TrackerTableModel extends AbstractTableModel {
 			case COL_STATUS:
 				return item.getStatus();
 			case COL_SEEDERS:
-				return item.getInfo(torrentFrame.getSelectedTorrent()).getSeeders();
+				return item.getInfo(torrentFrame.getSelectedTorrent()).get().getSeeders();
 			case COL_LEECHERS:
-				return item.getInfo(torrentFrame.getSelectedTorrent()).getLeechers();
+				return item.getInfo(torrentFrame.getSelectedTorrent()).get().getLeechers();
 			case COL_COMPLETED:
-				return item.getInfo(torrentFrame.getSelectedTorrent()).getDownloadCount();
+				return item.getInfo(torrentFrame.getSelectedTorrent()).get().getDownloadCount();
 			default:
 				throw new IllegalArgumentException(String.format("Column %d is outside of the column range", columnIndex));
 		}

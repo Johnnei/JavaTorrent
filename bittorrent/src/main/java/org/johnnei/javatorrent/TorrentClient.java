@@ -3,14 +3,23 @@ package org.johnnei.javatorrent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
+import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.torrent.TorrentManager;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerFactory;
-import org.johnnei.javatorrent.torrent.download.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
 import org.johnnei.javatorrent.torrent.protocol.MessageFactory;
+import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.torrent.tracker.ITracker;
+import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.tracker.TrackerFactory;
+import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.utils.CheckedBiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +39,15 @@ public class TorrentClient {
 
 	private TrackerManager trackerManager;
 
-	private Thread trackerManagerThread;
-
 	private PhaseRegulator phaseRegulator;
+
+	private IPeerConnector peerConnector;
+
+	private IPeerManager peerManager;
+
+	private ExecutorService executorService;
+
+	private int downloadPort;
 
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
@@ -40,24 +55,36 @@ public class TorrentClient {
 		messageFactory = builder.messageFactoryBuilder.build();
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
 		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
+		executorService = Objects.requireNonNull(builder.executorService, "Executor service is required to process torrent tasks.");
+
+		peerManager = Objects.requireNonNull(builder.peerManager, "Peer manager required to handle peer selection mechanism.");
+		LOGGER.info(String.format("Configured %s as Peer Manager", peerManager));
+
+		peerConnector = Objects.requireNonNull(builder.peerConnector.apply(this), "Peer connector required to allow external connections");
+		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
+
+		Objects.requireNonNull(builder.trackerFactoryBuilder, "At least one tracker protocol must be configured.");
+		TrackerFactory trackerFactory = builder.trackerFactoryBuilder.setTorrentClient(this).build();
 
 		torrentManager = new TorrentManager(this);
-		trackerManager = new TrackerManager(this, Objects.requireNonNull(builder.trackerFactory, "At least one tracker protocol must be configured."));
-		LOGGER.info(String.format("Configured trackers: %s", builder.trackerFactory));
-
-		trackerManagerThread = new Thread(trackerManager, "Tracker manager");
-		trackerManagerThread.setDaemon(true);
+		trackerManager = new TrackerManager(peerConnector, trackerFactory);
+		LOGGER.info(String.format("Configured trackers: %s", trackerFactory));
 
 		LOGGER.info(String.format("Configured modules: %s", builder.modules.stream()
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
 				.reduce((a, b) -> a + ", " + b).orElse("")));
+
+		downloadPort = builder.downloadPort;
 	}
 
 	public void start() {
-		trackerManagerThread.start();
 		torrentManager.startListener(trackerManager);
 	}
 
+	/**
+	 * Gets the message factory for this client
+	 * @return The {@link MessageFactory}
+	 */
 	public MessageFactory getMessageFactory() {
 		return messageFactory;
 	}
@@ -74,28 +101,77 @@ public class TorrentClient {
 		return torrentManager;
 	}
 
+	/**
+	 * Gets the {@link TrackerManager} which manages the collective instances {@link ITracker}
+	 * @return
+	 */
 	public TrackerManager getTrackerManager() {
 		return trackerManager;
 	}
 
+	/**
+	 * Gets the {@link PhaseRegulator} which manages the ordering of the download states.
+	 * @return
+	 */
 	public PhaseRegulator getPhaseRegulator() {
 		return phaseRegulator;
 	}
 
-	public static class Builder {
+	/**
+	 * Gets the {@link ExecutorService} which will execute the small tasks
+	 * @return The executor service implementation
+	 */
+	public ExecutorService getExecutorService() {
+		return executorService;
+	}
 
-		private ConnectionDegradation connectionDegradation;
+	/**
+	 * Gets the {@link IPeerConnector} which connects new peers
+	 * @return The peer connector implementation
+	 */
+	public IPeerConnector getPeerConnector() {
+		return peerConnector;
+	}
+
+	/**
+	 * Gets the {@link IPeerManager} which handles the choking/unchoking of the connected peers.
+	 * @return The peer manager implementation
+	 */
+	public IPeerManager getPeerManager() {
+		return peerManager;
+	}
+
+	/**
+	 * Gets the port at which we are listening for peers
+	 * @return The port at which we are listening
+	 */
+	public int getDownloadPort() {
+		return downloadPort;
+	}
+
+	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
 
+		private final Collection<IModule> modules;
+
+		private ConnectionDegradation connectionDegradation;
+
 		private PhaseRegulator phaseRegulator;
 
-		private TrackerFactory trackerFactory;
+		private TrackerFactory.Builder trackerFactoryBuilder;
 
-		private final Collection<IModule> modules;
+		private Function<TorrentClient, IPeerConnector> peerConnector;
+
+		private ExecutorService executorService;
+
+		private IPeerManager peerManager;
+
+		private int downloadPort;
 
 		public Builder() {
 			messageFactoryBuilder = new MessageFactory.Builder();
+			trackerFactoryBuilder = new TrackerFactory.Builder();
 			modules = new ArrayList<>();
 		}
 
@@ -107,9 +183,26 @@ public class TorrentClient {
 			}
 
 			modules.add(module);
-			module.getMessages().forEach(messageFactoryBuilder::registerMessage);
+			return this;
+		}
 
-			// TODO Enable the reserved bits
+		/**
+		 * Returns the list of reserved bits to enable to indicate that we support this extension.
+		 * The bit numbers are represented in the following order: Right to left, starting at zero.
+		 * For reference see BEP 10 which indicates that bit 20 must be enabled.
+		 * @param bit The bit to enable.
+		 */
+		public void enableExtensionBit(int bit) {
+			// TODO Implement
+		}
+
+		public Builder registerMessage(int id, Supplier<IMessage> messageSupplier) {
+			messageFactoryBuilder.registerMessage(id, messageSupplier);
+			return this;
+		}
+
+		public Builder registerTrackerProtocol(String protocol, CheckedBiFunction<String, TorrentClient, ITracker, TrackerException> supplier) {
+			trackerFactoryBuilder.registerProtocol(protocol, supplier);
 			return this;
 		}
 
@@ -123,8 +216,28 @@ public class TorrentClient {
 			return this;
 		}
 
-		public Builder setTrackerFactory(TrackerFactory trackerFactory) {
-			this.trackerFactory = trackerFactory;
+		public Builder setPeerConnector(Function<TorrentClient, IPeerConnector> peerConnector) {
+			this.peerConnector = peerConnector;
+			return this;
+		}
+
+		public Builder setExecutorService(ExecutorService executorService) {
+			this.executorService = executorService;
+			return this;
+		}
+
+		public Builder setPeerManager(IPeerManager peerManager) {
+			this.peerManager = peerManager;
+			return this;
+		}
+
+		/**
+		 * Sets the download port at which we are listening
+		 * @param downloadPort The port at which we are listening
+		 * @return The modified instance
+		 */
+		public Builder setDownloadPort(int downloadPort) {
+			this.downloadPort = downloadPort;
 			return this;
 		}
 

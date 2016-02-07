@@ -8,8 +8,12 @@ import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageData;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DiskJobSendMetadataBlock extends DiskJob {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobSendMetadataBlock.class);
 
 	/**
 	 * The peer to send the block to
@@ -29,7 +33,7 @@ public class DiskJobSendMetadataBlock extends DiskJob {
 			MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mData);
 			peer.getBitTorrentSocket().queueMessage(extendedMessage);
 		} catch (IOException e) {
-			torrent.getLogger().warning(String.format("Reading metadata block %d failed, requeueing read job. %s", blockIndex, e.getMessage()));
+			LOGGER.warn(String.format("Reading metadata block %d failed, requeueing read job.", blockIndex), e);
 			torrent.addDiskJob(this);
 		}
 	}

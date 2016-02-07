@@ -4,17 +4,12 @@ import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 
-public class MetadataSelect implements IDownloadRegulator {
-	
+public class MetadataSelect implements IPieceSelector {
+
 	private Torrent torrent;
-	
+
 	public MetadataSelect(Torrent torrent) {
 		this.torrent = torrent;
-	}
-
-	@Override
-	public String getName() {
-		return "Full Piece Select (Metadata)";
 	}
 
 	@Override
@@ -23,7 +18,7 @@ public class MetadataSelect implements IDownloadRegulator {
 		if (piece.getRequestedCount() < piece.getBlockCount()) {
 			return piece;
 		}
-		
+
 		return null;
 	}
 

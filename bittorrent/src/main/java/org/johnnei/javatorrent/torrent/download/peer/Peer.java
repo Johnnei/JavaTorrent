@@ -1,14 +1,10 @@
 package org.johnnei.javatorrent.torrent.download.peer;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJobSendBlock;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageKeepAlive;
-import org.johnnei.javatorrent.utils.ConsoleLogger;
 import org.johnnei.javatorrent.utils.JMath;
 
 public class Peer implements Comparable<Peer> {
@@ -52,8 +48,6 @@ public class Peer implements Comparable<Peer> {
 	 */
 	private int strikes;
 
-	private Logger log;
-
 	/**
 	 * The pieces this peer has
 	 */
@@ -88,7 +82,6 @@ public class Peer implements Comparable<Peer> {
 		status = "";
 		clientName = "pending";
 		lastActivity = System.currentTimeMillis();
-		log = ConsoleLogger.createLogger("Peer", Level.INFO);
 		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFiles() != null) {
@@ -373,10 +366,6 @@ public class Peer implements Comparable<Peer> {
 			flags += "C";
 		}
 		return flags;
-	}
-
-	public Logger getLogger() {
-		return log;
 	}
 
 	/**

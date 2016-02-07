@@ -6,8 +6,12 @@ import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageBlock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DiskJobSendBlock extends DiskJob {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobSendBlock.class);
 
 	/**
 	 * The peer to send the block to
@@ -33,9 +37,9 @@ public class DiskJobSendBlock extends DiskJob {
 			peer.addToPendingMessages(-1);
 			torrent.addUploadedBytes(data.length);
 		} catch (TorrentException te) {
-			torrent.getLogger().warning(String.format("Can't satify peer request for block: %s", te.getMessage()));
+			LOGGER.warn(String.format("Can't satify peer request for block: %s", te.getMessage()));
 		} catch (IOException e) {
-			torrent.getLogger().warning(String.format("IO error while reading block request: %s. Requeueing task.", e.getMessage()));
+			LOGGER.warn(String.format("IO error while reading block request: %s. Requeueing task.", e.getMessage()));
 			torrent.addDiskJob(this);
 		}
 	}

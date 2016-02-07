@@ -7,9 +7,13 @@ import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.utils.ThreadUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PeersWriterRunnable implements Runnable {
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PeersWriterRunnable.class);
+
 	private TorrentManager manager;
 
 	public PeersWriterRunnable(TorrentManager manager) {
@@ -25,7 +29,7 @@ public class PeersWriterRunnable implements Runnable {
 			ThreadUtils.sleep(1);
 		}
 	}
-	
+
 	private void processTorrent(Torrent torrent) {
 		synchronized (torrent) {
 			for (Peer peer : torrent.getPeers()) {
@@ -33,22 +37,22 @@ public class PeersWriterRunnable implements Runnable {
 			}
 		}
 	}
-	
+
 	private void processPeer(Peer peer) {
 		if (peer.getBitTorrentSocket().closed()) {
 			return;
 		}
-		
+
 		try {
 			BitTorrentSocket socket = peer.getBitTorrentSocket();
-			
+
 			if (socket.canWriteMessage()) {
 				peer.getBitTorrentSocket().sendMessage();
 			} else if (peer.getWorkQueueSize(PeerDirection.Upload) > 0) {
 				peer.queueNextPieceForSending();
 			}
 		} catch (IOException e) {
-			peer.getLogger().severe(e.getMessage());
+			LOGGER.error(String.format("IO Error for peer: %s", peer), e);
 			peer.getBitTorrentSocket().close();
 		}
 	}

@@ -4,8 +4,12 @@ import java.io.IOException;
 
 import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.download.Torrent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DiskJobStoreBlock extends DiskJob {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobStoreBlock.class);
 
 	private int pieceIndex;
 	private int blockIndex;
@@ -26,10 +30,10 @@ public class DiskJobStoreBlock extends DiskJob {
 				torrent.addDiskJob(new DiskJobCheckHash(pieceIndex));
 			}
 		} catch (TorrentException e) {
-			torrent.getLogger().warning(e.getMessage());
+			LOGGER.warn(e.getMessage(), e);
 			torrent.getFiles().getPiece(pieceIndex).reset(blockIndex);
 		} catch (IOException e) {
-			torrent.getLogger().warning(String.format("IO error while saving piece %d block %d: %s. Requeueing write task.", pieceIndex, blockIndex, e.getMessage()));
+			LOGGER.warn(String.format("IO error while saving piece %d block %d: %s. Requeueing write task.", pieceIndex, blockIndex, e.getMessage()), e);
 			torrent.addDiskJob(this);
 			return;
 		}

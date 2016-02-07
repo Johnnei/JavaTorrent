@@ -6,6 +6,8 @@ import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A job to check the hash of a piece for a given torrent
@@ -14,6 +16,8 @@ import org.johnnei.javatorrent.torrent.util.StringUtil;
  *
  */
 public class DiskJobCheckHash extends DiskJob {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobCheckHash.class);
 
 	/**
 	 * The piece to check the has for
@@ -33,16 +37,16 @@ public class DiskJobCheckHash extends DiskJob {
 					torrent.getFiles().havePiece(pieceIndex);
 					torrent.broadcastMessage(new MessageHave(pieceIndex));
 				}
-				torrent.getLogger().info("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
+				LOGGER.info("Recieved and verified piece: " + pieceIndex + ", Torrent Progress: " + StringUtil.progressToString(torrent.getProgress()) + "%");
 			} else {
-				torrent.getLogger().warning("Hash check failed on piece: " + pieceIndex);
+				LOGGER.warn("Hash check failed on piece: " + pieceIndex);
 				torrent.getFiles().getPiece(pieceIndex).hashFail();
 			}
 		} catch (TorrentException e) {
-			torrent.getLogger().warning("Hash check error on piece: " + pieceIndex + ", Err: " + e.getMessage());
+			LOGGER.warn("Hash check error on piece: " + pieceIndex + ", Err: " + e.getMessage());
 			torrent.getFiles().getPiece(pieceIndex).hashFail();
 		} catch (IOException e) {
-			torrent.getLogger().warning(String.format("IO error while checking hash on piece %d: %s. Requeuing task.", pieceIndex, e.getMessage()));
+			LOGGER.warn(String.format("IO error while checking hash on piece %d. Requeuing task.", pieceIndex), e);
 			return;
 		}
 		torrent.finishHaltingOperations(1);

@@ -2,40 +2,40 @@ package org.johnnei.javatorrent.torrent.download;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.torrent.TorrentException;
-import org.johnnei.javatorrent.torrent.download.algos.BurstPeerManager;
 import org.johnnei.javatorrent.torrent.download.algos.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.algos.IDownloadRegulator;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
+import org.johnnei.javatorrent.torrent.download.algos.IPieceSelector;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJobStoreBlock;
 import org.johnnei.javatorrent.torrent.download.files.disk.IOManager;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
-import org.johnnei.javatorrent.torrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageInterested;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
-import org.johnnei.javatorrent.utils.ConsoleLogger;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 import org.johnnei.javatorrent.utils.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Torrent implements Runnable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Torrent.class);
 
 	/**
 	 * The display name of this torrent
@@ -71,7 +71,7 @@ public class Torrent implements Runnable {
 	/**
 	 * Regulates the selection of pieces and the peers to download the pieces
 	 */
-	private IDownloadRegulator downloadRegulator;
+	private IPieceSelector pieceSelector;
 	/**
 	 * Regulates the connection with peers
 	 */
@@ -111,15 +111,37 @@ public class Torrent implements Runnable {
 	 */
 	private TorrentClient torrentClient;
 
-	private Logger log;
-
 	/**
 	 * The thread on which the torrent is being processed
 	 */
 	private Thread thread;
 
+	public Torrent(Builder builder) {
+		displayName = builder.displayName;
+		torrentClient = builder.torrentClient;
+		btihHash = builder.hash;
+		peerManager = builder.peerManager;
+		phase = builder.phase;
+		torrentHaltingOperations = new AtomicInteger();
+		downloadedBytes = 0L;
+		peers = new LinkedList<Peer>();
+		keepDownloading = true;
+		status = "Parsing Magnet Link";
+		ioManager = new IOManager();
+		pieceSelector = new FullPieceSelect(this);
+		thread = new Thread(this, displayName);
+	}
+
+	/**
+	 *
+	 * @param torrentClient
+	 * @param btihHash
+	 * @param displayName
+	 *
+	 * @deprecated Replaced by {@link #Torrent(Builder)}
+	 */
+	@Deprecated
 	public Torrent(TorrentClient torrentClient, byte[] btihHash, String displayName) {
-		log = ConsoleLogger.createLogger(String.format("Torrent %s", StringUtil.byteArrayToString(btihHash)), Level.INFO);
 		this.displayName = displayName;
 		this.torrentClient = torrentClient;
 		this.btihHash = btihHash;
@@ -129,8 +151,8 @@ public class Torrent implements Runnable {
 		keepDownloading = true;
 		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
-		downloadRegulator = new FullPieceSelect(this);
-		peerManager = new BurstPeerManager(Config.getConfig().getInt("peer-max"), Config.getConfig().getFloat("peer-max_burst_ratio"));
+		pieceSelector = new FullPieceSelect(this);
+		peerManager = torrentClient.getPeerManager();
 		phase = torrentClient.getPhaseRegulator().createInitialPhase(torrentClient, this);
 
 		thread = new Thread(this, displayName);
@@ -145,7 +167,7 @@ public class Torrent implements Runnable {
 	public void addPeer(Peer peer) {
 		if (hasPeer(peer)) {
 			peer.getBitTorrentSocket().close();
-			log.fine("Filtered duplicate Peer: " + peer);
+			LOGGER.trace("Filtered duplicate Peer: " + peer);
 			return;
 		}
 		synchronized (this) {
@@ -164,7 +186,7 @@ public class Torrent implements Runnable {
 	@Override
 	public void run() {
 		while(phase != null) {
-			log.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
+			LOGGER.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
 			synchronized (this) {
 				peers.forEach(p -> p.onTorrentPhaseChange());
 			}
@@ -178,7 +200,7 @@ public class Torrent implements Runnable {
 			phase.onPhaseExit();
 			phase = torrentClient.getPhaseRegulator().createNextPhase(phase, torrentClient, this).orElse(null);
 		}
-		log.info("Torrent has finished");
+		LOGGER.info("Torrent has finished");
 	}
 
 	/**
@@ -344,13 +366,13 @@ public class Torrent implements Runnable {
 	 * Calculates the current progress based on all available files on the HDD
 	 */
 	public void checkProgress() {
-		log.info("Checking progress...");
+		LOGGER.info("Checking progress...");
 		files.pieces.stream().
 			filter(p -> {
 				try {
 					return p.checkHash();
 				} catch (IOException | TorrentException e) {
-					log.warning(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
+					LOGGER.warn(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
 					return false;
 				}
 			}).
@@ -359,7 +381,7 @@ public class Torrent implements Runnable {
 				broadcastMessage(new MessageHave(p.getIndex()));
 			}
 		);
-		log.info("Checking progress done");
+		LOGGER.info("Checking progress done");
 	}
 
 	/**
@@ -502,27 +524,81 @@ public class Torrent implements Runnable {
 	 * The regulator which is managing this download
 	 * @return The current assigned regulator
 	 */
-	public IDownloadRegulator getDownloadRegulator() {
-		return downloadRegulator;
+	public IPieceSelector getDownloadRegulator() {
+		return pieceSelector;
 	}
 
 	@Override
-	public boolean equals(Object object) {
-		if(object instanceof Torrent) {
-			Torrent torrent = (Torrent)object;
-			return SHA1.match(btihHash, torrent.btihHash);
-		} else {
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(btihHash);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
 			return false;
 		}
+		if (!(obj instanceof Torrent)) {
+			return false;
+		}
+		Torrent other = (Torrent) obj;
+		if (!Arrays.equals(btihHash, other.btihHash)) {
+			return false;
+		}
+		return true;
 	}
 
-	@Deprecated
-	public Logger getLogger() {
-		return log;
+	public void setPieceSelector(IPieceSelector downloadRegulator) {
+		this.pieceSelector = downloadRegulator;
 	}
 
-	public void setDownloadRegulator(IDownloadRegulator downloadRegulator) {
-		this.downloadRegulator = downloadRegulator;
+	public static final class Builder {
+
+		private TorrentClient torrentClient;
+
+		private String displayName;
+
+		private IPeerManager peerManager;
+
+		private IDownloadPhase phase;
+
+		private byte[] hash;
+
+		public Builder setTorrentClient(TorrentClient torrentClient) {
+			this.torrentClient = torrentClient;
+			return this;
+		}
+
+		public Builder setHash(byte[] hash) {
+			this.hash = hash;
+			return this;
+		}
+
+		public Builder setName(String name) {
+			this.displayName = name;
+			return this;
+		}
+
+		public Builder setPeerManager(IPeerManager peerManager) {
+			this.peerManager = peerManager;
+			return this;
+		}
+
+		public Builder setInitialPhase(IDownloadPhase phase) {
+			this.phase = phase;
+			return this;
+		}
+
+		public Torrent build() {
+			return new Torrent(this);
+		}
+
 	}
 
 }

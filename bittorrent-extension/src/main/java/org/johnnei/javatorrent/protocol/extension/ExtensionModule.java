@@ -6,10 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.module.IModule;
-import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
@@ -32,6 +31,13 @@ public class ExtensionModule implements IModule {
 				.reduce((a, b) -> a + ", " + b).orElse("")));
 	}
 
+
+	@Override
+	public void configureTorrentClient(TorrentClient.Builder builder) {
+		builder.registerMessage(Protocol.MESSAGE_EXTENDED_MESSAGE, () -> new MessageExtension(this));
+		builder.enableExtensionBit(20);
+	}
+
 	public MessageHandshake createHandshakeMessage() {
 		return new MessageHandshake(extensionsById.values());
 	}
@@ -44,18 +50,6 @@ public class ExtensionModule implements IModule {
 	@Override
 	public List<Class<IModule>> getDependsOn() {
 		return Collections.emptyList();
-	}
-
-	@Override
-	public int[] getReservedBits() {
-		return new int[] { 20 };
-	}
-
-	@Override
-	public Map<Integer, Supplier<IMessage>> getMessages() {
-		Map<Integer, Supplier<IMessage>> messages = new HashMap<>();
-		messages.put(Protocol.MESSAGE_EXTENDED_MESSAGE, () -> new MessageExtension(this));
-		return messages;
 	}
 
 	@Override
@@ -109,6 +103,17 @@ public class ExtensionModule implements IModule {
 		public ExtensionModule build() {
 			return new ExtensionModule(this);
 		}
+	}
+
+	@Override
+	public void onBuild(TorrentClient torrentClient) {
+		/* Not required */
+	}
+
+
+	@Override
+	public void onShutdown() {
+		/* Nothing to clean up */
 	}
 
 }
