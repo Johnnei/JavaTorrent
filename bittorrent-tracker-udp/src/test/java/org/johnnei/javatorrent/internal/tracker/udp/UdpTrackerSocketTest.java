@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.tracker.udp;
+package org.johnnei.javatorrent.internal.tracker.udp;
 
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
@@ -21,6 +21,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.tracker.udp.ConnectionRequest;
+import org.johnnei.javatorrent.internal.tracker.udp.IUdpTrackerPayload;
+import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
+import org.johnnei.javatorrent.internal.tracker.udp.UdpSocketUtils;
+import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.RulePrintTestCase;

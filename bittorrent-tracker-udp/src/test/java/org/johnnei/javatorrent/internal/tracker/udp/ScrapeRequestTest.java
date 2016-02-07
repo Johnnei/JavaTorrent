@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.tracker.udp;
+package org.johnnei.javatorrent.internal.tracker.udp;
 
 import static java.util.Arrays.asList;
 import static org.easymock.EasyMock.eq;
@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
+import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.DummyEntity;

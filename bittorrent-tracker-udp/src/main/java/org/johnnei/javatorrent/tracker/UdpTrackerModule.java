@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.module.IModule;
+import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.tracker.udp.UdpTrackerSocket;
 
 public class UdpTrackerModule implements IModule {
 

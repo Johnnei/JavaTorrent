@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.tracker.udp;
+package org.johnnei.javatorrent.internal.tracker.udp;
 
 import static org.easymock.EasyMock.eq;
 import static org.johnnei.javatorrent.test.TestUtils.copySection;
@@ -11,6 +11,7 @@ import java.time.Clock;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
+import org.johnnei.javatorrent.internal.tracker.udp.AnnounceRequest;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.DummyEntity;

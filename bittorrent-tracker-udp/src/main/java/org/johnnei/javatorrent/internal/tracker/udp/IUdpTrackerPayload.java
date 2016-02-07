@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.tracker.udp;
+package org.johnnei.javatorrent.internal.tracker.udp;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
