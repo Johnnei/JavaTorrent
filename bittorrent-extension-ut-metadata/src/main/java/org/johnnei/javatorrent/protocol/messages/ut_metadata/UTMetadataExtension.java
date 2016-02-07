@@ -15,37 +15,46 @@ import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.encoding.Bencode;
 import org.johnnei.javatorrent.torrent.encoding.Bencoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UTMetadataExtension implements IExtension {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(UTMetadataExtension.class);
+
 	@Override
-	public IMessage getMessage(InStream inStream) throws InvalidObjectException {
+	public IMessage getMessage(InStream inStream) {
 		int moveBackLength = inStream.available();
 
-		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
-		HashMap<String, Object> dictionary = decoder.decodeDictionary();
-		int id = (int) dictionary.get("msg_type");
-		IMessage message;
-		switch (id) {
-		case UTMetadata.DATA:
-			message = new MessageData();
-			break;
+		try {
+			Bencode decoder = new Bencode(inStream.readString(inStream.available()));
+			HashMap<String, Object> dictionary = decoder.decodeDictionary();
+			int id = (int) dictionary.get("msg_type");
+			IMessage message;
+			switch (id) {
+			case UTMetadata.DATA:
+				message = new MessageData();
+				break;
 
-		case UTMetadata.REJECT:
-			message = new MessageReject();
-			break;
+			case UTMetadata.REJECT:
+				message = new MessageReject();
+				break;
 
-		case UTMetadata.REQUEST:
-			message = new MessageRequest();
-			break;
+			case UTMetadata.REQUEST:
+				message = new MessageRequest();
+				break;
 
-		default:
-			message = null;
-			break;
+			default:
+				message = null;
+				break;
+			}
+
+			inStream.moveBack(moveBackLength);
+			return message;
+		} catch (InvalidObjectException e) {
+			LOGGER.warn("Received incorrect message", e);
+			return null;
 		}
-
-		inStream.moveBack(moveBackLength);
-		return message;
 	}
 
 	@Override

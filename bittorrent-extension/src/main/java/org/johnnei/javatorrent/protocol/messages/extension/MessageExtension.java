@@ -16,6 +16,7 @@ public class MessageExtension implements IMessage {
 	private final ExtensionModule extensionModule;
 
 	private int extensionId;
+
 	private IMessage message;
 
 	public MessageExtension(int extensionId, IMessage message) {
@@ -41,13 +42,8 @@ public class MessageExtension implements IMessage {
 			message = extensionModule.createHandshakeMessage();
 		} else {
 			IExtension extension = extensionModule.getExtensionById(extensionId)
-					.orElseThrow(() -> new IllegalArgumentException(String.format("Unknown extension with id %d", extensionId)));
-			try {
-				message = extension.getMessage(inStream);
-			} catch (Exception e) {
-				LOGGER.warn(String.format("Failed to read extension message in extension %s.", extension.getExtensionName()), e);
-				return;
-			}
+					.orElseThrow(() -> new IllegalArgumentException(String.format("Unknown extension message with id %d", extensionId)));
+			message = extension.getMessage(inStream);
 		}
 		message.read(inStream);
 	}
@@ -55,8 +51,8 @@ public class MessageExtension implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		if (message == null) {
-			LOGGER.error("Processing extended message without message. (ID: " + extensionId + ")");
-			peer.getBitTorrentSocket().close();
+			LOGGER.error("Attemped to process extended message without message: {}", this);
+			return;
 		}
 		message.process(peer);
 	}
@@ -77,11 +73,7 @@ public class MessageExtension implements IMessage {
 
 	@Override
 	public String toString() {
-		if (message != null) {
-			return "Extension " + message.toString();
-		} else {
-			return "Extension";
-		}
+		return String.format("MessageExtension[extensionId=%s, message=%s]", extensionId, message);
 	}
 
 }

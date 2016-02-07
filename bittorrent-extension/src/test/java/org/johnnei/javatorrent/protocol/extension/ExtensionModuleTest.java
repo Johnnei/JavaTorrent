@@ -11,8 +11,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -20,14 +18,12 @@ import org.easymock.Capture;
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
+import org.johnnei.javatorrent.test.StubExtension;
 import org.johnnei.javatorrent.torrent.download.peer.Extensions;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -129,36 +125,6 @@ public class ExtensionModuleTest extends EasyMockSupport {
 		cut.onPostHandshake(peerMock);
 
 		verifyAll();
-	}
-
-	private static final class StubExtension implements IExtension {
-
-		private final String name;
-
-		public StubExtension(String name) {
-			this.name = name;
-		}
-
-		@Override
-		public IMessage getMessage(InStream data) throws Exception {
-			return null;
-		}
-
-		@Override
-		public void addHandshakeMetadata(Peer peer, Bencoder bencoder) {
-			/* Don't do anything in this stub */
-		}
-
-		@Override
-		public void processHandshakeMetadata(Peer peer, HashMap<String, Object> dictionary, Map<?, ?> mEntry) {
-			/* Don't do anything in this stub */
-		}
-
-		@Override
-		public String getExtensionName() {
-			return name;
-		}
-
 	}
 
 }

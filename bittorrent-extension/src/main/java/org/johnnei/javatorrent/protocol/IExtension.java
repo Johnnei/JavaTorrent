@@ -16,7 +16,7 @@ public interface IExtension {
 	 * @param data The stream which remained after the extension base
 	 * @return The Message
 	 */
-	public IMessage getMessage(InStream data) throws Exception;
+	public IMessage getMessage(InStream data);
 
 	/**
 	 * Add the information to the handshake which is needed for the extension to work.
