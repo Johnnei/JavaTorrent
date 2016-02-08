@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -63,10 +62,10 @@ public class MessageHandshake implements IMessage {
 	public void process(Peer peer) {
 		Bencode decoder = new Bencode(bencodedHandshake);
 		try {
-			HashMap<String, Object> dictionary = decoder.decodeDictionary();
+			Map<String, Object> dictionary = decoder.decodeDictionary();
 			Object m = dictionary.get("m");
-			if (m != null && m instanceof HashMap<?, ?>) {
-				HashMap<?, ?> extensionData = (HashMap<?, ?>) m;
+			if (m != null && m instanceof Map<?, ?>) {
+				Map<?, ?> extensionData = (Map<?, ?>) m;
 				extensions.forEach(e -> e.processHandshakeMetadata(peer, dictionary, extensionData));
 			}
 			Object reqq = dictionary.get("reqq");
@@ -99,7 +98,7 @@ public class MessageHandshake implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Handshake";
+		return String.format("MessageHandshake[bencoded=%s]", bencodedHandshake);
 	}
 
 }

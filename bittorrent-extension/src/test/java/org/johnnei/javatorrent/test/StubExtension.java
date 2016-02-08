@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.test;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
@@ -28,7 +27,7 @@ public class StubExtension implements IExtension {
 	}
 
 	@Override
-	public void processHandshakeMetadata(Peer peer, HashMap<String, Object> dictionary, Map<?, ?> mEntry) {
+	public void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry) {
 		/* Don't do anything in this stub */
 	}
 

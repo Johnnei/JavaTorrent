@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.protocol;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
@@ -31,7 +30,7 @@ public interface IExtension {
 	 * @param dictionary The handshake dictionary
 	 * @param mEntry The 'm' entry of the handshake
 	 */
-	public void processHandshakeMetadata(Peer peer, HashMap<String, Object> dictionary, Map<?, ?> mEntry);
+	public void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry);
 
 	/**
 	 * The name of this extension. The advised format for new extensions is: &ltclient-token&gt_&ltname&gt

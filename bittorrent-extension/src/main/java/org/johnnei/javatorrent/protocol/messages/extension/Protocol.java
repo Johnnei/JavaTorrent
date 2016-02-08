@@ -2,6 +2,10 @@ package org.johnnei.javatorrent.protocol.messages.extension;
 
 public class Protocol {
 
+	private Protocol() {
+		/* No instances for constants for you! */
+	}
+
 	/**
 	 * An Protocol Extension message<br/>
 	 * Payload:<br/>

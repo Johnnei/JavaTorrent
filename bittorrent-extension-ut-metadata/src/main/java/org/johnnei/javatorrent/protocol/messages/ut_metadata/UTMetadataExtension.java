@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
-import java.io.InvalidObjectException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,35 +24,31 @@ public class UTMetadataExtension implements IExtension {
 	public IMessage getMessage(InStream inStream) {
 		int moveBackLength = inStream.available();
 
-		try {
-			Bencode decoder = new Bencode(inStream.readString(inStream.available()));
-			HashMap<String, Object> dictionary = decoder.decodeDictionary();
-			int id = (int) dictionary.get("msg_type");
-			IMessage message;
-			switch (id) {
-			case UTMetadata.DATA:
-				message = new MessageData();
-				break;
+		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
+		Map<String, Object> dictionary = decoder.decodeDictionary();
+		int id = (int) dictionary.get("msg_type");
+		IMessage message;
+		switch (id) {
+		case UTMetadata.DATA:
+			message = new MessageData();
+			break;
 
-			case UTMetadata.REJECT:
-				message = new MessageReject();
-				break;
+		case UTMetadata.REJECT:
+			message = new MessageReject();
+			break;
 
-			case UTMetadata.REQUEST:
-				message = new MessageRequest();
-				break;
+		case UTMetadata.REQUEST:
+			message = new MessageRequest();
+			break;
 
-			default:
-				message = null;
-				break;
-			}
-
-			inStream.moveBack(moveBackLength);
-			return message;
-		} catch (InvalidObjectException e) {
-			LOGGER.warn("Received incorrect message", e);
-			return null;
+		default:
+			message = null;
+			break;
 		}
+
+		inStream.moveBack(moveBackLength);
+		return message;
+
 	}
 
 	@Override
@@ -75,7 +69,7 @@ public class UTMetadataExtension implements IExtension {
 	}
 
 	@Override
-	public void processHandshakeMetadata(Peer peer, HashMap<String, Object> dictionary, Map<?, ?> mEntry) {
+	public void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry) {
 		if (!mEntry.containsKey(UTMetadata.NAME)) {
 			return;
 		}
