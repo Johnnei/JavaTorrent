@@ -94,8 +94,7 @@ public class PeerConnector implements Runnable {
 
 				BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getHashArray());
 
-				Peer peer = new Peer(peerSocket, peerInfo.getTorrent());
-				peer.getExtensions().register(handshake.getPeerExtensionBytes());
+				Peer peer = new Peer(peerSocket, peerInfo.getTorrent(), handshake.getPeerExtensionBytes());
 				BitTorrentUtil.onPostHandshake(peer);
 				if (LOGGER.isDebugEnabled()) {
 					LOGGER.debug(String.format(

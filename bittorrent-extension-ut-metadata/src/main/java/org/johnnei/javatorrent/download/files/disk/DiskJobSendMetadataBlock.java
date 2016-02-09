@@ -1,8 +1,10 @@
 package org.johnnei.javatorrent.download.files.disk;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageData;
 import org.johnnei.javatorrent.torrent.download.Torrent;
@@ -29,8 +31,14 @@ public class DiskJobSendMetadataBlock extends DiskJob {
 	@Override
 	public void process(Torrent torrent) {
 		try {
+			Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
+			if (!peerExtensions.isPresent() || !peerExtensions.get().hasExtension(UTMetadata.NAME)) {
+				LOGGER.warn("Request to send Metadata block {} to {} has been rejected. Peer doesn't know about UT_METADATA", blockIndex, peer);
+				return;
+			}
+
 			MessageData mData = new MessageData(blockIndex, peer.getTorrent().getMetadata().get().getBlock(blockIndex));
-			MessageExtension extendedMessage = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), mData);
+			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mData);
 			peer.getBitTorrentSocket().queueMessage(extendedMessage);
 		} catch (IOException e) {
 			LOGGER.warn(String.format("Reading metadata block %d failed, requeueing read job.", blockIndex), e);

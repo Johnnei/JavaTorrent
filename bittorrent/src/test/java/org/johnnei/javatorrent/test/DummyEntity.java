@@ -9,7 +9,7 @@ import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 public class DummyEntity {
 
 	public static Peer createPeer(Torrent torrent) {
-		return new Peer(new BitTorrentSocket(null), torrent);
+		return new Peer(new BitTorrentSocket(null), torrent, new byte[8]);
 	}
 
 	public static byte[] createRandomBytes(int amount) {

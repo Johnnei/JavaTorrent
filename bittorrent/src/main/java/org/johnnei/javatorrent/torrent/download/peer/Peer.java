@@ -1,5 +1,10 @@
 package org.johnnei.javatorrent.torrent.download.peer;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.johnnei.javatorrent.bittorrent.module.IModule;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
 import org.johnnei.javatorrent.torrent.download.files.disk.DiskJobSendBlock;
@@ -56,7 +61,7 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * The extensions which are supported by this peer
 	 */
-	private Extensions extensions;
+	private byte[] extensionBytes;
 
 	/**
 	 * The absolute maximum amount of requests which the peer can support<br/>
@@ -74,15 +79,21 @@ public class Peer implements Comparable<Peer> {
 	 */
 	private BitTorrentSocket socket;
 
-	public Peer(BitTorrentSocket client, Torrent torrent) {
+	/**
+	 * A map of the extra data stored by {@link IModule} which are peer specific
+	 */
+	private Map<Class<?>, Object> extensions;
+
+	public Peer(BitTorrentSocket client, Torrent torrent, byte[] extensionBytes) {
 		this.torrent = torrent;
 		this.socket = client;
+		this.extensionBytes = extensionBytes;
 		peerClient = new Client();
 		myClient = new Client();
+		extensions = new HashMap<>();
 		status = "";
 		clientName = "pending";
 		lastActivity = System.currentTimeMillis();
-		extensions = new Extensions();
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFiles() != null) {
 			haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
@@ -94,7 +105,50 @@ public class Peer implements Comparable<Peer> {
 
 	public void connect() {
 		setStatus("Connecting...");
+	}
 
+	/**
+	 * Registers the {@link IModule} peer specific information based on the class
+	 * @param infoObject The object to add
+	 * @throws {@link IllegalStateException} when the class is already registered.
+	 * @since 0.5
+	 */
+	public void addModuleInfo(Object infoObject) {
+		Class<?> infoClass = infoObject.getClass();
+		if (extensions.containsKey(infoClass)) {
+			throw new IllegalStateException(String.format("Module Info already registered: %s", infoClass.getName()));
+		}
+
+		extensions.put(infoClass, infoObject);
+	}
+
+	/**
+	 * Gets the info object registered with {@link #addModuleInfo(Object)}
+	 * @param infoClass
+	 * @return The module info or {@link Optional#empty()} when not present.
+	 * @since 0.5
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> Optional<T> getModuleInfo(Class<T> infoClass) {
+		if (!extensions.containsKey(infoClass)) {
+			return Optional.empty();
+		}
+
+		return Optional.of((T) extensions.get(infoClass));
+	}
+
+	/**
+	 * Checks if the {@link #extensionBytes} has the given bit set for the extension which is part of the extension bytes in the handshake
+	 * @param index
+	 * @param bit
+	 * @return returns true if the extension bit is set. Otherwise false
+	 */
+	public boolean hasExtension(int index, int bit) {
+		if (index < 0 || index >= extensionBytes.length) {
+			return false;
+		}
+
+		return (extensionBytes[index] & bit) > 0;
 	}
 
 	public void checkDisconnect() {
@@ -250,21 +304,6 @@ public class Peer implements Comparable<Peer> {
 		return haveState.hasPiece(pieceIndex);
 	}
 
-	/**
-	 * Sets the torrent
-	 *
-	 * @param torrent
-	 * @throws IllegalStateException
-	 *             if the peer is already bound to a torrent
-	 */
-	public void setTorrent(Torrent torrent) throws IllegalStateException {
-		if (this.torrent != null) {
-			throw new IllegalStateException("Peer is already bound to a torrent");
-		}
-
-		this.torrent = torrent;
-	}
-
 	public long getLastActivity() {
 		return lastActivity;
 	}
@@ -366,14 +405,6 @@ public class Peer implements Comparable<Peer> {
 			flags += "C";
 		}
 		return flags;
-	}
-
-	/**
-	 * Gets the extensions which are supported by this peer
-	 * @return the extensions of this peer
-	 */
-	public Extensions getExtensions() {
-		return extensions;
 	}
 
 	/**

@@ -63,9 +63,7 @@ public class PeerConnectionAccepter extends Thread {
 					continue;
 				}
 
-				Peer peer = new Peer(peerSocket, torrent.get());
-				peer.getExtensions().register(handshake.getPeerExtensionBytes());
-				peer.setTorrent(torrent.get());
+				Peer peer = new Peer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes());
 				peerSocket.sendHandshake(trackerManager.getPeerId(), torrent.get().getHashArray());
 				BitTorrentUtil.onPostHandshake(peer);
 			} catch (IOException e) {

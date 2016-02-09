@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.johnnei.javatorrent.torrent.TorrentException;
@@ -17,8 +18,8 @@ import org.johnnei.javatorrent.utils.ThreadUtils;
 import org.johnnei.javatorrent.utils.config.Config;
 
 public class Files extends AFiles {
-	
-	public static final int BLOCK_SIZE = 1 << 14; 
+
+	public static final int BLOCK_SIZE = 1 << 14;
 
 	/**
 	 * The folder name to put the files in
@@ -36,7 +37,7 @@ public class Files extends AFiles {
 
 	/**
 	 * Creates a Files instance based upon a .torrent file
-	 * 
+	 *
 	 * @param torrentFile
 	 */
 	public Files(File torrentFile) {
@@ -55,7 +56,7 @@ public class Files extends AFiles {
 		}
 	}
 
-	private void parseDictionary(HashMap<String, Object> dictionary) throws IOException {
+	private void parseDictionary(Map<String, Object> dictionary) throws IOException {
 		folderName = Config.getConfig().getString("download-output_folder") + dictionary.get("name");
 		new File(folderName + "/").mkdirs();
 
@@ -107,11 +108,11 @@ public class Files extends AFiles {
 			remainingSize -= size;
 		}
 	}
-	
+
 	private long getNumberFromDictionary(Object o) {
 		long l = 0L;
 		if (o instanceof Integer) {
-			l = (long) ((int) o);
+			l = ((int) o);
 		} else {
 			l = (long) o;
 		}
@@ -120,9 +121,10 @@ public class Files extends AFiles {
 
 	/**
 	 * Adds the have to the bitfield and updates the correct fileInfo have counts
-	 * 
+	 *
 	 * @param pieceIndex
 	 */
+	@Override
 	public void havePiece(int pieceIndex) {
 		bitfield.havePiece(pieceIndex);
 		if (!pieces.get(pieceIndex).isDone()) {
@@ -138,7 +140,7 @@ public class Files extends AFiles {
 
 	/**
 	 * Gets the proper file location for the given filename
-	 * 
+	 *
 	 * @param name The desired file name
 	 * @return The file within the download folder
 	 */
@@ -146,6 +148,7 @@ public class Files extends AFiles {
 		return new File(folderName + "/" + name);
 	}
 
+	@Override
 	public Piece getPiece(int index) {
 		return pieces.get(index);
 	}
@@ -156,39 +159,42 @@ public class Files extends AFiles {
 
 	/**
 	 * Gets the default piece size
-	 * 
+	 *
 	 * @return The default piece size
 	 */
+	@Override
 	public long getPieceSize() {
 		return pieceSize;
 	}
 
+	@Override
 	public int getBlockSize() {
 		return BLOCK_SIZE;
 	}
 
 	/**
 	 * Gets the FileInfo for the given piece and block
-	 * 
+	 *
 	 * @param pieceIndex The piece index
 	 * @param blockIndex The block index within the piece
 	 * @param byteOffset The offset within the block
 	 * @return The FileInfo for the given data
 	 */
+	@Override
 	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) throws TorrentException {
 		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * BLOCK_SIZE) + byteOffset;
-		
+
 		if (bytesStartPosition < 0) {
 			throw new TorrentException("Trying to find file for bytes with a negative byte start position.");
 		}
-		
+
 		for (FileInfo fileInfo : fileInfos) {
 			// If the file started before or at the wanted byteStartPosition then that file contains the bytes
 			if (fileInfo.getFirstByteOffset() <= bytesStartPosition) {
 				return fileInfo;
 			}
 		}
-		
+
 		throw new TorrentException("Piece is not within any of the files");
 	}
 

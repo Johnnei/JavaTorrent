@@ -1,15 +1,13 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
-import java.io.InvalidObjectException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.download.MetadataFile;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
@@ -19,11 +17,11 @@ import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 public class UTMetadataExtension implements IExtension {
 
 	@Override
-	public IMessage getMessage(InStream inStream) throws InvalidObjectException {
+	public IMessage getMessage(InStream inStream) {
 		int moveBackLength = inStream.available();
 
 		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
-		HashMap<String, Object> dictionary = decoder.decodeDictionary();
+		Map<String, Object> dictionary = decoder.decodeDictionary();
 		int id = (int) dictionary.get("msg_type");
 		IMessage message;
 		switch (id) {
@@ -46,6 +44,7 @@ public class UTMetadataExtension implements IExtension {
 
 		inStream.moveBack(moveBackLength);
 		return message;
+
 	}
 
 	@Override
@@ -66,12 +65,7 @@ public class UTMetadataExtension implements IExtension {
 	}
 
 	@Override
-	public void processHandshakeMetadata(Peer peer, HashMap<String, Object> dictionary, Map<?, ?> mEntry) {
-		if (!mEntry.containsKey(UTMetadata.NAME)) {
-			return;
-		}
-
-		peer.getExtensions().register(UTMetadata.NAME, (Integer) mEntry.get(UTMetadata.NAME));
+	public void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry) {
 		if (!dictionary.containsKey("metadata_size")) {
 			return;
 		}
