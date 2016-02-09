@@ -3,12 +3,14 @@ package org.johnnei.javatorrent.protocol.messages.extension;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.protocol.IExtension;
+import org.johnnei.javatorrent.protocol.extension.IExtension;
+import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.encoding.Bencode;
 import org.johnnei.javatorrent.torrent.encoding.Bencoder;
@@ -21,6 +23,9 @@ public class MessageHandshake implements IMessage {
 
 	private String bencodedHandshake;
 
+	/**
+	 * The extensions we know, so we only need to check for these in the handshake dictionary.
+	 */
 	private Collection<IExtension> extensions;
 
 	public MessageHandshake(Collection<IExtension> extensions) {
@@ -66,7 +71,19 @@ public class MessageHandshake implements IMessage {
 			Object m = dictionary.get("m");
 			if (m != null && m instanceof Map<?, ?>) {
 				Map<?, ?> extensionData = (Map<?, ?>) m;
-				extensions.forEach(e -> e.processHandshakeMetadata(peer, dictionary, extensionData));
+				extensions.stream()
+					.filter(extension -> extensionData.containsKey(extension.getExtensionName()))
+					.forEach(extension -> {
+						Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
+
+						if (!peerExtensions.isPresent()) {
+							LOGGER.warn("Received Extension handshake from peer but PeerExtensions aren't registed");
+							return;
+						}
+
+						peerExtensions.get().registerExtension((Integer) extensionData.get(extension.getExtensionName()), extension.getExtensionName());
+						extension.processHandshakeMetadata(peer, dictionary, extensionData);
+					});
 			}
 			Object reqq = dictionary.get("reqq");
 			if (reqq != null) {

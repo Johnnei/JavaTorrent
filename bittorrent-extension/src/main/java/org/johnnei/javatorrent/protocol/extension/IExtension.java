@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.protocol;
+package org.johnnei.javatorrent.protocol.extension;
 
 import java.util.Map;
 

@@ -6,19 +6,15 @@ import java.util.Optional;
 import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.download.MetadataFile;
 import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.encoding.Bencode;
 import org.johnnei.javatorrent.torrent.encoding.Bencoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UTMetadataExtension implements IExtension {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(UTMetadataExtension.class);
 
 	@Override
 	public IMessage getMessage(InStream inStream) {
@@ -70,11 +66,6 @@ public class UTMetadataExtension implements IExtension {
 
 	@Override
 	public void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry) {
-		if (!mEntry.containsKey(UTMetadata.NAME)) {
-			return;
-		}
-
-		peer.getExtensions().register(UTMetadata.NAME, (Integer) mEntry.get(UTMetadata.NAME));
 		if (!dictionary.containsKey("metadata_size")) {
 			return;
 		}

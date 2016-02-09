@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.torrent.encoding;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class BencoderTest {
@@ -54,7 +55,7 @@ public class BencoderTest {
 		assertEquals("Incorrect handling of dictionaries", "d3:cow3:moo4:spam4:eggse", bencoder.getBencodedData());
 	}
 
-	/* See issue #40 */
+	@Ignore("See issue #40")
 	@Test
 	public void testDictionaryOrdering() {
 		Bencoder bencoder = new Bencoder();

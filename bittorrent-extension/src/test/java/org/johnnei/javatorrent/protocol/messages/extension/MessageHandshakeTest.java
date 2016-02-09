@@ -9,13 +9,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.Charset;
 import java.util.Collections;
+import java.util.Optional;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.protocol.IExtension;
+import org.johnnei.javatorrent.protocol.extension.IExtension;
+import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 import org.junit.Test;
@@ -49,12 +51,39 @@ public class MessageHandshakeTest extends EasyMockSupport {
 	public void testProcess() {
 		Peer peerMock = createMock(Peer.class);
 		IExtension extensionMock = createMock(IExtension.class);
+		PeerExtensions peerExtensionsMock = createMock(PeerExtensions.class);
 
+		expect(peerMock.getModuleInfo(eq(PeerExtensions.class))).andStubReturn(Optional.of(peerExtensionsMock));
 		peerMock.setClientName(eq("JavaTorrent 0.05.0"));
 		peerMock.setAbsoluteRequestLimit(eq(250));
 		extensionMock.processHandshakeMetadata(same(peerMock), notNull(), notNull());
 
 		String input = "d1:md7:jt_mocki1ee1:v18:JavaTorrent 0.05.04:reqqi250ee";
+
+		expect(extensionMock.getExtensionName()).andStubReturn("jt_mock");
+		peerExtensionsMock.registerExtension(eq(1), eq("jt_mock"));
+
+		replayAll();
+		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));
+		cut.read(new InStream(input.getBytes(Charset.forName("UTF-8"))));
+
+		cut.process(peerMock);
+
+		verifyAll();
+	}
+
+	@Test
+	public void testProcessModuleNotRegistered() {
+		Peer peerMock = createMock(Peer.class);
+		IExtension extensionMock = createMock(IExtension.class);
+
+		expect(peerMock.getModuleInfo(eq(PeerExtensions.class))).andStubReturn(Optional.empty());
+		peerMock.setClientName(eq("JavaTorrent 0.05.0"));
+		peerMock.setAbsoluteRequestLimit(eq(250));
+
+		String input = "d1:md7:jt_mocki1ee1:v18:JavaTorrent 0.05.04:reqqi250ee";
+
+		expect(extensionMock.getExtensionName()).andStubReturn("jt_mock");
 
 		replayAll();
 		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));

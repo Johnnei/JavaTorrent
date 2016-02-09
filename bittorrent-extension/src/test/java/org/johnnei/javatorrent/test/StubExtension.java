@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.protocol.IExtension;
+import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 

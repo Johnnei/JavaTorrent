@@ -1,11 +1,13 @@
 package org.johnnei.javatorrent.download.algos;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
 import org.johnnei.javatorrent.torrent.download.Files;
@@ -47,7 +49,13 @@ public class PhaseMetadata extends AMetadataPhase {
 				if (block == null) {
 					break;
 				} else {
-					IMessage message = new MessageExtension(peer.getExtensions().getIdFor(UTMetadata.NAME), new MessageRequest(block.getIndex()));
+					Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
+					if (!peerExtensions.isPresent()) {
+						LOGGER.warn("Attempted to send metadata request to peer which doesn't support metadata. ", peer);
+						continue;
+					}
+
+					IMessage message = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
 					peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
 					peer.getBitTorrentSocket().queueMessage(message);
 				}
@@ -70,7 +78,15 @@ public class PhaseMetadata extends AMetadataPhase {
 	@Override
 	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
 		return peers.stream()
-				.filter(peer -> peer.getExtensions().hasExtension(UTMetadata.NAME))
+				.filter(this::hasUtMetadataExtension)
 				.collect(Collectors.toList());
+	}
+
+	private boolean hasUtMetadataExtension(Peer peer) {
+		Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
+		if (!peerExtensions.isPresent()) {
+			return false;
+		}
+		return peerExtensions.get().hasExtension(UTMetadata.NAME);
 	}
 }

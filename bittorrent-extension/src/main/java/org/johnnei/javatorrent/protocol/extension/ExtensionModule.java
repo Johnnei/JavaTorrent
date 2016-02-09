@@ -9,7 +9,6 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.module.IModule;
-import org.johnnei.javatorrent.protocol.IExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
 import org.johnnei.javatorrent.protocol.messages.extension.Protocol;
@@ -54,7 +53,7 @@ public class ExtensionModule implements IModule {
 
 	@Override
 	public void onPostHandshake(Peer peer) throws IOException {
-		if (peer.getExtensions().hasExtension(5, 0x10)) {
+		if (peer.hasExtension(5, 0x10)) {
 			// Extended Messages extension
 			sendExtendedMessages(peer);
 		}

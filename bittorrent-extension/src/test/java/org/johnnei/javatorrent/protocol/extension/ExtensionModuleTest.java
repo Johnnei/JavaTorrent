@@ -22,7 +22,6 @@ import org.johnnei.javatorrent.network.protocol.IMessage;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
 import org.johnnei.javatorrent.test.StubExtension;
-import org.johnnei.javatorrent.torrent.download.peer.Extensions;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
 import org.junit.Test;
@@ -92,11 +91,9 @@ public class ExtensionModuleTest extends EasyMockSupport {
 
 	@Test
 	public void testOnPostHandshakeNoExtension() throws Exception {
-		Extensions extensionMock = createMock(Extensions.class);
 		Peer peerMock = createMock(Peer.class);
 
-		expect(peerMock.getExtensions()).andReturn(extensionMock).atLeastOnce();
-		expect(extensionMock.hasExtension(eq(5), eq(0x10))).andReturn(false).atLeastOnce();
+		expect(peerMock.hasExtension(eq(5), eq(0x10))).andReturn(false).atLeastOnce();
 
 		replayAll();
 
@@ -110,12 +107,10 @@ public class ExtensionModuleTest extends EasyMockSupport {
 	@Test
 	public void testOnPostHandshakeWithExtension() throws Exception {
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
-		Extensions extensionMock = createMock(Extensions.class);
 		Peer peerMock = createMock(Peer.class);
 
-		expect(peerMock.getExtensions()).andReturn(extensionMock).atLeastOnce();
+		expect(peerMock.hasExtension(eq(5), eq(0x10))).andReturn(true).atLeastOnce();
 		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock).atLeastOnce();
-		expect(extensionMock.hasExtension(eq(5), eq(0x10))).andReturn(true).atLeastOnce();
 		socketMock.queueMessage(and(notNull(), isA(MessageExtension.class)));
 
 		replayAll();
