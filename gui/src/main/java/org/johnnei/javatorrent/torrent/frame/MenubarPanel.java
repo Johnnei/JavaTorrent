@@ -9,7 +9,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.download.MagnetLink;
+import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.frame.controls.ImageButton;
 import org.johnnei.javatorrent.torrent.frame.popup.AddTorrentFrame;

@@ -116,6 +116,10 @@ public class Torrent implements Runnable {
 	 */
 	private Thread thread;
 
+	/**
+	 * Creates a new
+	 * @param builder
+	 */
 	public Torrent(Builder builder) {
 		displayName = builder.displayName;
 		torrentClient = builder.torrentClient;
@@ -593,6 +597,15 @@ public class Torrent implements Runnable {
 		public Builder setInitialPhase(IDownloadPhase phase) {
 			this.phase = phase;
 			return this;
+		}
+
+		/**
+		 * This method check if {@link #setHash(byte[])} has been called as depending on the configured BEPs that requirements
+		 * before something is 'downloadable' changes.
+		 * @return <code>true</code> if the hash has been set.
+		 */
+		public boolean canDownload() {
+			return hash != null;
 		}
 
 		public Torrent build() {

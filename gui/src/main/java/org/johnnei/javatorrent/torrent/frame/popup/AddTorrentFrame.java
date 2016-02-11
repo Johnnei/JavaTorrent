@@ -10,7 +10,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.download.MagnetLink;
+import org.johnnei.javatorrent.magnetlink.MagnetLink;
 
 public class AddTorrentFrame extends JPopup {
 
