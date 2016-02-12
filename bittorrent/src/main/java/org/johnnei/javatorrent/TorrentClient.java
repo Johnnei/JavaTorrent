@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +50,8 @@ public class TorrentClient {
 
 	private int downloadPort;
 
+	private final byte[] extensionBytes;
+
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
@@ -60,7 +63,7 @@ public class TorrentClient {
 		peerManager = Objects.requireNonNull(builder.peerManager, "Peer manager required to handle peer selection mechanism.");
 		LOGGER.info(String.format("Configured %s as Peer Manager", peerManager));
 
-		peerConnector = Objects.requireNonNull(builder.peerConnector.apply(this), "Peer connector required to allow external connections");
+		peerConnector = Objects.requireNonNull(builder.peerConnector, "Peer connector required to allow external connections").apply(this);
 		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
 
 		Objects.requireNonNull(builder.trackerFactoryBuilder, "At least one tracker protocol must be configured.");
@@ -75,6 +78,7 @@ public class TorrentClient {
 				.reduce((a, b) -> a + ", " + b).orElse("")));
 
 		downloadPort = builder.downloadPort;
+		extensionBytes = builder.extensionBytes;
 	}
 
 	public void start() {
@@ -149,6 +153,14 @@ public class TorrentClient {
 		return downloadPort;
 	}
 
+	/**
+	 * Gets the eight extension bytes which represent which BitTorrent extensions are enabled on this client.
+	 * @return The extension bytes
+	 */
+	public byte[] getExtensionBytes() {
+		return Arrays.copyOf(extensionBytes, extensionBytes.length);
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -169,10 +181,13 @@ public class TorrentClient {
 
 		private int downloadPort;
 
+		private byte[] extensionBytes;
+
 		public Builder() {
 			messageFactoryBuilder = new MessageFactory.Builder();
 			trackerFactoryBuilder = new TrackerFactory.Builder();
 			modules = new ArrayList<>();
+			extensionBytes = new byte[8];
 		}
 
 		public Builder registerModule(IModule module) {
@@ -182,18 +197,23 @@ public class TorrentClient {
 				}
 			}
 
+			module.configureTorrentClient(this);
 			modules.add(module);
 			return this;
 		}
 
 		/**
-		 * Returns the list of reserved bits to enable to indicate that we support this extension.
+		 * Enables a bit in the extension bytes. According to BEP 3 there are 8 extension bytes (reserved bytes).
 		 * The bit numbers are represented in the following order: Right to left, starting at zero.
 		 * For reference see BEP 10 which indicates that bit 20 must be enabled.
 		 * @param bit The bit to enable.
 		 */
-		public void enableExtensionBit(int bit) {
-			// TODO Implement
+		public Builder enableExtensionBit(int bit) {
+			final int index = (extensionBytes.length - 1 - (bit / 8));
+			final int bitValue = 1 << Math.floorMod(bit, 8);
+
+			extensionBytes[index] |= bitValue;
+			return this;
 		}
 
 		public Builder registerMessage(int id, Supplier<IMessage> messageSupplier) {
@@ -241,8 +261,12 @@ public class TorrentClient {
 			return this;
 		}
 
-		public TorrentClient build() {
-			return new TorrentClient(this);
+		public TorrentClient build() throws Exception {
+			TorrentClient client = new TorrentClient(this);
+			for (IModule module : modules) {
+				module.onBuild(client);
+			}
+			return client;
 		}
 
 	}

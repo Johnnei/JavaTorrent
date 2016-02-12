@@ -1,5 +1,22 @@
 package org.johnnei.javatorrent.protocol.extension;
 
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.network.protocol.IMessage;
+import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
+import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
+import org.johnnei.javatorrent.test.StubExtension;
+import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
+
+import org.easymock.Capture;
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import static org.easymock.EasyMock.and;
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.eq;
@@ -11,22 +28,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Optional;
-import java.util.function.Supplier;
-
-import org.easymock.Capture;
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
-import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
-import org.johnnei.javatorrent.test.StubExtension;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 @RunWith(EasyMockRunner.class)
 public class ExtensionModuleTest extends EasyMockSupport {
 
@@ -36,7 +37,7 @@ public class ExtensionModuleTest extends EasyMockSupport {
 		Capture<Supplier<IMessage>> supplierCapture = newCapture();
 
 		expect(builderMock.registerMessage(eq(20), and(notNull(), capture(supplierCapture)))).andReturn(builderMock);
-		builderMock.enableExtensionBit(eq(20));
+		expect(builderMock.enableExtensionBit(eq(20))).andReturn(builderMock);
 
 		replayAll();
 

@@ -8,7 +8,6 @@
   <name>JavaTorrent Parent POM</name>
   <description>BitTorrent Protocol implementation as library and GUI</description>
   <modules>
-    <module>common</module>
     <module>bittorrent</module>
     <module>bittorrent-extension</module>
     <module>bittorrent-extension-ut-metadata</module>
