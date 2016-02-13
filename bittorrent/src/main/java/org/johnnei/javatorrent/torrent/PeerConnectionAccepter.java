@@ -15,7 +15,6 @@ import org.johnnei.javatorrent.torrent.protocol.BitTorrentUtil;
 import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
 import org.johnnei.javatorrent.utils.ThreadUtils;
-import org.johnnei.javatorrent.utils.config.Config;
 
 public class PeerConnectionAccepter extends Thread {
 
@@ -34,7 +33,7 @@ public class PeerConnectionAccepter extends Thread {
 		this.torrentClient = torrentClient;
 		this.torrentManager = torrentClient.getTorrentManager();
 		this.trackerManager = torrentClient.getTrackerManager();
-		serverSocket = new ServerSocket(Config.getConfig().getInt("download-port"));
+		serverSocket = new ServerSocket(torrentClient.getDownloadPort());
 	}
 
 	@Override

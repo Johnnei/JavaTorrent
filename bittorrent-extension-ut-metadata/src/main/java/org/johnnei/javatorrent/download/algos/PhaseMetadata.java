@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.download.algos;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.download.peer.Job;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
-import org.johnnei.javatorrent.utils.config.Config;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +28,11 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseMetadata.class);
 
-	public PhaseMetadata(TorrentClient torrentClient, Torrent torrent) {
-		super(torrentClient, torrent);
-		foundMatchingFile = false;
+	private final File downloadFolder;
+
+	public PhaseMetadata(TorrentClient torrentClient, Torrent torrent, File metadataFile, File downloadFolder) {
+		super(torrentClient, torrent, metadataFile);
+		this.downloadFolder = downloadFolder;
 	}
 
 	@Override
@@ -71,7 +74,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrent.setFiles(new Files(Config.getConfig().getTorrentFileFor(torrent.getHash())));
+		torrent.setFiles(new Files(metadataFile, downloadFolder));
 		LOGGER.info("Metadata download completed");
 	}
 

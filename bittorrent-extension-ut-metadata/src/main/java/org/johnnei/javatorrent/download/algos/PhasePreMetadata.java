@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.download.algos;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -8,14 +9,13 @@ import org.johnnei.javatorrent.torrent.download.MetadataFile;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.algos.AMetadataPhase;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.utils.config.Config;
 
 public class PhasePreMetadata extends AMetadataPhase {
 
 	private int metadataSize;
 
-	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent) {
-		super(torrentClient, torrent);
+	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent, File metadataFile) {
+		super(torrentClient, torrent, metadataFile);
 	}
 
 	@Override
@@ -32,13 +32,13 @@ public class PhasePreMetadata extends AMetadataPhase {
 	public void onPhaseEnter() {
 		super.onPhaseEnter();
 		if (foundMatchingFile) {
-			metadataSize = (int) Config.getConfig().getTorrentFileFor(torrent.getHash()).length();
+			metadataSize = (int) metadataFile.length();
 		}
 	}
 
 	@Override
 	public void onPhaseExit() {
-		MetadataFile metadata = new MetadataFile(torrent, metadataSize);
+		MetadataFile metadata = new MetadataFile(torrent, metadataFile);
 		torrent.setFiles(metadata);
 		torrent.setMetadata(metadata);
 	}

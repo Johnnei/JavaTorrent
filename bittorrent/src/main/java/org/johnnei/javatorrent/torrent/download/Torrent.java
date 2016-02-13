@@ -29,7 +29,7 @@ import org.johnnei.javatorrent.torrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.torrent.util.StringUtil;
 import org.johnnei.javatorrent.utils.ThreadUtils;
-import org.johnnei.javatorrent.utils.config.Config;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -416,22 +416,6 @@ public class Torrent implements Runnable {
 	@Override
 	public String toString() {
 		return StringUtil.byteArrayToString(btihHash);
-	}
-
-	/**
-	 * Checks if the tracker needs to announce
-	 *
-	 * @return true if we need more peers
-	 */
-	public boolean needAnnounce() {
-		int peersPerThread = Config.getConfig().getInt("peer-max_connecting") / Config.getConfig().getInt("peer-max_concurrent_connecting");
-		boolean needEnoughPeers = peersWanted() >= peersPerThread;
-		boolean notExceedMaxPendingPeers = peers.size() < peerManager.getMaxPendingPeers();
-		return needEnoughPeers && notExceedMaxPendingPeers;
-	}
-
-	public int getMaxPeers() {
-		return peerManager.getMaxPeers();
 	}
 
 	public int peersWanted() {

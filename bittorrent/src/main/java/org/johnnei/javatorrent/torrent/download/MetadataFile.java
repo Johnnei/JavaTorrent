@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.torrent.download;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -7,7 +8,6 @@ import java.util.NoSuchElementException;
 
 import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
-import org.johnnei.javatorrent.utils.config.Config;
 
 public class MetadataFile extends AFiles {
 
@@ -18,10 +18,10 @@ public class MetadataFile extends AFiles {
 	 */
 	private int fileSize;
 
-	public MetadataFile(Torrent torrent, int fileSize) {
+	public MetadataFile(Torrent torrent, File metadataFile) {
 		this.fileInfos = new ArrayList<>();
-		this.fileInfos.add(new FileInfo(fileSize, 0, Config.getConfig().getTorrentFileFor(torrent.getHash()), 1));
-		this.fileSize = fileSize;
+		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile, 1));
+		this.fileSize = (int) metadataFile.length();
 		this.pieces = new ArrayList<>(1);
 		this.pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
 	}

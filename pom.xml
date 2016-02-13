@@ -13,7 +13,6 @@
     <module>bittorrent-extension-ut-metadata</module>
     <module>bittorrent-tracker-udp</module>
     <module>bittorrent-utp</module>
-    <module>gui</module>
   </modules>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>

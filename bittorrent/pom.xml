@@ -11,10 +11,6 @@
   </parent>
   <dependencies>
     <dependency>
-      <groupId>org.johnnei</groupId>
-      <artifactId>javatorrent-common</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>

@@ -7,7 +7,7 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.download.Torrent;
 import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
 import org.johnnei.javatorrent.utils.ThreadUtils;
-import org.johnnei.javatorrent.utils.config.Config;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,14 +17,15 @@ public class PeerConnectorPool implements IPeerConnector {
 
 	private List<PeerConnector> connectors;
 
-	public PeerConnectorPool(TorrentClient torrentClient) {
+	public PeerConnectorPool(TorrentClient torrentClient, int maxPendingPeers, int maxConcurrentConnecting) {
 		connectors = new LinkedList<>();
-		final int connectorCount = Config.getConfig().getInt("peer-max_concurrent_connecting");
-		final int peerLimitPerConnector = Config.getConfig().getInt("peer-max_connecting") / connectorCount;
+		final int peerLimitPerConnector = maxPendingPeers / maxConcurrentConnecting;
 
 		LOGGER.info(
-				String.format("Starting PeerConnector pool with %d connectors with a queue limit of %d peers each.", connectorCount, peerLimitPerConnector));
-		for (int i = 0; i < connectorCount; i++) {
+				"Starting PeerConnector pool with {} connectors with a queue limit of {} peers each.",
+				maxConcurrentConnecting,
+				peerLimitPerConnector);
+		for (int i = 0; i < maxConcurrentConnecting; i++) {
 			LOGGER.trace(String.format("Starting PeerConnector thread #%d", i));
 			PeerConnector connector = new PeerConnector(torrentClient, peerLimitPerConnector);
 			connectors.add(connector);
@@ -42,7 +43,7 @@ public class PeerConnectorPool implements IPeerConnector {
 		PeerConnector connector = connectors.stream().max((a, b) -> a.getFreeCapacity() - b.getFreeCapacity()).get();
 
 		if (connector.getFreeCapacity() == 0) {
-			System.err.println("[PeerConnectorPool] Overflowing in peers. Can't distribute peers!");
+			LOGGER.warn("Overflowing in peers. Can't distribute to connectors in pool.");
 			// TODO Implement a backlog of peers
 			return;
 		}

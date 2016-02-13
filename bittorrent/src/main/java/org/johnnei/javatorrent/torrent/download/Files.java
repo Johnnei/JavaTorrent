@@ -15,9 +15,13 @@ import org.johnnei.javatorrent.torrent.encoding.Bencode;
 import org.johnnei.javatorrent.torrent.network.ByteInputStream;
 import org.johnnei.javatorrent.utils.JMath;
 import org.johnnei.javatorrent.utils.ThreadUtils;
-import org.johnnei.javatorrent.utils.config.Config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Files extends AFiles {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Files.class);
 
 	public static final int BLOCK_SIZE = 1 << 14;
 
@@ -38,27 +42,27 @@ public class Files extends AFiles {
 	/**
 	 * Creates a Files instance based upon a .torrent file
 	 *
-	 * @param torrentFile
+	 * @param torrentFile The metadata file containing the torrent information
+	 * @param downloadFolder The folder in which the downloads need to be stored.
 	 */
-	public Files(File torrentFile) {
-		parseTorrentFileData(torrentFile);
+	public Files(File torrentFile, File downloadFolder) {
+		parseTorrentFileData(torrentFile, downloadFolder);
 		bitfield = new Bitfield(getBitfieldSize());
 	}
 
-	private void parseTorrentFileData(File torrentFile) {
+	private void parseTorrentFileData(File torrentFile, File downloadFolder) {
 		try (ByteInputStream in = new ByteInputStream(new FileInputStream(torrentFile))) {
 			Bencode decoder = new Bencode(in.readString(in.available()));
-			parseDictionary(decoder.decodeDictionary());
+			parseDictionary(decoder.decodeDictionary(), downloadFolder);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.warn("Failed to parse torrent data.", e);
 			ThreadUtils.sleep(10);
-			parseTorrentFileData(torrentFile);
+			parseTorrentFileData(torrentFile, downloadFolder);
 		}
 	}
 
-	private void parseDictionary(Map<String, Object> dictionary) throws IOException {
-		folderName = Config.getConfig().getString("download-output_folder") + dictionary.get("name");
-		new File(folderName + "/").mkdirs();
+	private void parseDictionary(Map<String, Object> dictionary, File downloadFolder) throws IOException {
+		new File(downloadFolder, dictionary.get("name") + System.lineSeparator()).mkdirs();
 
 		pieceSize = (int) dictionary.get("piece length");
 		long remainingSize = 0L;
