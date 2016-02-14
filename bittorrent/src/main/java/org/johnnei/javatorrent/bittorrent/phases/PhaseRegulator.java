@@ -37,7 +37,7 @@ public class PhaseRegulator {
 			return Optional.empty();
 		}
 
-		return Optional.of(phaseSupplier.get(downloadPhasesOrder.get(phase)).apply(torrentClient, torrent));
+		return Optional.of(phaseSupplier.get(downloadPhasesOrder.get(phase.getClass())).apply(torrentClient, torrent));
 	}
 
 	@Override
@@ -87,8 +87,8 @@ public class PhaseRegulator {
 			Objects.requireNonNull(phaseSupplier, "Phase supplier is required.");
 			Objects.requireNonNull(nextPhase, "Next phase should be Optional.empty() when not applicable.");
 
-			if (downloadPhasesOrder.containsKey(phase)) {
-				throw new IllegalArgumentException(String.format("Phase %s is already mapped", phase.getSimpleName()));
+			if (phaseSuppliers.containsKey(phase)) {
+				throw new IllegalStateException(String.format("Phase %s is already mapped", phase.getSimpleName()));
 			}
 
 			if (nextPhase.isPresent()) {
@@ -113,10 +113,6 @@ public class PhaseRegulator {
 			Class<? extends IDownloadPhase> phase = initialPhase;
 
 			while (phase != null) {
-				if (!phaseSuppliers.containsKey(phase)) {
-					throw new IllegalArgumentException(String.format("Missing supplier for download phase: %s", phase.getSimpleName()));
-				}
-
 				phasesSeenCount++;
 				phase = downloadPhasesOrder.get(phase);
 			}

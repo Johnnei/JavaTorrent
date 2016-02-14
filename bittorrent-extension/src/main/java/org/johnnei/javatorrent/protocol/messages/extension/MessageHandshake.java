@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,6 +15,7 @@ import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.encoding.Bencode;
 import org.johnnei.javatorrent.torrent.encoding.Bencoder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +112,7 @@ public class MessageHandshake implements IMessage {
 	}
 
 	@Override
-	public void setReadDuration(int duration) {
+	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

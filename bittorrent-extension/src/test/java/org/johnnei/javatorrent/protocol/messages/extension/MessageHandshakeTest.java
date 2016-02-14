@@ -1,18 +1,10 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
-import static org.easymock.EasyMock.same;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -20,8 +12,18 @@ import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
+
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.notNull;
+import static org.easymock.EasyMock.same;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(EasyMockRunner.class)
 public class MessageHandshakeTest extends EasyMockSupport {
@@ -134,7 +136,7 @@ public class MessageHandshakeTest extends EasyMockSupport {
 	public void testSimpleMethods() {
 		MessageHandshake cut = new MessageHandshake(Collections.emptyList());
 
-		cut.setReadDuration(5);
+		cut.setReadDuration(Duration.ZERO);
 		assertEquals("Incorrect packet ID", 0, cut.getId());
 		assertTrue("Incorrect start of toString", cut.toString().startsWith("MessageHandshake["));
 	}

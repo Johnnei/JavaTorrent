@@ -1,22 +1,24 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import java.time.Duration;
 import java.util.Collections;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.test.StubExtension;
 import org.johnnei.javatorrent.test.StubMessage;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
+
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.easymock.EasyMock.expect;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(EasyMockRunner.class)
 public class MessageExtensionTest extends EasyMockSupport {
@@ -98,7 +100,7 @@ public class MessageExtensionTest extends EasyMockSupport {
 		replayAll();
 
 		cut.read(new InStream(input));
-		cut.setReadDuration(4);
+		cut.setReadDuration(Duration.ZERO);
 
 		verifyAll();
 	}

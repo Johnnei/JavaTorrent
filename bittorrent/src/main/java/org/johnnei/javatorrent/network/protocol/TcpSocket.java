@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Objects;
 
 public class TcpSocket implements ISocket {
 
@@ -16,7 +17,8 @@ public class TcpSocket implements ISocket {
 
 	/**
 	 * Creates a TcpSocket on a pre-connected socket
-	 * @param socket
+	 *
+	 * @param socket The underlying TCP socket
 	 */
 	public TcpSocket(Socket socket) {
 		this.socket = socket;
@@ -71,4 +73,24 @@ public class TcpSocket implements ISocket {
 	public void flush() throws IOException {
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null) {
+			return false;
+		}
+		if (!(o instanceof TcpSocket)) {
+			return false;
+		}
+
+		TcpSocket other = (TcpSocket) o;
+		return Objects.equals(socket, other.socket);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(socket);
+	}
 }

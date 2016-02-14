@@ -52,7 +52,6 @@ public class PeersReadRunnable implements Runnable {
 
 			IMessage message = socket.readMessage();
 			message.process(peer);
-			peer.updateLastActivity();
 		} catch (IOException e) {
 			LOGGER.error("Caught IO exception in peer connection, closing socket.", e);
 			peer.getBitTorrentSocket().close();

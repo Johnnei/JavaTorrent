@@ -34,14 +34,14 @@ public class BitTorrentUtil {
 		}
 
 		if (JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8) + 1 < 5 * files.countCompletedPieces()) {
-			peer.getBitTorrentSocket().queueMessage(new MessageBitfield(files.getBitfieldBytes()));
+			peer.getBitTorrentSocket().enqueueMessage(new MessageBitfield(files.getBitfieldBytes()));
 		} else {
 			for (int pieceIndex = 0; pieceIndex < torrent.getFiles().getPieceCount(); pieceIndex++) {
 				if (!torrent.getFiles().hasPiece(pieceIndex)) {
 					continue;
 				}
 
-				peer.getBitTorrentSocket().queueMessage(new MessageHave(pieceIndex));
+				peer.getBitTorrentSocket().enqueueMessage(new MessageHave(pieceIndex));
 			}
 		}
 	}

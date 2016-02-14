@@ -46,7 +46,7 @@ public class PeersWriterRunnable implements Runnable {
 		try {
 			BitTorrentSocket socket = peer.getBitTorrentSocket();
 
-			if (socket.canWriteMessage()) {
+			if (socket.hasOutboundMessages()) {
 				peer.getBitTorrentSocket().sendMessage();
 			} else if (peer.getWorkQueueSize(PeerDirection.Upload) > 0) {
 				peer.queueNextPieceForSending();

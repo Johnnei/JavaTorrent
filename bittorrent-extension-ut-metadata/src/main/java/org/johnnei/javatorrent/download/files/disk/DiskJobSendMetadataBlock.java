@@ -39,7 +39,7 @@ public class DiskJobSendMetadataBlock extends DiskJob {
 
 			MessageData mData = new MessageData(blockIndex, peer.getTorrent().getMetadata().get().getBlock(blockIndex));
 			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mData);
-			peer.getBitTorrentSocket().queueMessage(extendedMessage);
+			peer.getBitTorrentSocket().enqueueMessage(extendedMessage);
 		} catch (IOException e) {
 			LOGGER.warn(String.format("Reading metadata block %d failed, requeueing read job.", blockIndex), e);
 			torrent.addDiskJob(this);

@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.protocol.messages;
 
+import java.time.Duration;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
@@ -14,7 +16,7 @@ public class MessageBlock implements IMessage {
 	private int offset;
 	private byte[] data;
 
-	private int readDuration;
+	private Duration readDuration;
 
 	public MessageBlock() {
 	}
@@ -43,17 +45,17 @@ public class MessageBlock implements IMessage {
 	public void process(Peer peer) {
 		peer.getTorrent().collectPiece(index, offset, data);
 		peer.removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)), PeerDirection.Download);
-		if (data.length > 0) {
-			peer.addStrike(-1);
-			if (readDuration > 0 && readDuration < 1000) { // Set by extreme speed
-				peer.setRequestLimit((int) Math.ceil(1000 / readDuration));
-			} else { // Set by trust
-				if (peer.getRequestLimit() < 5) {
-					peer.setRequestLimit(2 * (peer.getRequestLimit() + 1));
-				}
-			}
-		} else {
+		if (data.length <= 0) {
 			peer.addStrike(1);
+			return;
+		}
+
+		peer.addStrike(-1);
+		if (readDuration.minusSeconds(1).isNegative()) { // Set by extreme speed
+			peer.setRequestLimit((int) Math.ceil(1000 / readDuration.toMillis()));
+		} else if (peer.getRequestLimit() < 5) {
+			// Set by trust
+			peer.setRequestLimit(2 * (peer.getRequestLimit() + 1));
 		}
 	}
 
@@ -68,7 +70,7 @@ public class MessageBlock implements IMessage {
 	}
 
 	@Override
-	public void setReadDuration(int duration) {
+	public void setReadDuration(Duration duration) {
 		readDuration = duration;
 	}
 

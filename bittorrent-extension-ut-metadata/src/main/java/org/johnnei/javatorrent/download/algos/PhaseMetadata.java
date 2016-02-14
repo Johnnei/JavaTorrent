@@ -60,7 +60,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 					IMessage message = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
 					peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
-					peer.getBitTorrentSocket().queueMessage(message);
+					peer.getBitTorrentSocket().enqueueMessage(message);
 				}
 			}
 		}

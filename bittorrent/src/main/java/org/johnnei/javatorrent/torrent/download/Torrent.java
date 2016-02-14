@@ -228,9 +228,9 @@ public class Torrent implements Runnable {
 		synchronized (this) {
 			peers.stream().
 				filter(p -> p.getBitTorrentSocket().closed()).
-				forEach(p -> p.cancelAllPieces());
+				forEach(Peer::cancelAllPieces);
 			peers.removeIf(p -> p == null || p.getBitTorrentSocket().closed());
-			peers.forEach(p -> p.checkDisconnect());
+			peers.forEach(Peer::checkDisconnect);
 
 		}
 	}
@@ -250,21 +250,21 @@ public class Torrent implements Runnable {
 					if (p.hasPiece(neededPieces.get(j).getIndex())) {
 						hasNoPieces = false;
 						if (!p.isInterested(PeerDirection.Upload)) {
-							p.getBitTorrentSocket().queueMessage(new MessageInterested());
+							p.getBitTorrentSocket().enqueueMessage(new MessageInterested());
 							p.setInterested(PeerDirection.Upload, true);
 						}
 						break;
 					}
 				}
 				if (hasNoPieces && p.isInterested(PeerDirection.Upload)) {
-					p.getBitTorrentSocket().queueMessage(new MessageUninterested());
+					p.getBitTorrentSocket().enqueueMessage(new MessageUninterested());
 					p.setInterested(PeerDirection.Upload, false);
 				}
 				if (p.isInterested(PeerDirection.Download) && p.isChoked(PeerDirection.Upload)) {
-					p.getBitTorrentSocket().queueMessage(new MessageUnchoke());
+					p.getBitTorrentSocket().enqueueMessage(new MessageUnchoke());
 					p.setChoked(PeerDirection.Upload, false);
 				} else if (!p.isInterested(PeerDirection.Download) && !p.isChoked(PeerDirection.Upload)) {
-					p.getBitTorrentSocket().queueMessage(new MessageChoke());
+					p.getBitTorrentSocket().enqueueMessage(new MessageChoke());
 					p.setChoked(PeerDirection.Upload, true);
 				}
 			}
@@ -362,7 +362,7 @@ public class Torrent implements Runnable {
 		synchronized (this) {
 			peers.stream().
 				filter(p -> !p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()).
-				forEach(p -> p.getBitTorrentSocket().queueMessage(m));
+				forEach(p -> p.getBitTorrentSocket().enqueueMessage(m));
 		}
 	}
 

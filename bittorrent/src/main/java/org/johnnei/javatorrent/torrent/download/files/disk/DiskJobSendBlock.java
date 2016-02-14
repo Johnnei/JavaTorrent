@@ -30,14 +30,13 @@ public class DiskJobSendBlock extends DiskJob {
 
 	@Override
 	public void process(Torrent torrent) {
-		byte[] data = new byte[0];
 		try {
-			data = torrent.getFiles().getPiece(pieceIndex).loadPiece(offset, length);
-			peer.getBitTorrentSocket().queueMessage(new MessageBlock(pieceIndex, offset, data));
+			byte[] data = torrent.getFiles().getPiece(pieceIndex).loadPiece(offset, length);
+			peer.getBitTorrentSocket().enqueueMessage(new MessageBlock(pieceIndex, offset, data));
 			peer.addToPendingMessages(-1);
 			torrent.addUploadedBytes(data.length);
 		} catch (TorrentException te) {
-			LOGGER.warn(String.format("Can't satify peer request for block: %s", te.getMessage()));
+			LOGGER.warn(String.format("Can't satisfy peer request for block: %s", te.getMessage()));
 		} catch (IOException e) {
 			LOGGER.warn(String.format("IO error while reading block request: %s. Requeueing task.", e.getMessage()));
 			torrent.addDiskJob(this);

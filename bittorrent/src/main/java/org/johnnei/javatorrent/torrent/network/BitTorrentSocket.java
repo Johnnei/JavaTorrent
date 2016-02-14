@@ -2,6 +2,9 @@ package org.johnnei.javatorrent.torrent.network;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Queue;
@@ -14,11 +17,15 @@ import org.johnnei.javatorrent.network.protocol.ISocket;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.torrent.protocol.MessageFactory;
-import org.johnnei.javatorrent.torrent.protocol.MessageUtils;
 import org.johnnei.javatorrent.torrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BitTorrentSocket {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(BitTorrentSocket.class);
 
 	private final Object QUEUE_LOCK = new Object();
 	private final Object BLOCK_QUEUE_LOCK = new Object();
@@ -65,12 +72,27 @@ public class BitTorrentSocket {
 	/**
 	 * The last time a buffer was created
 	 */
-	private long lastBufferCreate;
+	private LocalDateTime lastBufferCreate;
 
-	public BitTorrentSocket(MessageFactory messageFactory) {
+	/**
+	 * To clock to measure the activity time with
+	 */
+	private Clock clock;
+
+	/**
+	 * The local timestamp at which the last activity on the underlying socket was made
+	 */
+	private LocalDateTime lastActivity;
+
+	public BitTorrentSocket(Clock clock, MessageFactory messageFactory) {
+		this.clock = clock;
 		this.messageFactory = messageFactory;
 		messageQueue = new LinkedList<>();
 		blockQueue = new LinkedList<>();
+		lastActivity = LocalDateTime.now(clock);
+	}
+	public BitTorrentSocket(MessageFactory messageFactory) {
+		this(Clock.systemDefaultZone(), messageFactory);
 	}
 
 	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) throws IOException {
@@ -106,7 +128,7 @@ public class BitTorrentSocket {
 	 * Queues the message to be send
 	 * @param message
 	 */
-	public void queueMessage(IMessage message) {
+	public void enqueueMessage(IMessage message) {
 		if (message.getId() == BitTorrent.MESSAGE_PIECE) {
 			synchronized (BLOCK_QUEUE_LOCK) {
 				blockQueue.add(message);
@@ -125,7 +147,7 @@ public class BitTorrentSocket {
 
 	public IMessage readMessage() {
 		InStream stream = getBufferedMessage();
-		int duration = getBufferLifetime();
+		Duration duration = getBufferLifetime();
 		int length = stream.readInt();
 		if (length == 0) {
 			return new MessageKeepAlive();
@@ -139,7 +161,7 @@ public class BitTorrentSocket {
 	}
 
 	/**
-	 * Sends at most 1 pending message. {@link MessagePiece} will be send last
+	 * Sends at most 1 pending message. {@link org.johnnei.javatorrent.torrent.protocol.messages.MessageBlock} will be send last
 	 * @throws IOException
 	 */
 	public void sendMessage() throws IOException {
@@ -159,7 +181,16 @@ public class BitTorrentSocket {
 			return;
 		}
 
-		MessageUtils.getUtils().writeMessage(outStream, message);
+		OutStream outBuffer = new OutStream(message.getLength() + 4);
+		outBuffer.writeInt(message.getLength());
+
+		if (message.getLength() > 0) {
+			outBuffer.writeByte(message.getId());
+			message.write(outBuffer);
+		}
+
+		outStream.write(outBuffer.toByteArray());
+		lastActivity = LocalDateTime.now(clock);
 	}
 
 	/**
@@ -182,7 +213,7 @@ public class BitTorrentSocket {
 	/**
 	 * Reads the handshake information from the peer
 	 *
-	 * @return A succesfully read handshake
+	 * @return A successfully read handshake
 	 * @throws IOException
 	 *             when either an io error occurs or a protocol error occurs
 	 */
@@ -227,6 +258,7 @@ public class BitTorrentSocket {
 		try {
 			socket.close();
 		} catch (IOException e) {
+			LOGGER.warn("Failed to close socket.", e);
 		}
 	}
 
@@ -240,6 +272,7 @@ public class BitTorrentSocket {
 				return false;
 			}
 
+			lastBufferCreate = LocalDateTime.now(clock);
 			int length = inStream.readInt();
 			buffer = new OutStream(length + 4);
 			bufferSize = length + 4;
@@ -258,18 +291,18 @@ public class BitTorrentSocket {
 	}
 
 	private InStream getBufferedMessage() {
-		InStream inStream = new InStream(buffer.toByteArray());
+		InStream bufferedStream = new InStream(buffer.toByteArray());
 		buffer = null;
-		return inStream;
+		return bufferedStream;
 	}
 
 	/**
-	 * The time in milliseconds that this buffer has existed
+	 * The time that this buffer has existed
 	 *
-	 * @return
+	 * @return The duration since creation
 	 */
-	private int getBufferLifetime() {
-		return (int) (System.currentTimeMillis() - lastBufferCreate);
+	private Duration getBufferLifetime() {
+		return Duration.between(lastBufferCreate, LocalDateTime.now(clock));
 	}
 
 
@@ -283,7 +316,7 @@ public class BitTorrentSocket {
 
 	/**
 	 * Checks if the socket is closed
-	 * @return
+	 * @return <code>true</code> if the underlying socket is closed, otherwise <code>false</code>
 	 */
 	public boolean closed() {
 		if (socket == null) {
@@ -293,19 +326,26 @@ public class BitTorrentSocket {
 		return socket.isClosed();
 	}
 
+	/**
+	 * Gets if this socket has completed the BitTorrent handshake
+	 * @return <code>true</code> if the handshake was completed
+	 */
 	public boolean getPassedHandshake() {
 		return passedHandshake;
 	}
 
+	/**
+	 * Marks that this socket has passed the BitTorrent handshake and therefor is a valid BitTorrent socket.
+	 */
 	public void setPassedHandshake() {
 		passedHandshake = true;
 	}
 
 	/**
 	 * Checks if this socket has messages queued for sending
-	 * @return
+	 * @return <code>true</code> if there is at least one {@link IMessage} waiting to be sent.
 	 */
-	public boolean canWriteMessage() {
+	public boolean hasOutboundMessages() {
 		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
 	}
 
@@ -313,12 +353,16 @@ public class BitTorrentSocket {
 		return String.format("%d/%d bytes", inStream.available(), HANDSHAKE_SIZE);
 	}
 
-	public String getConnectionFlag() {
+	/**
+	 * Gets the class simple name of the underlying socket.
+	 * @return The name of the socket or an empty string when no socket is set.
+	 */
+	public String getSocketName() {
 		if (socket == null) {
 			return "";
 		}
 
-		return socket.getClass().getSimpleName().substring(0, 1);
+		return socket.getClass().getSimpleName();
 	}
 
 	@Override
@@ -326,4 +370,11 @@ public class BitTorrentSocket {
 		return socket.toString();
 	}
 
+	/**
+	 * Gets the time at which the last byte has been read or written to the socket.
+	 * @return The most recent activity time
+	 */
+	public LocalDateTime getLastActivity() {
+		return lastActivity;
+	}
 }

@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.protocol.messages;
 
+import java.time.Duration;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
@@ -34,7 +36,7 @@ public class MessageInterested implements IMessage {
 	}
 
 	@Override
-	public void setReadDuration(int duration) {
+	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

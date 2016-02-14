@@ -69,7 +69,7 @@ public class ExtensionModule implements IModule {
 
 	private void sendExtendedMessages(Peer peer) throws IOException {
 		MessageExtension message = new MessageExtension(Protocol.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(peer, extensionsById));
-		peer.getBitTorrentSocket().queueMessage(message);
+		peer.getBitTorrentSocket().enqueueMessage(message);
 	}
 
 	public static class Builder {

@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
@@ -41,7 +42,7 @@ public abstract class Message implements IMessage {
 	}
 
 	@Override
-	public void setReadDuration(int duration) {
+	public void setReadDuration(Duration duration) {
 	}
 
 }

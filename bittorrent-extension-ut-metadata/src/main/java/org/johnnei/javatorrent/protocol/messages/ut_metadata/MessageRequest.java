@@ -32,7 +32,7 @@ public class MessageRequest extends Message {
 
 			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
 			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mr);
-			peer.getBitTorrentSocket().queueMessage(extendedMessage);
+			peer.getBitTorrentSocket().enqueueMessage(extendedMessage);
 		} else {
 			int piece = (int) dictionary.get("piece");
 			peer.getTorrent().addDiskJob(new DiskJobSendMetadataBlock(peer, piece));

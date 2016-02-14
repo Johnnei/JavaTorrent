@@ -76,8 +76,8 @@ public class PeerConnector implements Runnable {
 				continue;
 			}
 
+			peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory());
 			try {
-				peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory());
 				peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
 				peerSocket.sendHandshake(torrentClient.getTrackerManager().getPeerId(), peerInfo.getTorrent().getHashArray());
 
@@ -96,23 +96,10 @@ public class PeerConnector implements Runnable {
 
 				Peer peer = new Peer(peerSocket, peerInfo.getTorrent(), handshake.getPeerExtensionBytes());
 				BitTorrentUtil.onPostHandshake(peer);
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug(String.format(
-						"Connected with %s:%d",
-						peerInfo.getAddress().getAddress(),
-						peerInfo.getAddress().getPort()));
-				}
+				LOGGER.debug("Connected with {}: {}", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort());
 			} catch (IOException e) {
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug(String.format(
-						"Failed to connect to peer (%s:%d): %s",
-						peerInfo.getAddress().getAddress(),
-						peerInfo.getAddress().getPort(),
-						e.getMessage()));
-				}
-				if (peerSocket != null) {
-					peerSocket.close();
-				}
+				LOGGER.debug("Failed to connect to peer ({}:{})", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort(), e);
+				peerSocket.close();
 			}
 		}
 	}

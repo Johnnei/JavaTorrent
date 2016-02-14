@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.protocol.messages;
 
+import java.time.Duration;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.protocol.IMessage;
@@ -7,6 +9,7 @@ import org.johnnei.javatorrent.torrent.download.peer.Job;
 import org.johnnei.javatorrent.torrent.download.peer.Peer;
 import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
 import org.johnnei.javatorrent.torrent.protocol.BitTorrent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +66,7 @@ public class MessageRequest implements IMessage {
 	}
 
 	@Override
-	public void setReadDuration(int duration) {
+	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

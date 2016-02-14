@@ -112,7 +112,7 @@ public class ExtensionModuleTest extends EasyMockSupport {
 
 		expect(peerMock.hasExtension(eq(5), eq(0x10))).andReturn(true).atLeastOnce();
 		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock).atLeastOnce();
-		socketMock.queueMessage(and(notNull(), isA(MessageExtension.class)));
+		socketMock.enqueueMessage(and(notNull(), isA(MessageExtension.class)));
 
 		replayAll();
 

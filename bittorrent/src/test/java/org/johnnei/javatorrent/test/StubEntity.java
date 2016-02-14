@@ -1,15 +1,10 @@
 package org.johnnei.javatorrent.test;
 
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 
-import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.TorrentException;
@@ -19,6 +14,12 @@ import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
 import org.johnnei.javatorrent.torrent.download.files.Piece;
 import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
+
+import org.easymock.EasyMockSupport;
+
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.notNull;
 
 public class StubEntity {
 
@@ -94,7 +95,6 @@ public class StubEntity {
 		}
 
 	}
-
 
 	private static class PeerManagerStub implements IPeerManager {
 
