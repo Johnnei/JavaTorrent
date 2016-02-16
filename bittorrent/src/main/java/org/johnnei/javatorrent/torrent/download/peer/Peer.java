@@ -299,17 +299,13 @@ public class Peer implements Comparable<Peer> {
 	 * @param i
 	 */
 	public synchronized void addStrike(int i) {
-		if (strikes + i < 0) {
-			strikes = 0;
-		} else {
-			strikes += i;
-		}
+		strikes = Math.max(0, strikes + i);
 	}
 
 	/**
 	 * Sets the amount of requests this peer can support at most
 	 *
-	 * @param absoluteRequestLimit
+	 * @param absoluteRequestLimit The absolute maximum amount of outstanding requests the peer supports.
 	 */
 	public void setAbsoluteRequestLimit(int absoluteRequestLimit) {
 		this.absoluteRequestLimit = absoluteRequestLimit;
@@ -319,7 +315,7 @@ public class Peer implements Comparable<Peer> {
 	 * Sets the amount of requests we think this peer can handle properly.<br/>
 	 * This amount will be limited by {@link #absoluteRequestLimit}
 	 *
-	 * @param requestLimit
+	 * @param requestLimit The new limit.
 	 */
 	public void setRequestLimit(int requestLimit) {
 		if (requestLimit < 0) {
@@ -330,6 +326,12 @@ public class Peer implements Comparable<Peer> {
 		this.requestLimit = Math.min(requestLimit, absoluteRequestLimit);
 	}
 
+	/**
+	 * Sets if this peer is choked or not.
+	 * Choked meaning: We either can or cannot download pieces from this peer (or we don't allow them to do so).
+	 * @param direction The side of the connection is being changed
+	 * @param choked The choke state
+	 */
 	public void setChoked(PeerDirection direction, boolean choked) {
 		Client client = getClientByDirection(direction);
 
@@ -340,6 +342,12 @@ public class Peer implements Comparable<Peer> {
 		}
 	}
 
+	/**
+	 * Sets if this peer is interested or not.
+	 * Interested meaning: We either want or don't want to download pieces from this peer (or they don't want pieces from us).
+	 * @param direction The side of the connection is being changed
+	 * @param interested The interested state
+	 */
 	public void setInterested(PeerDirection direction, boolean interested) {
 		Client client = getClientByDirection(direction);
 
