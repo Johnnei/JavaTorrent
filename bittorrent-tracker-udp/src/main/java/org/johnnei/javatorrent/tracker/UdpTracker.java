@@ -20,11 +20,11 @@ import org.johnnei.javatorrent.internal.tracker.udp.Connection;
 import org.johnnei.javatorrent.internal.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.tracker.ITracker;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

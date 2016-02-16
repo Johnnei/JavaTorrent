@@ -6,8 +6,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.util.StringUtil;
+import org.johnnei.javatorrent.torrent.Torrent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,11 +47,11 @@ public class MagnetLink {
 
 			switch (key) {
 			case "dn":
-				torrentBuilder.setName(StringUtil.removeHex(StringUtil.spaceFix(value)));
+				torrentBuilder.setName(removeHex(spaceFix(value)));
 				break;
 
 			case "tr":
-				trackerUrls.add(StringUtil.removeHex(value));
+				trackerUrls.add(removeHex(value));
 				break;
 
 			case "xt":
@@ -86,6 +86,34 @@ public class MagnetLink {
 			hash[j] = (byte) Integer.parseInt(hashSection.substring(j * 2, j * 2 + 2), 16);
 		}
 		return hash;
+	}
+
+	/**
+	 * Translates the hexadecimal encoding back to readable text
+	 *
+	 * @param s
+	 * @return
+	 */
+	private String removeHex(String s) {
+		String[] pieces = s.split("%");
+		for (int i = 1; i < pieces.length; i++) {
+			int hex = Integer.parseInt(pieces[i].substring(0, 2), 16);
+			pieces[i] = (char) hex + pieces[i].substring(2);
+		}
+		s = pieces[0];
+		for (int i = 1; i < pieces.length; i++)
+			s += pieces[i];
+		return s;
+	}
+
+	/**
+	 * Replaces all occurrences of "+" with " "
+	 *
+	 * @param s
+	 * @return
+	 */
+	public static String spaceFix(String s) {
+		return s.replaceAll("\\+", " ");
 	}
 
 	private byte[] convertBase32Hash(String hashSection) {

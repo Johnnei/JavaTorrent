@@ -10,8 +10,8 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.network.BitTorrentSocket;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;

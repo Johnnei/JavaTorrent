@@ -2,9 +2,9 @@ package org.johnnei.javatorrent.test;
 
 import java.util.Random;
 
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.network.BitTorrentSocket;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.network.BitTorrentSocket;
 
 public class DummyEntity {
 

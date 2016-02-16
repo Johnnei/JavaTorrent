@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 
 /**

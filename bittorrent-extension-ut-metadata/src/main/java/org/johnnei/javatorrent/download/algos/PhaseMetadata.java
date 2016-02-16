@@ -6,20 +6,18 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.protocol.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
-import org.johnnei.javatorrent.torrent.download.Files;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.algos.AMetadataPhase;
-import org.johnnei.javatorrent.torrent.download.algos.MetadataSelect;
-import org.johnnei.javatorrent.torrent.download.files.Block;
-import org.johnnei.javatorrent.torrent.download.files.Piece;
-import org.johnnei.javatorrent.torrent.download.peer.Job;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
+import org.johnnei.javatorrent.torrent.Files;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.files.Block;
+import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.torrent.peer.Job;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

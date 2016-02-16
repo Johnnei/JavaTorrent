@@ -8,7 +8,7 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.test.StubExtension;
 import org.johnnei.javatorrent.test.StubMessage;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;

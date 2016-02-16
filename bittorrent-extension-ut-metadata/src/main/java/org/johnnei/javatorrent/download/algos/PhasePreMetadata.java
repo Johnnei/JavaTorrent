@@ -5,10 +5,9 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.download.MetadataFile;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.algos.AMetadataPhase;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.MetadataFile;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 
 public class PhasePreMetadata extends AMetadataPhase {
 

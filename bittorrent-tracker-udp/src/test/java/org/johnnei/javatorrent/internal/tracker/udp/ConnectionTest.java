@@ -3,8 +3,7 @@ package org.johnnei.javatorrent.internal.tracker.udp;
 import java.time.Clock;
 import java.time.Duration;
 
-import org.johnnei.javatorrent.internal.tracker.udp.Connection;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -4,10 +4,10 @@ import java.time.Duration;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.network.protocol.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

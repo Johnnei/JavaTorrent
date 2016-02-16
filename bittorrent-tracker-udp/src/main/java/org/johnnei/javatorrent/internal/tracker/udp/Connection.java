@@ -4,7 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 
 public class Connection {
 

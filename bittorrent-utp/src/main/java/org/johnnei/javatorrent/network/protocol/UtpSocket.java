@@ -9,18 +9,19 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Random;
 
+import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.network.protocol.utp.ConnectionState;
 import org.johnnei.javatorrent.network.protocol.utp.UdpMultiplexer;
 import org.johnnei.javatorrent.network.protocol.utp.UtpClient;
 import org.johnnei.javatorrent.network.protocol.utp.UtpInputStream;
 import org.johnnei.javatorrent.network.protocol.utp.UtpOutputStream;
-import org.johnnei.javatorrent.torrent.network.Stream;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketFin;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSample;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketState;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketSyn;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.UtpProtocol;
+import org.johnnei.javatorrent.network.Stream;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.Packet;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.PacketFin;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.PacketSample;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.PacketState;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.PacketSyn;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.UtpProtocol;
 import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 

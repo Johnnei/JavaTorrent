@@ -10,11 +10,11 @@ import java.util.Random;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

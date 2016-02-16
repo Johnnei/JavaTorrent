@@ -11,17 +11,17 @@ import java.time.Clock;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.internal.tracker.udp.AnnounceRequest;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.StubEntity;
 import org.johnnei.javatorrent.test.Whitebox;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -3,14 +3,14 @@ package org.johnnei.javatorrent;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 
-import org.johnnei.javatorrent.bittorrent.module.IModule;
-import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.network.protocol.ConnectionDegradation;
-import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
-import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
-import org.johnnei.javatorrent.torrent.tracker.ITracker;
+import org.johnnei.javatorrent.module.IModule;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.network.ConnectionDegradation;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;

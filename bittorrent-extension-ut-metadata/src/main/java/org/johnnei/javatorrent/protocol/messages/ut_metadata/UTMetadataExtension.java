@@ -5,14 +5,14 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
 import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.protocol.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
-import org.johnnei.javatorrent.torrent.download.MetadataFile;
-import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.encoding.Bencode;
-import org.johnnei.javatorrent.torrent.encoding.Bencoder;
+import org.johnnei.javatorrent.torrent.MetadataFile;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 
 public class UTMetadataExtension implements IExtension {
 

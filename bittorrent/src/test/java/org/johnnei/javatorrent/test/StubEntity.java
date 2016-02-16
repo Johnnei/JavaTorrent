@@ -6,14 +6,14 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.TorrentException;
-import org.johnnei.javatorrent.torrent.download.AFiles;
-import org.johnnei.javatorrent.torrent.download.FileInfo;
-import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
-import org.johnnei.javatorrent.torrent.download.files.Piece;
-import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.FileInfo;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
+import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
 
 import org.easymock.EasyMockSupport;
 

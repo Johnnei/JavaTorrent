@@ -2,14 +2,15 @@ package org.johnnei.javatorrent.torrent;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.download.PeersReadRunnable;
-import org.johnnei.javatorrent.torrent.download.PeersWriterRunnable;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.network.PeerConnectionAccepter;
+import org.johnnei.javatorrent.network.socket.PeersReadRunnable;
+import org.johnnei.javatorrent.network.socket.PeersWriterRunnable;
+import org.johnnei.javatorrent.tracker.TrackerManager;
 
 public class TorrentManager {
 
@@ -59,6 +60,10 @@ public class TorrentManager {
 		}
 	}
 
+	/**
+	 * Registers a new torrent
+	 * @param torrent The torrent to register
+	 */
 	public void addTorrent(Torrent torrent) {
 		synchronized (TORRENTS_LOCK) {
 			activeTorrents.add(torrent);
@@ -70,10 +75,9 @@ public class TorrentManager {
 	 * @param hash The BTIH of the torrent
 	 * @return The torrent if known.
 	 */
-	public Optional<Torrent> getTorrent(String hash) {
-		for (int i = 0; i < activeTorrents.size(); i++) {
-			Torrent torrent = activeTorrents.get(i);
-			if (torrent.getHash().equalsIgnoreCase(hash)) {
+	public Optional<Torrent> getTorrent(byte[] hash) {
+		for (Torrent torrent : activeTorrents) {
+			if (Arrays.equals(torrent.getHashArray(), hash)) {
 				return Optional.of(torrent);
 			}
 		}
@@ -83,11 +87,11 @@ public class TorrentManager {
 
 	/**
 	 * Creates a shallow-copy of the list containing the torrents
-	 * @return
+	 * @return The list of torrents
 	 */
 	public Collection<Torrent> getTorrents() {
 		synchronized (TORRENTS_LOCK) {
-			return new ArrayList<Torrent>(activeTorrents);
+			return new ArrayList<>(activeTorrents);
 		}
 	}
 

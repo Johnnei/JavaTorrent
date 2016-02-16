@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
-import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
+import org.johnnei.javatorrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

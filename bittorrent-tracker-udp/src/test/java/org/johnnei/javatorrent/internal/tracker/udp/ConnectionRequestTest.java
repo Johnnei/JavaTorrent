@@ -11,11 +11,10 @@ import java.time.Clock;
 import org.easymock.Capture;
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.internal.tracker.udp.Connection;
-import org.johnnei.javatorrent.internal.tracker.udp.ConnectionRequest;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.junit.Test;
 import org.junit.runner.RunWith;

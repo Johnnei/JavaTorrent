@@ -7,9 +7,9 @@ import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageData;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.files.disk.DiskJob;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.disk.DiskJob;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

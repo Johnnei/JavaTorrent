@@ -3,8 +3,8 @@ package org.johnnei.javatorrent.network.protocol.utp;
 import java.io.OutputStream;
 
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
-import org.johnnei.javatorrent.torrent.network.Stream;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketData;
+import org.johnnei.javatorrent.network.Stream;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.PacketData;
 
 public class UtpOutputStream extends OutputStream {
 

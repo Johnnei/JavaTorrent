@@ -1,9 +1,9 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
 import org.johnnei.javatorrent.protocol.UTMetadata;
-import org.johnnei.javatorrent.torrent.download.peer.Job;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.download.peer.PeerDirection;
+import org.johnnei.javatorrent.torrent.peer.Job;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

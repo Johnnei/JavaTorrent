@@ -7,8 +7,8 @@ import java.util.Iterator;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
-import org.johnnei.javatorrent.torrent.network.Stream;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
+import org.johnnei.javatorrent.network.Stream;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.Packet;
 import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
 
 import org.slf4j.Logger;

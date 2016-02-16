@@ -28,11 +28,11 @@ import org.johnnei.javatorrent.internal.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestClock;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
-import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
