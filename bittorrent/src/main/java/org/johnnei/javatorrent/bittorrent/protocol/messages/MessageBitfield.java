@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
 import java.time.Duration;
+import java.util.Arrays;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -30,22 +31,21 @@ public class MessageBitfield implements IMessage {
 	public void read(InStream inStream) {
 		bitfield = new byte[inStream.available()];
 		for (int i = 0; i < bitfield.length; i++) {
-			bitfield[i] = (byte) inStream.readByte();
+			bitfield[i] = inStream.readByte();
 		}
 	}
 
 	@Override
 	public void process(Peer peer) {
 		int pieceIndex = 0;
-		for (int byteIndex = 0; byteIndex < bitfield.length; byteIndex++) {
-			byte b = bitfield[byteIndex];
+		for (byte b : bitfield) {
 			for (int i = 0; i < 8; i++) {
 				boolean isSet = ((b >> (7 - i)) & 0x1) != 0;
-				
+
 				if (isSet) {
 					peer.havePiece(pieceIndex);
 				}
-				
+
 				pieceIndex++;
 			}
 		}
@@ -67,7 +67,7 @@ public class MessageBitfield implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Bitfield";
+		return String.format("MessageBitfield[bitfield=%s]", Arrays.toString(bitfield));
 	}
 
 }
