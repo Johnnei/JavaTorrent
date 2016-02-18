@@ -193,15 +193,15 @@ public class BitTorrentSocket {
 	/**
 	 * Writes the handshake onto the output stream
 	 *
-	 * @param peerId
-	 *            The peer ID which has been received from
-	 *            {@link TrackerManager#getPeerId()}
+	 * @param extensionBytes The bytes indicating which extensions we support
+	 * @param peerId The peer ID which has been received from {@link TrackerManager#getPeerId()}
+	 * @param torrentHash The hash of the torrent on which we wish to interact on with this peer.
 	 * @throws IOException
 	 */
-	public void sendHandshake(byte[] peerId, byte[] torrentHash) throws IOException {
+	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
-		outStream.write(BitTorrent.RESERVED_EXTENTION_BYTES);
+		outStream.write(extensionBytes);
 		outStream.write(torrentHash);
 		outStream.write(peerId);
 		outStream.flush();

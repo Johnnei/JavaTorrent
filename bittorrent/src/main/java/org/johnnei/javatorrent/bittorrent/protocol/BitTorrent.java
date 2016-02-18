@@ -2,17 +2,6 @@ package org.johnnei.javatorrent.bittorrent.protocol;
 
 public final class BitTorrent {
 
-	/**
-	 * The extension bytes which indicates which extension we support
-	 */
-	public static final byte[] RESERVED_EXTENTION_BYTES = new byte[8];
-
-	static {
-		// TODO Rework this into a modular system
-		// Initialise reserved bytes field
-		RESERVED_EXTENTION_BYTES[5] |= 0x10; // Extended Messages
-	}
-
 	/*
 	 * There is a message without ID. This message only contains a length integer. The message is used as keep-alive
 	 */
@@ -86,5 +75,9 @@ public final class BitTorrent {
 	 * <b>This is not yet implemented in this client</b>
 	 */
 	public static final int MESSAGE_PORT = 9;
+
+	private BitTorrent() {
+		/* No instances for you! */
+	}
 
 }

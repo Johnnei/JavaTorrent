@@ -79,7 +79,10 @@ public class PeerConnector implements Runnable {
 			peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory());
 			try {
 				peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
-				peerSocket.sendHandshake(torrentClient.getTrackerManager().getPeerId(), peerInfo.getTorrent().getHashArray());
+				peerSocket.sendHandshake(
+						torrentClient.getExtensionBytes(),
+						torrentClient.getTrackerManager().getPeerId(),
+						peerInfo.getTorrent().getHashArray());
 
 				long timeWaited = 0;
 				while (!peerSocket.canReadMessage() && timeWaited < 10_000) {
