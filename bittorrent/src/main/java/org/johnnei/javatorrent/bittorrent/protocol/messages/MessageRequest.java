@@ -49,7 +49,7 @@ public class MessageRequest implements IMessage {
 		if (peer.getTorrent().getFiles().hasPiece(index)) {
 			peer.addJob(new Job(index, offset, length), PeerDirection.Upload);
 		} else {
-			LOGGER.error(String.format("Requested piece %d which I don't have", index));
+			LOGGER.error("Requested piece {} which I don't have", index);
 			peer.getBitTorrentSocket().close();
 		}
 	}
@@ -70,7 +70,7 @@ public class MessageRequest implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Request";
+		return String.format("MessageRequest[index=%d, offset=%d, lenght=%d]", index, offset, length);
 	}
 
 }

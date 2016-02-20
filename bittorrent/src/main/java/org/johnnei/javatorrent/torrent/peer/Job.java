@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.peer;
 
+import java.util.Objects;
+
 /**
  * A handler to manage the peer their work queue
  * 
@@ -50,11 +52,7 @@ public class Job {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + pieceIndex;
-		result = prime * result + block;
-		return result;
+		return Objects.hash(pieceIndex, block, length);
 	}
 
 	@Override
@@ -65,7 +63,7 @@ public class Job {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
+		if (!(obj instanceof Job)) {
 			return false;
 		}
 		Job other = (Job) obj;
@@ -75,6 +73,11 @@ public class Job {
 		if (block != other.block) {
 			return false;
 		}
+
+		if (length != other.length) {
+			return false;
+		}
+
 		return true;
 	}
 
