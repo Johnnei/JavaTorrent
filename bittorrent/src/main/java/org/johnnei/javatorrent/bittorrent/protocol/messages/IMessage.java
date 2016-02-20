@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
-
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -43,12 +41,5 @@ public interface IMessage {
 	 * @return id
 	 */
 	int getId();
-
-	/**
-	 * Sets the read duration of this message
-	 *
-	 * @param duration The duration it took to read this message
-	 */
-	void setReadDuration(Duration duration);
 
 }

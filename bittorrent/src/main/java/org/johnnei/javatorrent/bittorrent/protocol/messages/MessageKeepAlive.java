@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
-
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -35,11 +33,6 @@ public class MessageKeepAlive implements IMessage {
 	@Override
 	public int getId() {
 		throw new UnsupportedOperationException("Keep alive messages don't send an ID and the protocol doesn't define the ID.");
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
-		/* This isn't used for the keep alive */
 	}
 
 	@Override

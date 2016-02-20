@@ -1,12 +1,11 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
 import java.util.Arrays;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 public class MessageBitfield implements IMessage {
 
@@ -59,10 +58,6 @@ public class MessageBitfield implements IMessage {
 	@Override
 	public int getId() {
 		return BitTorrent.MESSAGE_BITFIELD;
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

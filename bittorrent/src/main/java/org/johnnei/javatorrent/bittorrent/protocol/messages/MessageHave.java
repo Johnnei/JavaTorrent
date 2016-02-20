@@ -1,11 +1,9 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
-
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 public class MessageHave implements IMessage {
 
@@ -36,10 +34,6 @@ public class MessageHave implements IMessage {
 	@Override
 	public int getLength() {
 		return 5;
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

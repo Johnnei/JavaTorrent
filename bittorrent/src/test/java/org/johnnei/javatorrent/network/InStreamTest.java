@@ -1,9 +1,12 @@
 package org.johnnei.javatorrent.network;
 
+import java.time.Duration;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -75,5 +78,12 @@ public class InStreamTest {
 		assertEquals("Incorrect available value after returning to mark", 4, inStream.available());
 	}
 
+	@Test
+	public void testDuration() {
+		InStream inStream = new InStream(new byte[] {}, Duration.ZERO);
+		assertEquals("Incorrect duration", Duration.ZERO, inStream.getReadDuration().get());
+		inStream = new InStream(new byte[] { 0x0, 0x0 }, 1, 1);
+		assertFalse("Incorrect duration", inStream.getReadDuration().isPresent());
+	}
 
 }

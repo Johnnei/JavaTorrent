@@ -123,7 +123,7 @@ public class BitTorrentSocket {
 
 	/**
 	 * Queues the message to be send
-	 * @param message
+	 * @param message The message to be added to the queue
 	 */
 	public void enqueueMessage(IMessage message) {
 		if (message.getId() == BitTorrent.MESSAGE_PIECE) {
@@ -144,7 +144,6 @@ public class BitTorrentSocket {
 
 	public IMessage readMessage() {
 		InStream stream = getBufferedMessage();
-		Duration duration = getBufferLifetime();
 		int length = stream.readInt();
 		if (length == 0) {
 			return new MessageKeepAlive();
@@ -152,7 +151,6 @@ public class BitTorrentSocket {
 
 		int id = stream.readByte();
 		IMessage message = messageFactory.createById(id);
-		message.setReadDuration(duration);
 		message.read(stream);
 		return message;
 	}
@@ -288,7 +286,7 @@ public class BitTorrentSocket {
 	}
 
 	private InStream getBufferedMessage() {
-		InStream bufferedStream = new InStream(buffer.toByteArray());
+		InStream bufferedStream = new InStream(buffer.toByteArray(), getBufferLifetime());
 		buffer = null;
 		return bufferedStream;
 	}

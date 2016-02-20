@@ -1,13 +1,11 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
-
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 public class MessageCancel implements IMessage {
 
@@ -52,10 +50,6 @@ public class MessageCancel implements IMessage {
 	@Override
 	public int getId() {
 		return BitTorrent.MESSAGE_CANCEL;
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

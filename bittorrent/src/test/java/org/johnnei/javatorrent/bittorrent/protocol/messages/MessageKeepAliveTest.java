@@ -41,12 +41,6 @@ public class MessageKeepAliveTest {
 	}
 
 	@Test
-	public void testSetReadDuration() throws Exception {
-		// No interaction is expected, pass null to make it throw NPE's if it still does
-		new MessageKeepAlive().setReadDuration(null);
-	}
-
-	@Test
 	public void testToString() throws Exception {
 		assertTrue("toString doesn't contain class name", new MessageKeepAlive().toString().contains(MessageKeepAlive.class.getSimpleName()));
 	}

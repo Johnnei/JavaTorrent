@@ -1,10 +1,8 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import java.time.Duration;
-
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -68,10 +66,6 @@ public class MessageExtension implements IMessage {
 	@Override
 	public int getId() {
 		return Protocol.MESSAGE_EXTENDED_MESSAGE;
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

@@ -38,6 +38,7 @@ public class MessageBlock implements IMessage {
 		index = inStream.readInt();
 		offset = inStream.readInt();
 		data = inStream.readFully(inStream.available());
+		readDuration = inStream.getReadDuration().orElse(Duration.ofSeconds(1));
 	}
 
 	@Override
@@ -66,11 +67,6 @@ public class MessageBlock implements IMessage {
 	@Override
 	public int getId() {
 		return BitTorrent.MESSAGE_PIECE;
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
-		readDuration = duration;
 	}
 
 	@Override

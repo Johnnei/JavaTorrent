@@ -1,20 +1,19 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.Version;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,10 +108,6 @@ public class MessageHandshake implements IMessage {
 	@Override
 	public int getId() {
 		return Protocol.EXTENDED_MESSAGE_HANDSHAKE;
-	}
-
-	@Override
-	public void setReadDuration(Duration duration) {
 	}
 
 	@Override

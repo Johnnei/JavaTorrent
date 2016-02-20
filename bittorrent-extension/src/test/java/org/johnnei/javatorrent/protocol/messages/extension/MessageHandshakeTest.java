@@ -1,17 +1,16 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
 import java.nio.charset.Charset;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.Version;
+import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.network.BitTorrentSocket;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
@@ -136,7 +135,6 @@ public class MessageHandshakeTest extends EasyMockSupport {
 	public void testSimpleMethods() {
 		MessageHandshake cut = new MessageHandshake(Collections.emptyList());
 
-		cut.setReadDuration(Duration.ZERO);
 		assertEquals("Incorrect packet ID", 0, cut.getId());
 		assertTrue("Incorrect start of toString", cut.toString().startsWith("MessageHandshake["));
 	}

@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import java.time.Duration;
 import java.util.Collections;
 
 import org.johnnei.javatorrent.network.InStream;
@@ -100,7 +99,6 @@ public class MessageExtensionTest extends EasyMockSupport {
 		replayAll();
 
 		cut.read(new InStream(input));
-		cut.setReadDuration(Duration.ZERO);
 
 		verifyAll();
 	}

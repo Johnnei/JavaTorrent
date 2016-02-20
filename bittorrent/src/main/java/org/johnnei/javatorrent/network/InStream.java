@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.network;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +12,8 @@ import org.slf4j.LoggerFactory;
 public class InStream {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InStream.class);
+
+	private Duration readDuration;
 
 	/**
 	 * The byte array reader
@@ -29,13 +33,26 @@ public class InStream {
 	/**
 	 * Creates a new buffered input stream based on the given byte array.
 	 *
-	 * Calls <code>InStream(data, 0, data.length)</code>.
+	 * Calls <code>InStream(data, 0, data.length, null)</code>.
 	 * @param data The byte buffer
 	 *
 	 * @see #InStream(byte[], int, int)
 	 */
 	public InStream(byte[] data) {
-		this(data, 0, data.length);
+		this(data, 0, data.length, null);
+	}
+
+	/**
+	 * Creates a new buffered input stream based on the given byte array.
+	 *
+	 * Calls <code>InStream(data, 0, data.length, readDuration)</code>.
+	 * @param data The byte buffer
+	 * @param readDuration The duration it took to read the given buffer
+	 *
+	 * @see #InStream(byte[], int, int, Duration)
+	 */
+	public InStream(byte[] data, Duration readDuration) {
+		this(data, 0, data.length, readDuration);
 	}
 
 	/**
@@ -43,11 +60,25 @@ public class InStream {
 	 * @param data The byte buffer
 	 * @param offset The starting offset
 	 * @param length The amount of bytes available
+	 *
+	 * @see #InStream(byte[], int, int, Duration)
 	 */
 	public InStream(byte[] data, int offset, int length) {
+		this(data, offset, length, null);
+	}
+
+	/**
+	 * Creates a new buffered input stream based on the section in the given byte array.
+	 * @param data The byte buffer
+	 * @param offset The starting offset
+	 * @param length The amount of bytes available
+	 * @param readDuration The duration it took to read the given buffer
+	 */
+	public InStream(byte[] data, int offset, int length, Duration readDuration) {
 		buffer = new ByteArrayInputStream(data, offset, length);
 		in = new DataInputStream(buffer);
 		this.length = length;
+		this.readDuration = readDuration;
 	}
 
 	/**
@@ -252,6 +283,14 @@ public class InStream {
 	 */
 	public void resetToMark() {
 		buffer.reset();
+	}
+
+	/**
+	 * Gets the duration it took to read this message.
+	 * @return The duration it took or {@link Optional#empty()} if unknown
+	 */
+	public Optional<Duration> getReadDuration() {
+		return Optional.ofNullable(readDuration);
 	}
 
 }
