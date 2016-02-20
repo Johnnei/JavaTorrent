@@ -18,6 +18,7 @@ public class MessageBlock implements IMessage {
 	private Duration readDuration;
 
 	public MessageBlock() {
+		/* Default constructor for reading */
 	}
 
 	public MessageBlock(int index, int offset, byte[] data) {
@@ -43,12 +44,13 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.getTorrent().collectPiece(index, offset, data);
 		peer.removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)), PeerDirection.Download);
 		if (data.length <= 0) {
 			peer.addStrike(1);
 			return;
 		}
+
+		peer.getTorrent().collectPiece(index, offset, data);
 
 		peer.addStrike(-1);
 		if (readDuration.minusSeconds(1).isNegative()) { // Set by extreme speed
@@ -71,7 +73,7 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Block";
+		return String.format("MessageBlock[index=%d, offset=%d, length=%d]", index, offset, data != null ? data.length : -1);
 	}
 
 }
