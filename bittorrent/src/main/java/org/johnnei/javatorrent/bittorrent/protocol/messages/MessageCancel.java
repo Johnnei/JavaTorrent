@@ -41,7 +41,7 @@ public class MessageCancel implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.removeJob(new Job(index, offset), PeerDirection.Upload);
+		peer.removeJob(new Job(index, offset, length), PeerDirection.Upload);
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class MessageCancel implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Cancel";
+		return String.format("MessageCancel[index=%d, offset=%d, lenght=%d]", index, offset, length);
 	}
 
 }
