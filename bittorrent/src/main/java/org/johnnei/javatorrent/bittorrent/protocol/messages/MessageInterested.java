@@ -10,16 +10,17 @@ public class MessageInterested implements IMessage {
 
 	@Override
 	public void write(OutStream outStream) {
+		/* Interested message has no payload */
 	}
 
 	@Override
 	public void read(InStream inStream) {
+		/* Interested message has no payload */
 	}
 
 	@Override
 	public void process(Peer peer) {
-		// This is questionable behaviour, they notify that THEY are interested, for us that is upload not download
-		peer.setInterested(PeerDirection.Download, true);
+		peer.setInterested(PeerDirection.Upload, true);
 	}
 
 	@Override
@@ -34,7 +35,7 @@ public class MessageInterested implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Interested";
+		return "MessageInterested[]";
 	}
 
 }

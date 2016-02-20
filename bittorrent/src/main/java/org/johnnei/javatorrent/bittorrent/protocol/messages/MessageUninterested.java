@@ -10,16 +10,17 @@ public class MessageUninterested implements IMessage {
 
 	@Override
 	public void write(OutStream outStream) {
+		/* Uninterested message has no payload */
 	}
 
 	@Override
 	public void read(InStream inStream) {
+		/* Uninterested message has no payload */
 	}
 
 	@Override
 	public void process(Peer peer) {
-		// Again, doubt full about model-correctness
-		peer.setInterested(PeerDirection.Download, false);
+		peer.setInterested(PeerDirection.Upload, false);
 	}
 
 	@Override
@@ -34,7 +35,7 @@ public class MessageUninterested implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Uninterested";
+		return "MessageUninterested[]";
 	}
 
 }

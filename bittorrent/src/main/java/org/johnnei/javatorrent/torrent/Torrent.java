@@ -248,9 +248,9 @@ public class Torrent implements Runnable {
 				for (int j = 0; j < neededPieces.size(); j++) {
 					if (p.hasPiece(neededPieces.get(j).getIndex())) {
 						hasNoPieces = false;
-						if (!p.isInterested(PeerDirection.Upload)) {
+						if (!p.isInterested(PeerDirection.Download)) {
 							p.getBitTorrentSocket().enqueueMessage(new MessageInterested());
-							p.setInterested(PeerDirection.Upload, true);
+							p.setInterested(PeerDirection.Download, true);
 						}
 						break;
 					}
@@ -259,10 +259,10 @@ public class Torrent implements Runnable {
 					p.getBitTorrentSocket().enqueueMessage(new MessageUninterested());
 					p.setInterested(PeerDirection.Upload, false);
 				}
-				if (p.isInterested(PeerDirection.Download) && p.isChoked(PeerDirection.Upload)) {
+				if (p.isInterested(PeerDirection.Upload) && p.isChoked(PeerDirection.Upload)) {
 					p.getBitTorrentSocket().enqueueMessage(new MessageUnchoke());
 					p.setChoked(PeerDirection.Upload, false);
-				} else if (!p.isInterested(PeerDirection.Download) && !p.isChoked(PeerDirection.Upload)) {
+				} else if (!p.isInterested(PeerDirection.Upload) && !p.isChoked(PeerDirection.Upload)) {
 					p.getBitTorrentSocket().enqueueMessage(new MessageChoke());
 					p.setChoked(PeerDirection.Upload, true);
 				}

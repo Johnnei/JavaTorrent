@@ -10,6 +10,7 @@ public class MessageHave implements IMessage {
 	private int pieceIndex;
 
 	public MessageHave() {
+		/* Default constructor for reading */
 	}
 
 	public MessageHave(int pieceIndex) {
@@ -43,7 +44,7 @@ public class MessageHave implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Have";
+		return String.format("MessageHave[piece=%s]", pieceIndex);
 	}
 
 }

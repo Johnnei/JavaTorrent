@@ -10,10 +10,12 @@ public class MessageChoke implements IMessage {
 
 	@Override
 	public void write(OutStream outStream) {
+		/* Choke message has no payload */
 	}
 
 	@Override
 	public void read(InStream inStream) {
+		/* Choke message has no payload */
 	}
 
 	@Override
@@ -34,7 +36,7 @@ public class MessageChoke implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Choke";
+		return "MessageChoke[]";
 	}
 
 }

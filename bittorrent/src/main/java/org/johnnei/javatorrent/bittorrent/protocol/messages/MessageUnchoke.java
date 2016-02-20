@@ -10,10 +10,12 @@ public class MessageUnchoke implements IMessage {
 
 	@Override
 	public void write(OutStream outStream) {
+		/* Unchoke message has no payload */
 	}
 
 	@Override
 	public void read(InStream inStream) {
+		/* Unchoke message has no payload */
 	}
 
 	@Override
@@ -33,7 +35,7 @@ public class MessageUnchoke implements IMessage {
 
 	@Override
 	public String toString() {
-		return "Unchoke";
+		return "MessageUnchoke[]";
 	}
 
 }
