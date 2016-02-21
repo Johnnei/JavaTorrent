@@ -236,9 +236,7 @@ public class Peer implements Comparable<Peer> {
 	public void cancelAllPieces() {
 		synchronized (this) {
 			if (getWorkQueueSize(PeerDirection.Download) > 0) {
-				Object[] keys = myClient.getKeySet().toArray();
-				for (int i = 0; i < keys.length; i++) {
-					Job job = (Job) keys[i];
+				for (Job job : myClient.getJobs()) {
 					torrent.getFiles().getPiece(job.getPieceIndex()).reset(job.getBlockIndex());
 				}
 				myClient.clearJobs();
@@ -454,8 +452,7 @@ public class Peer implements Comparable<Peer> {
 			return;
 		}
 
-		Job request = peerClient.getNextJob();
-		peerClient.removeJob(request);
+		Job request = peerClient.popNextJob();
 		addToPendingMessages(1);
 
 		DiskJob sendBlock = new DiskJobSendBlock(this,

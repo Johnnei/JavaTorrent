@@ -1,45 +1,70 @@
 package org.johnnei.javatorrent.torrent.peer;
 
-import java.util.HashMap;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class Client {
 
-	private final Object JOB_LOCK = new Object();
+	private final Object queueLock = new Object();
+
 	private boolean isChoked;
 	private boolean isInterested;
 
 	/**
 	 * The pieces to be send or be requested
 	 */
-	private HashMap<Job, Integer> workingQueue;
+	private Queue<Job> workingQueue;
 
+	/**
+	 * Creates a new Client.
+	 */
 	public Client() {
 		isChoked = true;
 		isInterested = false;
-		workingQueue = new HashMap<>();
+		workingQueue = new LinkedList<>();
 	}
 
+	/**
+	 * Marks the client as choked.
+	 */
 	public void choke() {
 		isChoked = true;
 	}
 
+	/**
+	 * Marks the client as unchoked.
+	 */
 	public void unchoke() {
 		isChoked = false;
 	}
 
+	/**
+	 * Marks the client as interested.
+	 */
 	public void interested() {
 		isInterested = true;
 	}
 
+	/**
+	 * Marks the client as uninterested.
+	 */
 	public void uninterested() {
 		isInterested = false;
 	}
 
+	/**
+	 * Returns if the client is choked or not.
+	 * @return <code>true</code> when the client is choked, otherwise <code>false</code>
+	 */
 	public boolean isChoked() {
 		return isChoked;
 	}
 
+	/**
+	 * Returns if the client is interested or not.
+	 * @return <code>true</code> when the client is interested, otherwise <code>false</code>
+	 */
 	public boolean isInterested() {
 		return isInterested;
 	}
@@ -49,33 +74,40 @@ public class Client {
 	 * 
 	 * @return The next job available
 	 */
-	public Job getNextJob() {
-		synchronized (JOB_LOCK) {
-			return workingQueue.entrySet().iterator().next().getKey();
+	public Job popNextJob() {
+		synchronized (queueLock) {
+			return workingQueue.poll();
 		}
 	}
 
-	public Set<Job> getKeySet() {
-		return workingQueue.keySet();
+	/**
+	 * Gets an iterable to allow iteration over the job list.
+	 * @return An iteratable collection containing the jobs.
+	 */
+	public Iterable<Job> getJobs() {
+		// Return a copy to prevent ModificationExceptions
+		return new ArrayList<>(workingQueue);
 	}
 
 	/**
 	 * Removes a job from the working queue if it was listed
 	 * 
-	 * @param job
+	 * @param job The job to remove
 	 */
 	public void removeJob(Job job) {
-		workingQueue.remove(job);
+		synchronized (queueLock) {
+			workingQueue.remove(job);
+		}
 	}
 
 	/**
 	 * Adds a job to the working queue
 	 * 
-	 * @param job
+	 * @param job The job to add.
 	 */
 	public void addJob(Job job) {
-		synchronized (JOB_LOCK) {
-			workingQueue.put(job, 0);
+		synchronized (queueLock) {
+			workingQueue.add(job);
 		}
 	}
 
@@ -85,11 +117,17 @@ public class Client {
 	 * @return the amount
 	 */
 	public int getQueueSize() {
+		// The linkedlist implementation keeps track of the size, it can't throw an error on modification.
 		return workingQueue.size();
 	}
 
+	/**
+	 * Clears all jobs from the queue.
+	 */
 	public void clearJobs() {
-		workingQueue.clear();
+		synchronized (queueLock) {
+			workingQueue.clear();
+		}
 	}
 
 }
