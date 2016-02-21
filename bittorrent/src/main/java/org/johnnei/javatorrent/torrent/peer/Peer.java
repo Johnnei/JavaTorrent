@@ -7,12 +7,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.module.IModule;
-import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.disk.DiskJob;
 import org.johnnei.javatorrent.disk.DiskJobSendBlock;
+import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.utils.JMath;
 
 public class Peer implements Comparable<Peer> {
@@ -30,14 +34,6 @@ public class Peer implements Comparable<Peer> {
 	 * This will contain the requests we made to the endpoint
 	 */
 	private Client myClient;
-
-	/**
-	 * The last time this connection showed any form of activity<br/>
-	 * <i>Values are System.currentMillis()</i>
-	 * @deprecated
-	 */
-	@Deprecated
-	private long lastActivity;
 
 	private String clientName;
 
@@ -340,6 +336,14 @@ public class Peer implements Comparable<Peer> {
 		} else {
 			client.unchoke();
 		}
+
+		if (direction == PeerDirection.Upload) {
+			if (choked) {
+				socket.enqueueMessage(new MessageChoke());
+			} else {
+				socket.enqueueMessage(new MessageUnchoke());
+			}
+		}
 	}
 
 	/**
@@ -355,6 +359,14 @@ public class Peer implements Comparable<Peer> {
 			client.interested();
 		} else {
 			client.uninterested();
+		}
+
+		if (direction == PeerDirection.Download) {
+			if (interested) {
+				socket.enqueueMessage(new MessageInterested());
+			} else {
+				socket.enqueueMessage(new MessageUninterested());
+			}
 		}
 	}
 
