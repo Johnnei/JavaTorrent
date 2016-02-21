@@ -7,25 +7,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
-import org.johnnei.javatorrent.phases.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
-import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.disk.DiskJob;
 import org.johnnei.javatorrent.disk.DiskJobStoreBlock;
 import org.johnnei.javatorrent.disk.IOManager;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.utils.StringUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
@@ -106,6 +101,11 @@ public class Torrent implements Runnable {
 	private IDownloadPhase phase;
 
 	/**
+	 * The strategy used to handle the choking of peers.
+	 */
+	private IChokingStrategy chokingStrategy;
+
+	/**
 	 * The torrent client which created this Torrent object.
 	 */
 	private TorrentClient torrentClient;
@@ -125,6 +125,7 @@ public class Torrent implements Runnable {
 		btihHash = builder.hash;
 		peerManager = builder.peerManager;
 		phase = builder.phase;
+		chokingStrategy = builder.chokingStrategy;
 		torrentHaltingOperations = new AtomicInteger();
 		downloadedBytes = 0L;
 		peers = new LinkedList<Peer>();
@@ -132,32 +133,6 @@ public class Torrent implements Runnable {
 		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
 		pieceSelector = new FullPieceSelect(this);
-		thread = new Thread(this, displayName);
-	}
-
-	/**
-	 *
-	 * @param torrentClient
-	 * @param btihHash
-	 * @param displayName
-	 *
-	 * @deprecated Replaced by {@link #Torrent(Builder)}
-	 */
-	@Deprecated
-	public Torrent(TorrentClient torrentClient, byte[] btihHash, String displayName) {
-		this.displayName = displayName;
-		this.torrentClient = torrentClient;
-		this.btihHash = btihHash;
-		torrentHaltingOperations = new AtomicInteger();
-		downloadedBytes = 0L;
-		peers = new LinkedList<Peer>();
-		keepDownloading = true;
-		status = "Parsing Magnet Link";
-		ioManager = new IOManager();
-		pieceSelector = new FullPieceSelect(this);
-		peerManager = torrentClient.getPeerManager();
-		phase = torrentClient.getPhaseRegulator().createInitialPhase(torrentClient, this);
-
 		thread = new Thread(this, displayName);
 	}
 
@@ -241,31 +216,9 @@ public class Torrent implements Runnable {
 		if (files == null) {
 			return;
 		}
-		List<Piece> neededPieces = files.getNeededPieces().collect(Collectors.toList());
 		synchronized (this) {
 			for (Peer p : peers) {
-				boolean hasNoPieces = true;
-				for (int j = 0; j < neededPieces.size(); j++) {
-					if (p.hasPiece(neededPieces.get(j).getIndex())) {
-						hasNoPieces = false;
-						if (!p.isInterested(PeerDirection.Download)) {
-							p.getBitTorrentSocket().enqueueMessage(new MessageInterested());
-							p.setInterested(PeerDirection.Download, true);
-						}
-						break;
-					}
-				}
-				if (hasNoPieces && p.isInterested(PeerDirection.Upload)) {
-					p.getBitTorrentSocket().enqueueMessage(new MessageUninterested());
-					p.setInterested(PeerDirection.Upload, false);
-				}
-				if (p.isInterested(PeerDirection.Upload) && p.isChoked(PeerDirection.Upload)) {
-					p.getBitTorrentSocket().enqueueMessage(new MessageUnchoke());
-					p.setChoked(PeerDirection.Upload, false);
-				} else if (!p.isInterested(PeerDirection.Upload) && !p.isChoked(PeerDirection.Upload)) {
-					p.getBitTorrentSocket().enqueueMessage(new MessageChoke());
-					p.setChoked(PeerDirection.Upload, true);
-				}
+				chokingStrategy.updateChoking(p);
 			}
 		}
 	}
@@ -555,6 +508,8 @@ public class Torrent implements Runnable {
 
 		private IDownloadPhase phase;
 
+		private IChokingStrategy chokingStrategy;
+
 		private byte[] hash;
 
 		public Builder setTorrentClient(TorrentClient torrentClient) {
@@ -579,6 +534,11 @@ public class Torrent implements Runnable {
 
 		public Builder setInitialPhase(IDownloadPhase phase) {
 			this.phase = phase;
+			return this;
+		}
+
+		public Builder setChokingStrategy(IChokingStrategy chokingStrategy) {
+			this.chokingStrategy = chokingStrategy;
 			return this;
 		}
 
