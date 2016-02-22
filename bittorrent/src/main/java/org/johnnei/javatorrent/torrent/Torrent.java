@@ -1,8 +1,8 @@
 package org.johnnei.javatorrent.torrent;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +19,8 @@ import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 import org.johnnei.javatorrent.utils.StringUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
@@ -46,11 +46,6 @@ public class Torrent implements Runnable {
 	private List<Peer> peers;
 
 	private boolean keepDownloading;
-
-	/**
-	 * The current status
-	 */
-	private String status;
 
 	/**
 	 * Contains all data of the actual torrent
@@ -116,8 +111,8 @@ public class Torrent implements Runnable {
 	private Thread thread;
 
 	/**
-	 * Creates a new
-	 * @param builder
+	 * Creates a new Torrent.
+	 * @param builder The builder with the components for the torrent.
 	 */
 	public Torrent(Builder builder) {
 		displayName = builder.displayName;
@@ -128,9 +123,8 @@ public class Torrent implements Runnable {
 		chokingStrategy = builder.chokingStrategy;
 		torrentHaltingOperations = new AtomicInteger();
 		downloadedBytes = 0L;
-		peers = new LinkedList<Peer>();
+		peers = new LinkedList<>();
 		keepDownloading = true;
-		status = "Parsing Magnet Link";
 		ioManager = new IOManager();
 		pieceSelector = new FullPieceSelect(this);
 		thread = new Thread(this, displayName);
@@ -166,7 +160,7 @@ public class Torrent implements Runnable {
 		while(phase != null) {
 			LOGGER.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
 			synchronized (this) {
-				peers.forEach(p -> p.onTorrentPhaseChange());
+				peers.forEach(Peer::onTorrentPhaseChange);
 			}
 			phase.onPhaseEnter();
 			while (!phase.isDone() || torrentHaltingOperations.get() > 0) {
@@ -239,10 +233,6 @@ public class Torrent implements Runnable {
 		return keepDownloading;
 	}
 
-	public String getStatus() {
-		return status;
-	}
-
 	public IDownloadPhase getDownloadPhase() {
 		return phase;
 	}
@@ -251,7 +241,7 @@ public class Torrent implements Runnable {
 	 * If the Torrent should be downloading the metadata information.
 	 * Depending on the installed modules the torrent might be stuck at this point.
 	 * BEP 10 and UT_METADATA extension must be available to download metadata.
-	 * @return
+	 * @return <code>true</code> when the torrent is currently downloading the metadata, otherwise <code>false</code>
 	 */
 	public boolean isDownloadingMetadata() {
 		if (!metadata.isPresent()) {
@@ -282,7 +272,13 @@ public class Torrent implements Runnable {
 	public void collectPiece(int index, int offset, byte[] data) {
 		addToHaltingOperations(1);
 		int blockIndex = offset / files.getBlockSize();
-		addDiskJob(new DiskJobStoreBlock(index, blockIndex, data));
+
+		Piece piece = files.getPiece(index);
+		if (piece.getBlockSize(blockIndex) != data.length) {
+			piece.reset(blockIndex);
+		} else {
+			addDiskJob(new DiskJobStoreBlock(index, blockIndex, data));
+		}
 	}
 
 	public void addToHaltingOperations(int newTasks) {
@@ -349,6 +345,10 @@ public class Torrent implements Runnable {
 		uploadedBytes += l;
 	}
 
+	/**
+	 * Sets the current set of files this torrent is downloading.
+	 * @param files The file set.
+	 */
 	public void setFiles(AFiles files) {
 		this.files = files;
 	}
@@ -381,8 +381,11 @@ public class Torrent implements Runnable {
 	}
 
 	/**
-	 * Gets the files which are being downloaded within this torrent
-	 * @return
+	 * Gets the files which are being downloaded within this torrent. This could be the metadata of the torrent (.torrent file),
+	 * the files in the torrent or something else if a module changed it with {@link #setFiles(AFiles)}.
+	 * @return The set of files being downloaded.
+	 *
+	 * @see #setFiles(AFiles)
 	 */
 	public AFiles getFiles() {
 		return files;
@@ -423,7 +426,7 @@ public class Torrent implements Runnable {
 	/**
 	 * The amount of bytes downloaded
 	 *
-	 * @return
+	 * @return The amount of bytes downloaded this session
 	 */
 	public long getDownloadedBytes() {
 		return downloadedBytes;
@@ -432,32 +435,18 @@ public class Torrent implements Runnable {
 	/**
 	 * The amount of bytes we have uploaded this session
 	 *
-	 * @return
+	 * @return The amount of bytes uploaded this session.
 	 */
 	public long getUploadedBytes() {
 		return uploadedBytes;
 	}
 
 	/**
-	 * Gets all leechers which: has atleast 1 piece and has us unchoked
-	 *
-	 * @return
+	 * Filters the list of peer to the set of relevant ones for this download phase.
+	 * @return The list of relevant peers.
 	 */
-	@Deprecated
-	public ArrayList<Peer> getDownloadablePeers() {
-		ArrayList<Peer> leechers = new ArrayList<Peer>();
-		synchronized (this) {
-			for (Peer peer : peers) {
-				if (peer.countHavePieces() == 0) {
-					continue;
-				}
-
-				if (!peer.isChoked(PeerDirection.Download) && peer.getFreeWorkTime() > 0) {
-					leechers.add(peer);
-				}
-			}
-		}
-		return leechers;
+	public synchronized Collection<Peer> getRelevantPeers() {
+		return phase.getRelevantPeers(peers);
 	}
 
 	/**
@@ -470,10 +459,7 @@ public class Torrent implements Runnable {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + Arrays.hashCode(btihHash);
-		return result;
+		return Arrays.hashCode(btihHash);
 	}
 
 	@Override
@@ -488,10 +474,8 @@ public class Torrent implements Runnable {
 			return false;
 		}
 		Torrent other = (Torrent) obj;
-		if (!Arrays.equals(btihHash, other.btihHash)) {
-			return false;
-		}
-		return true;
+
+		return Arrays.equals(btihHash, other.btihHash);
 	}
 
 	public void setPieceSelector(IPieceSelector downloadRegulator) {

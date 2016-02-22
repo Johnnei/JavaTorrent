@@ -135,12 +135,6 @@ public class Piece implements Comparable<Piece> {
 	 */
 	public void storeBlock(int blockIndex, byte[] blockData) throws TorrentException, IOException {
 		Block block = blocks.get(blockIndex);
-		if (block.getSize() != blockData.length) {
-			blocks.get(blockIndex).setDone(false);
-			blocks.get(blockIndex).setRequested(false);
-			throw new TorrentException("Block size did not match. Expected: " + blocks.get(blockIndex).getSize() + ", Got: " + blockData.length);
-		}
-
 		int remainingBytesToWrite = block.getSize();
 		// Write Block
 		while (remainingBytesToWrite > 0) {

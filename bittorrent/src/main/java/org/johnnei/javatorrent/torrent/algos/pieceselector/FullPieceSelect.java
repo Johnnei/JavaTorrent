@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.torrent.algos.pieceselector;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,8 +36,7 @@ public class FullPieceSelect implements IPieceSelector {
 		int max = -1;
 		Piece mostAvailable = null;
 		for (Piece piece : undownloaded) {
-			ArrayList<Peer> peers = torrent.getDownloadablePeers();
-			for (Peer p : peers) {
+			for (Peer p : torrent.getRelevantPeers()) {
 				if (p.hasPiece(piece.getIndex())) {
 					availability[piece.getIndex()]++;
 				}
@@ -73,8 +73,7 @@ public class FullPieceSelect implements IPieceSelector {
 		if (mostAvailable != null && peer.hasPiece(mostAvailable.getIndex())) { // Try most available piece
 			return mostAvailable;
 		} else { // Nope, just request the first piece they have
-			for (int i = 0; i < undownloaded.size(); i++) {
-				Piece piece = undownloaded.get(i);
+			for (Piece piece : undownloaded) {
 				if (piece.getTotalRequestedCount() < piece.getBlockCount()) {
 					if (peer.hasPiece(piece.getIndex())) {
 						return piece;

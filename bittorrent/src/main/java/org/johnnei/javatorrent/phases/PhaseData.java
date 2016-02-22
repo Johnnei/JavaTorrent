@@ -1,11 +1,12 @@
 package org.johnnei.javatorrent.phases;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.files.Block;
@@ -13,8 +14,7 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
-import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +37,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void process() {
-		ArrayList<Peer> downloadPeers = torrent.getDownloadablePeers();
-		while(downloadPeers.size() > 0) {
-			Peer peer = downloadPeers.remove(0);
+		for (Peer peer : torrent.getRelevantPeers()) {
 			Piece piece = torrent.getDownloadRegulator().getPieceForPeer(peer);
 			if (piece == null) {
 				continue;
