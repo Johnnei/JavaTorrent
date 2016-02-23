@@ -6,19 +6,20 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
-import org.johnnei.javatorrent.disk.DiskJob;
-import org.johnnei.javatorrent.disk.DiskJobStoreBlock;
+import org.johnnei.javatorrent.disk.DiskJobCheckHash;
+import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
+import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.disk.IOManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.StringUtils;
@@ -81,10 +82,6 @@ public class Torrent implements Runnable {
 	 * The last time all peer interest states have been updated
 	 */
 	private long lastPeerUpdate = System.currentTimeMillis();
-	/**
-	 * Remembers if the torrent is collecting a piece or checking the hash so we can wait until all pieces are written to the hdd before continuing
-	 */
-	private AtomicInteger torrentHaltingOperations;
 
 	/**
 	 * IOManager to manage the transaction between the hdd and the programs so none of the actual network thread need to get block for that
@@ -121,7 +118,6 @@ public class Torrent implements Runnable {
 		peerManager = builder.peerManager;
 		phase = builder.phase;
 		chokingStrategy = builder.chokingStrategy;
-		torrentHaltingOperations = new AtomicInteger();
 		downloadedBytes = 0L;
 		peers = new LinkedList<>();
 		keepDownloading = true;
@@ -163,10 +159,10 @@ public class Torrent implements Runnable {
 				peers.forEach(Peer::onTorrentPhaseChange);
 			}
 			phase.onPhaseEnter();
-			while (!phase.isDone() || torrentHaltingOperations.get() > 0) {
+			while (!phase.isDone()) {
 				processPeers();
 				phase.process();
-				ioManager.processTask(this);
+				ioManager.processTask();
 				ThreadUtils.sleep(25);
 			}
 			phase.onPhaseExit();
@@ -270,31 +266,35 @@ public class Torrent implements Runnable {
 	 * @param data The bytes to be stored
 	 */
 	public void collectPiece(int index, int offset, byte[] data) {
-		addToHaltingOperations(1);
 		int blockIndex = offset / files.getBlockSize();
 
 		Piece piece = files.getPiece(index);
 		if (piece.getBlockSize(blockIndex) != data.length) {
-			piece.reset(blockIndex);
+			piece.setBlockStatus(blockIndex, BlockStatus.Needed);
 		} else {
-			addDiskJob(new DiskJobStoreBlock(index, blockIndex, data));
+			addDiskJob(new DiskJobWriteBlock(files.getPiece(index), blockIndex, data, this::onStoreBlockComplete));
 		}
 	}
 
-	public void addToHaltingOperations(int newTasks) {
-		for (int i = 0; i < newTasks; i++) {
-			torrentHaltingOperations.incrementAndGet();
+	private void onStoreBlockComplete(DiskJobWriteBlock storeBlock) {
+		Piece piece = storeBlock.getPiece();
+		piece.setBlockStatus(storeBlock.getBlockIndex(), BlockStatus.Stored);
+
+		if (!files.getPiece(piece.getIndex()).isDone()) {
+			return;
 		}
+
+		addDiskJob(new DiskJobCheckHash(piece, this::onCheckPieceHashComplete));
 	}
 
-
-	/**
-	 * Called by IOManager to notify the torrent that we processed the collectingPiece
-	 */
-	public void finishHaltingOperations(int completedTasks) {
-		for (int i = 0; i < completedTasks; i++) {
-			torrentHaltingOperations.decrementAndGet();
+	private void onCheckPieceHashComplete(DiskJobCheckHash checkJob) {
+		if (isDownloadingMetadata()) {
+			return;
 		}
+
+		// Why the heck is this here?!
+		files.havePiece(checkJob.getPiece().getIndex());
+		broadcastMessage(new MessageHave(checkJob.getPiece().getIndex()));
 	}
 
 	/**
@@ -302,7 +302,7 @@ public class Torrent implements Runnable {
 	 *
 	 * @param task The task to add
 	 */
-	public void addDiskJob(DiskJob task) {
+	public void addDiskJob(IDiskJob task) {
 		ioManager.addTask(task);
 	}
 
@@ -323,7 +323,7 @@ public class Torrent implements Runnable {
 			filter(p -> {
 				try {
 					return p.checkHash();
-				} catch (IOException | TorrentException e) {
+				} catch (IOException e) {
 					LOGGER.warn(String.format("Failed hash check for piece %d: %s", p.getIndex(), e.getMessage()));
 					return false;
 				}

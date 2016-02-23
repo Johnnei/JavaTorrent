@@ -5,60 +5,62 @@ public class Block {
 	/**
 	 * The index of this block within the piece
 	 */
-	private int index;
+	private final int index;
+
 	/**
 	 * The size of this block in bytes
 	 */
-	private int size;
-	/**
-	 * If this block has been requested
-	 */
-	private boolean requested;
-	/**
-	 * If this block has been stored on the hdd
-	 */
-	private boolean done;
+	private final int size;
 
+	/**
+	 * The status of this block
+	 */
+	private BlockStatus status;
+
+	/**
+	 * Creates a new block which is part of a {@link Piece}.
+	 * @param index The index within the owning piece.
+	 * @param size The size in bytes of this block.
+	 */
 	public Block(int index, int size) {
 		this.index = index;
 		this.size = size;
 	}
 
 	/**
-	 * Check if this block has been started
-	 * 
-	 * @return true if its either requested or done, else false
+	 * Updates the status of the block.
+	 * @param status The new status of this block.
 	 */
-	public boolean isStarted() {
-		return requested || done;
+	public void setStatus(BlockStatus status) {
+		this.status = status;
 	}
 
+	/**
+	 * Gets the current status of this block.
+	 * @return The status of this block.
+	 */
+	public BlockStatus getStatus() {
+		return status;
+	}
+
+	/**
+	 * Gets the amount of bytes expected for this block.
+	 * @return The amount of bytes for this block.
+	 */
 	public int getSize() {
 		return size;
 	}
 
-	public boolean isRequested() {
-		return requested;
-	}
-
-	public void setRequested(boolean requested) {
-		this.requested = requested;
-	}
-
-	public boolean isDone() {
-		return done;
-	}
-
-	public void setDone(boolean done) {
-		this.done = done;
-	}
-
+	/**
+	 * Gets the index of this block within the owning {@link Piece}
+	 * @return The index of this block.
+	 */
 	public int getIndex() {
 		return index;
 	}
 	
 	public String toString() {
-		return String.format("%s[index=%d, requested=%s, done=%s, size=%d]", getClass().getSimpleName(), index, requested, done, size);
+		return String.format("Block[index=%d, size=%d, status=%s]", index, size, status);
 	}
 
 }

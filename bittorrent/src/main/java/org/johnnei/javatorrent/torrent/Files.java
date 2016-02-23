@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
@@ -132,7 +133,7 @@ public class Files extends AFiles {
 		bitfield.havePiece(pieceIndex);
 		if (!pieces.get(pieceIndex).isDone()) {
 			for (int i = 0; i < pieces.get(pieceIndex).getBlockCount(); i++) {
-				pieces.get(pieceIndex).setDone(i);
+				pieces.get(pieceIndex).setBlockStatus(i, BlockStatus.Verified);
 			}
 		}
 	}
@@ -182,14 +183,14 @@ public class Files extends AFiles {
 	 * @param blockIndex The block index within the piece
 	 * @param byteOffset The offset within the block
 	 * @return The FileInfo for the given data
+	 * @throws IllegalArgumentException When information being requested is outside of this fileset.
 	 */
 	@Override
-	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) throws TorrentException {
-		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * BLOCK_SIZE) + byteOffset;
-
-		if (bytesStartPosition < 0) {
-			throw new TorrentException("Trying to find file for bytes with a negative byte start position.");
+	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
+		if (pieceIndex < 0 || blockIndex < 0 || byteOffset < 0) {
+			throw new IllegalArgumentException("pieceIndex, blockIndex and byteOffset must all be >= 0.");
 		}
+		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * BLOCK_SIZE) + byteOffset;
 
 		for (FileInfo fileInfo : fileInfos) {
 			// If the file started before or at the wanted byteStartPosition then that file contains the bytes
@@ -198,7 +199,7 @@ public class Files extends AFiles {
 			}
 		}
 
-		throw new TorrentException("Piece is not within any of the files");
+		throw new IllegalArgumentException("Piece is not within fileset.");
 	}
 
 	@Override

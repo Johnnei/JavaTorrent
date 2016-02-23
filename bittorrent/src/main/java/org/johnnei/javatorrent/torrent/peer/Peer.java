@@ -7,16 +7,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
-import org.johnnei.javatorrent.disk.DiskJob;
-import org.johnnei.javatorrent.disk.DiskJobSendBlock;
+import org.johnnei.javatorrent.disk.DiskJobReadBlock;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.utils.JMath;
 
 public class Peer implements Comparable<Peer> {
@@ -183,7 +185,7 @@ public class Peer implements Comparable<Peer> {
 	 *
 	 * @param i The count to add
 	 */
-	public synchronized void addToPendingMessages(int i) {
+	private synchronized void addToPendingMessages(int i) {
 		pendingMessages += i;
 	}
 
@@ -237,7 +239,7 @@ public class Peer implements Comparable<Peer> {
 		synchronized (this) {
 			if (getWorkQueueSize(PeerDirection.Download) > 0) {
 				for (Job job : myClient.getJobs()) {
-					torrent.getFiles().getPiece(job.getPieceIndex()).reset(job.getBlockIndex());
+					torrent.getFiles().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
 				}
 				myClient.clearJobs();
 			}
@@ -455,12 +457,15 @@ public class Peer implements Comparable<Peer> {
 		Job request = peerClient.popNextJob();
 		addToPendingMessages(1);
 
-		DiskJob sendBlock = new DiskJobSendBlock(this,
-				request.getPieceIndex(), request.getBlockIndex(),
-				request.getLength()
-		);
+		Piece piece = torrent.getFiles().getPiece(request.getPieceIndex());
+		torrent.addDiskJob(new DiskJobReadBlock(piece, request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
+	}
 
-		torrent.addDiskJob(sendBlock);
+	private void onReadBlockComplete(DiskJobReadBlock readJob) {
+		final byte[] data = readJob.getBlockData();
+		socket.enqueueMessage(new MessageBlock(readJob.getPiece().getIndex(), readJob.getOffset(), data));
+		addToPendingMessages(-1);
+		torrent.addUploadedBytes(data.length);
 	}
 
 }

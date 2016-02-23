@@ -34,7 +34,7 @@ public abstract class AFiles {
 	 * @param pieceIndex the index of the piece
 	 * @throws NoSuchElementException if the requested piece index is outside of the amount of pieces.
 	 */
-	public abstract void havePiece(int pieceIndex) throws NoSuchElementException;
+	public abstract void havePiece(int pieceIndex);
 
 	/**
 	 * Gets the FileInfo for the given piece and block
@@ -44,7 +44,7 @@ public abstract class AFiles {
 	 * @param blockDataOffset The offset within the block
 	 * @return The FileInfo for the given data
 	 */
-	public abstract FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) throws TorrentException;
+	public abstract FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset);
 
 	/**
 	 * Gets the piece with the given index

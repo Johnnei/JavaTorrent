@@ -6,13 +6,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.johnnei.javatorrent.torrent.TorrentException;
+import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.AFiles;
 import org.johnnei.javatorrent.torrent.FileInfo;
-import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.utils.JMath;
 
-public class Piece implements Comparable<Piece> {
+public class Piece {
 
 	/**
 	 * The files associated with this piece
@@ -53,7 +52,7 @@ public class Piece implements Comparable<Piece> {
 	public void hashFail() {
 		int tenPercent = JMath.ceilDivision(blocks.size(), 10);
 		for (int i = 0; i < tenPercent; i++) {
-			reset(hashFailCheck++);
+			blocks.get(hashFailCheck++).setStatus(BlockStatus.Needed);
 			if (hashFailCheck >= blocks.size()) {
 				hashFailCheck = 0;
 			}
@@ -61,24 +60,14 @@ public class Piece implements Comparable<Piece> {
 	}
 
 	/**
-	 * Resets a single block as unstarted
-	 *
-	 * @param blockIndex
-	 */
-	public void reset(int blockIndex) {
-		blocks.get(blockIndex).setDone(false);
-		blocks.get(blockIndex).setRequested(false);
-	}
-
-	/**
 	 * Loads a bit of data from the file but it is not strictly a block as I use it
 	 *
 	 * @param offset The offset in the piece
 	 * @param length The amount of bytes to read
-	 * @return The read bytes or an excpetion
-	 * @throws TorrentException
+	 * @return The read bytes or an exception
+	 * @throws IOException When the underlying IO causes an error.
 	 */
-	public byte[] loadPiece(int offset, int length) throws TorrentException, IOException {
+	public byte[] loadPiece(int offset, int length) throws IOException {
 		byte[] pieceData = new byte[length];
 
 		int readBytes = 0;
@@ -101,6 +90,7 @@ public class Piece implements Comparable<Piece> {
 
 			// Check if we don't read outside the file
 			if (offsetInFile < 0) {
+				// TODO Figure out why this exception can be thrown in the first place.
 				throw new IOException("Cannot seek to position: " + offsetInFile);
 			}
 
@@ -119,9 +109,8 @@ public class Piece implements Comparable<Piece> {
 	 * Checks if the received bytes hash matches with the hash which was given in the metadata
 	 *
 	 * @return hashMatched ? true : false
-	 * @throws TorrentException If the piece is not within any of the files in this torrent (Shouldn't occur)
 	 */
-	public boolean checkHash() throws TorrentException, IOException {
+	public boolean checkHash() throws IOException {
 		byte[] pieceData = loadPiece(0, getSize());
 		return Arrays.equals(expectedHash, SHA1.hash(pieceData));
 	}
@@ -131,9 +120,8 @@ public class Piece implements Comparable<Piece> {
 	 *
 	 * @param blockIndex The index of the block to write
 	 * @param blockData The data of the block
-	 * @throws Exception
 	 */
-	public void storeBlock(int blockIndex, byte[] blockData) throws TorrentException, IOException {
+	public void storeBlock(int blockIndex, byte[] blockData) throws IOException {
 		Block block = blocks.get(blockIndex);
 		int remainingBytesToWrite = block.getSize();
 		// Write Block
@@ -166,9 +154,6 @@ public class Piece implements Comparable<Piece> {
 				file.write(blockData, dataOffset, bytesToWrite);
 				remainingBytesToWrite -= bytesToWrite;
 			}
-
-			// Mark the block as done
-			block.setDone(true);
 		}
 	}
 
@@ -178,24 +163,33 @@ public class Piece implements Comparable<Piece> {
 	 * @return The remaining amount of bytes to finish this piece
 	 */
 	public long getRemainingBytes() {
-		return blocks.stream().filter(b -> !b.isDone()).mapToLong(Block::getSize).sum();
+		return blocks.stream().filter(b -> b.getStatus() != BlockStatus.Verified).mapToLong(Block::getSize).sum();
 	}
 
 	/**
-	 * Sets the block to done
-	 *
-	 * @param blockIndex
+	 * Updates the block status of the block at the given index.
+	 * @param blockIndex The index of the block.
+	 * @param blockStatus The new status of the block.
 	 */
-	public void setDone(int blockIndex) {
-		blocks.get(blockIndex).setDone(true);
+	public void setBlockStatus(int blockIndex, BlockStatus blockStatus) {
+		if (index < 0 || index >= blocks.size()) {
+			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
+		}
+
+		blocks.get(blockIndex).setStatus(blockStatus);
 	}
 
-	public boolean isRequested(int blockIndex) {
-		return blocks.get(blockIndex).isRequested();
-	}
+	/**
+	 * Gets the block status for the block at the given index
+	 * @param blockIndex The index of the block
+	 * @return The status of the given block.
+	 */
+	public BlockStatus getBlockStatus(int blockIndex) {
+		if (index < 0 || index >= blocks.size()) {
+			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
+		}
 
-	public boolean isDone(int blockIndex) {
-		return blocks.get(blockIndex).isDone();
+		return blocks.get(blockIndex).getStatus();
 	}
 
 	/**
@@ -204,7 +198,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return If this piece is completed
 	 */
 	public boolean isDone() {
-		return blocks.stream().allMatch(b -> b.isDone());
+		return blocks.stream().allMatch(b -> b.getStatus() == BlockStatus.Verified);
 	}
 
 	/**
@@ -213,28 +207,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return true if any progress is found
 	 */
 	public boolean isStarted() {
-		return blocks.stream().anyMatch(b -> b.isStarted());
-	}
-
-	@Override
-	public int compareTo(Piece p) {
-		int myValue = getCompareValue();
-		int theirValue = p.getCompareValue();
-
-		return myValue - theirValue;
-
-	}
-
-	private int getCompareValue() {
-		int value = 0;
-		for (Block block : blocks) {
-			if (block.isDone()) {
-				value += 2;
-			} else if (block.isRequested()) {
-				value += 1;
-			}
-		}
-		return value;
+		return blocks.stream().anyMatch(b -> b.getStatus() != BlockStatus.Needed);
 	}
 
 	/**
@@ -250,7 +223,7 @@ public class Piece implements Comparable<Piece> {
 	 * Gets the index of this Piece<br/>
 	 * The index is equal to the offset in the file divided by the default piece size
 	 *
-	 * @return
+	 * @return The index of the piece within the fileset.
 	 */
 	public int getIndex() {
 		return index;
@@ -271,7 +244,7 @@ public class Piece implements Comparable<Piece> {
 	 * @return block done count
 	 */
 	public int getDoneCount() {
-		return (int) blocks.stream().filter(p -> p.isDone()).count();
+		return (int) blocks.stream().filter(p -> p.getStatus() == BlockStatus.Verified).count();
 	}
 
 	/**
@@ -280,30 +253,32 @@ public class Piece implements Comparable<Piece> {
 	 * @return block requested count
 	 */
 	public int getRequestedCount() {
-		return (int) blocks.stream().filter(p -> p.isRequested() && !p.isDone()).count();
+		return (int) blocks.stream().filter(p -> p.getStatus() == BlockStatus.Requested || p.getStatus() == BlockStatus.Stored).count();
 	}
 
 	/**
 	 * Gets the amount of block requested including those who are done
 	 *
-	 * @return
+	 * @return The amount of blocks which are not on the status {@link BlockStatus#Needed}
 	 */
 	public int getTotalRequestedCount() {
-		return (int) blocks.stream().filter(p -> p.isRequested()).count();
+		return (int) blocks.stream().filter(p -> p.getStatus() != BlockStatus.Needed).count();
 	}
 
 	/**
 	 * Gets a new block to be requested
 	 *
 	 * @return an unrequested block
+	 *
+	 * TODO Rework to use Optional
 	 */
 	public Block getRequestBlock() {
-		Block block = blocks.stream().filter(p -> !p.isStarted()).findAny().orElse(null);
+		Block block = blocks.stream().filter(p -> p.getStatus() == BlockStatus.Needed).findAny().orElse(null);
 
 		if (block == null) {
 			return null;
 		} else {
-			block.setRequested(true);
+			block.setStatus(BlockStatus.Requested);
 			return block;
 		}
 	}

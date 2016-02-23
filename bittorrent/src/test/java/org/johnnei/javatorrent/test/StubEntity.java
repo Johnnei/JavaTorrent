@@ -6,11 +6,10 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.AFiles;
 import org.johnnei.javatorrent.torrent.FileInfo;
-import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
@@ -80,7 +79,7 @@ public class StubEntity {
 		}
 
 		@Override
-		public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) throws TorrentException {
+		public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) {
 			return null;
 		}
 

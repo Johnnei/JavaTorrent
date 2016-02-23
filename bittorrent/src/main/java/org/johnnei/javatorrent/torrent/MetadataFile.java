@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
 
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
 public class MetadataFile extends AFiles {
@@ -26,20 +26,20 @@ public class MetadataFile extends AFiles {
 	}
 
 	@Override
-	public boolean hasPiece(int pieceIndex) throws NoSuchElementException {
+	public boolean hasPiece(int pieceIndex) {
 		return pieces.get(pieceIndex).isDone();
 	}
 
 	@Override
-	public void havePiece(int pieceIndex) throws NoSuchElementException {
+	public void havePiece(int pieceIndex) {
 		Piece piece = pieces.get(pieceIndex);
 		for (int i = 0; i < piece.getBlockCount(); i++) {
-			piece.setDone(i);
+			piece.setBlockStatus(i, BlockStatus.Verified);
 		}
 	}
 
 	@Override
-	public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) throws TorrentException {
+	public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) {
 		return fileInfos.get(0);
 	}
 
