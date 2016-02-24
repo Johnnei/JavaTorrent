@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 
@@ -49,11 +50,20 @@ public class StubEntity {
 		return new AFilesStub(pieceCount);
 	}
 
+	public static AFiles stubAFiles(int pieceCount, FileInfo fileInfo) {
+		return new AFilesStub(pieceCount, fileInfo);
+	}
+
 	public static IPeerManager stubPeerManager() {
 		return new PeerManagerStub();
 	}
 
 	private static final class AFilesStub extends AFiles {
+
+		public AFilesStub(int pieceCount, FileInfo defaultFile) {
+			this(pieceCount);
+			fileInfos = Collections.singletonList(defaultFile);
+		}
 
 		public AFilesStub(int pieceCount) {
 			fileInfos = new ArrayList<>();
@@ -80,7 +90,7 @@ public class StubEntity {
 
 		@Override
 		public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) {
-			return null;
+			return fileInfos.get(0);
 		}
 
 		@Override

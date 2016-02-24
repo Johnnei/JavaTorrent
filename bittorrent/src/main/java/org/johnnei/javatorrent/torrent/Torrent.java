@@ -292,7 +292,12 @@ public class Torrent implements Runnable {
 			return;
 		}
 
-		// Why the heck is this here?!
+		Piece piece = checkJob.getPiece();
+		if (checkJob.isMatchingHash()) {
+			piece.hashFail();
+			return;
+		}
+
 		files.havePiece(checkJob.getPiece().getIndex());
 		broadcastMessage(new MessageHave(checkJob.getPiece().getIndex()));
 	}

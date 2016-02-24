@@ -4,9 +4,9 @@ import java.io.IOException;
 
 public interface IDiskJob {
 
-	int NORMAL = 0;
+	int NORMAL = 10;
 	int HIGH = 3;
-	int CRITICAL = 10;
+	int CRITICAL = 0;
 
 	/**
 	 * Processes the disk job

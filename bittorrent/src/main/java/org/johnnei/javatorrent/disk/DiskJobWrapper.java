@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.disk;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A wrapper around the {@link IDiskJob} which records the amount of tries and defines the priority.
  */
-public class DiskJobWrapper implements Comparable<DiskJobWrapper> {
+class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobWrapper.class);
 
@@ -17,7 +18,7 @@ public class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 	private int attempt;
 
 	public DiskJobWrapper(IDiskJob diskJob) {
-		this.diskJob = diskJob;
+		this.diskJob = Objects.requireNonNull(diskJob, "Can't wrap a null-job");
 	}
 
 	/**
@@ -41,5 +42,37 @@ public class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 	@Override
 	public int compareTo(DiskJobWrapper o) {
 		return diskJob.getPriority() - o.diskJob.getPriority();
+	}
+
+	/**
+	 * Tests this wrapper is wrapping the same job as the given object.
+	 * @param obj The object to compare to.
+	 * @return <code>true</code> when equal, otherwise <code>false</code>
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+
+		if (obj == this) {
+			return true;
+		}
+
+		if (!(obj instanceof DiskJobWrapper)) {
+			return false;
+		}
+
+		DiskJobWrapper other = (DiskJobWrapper) obj;
+
+		return Objects.equals(diskJob, other.diskJob);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int hashCode() {
+		return diskJob.hashCode();
 	}
 }

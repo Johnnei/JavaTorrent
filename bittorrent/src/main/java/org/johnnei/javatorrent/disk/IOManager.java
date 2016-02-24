@@ -32,7 +32,11 @@ public class IOManager {
 				task = taskQueue.remove();
 			}
 
-			task.process();
+			if (!task.process()) {
+				synchronized (this) {
+					taskQueue.add(task);
+				}
+			}
 		}
 	}
 
