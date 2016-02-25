@@ -6,7 +6,7 @@
   <version>0.05.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>JavaTorrent Parent POM</name>
-  <description>BitTorrent Protocol implementation as library and GUI</description>
+  <description>BitTorrent Protocol implementation as java library</description>
   <modules>
     <module>bittorrent</module>
     <module>bittorrent-extension</module>
