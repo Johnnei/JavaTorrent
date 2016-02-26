@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.download.algos;
 
+import java.util.Optional;
+
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
@@ -15,13 +17,13 @@ public class MetadataSelect implements IPieceSelector {
 	}
 
 	@Override
-	public Piece getPieceForPeer(Peer p) {
+	public Optional<Piece> getPieceForPeer(Peer p) {
 		Piece piece = torrent.getFiles().getPiece(0);
 		if (piece.hasBlockWithStatus(BlockStatus.Needed)) {
-			return piece;
+			return Optional.of(piece);
 		}
 
-		return null;
+		return Optional.empty();
 	}
 
 }
