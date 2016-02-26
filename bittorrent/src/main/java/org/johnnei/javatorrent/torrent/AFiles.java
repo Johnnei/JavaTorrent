@@ -133,7 +133,7 @@ public abstract class AFiles {
 	 * @return The amount of bytes still needed to be downloaded
 	 */
 	public long countRemainingBytes() {
-		return pieces.stream().mapToLong(Piece::getRemainingBytes).sum();
+		return pieces.stream().mapToLong(Piece::countRemainingBytes).sum();
 	}
 
 	/**

@@ -14,6 +14,7 @@ import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
 import org.johnnei.javatorrent.torrent.Files;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.Block;
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -45,21 +46,22 @@ public class PhaseMetadata extends AMetadataPhase {
 			if (piece == null) {
 				continue;
 			}
-			while (piece.getRequestedCount() < piece.getBlockCount() && peer.getFreeWorkTime() > 0) {
-				Block block = piece.getRequestBlock();
-				if (block == null) {
+			while (piece.hasBlockWithStatus(BlockStatus.Needed) && peer.getFreeWorkTime() > 0) {
+				Optional<Block> blockOptional = piece.getRequestBlock();
+				if (!blockOptional.isPresent()) {
 					break;
-				} else {
-					Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
-					if (!peerExtensions.isPresent()) {
-						LOGGER.warn("Attempted to send metadata request to peer which doesn't support metadata. ", peer);
-						continue;
-					}
-
-					IMessage message = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
-					peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
-					peer.getBitTorrentSocket().enqueueMessage(message);
 				}
+
+				Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
+				if (!peerExtensions.isPresent()) {
+					LOGGER.warn("Attempted to send metadata request to peer which doesn't support metadata. ", peer);
+					continue;
+				}
+
+				Block block = blockOptional.get();
+				IMessage message = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
+				peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
+				peer.getBitTorrentSocket().enqueueMessage(message);
 			}
 		}
 	}

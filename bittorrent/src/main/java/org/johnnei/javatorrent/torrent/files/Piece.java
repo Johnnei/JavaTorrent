@@ -5,6 +5,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.AFiles;
@@ -49,7 +50,7 @@ public class Piece {
 	/**
 	 * Drops ceil(10%) of the blocks in order to maintain speed and still try to *not* redownload the entire piece
 	 */
-	public void hashFail() {
+	public void onHashMismatch() {
 		int tenPercent = MathUtils.ceilDivision(blocks.size(), 10);
 		for (int i = 0; i < tenPercent; i++) {
 			blocks.get(hashFailCheck++).setStatus(BlockStatus.Needed);
@@ -79,7 +80,7 @@ public class Piece {
 			FileInfo outputFile = files.getFileForBytes(index, 0, alreadyReadOffset);
 
 			// Calculate offset as if the torrent was one file
-			long pieceIndexOffset = (index * files.getPieceSize());
+			long pieceIndexOffset = index * files.getPieceSize();
 			long totalOffset = pieceIndexOffset + alreadyReadOffset;
 
 			// Calculate the offset within the file
@@ -127,13 +128,13 @@ public class Piece {
 		// Write Block
 		while (remainingBytesToWrite > 0) {
 			// The offset within the block itself
-			int dataOffset = (block.getSize() - remainingBytesToWrite);
+			int dataOffset = block.getSize() - remainingBytesToWrite;
 			// Retrieve the file to which we need to write
 			FileInfo outputFile = files.getFileForBytes(index, blockIndex, dataOffset);
 
 			// Calculate the offset in bytes as if the torrent was one file
-			final long pieceOffset = (index * files.getPieceSize());
-			final long blockOffset = (blockIndex * files.getBlockSize());
+			final long pieceOffset = index * files.getPieceSize();
+			final long blockOffset = blockIndex * files.getBlockSize();
 			final long totalOffset = pieceOffset + blockOffset + dataOffset;
 
 			// Calculate the offset within the file
@@ -162,17 +163,18 @@ public class Piece {
 	 *
 	 * @return The remaining amount of bytes to finish this piece
 	 */
-	public long getRemainingBytes() {
+	public long countRemainingBytes() {
 		return blocks.stream().filter(b -> b.getStatus() != BlockStatus.Verified).mapToLong(Block::getSize).sum();
 	}
 
 	/**
 	 * Updates the block status of the block at the given index.
+	 *
 	 * @param blockIndex The index of the block.
 	 * @param blockStatus The new status of the block.
 	 */
 	public void setBlockStatus(int blockIndex, BlockStatus blockStatus) {
-		if (index < 0 || index >= blocks.size()) {
+		if (blockIndex < 0 || blockIndex >= blocks.size()) {
 			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
 		}
 
@@ -181,11 +183,12 @@ public class Piece {
 
 	/**
 	 * Gets the block status for the block at the given index
+	 *
 	 * @param blockIndex The index of the block
 	 * @return The status of the given block.
 	 */
 	public BlockStatus getBlockStatus(int blockIndex) {
-		if (index < 0 || index >= blocks.size()) {
+		if (blockIndex < 0 || blockIndex >= blocks.size()) {
 			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
 		}
 
@@ -238,49 +241,33 @@ public class Piece {
 		return blocks.stream().mapToInt(Block::getSize).sum();
 	}
 
-	/**
-	 * Gets the amount of blocks done
-	 *
-	 * @return block done count
-	 */
-	public int getDoneCount() {
-		return (int) blocks.stream().filter(p -> p.getStatus() == BlockStatus.Verified).count();
+	public int countBlocksWithStatus(BlockStatus status) {
+		return (int) blocks.stream().filter(block -> block.getStatus() == status).count();
 	}
 
 	/**
-	 * Gets the amount of block requested
+	 * Tests if any of the blocks have the given status.
 	 *
-	 * @return block requested count
+	 * @param status The status expected
+	 * @return returns <code>true</code> when at least 1 block has the given status, othwise <code>false</code>
 	 */
-	public int getRequestedCount() {
-		return (int) blocks.stream().filter(p -> p.getStatus() == BlockStatus.Requested || p.getStatus() == BlockStatus.Stored).count();
-	}
-
-	/**
-	 * Gets the amount of block requested including those who are done
-	 *
-	 * @return The amount of blocks which are not on the status {@link BlockStatus#Needed}
-	 */
-	public int getTotalRequestedCount() {
-		return (int) blocks.stream().filter(p -> p.getStatus() != BlockStatus.Needed).count();
+	public boolean hasBlockWithStatus(BlockStatus status) {
+		return blocks.stream().anyMatch(block -> block.getStatus() == status);
 	}
 
 	/**
 	 * Gets a new block to be requested
 	 *
 	 * @return an unrequested block
-	 *
-	 * TODO Rework to use Optional
 	 */
-	public Block getRequestBlock() {
-		Block block = blocks.stream().filter(p -> p.getStatus() == BlockStatus.Needed).findAny().orElse(null);
+	public Optional<Block> getRequestBlock() {
+		Optional<Block> block = blocks.stream().filter(p -> p.getStatus() == BlockStatus.Needed).findAny();
 
-		if (block == null) {
-			return null;
-		} else {
-			block.setStatus(BlockStatus.Requested);
-			return block;
+		if (block.isPresent()) {
+			block.get().setStatus(BlockStatus.Requested);
 		}
+
+		return block;
 	}
 
 	/**
@@ -290,6 +277,10 @@ public class Piece {
 	 * @return Size of the block in bytes
 	 */
 	public int getBlockSize(int blockIndex) {
+		if (blockIndex < 0 || blockIndex >= blocks.size()) {
+			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
+		}
+
 		return blocks.get(blockIndex).getSize();
 	}
 

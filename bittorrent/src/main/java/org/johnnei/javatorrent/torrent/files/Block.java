@@ -25,6 +25,7 @@ public class Block {
 	public Block(int index, int size) {
 		this.index = index;
 		this.size = size;
+		this.status = BlockStatus.Needed;
 	}
 
 	/**
@@ -58,7 +59,7 @@ public class Block {
 	public int getIndex() {
 		return index;
 	}
-	
+
 	public String toString() {
 		return String.format("Block[index=%d, size=%d, status=%s]", index, size, status);
 	}

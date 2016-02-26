@@ -294,7 +294,7 @@ public class Torrent implements Runnable {
 
 		Piece piece = checkJob.getPiece();
 		if (checkJob.isMatchingHash()) {
-			piece.hashFail();
+			piece.onHashMismatch();
 			return;
 		}
 

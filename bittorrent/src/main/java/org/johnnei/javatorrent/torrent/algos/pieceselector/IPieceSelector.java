@@ -11,6 +11,6 @@ public interface IPieceSelector {
 	 *
 	 * @return The piece info of the next piece to download or <b>null</b> if no next piece is available
 	 */
-	public Piece getPieceForPeer(Peer p);
+	Piece getPieceForPeer(Peer p);
 
 }
