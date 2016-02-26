@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.junit.Test;
 
+import static org.johnnei.javatorrent.test.TestUtils.assertEqualityMethods;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -85,6 +86,15 @@ public class PieceTest {
 			assertEquals("Incorrect status for expected piece to be reset", BlockStatus.Needed, piece.getBlockStatus(i));
 			piece.setBlockStatus(i, BlockStatus.Verified);
 		}
+	}
+
+	@Test
+	public void testToStringAndEqualsAndHashcode() {
+		Piece pieceOne = new Piece(null, new byte[20], 0, 50, 5);
+		Piece pieceTwo = new Piece(null, new byte[20], 0, 50, 5);
+		Piece pieceThree = new Piece(null, new byte[20], 1, 50, 5);
+		assertTrue("Incorrect toString start", pieceOne.toString().startsWith("Piece["));
+		assertEqualityMethods(pieceOne, pieceTwo, pieceThree);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

@@ -40,10 +40,12 @@ public class PhaseData implements IDownloadPhase {
 	@Override
 	public void process() {
 		for (Peer peer : torrent.getRelevantPeers()) {
-			Piece piece = torrent.getDownloadRegulator().getPieceForPeer(peer);
-			if (piece == null) {
+			Optional<Piece> pieceOptional = torrent.getDownloadRegulator().getPieceForPeer(peer);
+			if (!pieceOptional.isPresent()) {
 				continue;
 			}
+
+			Piece piece = pieceOptional.get();
 			while (piece.hasBlockWithStatus(BlockStatus.Needed) && peer.getFreeWorkTime() > 0) {
 				Optional<Block> blockOptional = piece.getRequestBlock();
 				if (!blockOptional.isPresent()) {

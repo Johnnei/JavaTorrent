@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.algos.pieceselector;
 
+import java.util.Optional;
+
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -11,6 +13,6 @@ public interface IPieceSelector {
 	 *
 	 * @return The piece info of the next piece to download or <b>null</b> if no next piece is available
 	 */
-	Piece getPieceForPeer(Peer p);
+	Optional<Piece> getPieceForPeer(Peer p);
 
 }

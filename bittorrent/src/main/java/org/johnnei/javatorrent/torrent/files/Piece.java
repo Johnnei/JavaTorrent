@@ -5,12 +5,14 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.AFiles;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.utils.MathUtils;
+import org.johnnei.javatorrent.utils.StringUtils;
 
 public class Piece {
 
@@ -284,6 +286,44 @@ public class Piece {
 		}
 
 		return blocks.get(blockIndex).getSize();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+
+		if (obj == this) {
+			return true;
+		}
+
+		if (!(obj instanceof Piece)) {
+			return false;
+		}
+
+		Piece other = (Piece) obj;
+
+		return index == other.index;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int hashCode() {
+		return Objects.hash(index);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		return String.format("Piece[index=%d, hash=%s]", index, StringUtils.byteArrayToString(expectedHash));
 	}
 
 }
