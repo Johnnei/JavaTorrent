@@ -14,6 +14,8 @@ import org.johnnei.javatorrent.utils.MathUtils;
 
 public class Piece {
 
+	private static final String ERR_BLOCK_IS_NOT_WITHIN_PIECE = "Block %d is not within the %d blocks of %s";
+
 	/**
 	 * The files associated with this piece
 	 */
@@ -134,7 +136,7 @@ public class Piece {
 
 			// Calculate the offset in bytes as if the torrent was one file
 			final long pieceOffset = index * files.getPieceSize();
-			final long blockOffset = blockIndex * files.getBlockSize();
+			final long blockOffset = (long) blockIndex * files.getBlockSize();
 			final long totalOffset = pieceOffset + blockOffset + dataOffset;
 
 			// Calculate the offset within the file
@@ -175,7 +177,7 @@ public class Piece {
 	 */
 	public void setBlockStatus(int blockIndex, BlockStatus blockStatus) {
 		if (blockIndex < 0 || blockIndex >= blocks.size()) {
-			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
+			throw new IllegalArgumentException(String.format(ERR_BLOCK_IS_NOT_WITHIN_PIECE, blockIndex, blocks.size(), this));
 		}
 
 		blocks.get(blockIndex).setStatus(blockStatus);
@@ -189,7 +191,7 @@ public class Piece {
 	 */
 	public BlockStatus getBlockStatus(int blockIndex) {
 		if (blockIndex < 0 || blockIndex >= blocks.size()) {
-			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
+			throw new IllegalArgumentException(String.format(ERR_BLOCK_IS_NOT_WITHIN_PIECE, blockIndex, blocks.size(), this));
 		}
 
 		return blocks.get(blockIndex).getStatus();
@@ -278,7 +280,7 @@ public class Piece {
 	 */
 	public int getBlockSize(int blockIndex) {
 		if (blockIndex < 0 || blockIndex >= blocks.size()) {
-			throw new IllegalArgumentException(String.format("Block %d is not within the %d blocks of %s", blockIndex, blocks.size(), this));
+			throw new IllegalArgumentException(String.format(ERR_BLOCK_IS_NOT_WITHIN_PIECE, blockIndex, blocks.size(), this));
 		}
 
 		return blocks.get(blockIndex).getSize();
