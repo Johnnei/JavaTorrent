@@ -281,6 +281,7 @@ public class BitTorrentSocket {
 
 		int availableBytes = Math.min(remainingBytes, inStream.available());
 		buffer.write(inStream.readByteArray(availableBytes));
+		lastActivity = LocalDateTime.now(clock);
 
 		return bufferSize - buffer.size() == 0;
 	}

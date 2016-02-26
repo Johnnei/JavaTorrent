@@ -3,6 +3,10 @@ package org.johnnei.javatorrent.utils;
 
 public class StringUtils {
 
+	private StringUtils() {
+		/* No util classes for you! */
+	}
+
 	public static String byteArrayToString(byte[] array) {
 		StringBuilder stringBuilder = new StringBuilder();
 		for (byte b : array) {

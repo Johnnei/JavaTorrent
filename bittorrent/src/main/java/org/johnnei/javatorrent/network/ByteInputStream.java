@@ -11,11 +11,6 @@ public class ByteInputStream extends DataInputStream {
 	 */
 	private int speed;
 	
-	/**
-	 * The timestamp of the last time we've succesfully read a byte.
-	 */
-	private long lastActivity;
-
 	public ByteInputStream(InputStream in) {
 		super(in);
 		speed = 0;
@@ -26,7 +21,6 @@ public class ByteInputStream extends DataInputStream {
 		int b = super.read();
 		if (b != -1) {
 			++speed;
-			lastActivity = System.currentTimeMillis();
 		}
 		return b;
 	}
@@ -38,10 +32,6 @@ public class ByteInputStream extends DataInputStream {
 			length--;
 		}
 		return s;
-	}
-
-	public String readString() throws IOException {
-		return readString(read());
 	}
 
 	public byte[] readByteArray(int length) throws IOException {
@@ -58,14 +48,6 @@ public class ByteInputStream extends DataInputStream {
 
 	public void reset(int downloadRate) {
 		speed -= downloadRate;
-	}
-
-	/**
-	 * Gets the timestamp at which the last byte has been read
-	 * @return
-	 */
-	public long getLastActivity() {
-		return lastActivity;
 	}
 
 }

@@ -2,8 +2,6 @@ package org.johnnei.javatorrent.torrent.util.tree;
 
 import java.util.Iterator;
 
-import org.johnnei.javatorrent.utils.JMath;
-
 
 /**
  * A BinarySearchTree which expect small classes to identify each object in the tree<br/>
@@ -120,7 +118,7 @@ public class BinarySearchTree<T extends Comparable<T>> implements Iterable<T> {
 			return true;
 		int leftHeight = root.getLeftNodeHeight();
 		int rightHeight = root.getRightNodeHeight();
-		return JMath.diff(leftHeight, rightHeight) < 2;
+		return Math.abs(leftHeight - rightHeight) < 2;
 	}
 
 	public boolean isEmpty() {

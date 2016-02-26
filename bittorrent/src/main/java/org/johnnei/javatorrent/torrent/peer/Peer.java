@@ -19,7 +19,7 @@ import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.utils.JMath;
+import org.johnnei.javatorrent.utils.MathUtils;
 
 public class Peer implements Comparable<Peer> {
 
@@ -92,7 +92,7 @@ public class Peer implements Comparable<Peer> {
 		clientName = "pending";
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFiles() != null) {
-			haveState = new Bitfield(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+			haveState = new Bitfield(MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8));
 		} else {
 			haveState = new Bitfield(0);
 		}
@@ -215,7 +215,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public void onTorrentPhaseChange() {
 		if (torrent.isDownloadingMetadata()) {
-			haveState.setSize(JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+			haveState.setSize(MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8));
 		}
 	}
 

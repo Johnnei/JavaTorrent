@@ -9,7 +9,7 @@ import java.util.List;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.AFiles;
 import org.johnnei.javatorrent.torrent.FileInfo;
-import org.johnnei.javatorrent.utils.JMath;
+import org.johnnei.javatorrent.utils.MathUtils;
 
 public class Piece {
 
@@ -36,7 +36,7 @@ public class Piece {
 		this.index = index;
 		this.files = files;
 		this.expectedHash = hash;
-		blocks = new ArrayList<>(JMath.ceilDivision(pieceSize, blockSize));
+		blocks = new ArrayList<>(MathUtils.ceilDivision(pieceSize, blockSize));
 		int blockIndex = 0;
 		while (pieceSize > 0) {
 			Block block = new Block(blockIndex, Math.min(blockSize, pieceSize));
@@ -50,7 +50,7 @@ public class Piece {
 	 * Drops ceil(10%) of the blocks in order to maintain speed and still try to *not* redownload the entire piece
 	 */
 	public void hashFail() {
-		int tenPercent = JMath.ceilDivision(blocks.size(), 10);
+		int tenPercent = MathUtils.ceilDivision(blocks.size(), 10);
 		for (int i = 0; i < tenPercent; i++) {
 			blocks.get(hashFailCheck++).setStatus(BlockStatus.Needed);
 			if (hashFailCheck >= blocks.size()) {

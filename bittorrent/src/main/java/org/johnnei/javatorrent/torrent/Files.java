@@ -13,7 +13,7 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.network.ByteInputStream;
-import org.johnnei.javatorrent.utils.JMath;
+import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
 import org.slf4j.Logger;
@@ -82,7 +82,7 @@ public class Files extends AFiles {
 				} else {
 					fileName = (String) fileStructure.get(0);
 				}
-				int pieceCount = (int) JMath.ceilDivision(fileSize, pieceSize);
+				int pieceCount = (int) MathUtils.ceilDivision(fileSize, pieceSize);
 				if (remainingSize % pieceSize != 0 && fileSize >= pieceSize) {
 					pieceCount++;
 				}
@@ -94,7 +94,7 @@ public class Files extends AFiles {
 			fileInfos = new ArrayList<>(1);
 			String filename = (String) dictionary.get("name");
 			long fileSize = getNumberFromDictionary(dictionary.get("length"));
-			fileInfos.add(new FileInfo(fileSize, remainingSize, getFile(filename), (int) JMath.ceilDivision(fileSize, pieceSize)));
+			fileInfos.add(new FileInfo(fileSize, remainingSize, getFile(filename), (int) MathUtils.ceilDivision(fileSize, pieceSize)));
 			remainingSize += fileSize;
 		}
 		String pieceHashes = (String) dictionary.get("pieces");

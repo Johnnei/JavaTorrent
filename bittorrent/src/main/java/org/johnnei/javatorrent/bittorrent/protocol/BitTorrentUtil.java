@@ -7,7 +7,7 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
-import org.johnnei.javatorrent.utils.JMath;
+import org.johnnei.javatorrent.utils.MathUtils;
 
 public class BitTorrentUtil {
 
@@ -33,7 +33,7 @@ public class BitTorrentUtil {
 			return;
 		}
 
-		if (JMath.ceilDivision(torrent.getFiles().getPieceCount(), 8) + 1 < 5 * files.countCompletedPieces()) {
+		if (MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8) + 1 < 5 * files.countCompletedPieces()) {
 			peer.getBitTorrentSocket().enqueueMessage(new MessageBitfield(files.getBitfieldBytes()));
 		} else {
 			for (int pieceIndex = 0; pieceIndex < torrent.getFiles().getPieceCount(); pieceIndex++) {

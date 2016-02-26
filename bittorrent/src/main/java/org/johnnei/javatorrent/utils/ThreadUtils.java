@@ -41,16 +41,4 @@ public class ThreadUtils {
 		}
 	}
 
-	/**
-	 * @param waitObject
-	 *
-	 * @deprecated Replaced by {@link Condition#signalAll()()}
-	 */
-	@Deprecated
-	public static void notifyAll(Object waitObject) {
-		synchronized (waitObject) {
-			waitObject.notifyAll();
-		}
-	}
-
 }
