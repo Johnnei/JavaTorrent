@@ -3,7 +3,7 @@ package org.johnnei.javatorrent.network.socket;
 import java.io.IOException;
 
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.TorrentManager;
+import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 import org.johnnei.javatorrent.network.BitTorrentSocket;

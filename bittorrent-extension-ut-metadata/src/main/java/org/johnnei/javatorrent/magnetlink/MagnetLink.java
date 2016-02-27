@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.magnetlink;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -125,10 +126,13 @@ public class MagnetLink {
 		if (torrent == null) {
 			torrentBuilder.setChokingStrategy(new PermissiveStrategy());
 			torrent = torrentBuilder.build();
-			trackerUrls.stream().forEach(url -> torrentClient.getTrackerManager().addTorrent(torrent, url));
 		}
 
 		return torrent;
+	}
+
+	public Collection<String> getTrackerUrls() {
+		return Collections.unmodifiableCollection(trackerUrls);
 	}
 
 	public boolean isDownloadable() {

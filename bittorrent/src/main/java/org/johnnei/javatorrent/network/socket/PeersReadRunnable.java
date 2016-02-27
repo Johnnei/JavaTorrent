@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.TorrentManager;
+import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.utils.ThreadUtils;

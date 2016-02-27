@@ -45,7 +45,7 @@ public class UdpTrackerModule implements IModule {
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws Exception {
 		socket = new UdpTrackerSocket.Builder()
-				.setTrackerManager(torrentClient.getTrackerManager())
+				.setTorrentClient(torrentClient)
 				.setSocketPort(trackerPort)
 				.build();
 		Thread thread = new Thread(socket, "UdpTracker Worker Thread");

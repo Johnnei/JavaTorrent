@@ -1,15 +1,13 @@
-package org.johnnei.javatorrent.tracker;
+package org.johnnei.javatorrent.internal.tracker;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.johnnei.javatorrent.Version;
-import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
 
 /**
  * Managers the trackers which are used to collect {@link Peer}s for {@link Torrent}s
@@ -20,32 +18,12 @@ public class TrackerManager {
 
 	private final TrackerFactory trackerFactory;
 
-	private byte[] peerId;
-
 	private IPeerConnector peerConnector;
-
-	private AtomicInteger transactionId;
 
 	public TrackerManager(IPeerConnector peerConnector, TrackerFactory trackerFactory) {
 		this.trackerFactory = trackerFactory;
 		this.peerConnector = peerConnector;
 
-		Random random = new Random();
-		transactionId = new AtomicInteger(random.nextInt());
-
-		char[] version = Version.BUILD.split(" ")[1].replace(".", "").toCharArray();
-		peerId = new byte[20];
-		peerId[0] = '-';
-		peerId[1] = 'J';
-		peerId[2] = 'T';
-		peerId[3] = (byte) version[0];
-		peerId[4] = (byte) version[1];
-		peerId[5] = (byte) version[2];
-		peerId[6] = (byte) version[3];
-		peerId[7] = '-';
-		for (int i = 8; i < peerId.length; i++) {
-			peerId[i] = (byte) (random.nextInt() & 0xFF);
-		}
 	}
 
 	/**
@@ -60,7 +38,7 @@ public class TrackerManager {
 	 * Adds the torrent to the tracker and registers the tracker.
 	 * If the tracker cannot be resolved this call will have no side-effects.
 	 * @param torrent The torrent to add
-	 * @param tracker The tracker url
+	 * @param trackerUrl The tracker url
 	 */
 	public void addTorrent(Torrent torrent, String trackerUrl) {
 		final Optional<ITracker> tracker = getTrackerFor(trackerUrl);
@@ -73,17 +51,18 @@ public class TrackerManager {
 
 	/**
 	 * Gets the tracker from the list or adds the given tracker
-	 * @param tracker The tracker to find
+	 * @param trackerUrl The tracker to find
 	 * @return the tracker
 	 */
 	private Optional<ITracker> getTrackerFor(String trackerUrl) {
 		return trackerFactory.getTrackerFor(trackerUrl);
 	}
 
-	public int createUniqueTransactionId() {
-		return transactionId.incrementAndGet();
-	}
-
+	/**
+	 * Calculates how many connections are assigned to the torrent but haven't passed the BitTorrent handshake yet.
+	 * @param torrent The torrent for which connections must be counted.
+	 * @return The amount of pending peers.
+	 */
 	public int getConnectingCountFor(Torrent torrent) {
 		return peerConnector.getConnectingCountFor(torrent);
 	}
@@ -95,15 +74,6 @@ public class TrackerManager {
 	 */
 	public List<ITracker> getTrackersFor(Torrent torrent) {
 		return trackerFactory.getTrackingsHavingTorrent(torrent);
-	}
-
-	/**
-	 * Gets the peer ID associated to this tracker manager
-	 *
-	 * @return
-	 */
-	public byte[] getPeerId() {
-		return peerId;
 	}
 
 }

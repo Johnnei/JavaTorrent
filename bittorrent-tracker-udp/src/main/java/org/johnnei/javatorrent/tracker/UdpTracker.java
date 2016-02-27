@@ -205,7 +205,7 @@ public class UdpTracker implements ITracker {
 			return;
 		}
 
-		trackerSocket.submitRequest(this, new AnnounceRequest(torrentInfo, torrentClient.getTrackerManager().getPeerId(), torrentClient.getDownloadPort()));
+		trackerSocket.submitRequest(this, new AnnounceRequest(torrentInfo, torrentClient.getPeerId(), torrentClient.getDownloadPort()));
 	}
 
 	/**

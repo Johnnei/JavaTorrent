@@ -15,7 +15,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

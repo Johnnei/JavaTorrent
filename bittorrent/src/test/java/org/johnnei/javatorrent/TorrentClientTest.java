@@ -2,18 +2,20 @@ package org.johnnei.javatorrent;
 
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 
-import org.johnnei.javatorrent.module.IModule;
-import org.johnnei.javatorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.module.IModule;
+import org.johnnei.javatorrent.network.ConnectionDegradation;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
-import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -22,6 +24,7 @@ import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(EasyMockRunner.class)
@@ -46,6 +49,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		expect(moduleMock.getRelatedBep()).andReturn(3);
 		moduleMock.configureTorrentClient(same(builder));
 		moduleMock.onBuild(notNull());
+		torrentMock.start();
 
 		replayAll();
 		TorrentClient torrentClient = builder
@@ -60,7 +64,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setDownloadPort(27960)
 				.build();
 
-		torrentClient.getTrackerManager().addTorrent(torrentMock, "udp://localhost:80");
+		torrentClient.download(torrentMock, Collections.singleton("udp://localhost:80"));
 		verifyAll();
 
 		assertEquals("Incorrect connection degradation instance", connectionDegradationMock, torrentClient.getConnectionDegradation());
@@ -76,6 +80,12 @@ public class TorrentClientTest extends EasyMockSupport {
 		}
 
 		assertNotNull("Missing message: 15", torrentClient.getMessageFactory().createById(15));
+		byte[] peerId = torrentClient.getPeerId();
+
+		// Assert that the peer id is in format: -JTdddd-xxxxxxxxxxxx
+		// The first 8 bytes are always readable ASCII characters.
+		String clientIdentifier = new String(peerId, 0, 8);
+		Assert.assertTrue("Incorrect client identifier in peer ID", Pattern.matches("-JT\\d{4}-", clientIdentifier));
 	}
 
 	@Test(expected = IllegalStateException.class)
@@ -151,5 +161,30 @@ public class TorrentClientTest extends EasyMockSupport {
 		};
 		assertEquals("Incorrect amount of extension byes", 8, extensionBytes.length);
 		assertArrayEquals("Extension bit didn't get enabled correctly", expectedBytes, extensionBytes);
+	}
+
+	@Test
+	public void testCreateUniqueTransactionId() throws Exception {
+		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
+		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
+		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		IPeerManager peerManagerMock = createMock(IPeerManager.class);
+		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+
+		replayAll();
+
+		TorrentClient cut = new TorrentClient.Builder()
+				.setConnectionDegradation(connectionDegradationMock)
+				.setPhaseRegulator(phaseRegulatorMock)
+				.setExecutorService(executorServiceMock)
+				.setPeerManager(peerManagerMock)
+				.setPeerConnector((t) -> peerConnectorMock)
+				.registerTrackerProtocol("udp", (url, client) -> null)
+				.build();
+
+		int id = cut.createUniqueTransactionId();
+		int id2 = cut.createUniqueTransactionId();
+
+		assertNotEquals("Duplicate transaction IDs", id, id2);
 	}
 }

@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent;
+package org.johnnei.javatorrent.internal.torrent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.PeerConnectionAccepter;
 import org.johnnei.javatorrent.network.socket.PeersReadRunnable;
 import org.johnnei.javatorrent.network.socket.PeersWriterRunnable;
-import org.johnnei.javatorrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.Torrent;
 
 public class TorrentManager {
 
@@ -45,9 +45,8 @@ public class TorrentManager {
 
 	/**
 	 * Starts the connnection listener which will accept new peers
-	 * @param trackerManager the tracker manager which will assign the peers
 	 */
-	public void startListener(TrackerManager trackerManager) {
+	public void startListener() {
 		if (connectorThread != null && connectorThread.isAlive()) {
 			return;
 		}

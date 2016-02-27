@@ -9,19 +9,13 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentUtil;
 import org.johnnei.javatorrent.network.socket.TcpSocket;
-import org.johnnei.javatorrent.torrent.TorrentManager;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
 public class PeerConnectionAccepter extends Thread {
 
 	private final TorrentClient torrentClient;
-
-	private final TorrentManager torrentManager;
-
-	private final TrackerManager trackerManager;
 
 	private ServerSocket serverSocket;
 
@@ -30,8 +24,6 @@ public class PeerConnectionAccepter extends Thread {
 		super("Peer connector");
 		setDaemon(true);
 		this.torrentClient = torrentClient;
-		this.torrentManager = torrentClient.getTorrentManager();
-		this.trackerManager = torrentClient.getTrackerManager();
 		serverSocket = new ServerSocket(torrentClient.getDownloadPort());
 	}
 
@@ -54,7 +46,7 @@ public class PeerConnectionAccepter extends Thread {
 
 				BitTorrentHandshake handshake = peerSocket.readHandshake();
 
-				Optional<Torrent> torrent = torrentManager.getTorrent(handshake.getTorrentHash());
+				Optional<Torrent> torrent = torrentClient.getTorrentByHash(handshake.getTorrentHash());
 				if (!torrent.isPresent()) {
 					// We don't know the torrent the peer is downloading
 					peerSocket.close();
@@ -62,7 +54,7 @@ public class PeerConnectionAccepter extends Thread {
 				}
 
 				Peer peer = new Peer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes());
-				peerSocket.sendHandshake(torrentClient.getExtensionBytes(), trackerManager.getPeerId(), torrent.get().getHashArray());
+				peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getHashArray());
 				BitTorrentUtil.onPostHandshake(peer);
 			} catch (IOException e) {
 			}

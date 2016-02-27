@@ -147,7 +147,6 @@ public class Torrent implements Runnable {
 	 * Registers the torrent and starts downloading it
 	 */
 	public void start() {
-		torrentClient.getTorrentManager().addTorrent(this);
 		thread.start();
 	}
 

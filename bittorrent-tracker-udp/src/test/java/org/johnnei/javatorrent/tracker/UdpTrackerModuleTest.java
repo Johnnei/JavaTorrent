@@ -1,5 +1,20 @@
 package org.johnnei.javatorrent.tracker;
 
+import java.net.DatagramSocket;
+
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
+import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
+import org.johnnei.javatorrent.test.Whitebox;
+import org.johnnei.javatorrent.utils.CheckedBiFunction;
+
+import org.easymock.Capture;
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import static org.easymock.EasyMock.and;
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.eq;
@@ -7,20 +22,6 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.newCapture;
 import static org.easymock.EasyMock.notNull;
 import static org.junit.Assert.assertEquals;
-
-import java.net.DatagramSocket;
-
-import org.easymock.Capture;
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
-import org.johnnei.javatorrent.test.Whitebox;
-import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
-import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
-import org.johnnei.javatorrent.utils.CheckedBiFunction;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @RunWith(EasyMockRunner.class)
 public class UdpTrackerModuleTest extends EasyMockSupport {
@@ -57,8 +58,6 @@ public class UdpTrackerModuleTest extends EasyMockSupport {
 				.build();
 
 		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		TrackerManager trackerManager = createMock(TrackerManager.class);
-		expect(torrentClientMock.getTrackerManager()).andStubReturn(trackerManager);
 		replayAll();
 
 		cut.onBuild(torrentClientMock);

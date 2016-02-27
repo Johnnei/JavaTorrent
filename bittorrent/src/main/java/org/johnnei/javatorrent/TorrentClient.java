@@ -3,24 +3,30 @@ package org.johnnei.javatorrent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.johnnei.javatorrent.module.IModule;
-import org.johnnei.javatorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.network.ConnectionDegradation;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
-import org.johnnei.javatorrent.torrent.TorrentManager;
-import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
-import org.johnnei.javatorrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
-import org.johnnei.javatorrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.module.IModule;
+import org.johnnei.javatorrent.network.ConnectionDegradation;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.internal.torrent.TorrentManager;
+import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +58,10 @@ public class TorrentClient {
 
 	private final byte[] extensionBytes;
 
+	private final byte[] peerId;
+
+	private AtomicInteger transactionId;
+
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
@@ -79,10 +89,70 @@ public class TorrentClient {
 
 		downloadPort = builder.downloadPort;
 		extensionBytes = builder.extensionBytes;
+		peerId = createPeerId();
+		transactionId = new AtomicInteger(new Random().nextInt());
+
+		torrentManager.startListener();
 	}
 
-	public void start() {
-		torrentManager.startListener(trackerManager);
+	private byte[] createPeerId() {
+		char[] version = Version.BUILD.split(" ")[1].replace(".", "").toCharArray();
+		byte[] peerId = new byte[20];
+		peerId[0] = '-';
+		peerId[1] = 'J';
+		peerId[2] = 'T';
+		peerId[3] = (byte) version[0];
+		peerId[4] = (byte) version[1];
+		peerId[5] = (byte) version[2];
+		peerId[6] = (byte) version[3];
+		peerId[7] = '-';
+
+		Random random = new Random();
+		for (int i = 8; i < peerId.length; i++) {
+			peerId[i] = (byte) (random.nextInt() & 0xFF);
+		}
+		return peerId;
+	}
+
+	/**
+	 * Initiates the downloading of a torrent.
+	 * @param torrent The torrent to download.
+	 * @param trackerUrls The trackers which are known for this torrent.
+	 */
+	public void download(Torrent torrent, Collection<String> trackerUrls) {
+		trackerUrls.forEach(url -> trackerManager.addTorrent(torrent, url));
+		download(torrent);
+	}
+
+	/**
+	 * Initiates the downloading of a torrent.
+	 * @param torrent The torrent to download.
+	 */
+	public void download(Torrent torrent) {
+		torrentManager.addTorrent(torrent);
+		torrent.start();
+	}
+
+	public int createUniqueTransactionId() {
+		return transactionId.incrementAndGet();
+	}
+
+	/**
+	 * Calculates how many connections are assigned to the torrent but haven't passed the BitTorrent handshake yet.
+	 * @param torrent The torrent for which connections must be counted.
+	 * @return The amount of pending peers.
+	 */
+	public int getConnectingCountFor(Torrent torrent) {
+		return trackerManager.getConnectingCountFor(torrent);
+	}
+
+	/**
+	 * Gets all trackers which know the given torrent
+	 * @param torrent the torrent which the tracker must support
+	 * @return a collection of trackers which support the given torrent
+	 */
+	public List<ITracker> getTrackersFor(Torrent torrent) {
+		return trackerManager.getTrackersFor(torrent);
 	}
 
 	/**
@@ -101,21 +171,9 @@ public class TorrentClient {
 		return connectionDegradation;
 	}
 
-	public TorrentManager getTorrentManager() {
-		return torrentManager;
-	}
-
-	/**
-	 * Gets the {@link TrackerManager} which manages the collective instances {@link ITracker}
-	 * @return
-	 */
-	public TrackerManager getTrackerManager() {
-		return trackerManager;
-	}
-
 	/**
 	 * Gets the {@link PhaseRegulator} which manages the ordering of the download states.
-	 * @return
+	 * @return The configured phase regulator.
 	 */
 	public PhaseRegulator getPhaseRegulator() {
 		return phaseRegulator;
@@ -161,6 +219,24 @@ public class TorrentClient {
 		return Arrays.copyOf(extensionBytes, extensionBytes.length);
 	}
 
+	/**
+	 * Gets the peer ID associated to this tracker manager
+	 *
+	 * @return The peer ID
+	 */
+	public byte[] getPeerId() {
+		return peerId;
+	}
+
+	/**
+	 * Gets the torrent associated with the given hash.
+	 * @param torrentHash The BTIH of the torrent
+	 * @return The torrent if known.
+	 */
+	public Optional<Torrent> getTorrentByHash(byte[] torrentHash) {
+		return torrentManager.getTorrent(torrentHash);
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -193,7 +269,7 @@ public class TorrentClient {
 		public Builder registerModule(IModule module) {
 			for (Class<IModule> dependingModule : module.getDependsOn()) {
 				if (!modules.stream().anyMatch(m -> m.getClass().equals(dependingModule))) {
-					throw new IllegalStateException(String.format("Depeding module %s is missing.", dependingModule.getSimpleName()));
+					throw new IllegalStateException(String.format("Depending module %s is missing.", dependingModule.getSimpleName()));
 				}
 			}
 
