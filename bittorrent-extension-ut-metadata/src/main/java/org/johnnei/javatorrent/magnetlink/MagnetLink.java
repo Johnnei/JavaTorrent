@@ -20,8 +20,6 @@ public class MagnetLink {
 	private static final Pattern BTIH_BASE16_PATTERN = Pattern.compile("urn:btih:([A-Z0-9]{40})");
 	private static final Pattern BTIH_BASE32_PATTERN = Pattern.compile("urn:btih:([A-Z0-9]{32})");
 
-	private final TorrentClient torrentClient;
-
 	/**
 	 * The resulting torrent from this Magnet link
 	 */
@@ -32,7 +30,6 @@ public class MagnetLink {
 	private Collection<String> trackerUrls;
 
 	public MagnetLink(String magnetLink, TorrentClient torrentClient) {
-		this.torrentClient = torrentClient;
 		this.torrentBuilder = new Torrent.Builder();
 		this.torrentBuilder.setTorrentClient(torrentClient);
 		trackerUrls = new ArrayList<>();
