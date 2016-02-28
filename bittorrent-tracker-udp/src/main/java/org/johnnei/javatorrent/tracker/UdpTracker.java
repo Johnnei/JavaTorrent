@@ -168,7 +168,7 @@ public class UdpTracker implements ITracker {
 
 	@Override
 	public void connectPeer(PeerConnectInfo peer) {
-		torrentClient.getPeerConnector().connectPeer(peer);
+		torrentClient.getPeerConnector().enqueuePeer(peer);
 	}
 
 	/**
