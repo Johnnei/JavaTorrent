@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
@@ -22,6 +23,7 @@ import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.StringUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
@@ -132,14 +134,43 @@ public class Torrent implements Runnable {
 		}
 	}
 
-	public void addPeer(Peer peer) {
+	public void addPeer(Peer peer) throws IOException {
 		if (hasPeer(peer)) {
 			peer.getBitTorrentSocket().close();
 			LOGGER.trace("Filtered duplicate Peer: " + peer);
 			return;
 		}
+
+		peer.getBitTorrentSocket().setPassedHandshake();
+		sendHaveMessages(peer);
+
 		synchronized (this) {
 			peers.add(peer);
+		}
+	}
+
+	private void sendHaveMessages(Peer peer) throws IOException {
+		if (peer.getTorrent().isDownloadingMetadata()) {
+			return;
+		}
+
+		Torrent torrent = peer.getTorrent();
+		AFiles files = torrent.getFiles();
+
+		if (files.countCompletedPieces() == 0) {
+			return;
+		}
+
+		if (MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8) + 1 < 5 * files.countCompletedPieces()) {
+			peer.getBitTorrentSocket().enqueueMessage(new MessageBitfield(files.getBitfieldBytes()));
+		} else {
+			for (int pieceIndex = 0; pieceIndex < torrent.getFiles().getPieceCount(); pieceIndex++) {
+				if (!torrent.getFiles().hasPiece(pieceIndex)) {
+					continue;
+				}
+
+				peer.getBitTorrentSocket().enqueueMessage(new MessageHave(pieceIndex));
+			}
 		}
 	}
 

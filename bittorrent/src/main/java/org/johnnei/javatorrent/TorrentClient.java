@@ -220,7 +220,7 @@ public class TorrentClient {
 	}
 
 	/**
-	 * Gets the peer ID associated to this tracker manager
+	 * Gets the 20-byte peer ID associated to this tracker manager
 	 *
 	 * @return The peer ID
 	 */

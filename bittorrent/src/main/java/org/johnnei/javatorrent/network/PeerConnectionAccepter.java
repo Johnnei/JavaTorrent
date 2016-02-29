@@ -7,13 +7,16 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentUtil;
 import org.johnnei.javatorrent.network.socket.TcpSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.utils.ThreadUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PeerConnectionAccepter extends Thread {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PeerConnectionAccepter.class);
 
 	private final TorrentClient torrentClient;
 
@@ -30,20 +33,11 @@ public class PeerConnectionAccepter extends Thread {
 	@Override
 	public void run() {
 		while (true) {
+			Socket tcpSocket = null;
 			try {
-				Socket tcpSocket = serverSocket.accept();
+				tcpSocket = serverSocket.accept();
 
 				BitTorrentSocket peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory(), new TcpSocket(tcpSocket));
-
-				long handshakeStart = System.currentTimeMillis();
-				while (!peerSocket.canReadMessage() && (System.currentTimeMillis() - handshakeStart) < 5000) {
-					ThreadUtils.sleep(10);
-				}
-				if (!peerSocket.canReadMessage()) {
-					peerSocket.close();
-					continue;
-				}
-
 				BitTorrentHandshake handshake = peerSocket.readHandshake();
 
 				Optional<Torrent> torrent = torrentClient.getTorrentByHash(handshake.getTorrentHash());
@@ -55,9 +49,22 @@ public class PeerConnectionAccepter extends Thread {
 
 				Peer peer = new Peer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes());
 				peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getHashArray());
-				BitTorrentUtil.onPostHandshake(peer);
+				torrent.get().addPeer(peer);
 			} catch (IOException e) {
+				LOGGER.debug("Failed to create connection with peer.", e);
+				closeQuietly(tcpSocket);
 			}
+		}
+	}
+
+	private void closeQuietly(Socket socket) {
+		if (socket == null) {
+			return;
+		}
+		try {
+			socket.close();
+		} catch (IOException e) {
+			LOGGER.debug("Failed to close socket", e);
 		}
 	}
 

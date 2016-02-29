@@ -3,17 +3,18 @@ package org.johnnei.javatorrent.tracker;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
+import org.johnnei.javatorrent.network.BitTorrentSocket;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.network.BitTorrentSocket;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentUtil;
 import org.johnnei.javatorrent.utils.StringUtils;
-import org.johnnei.javatorrent.utils.ThreadUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,9 @@ public class PeerConnector implements Runnable, IPeerConnector {
 	/**
 	 * The object on which the thread will start sleeping once it is out of work
 	 */
-	public final Object peerJobNotify = new Object();
+	private final Lock newPeerLock = new ReentrantLock();
+
+	private final Condition newPeerCondition = newPeerLock.newCondition();
 
 	/**
 	 * List of peer that are currently being connected
@@ -51,8 +54,19 @@ public class PeerConnector implements Runnable, IPeerConnector {
 	 */
 	@Override
 	public void enqueuePeer(PeerConnectInfo peerInfo) {
+		if (peerInfo == null) {
+			// Bad user!
+			return;
+		}
+
 		synchronized (peerListLock) {
 			peers.add(peerInfo);
+		}
+		newPeerLock.lock();
+		try {
+			newPeerCondition.signal();
+		} finally {
+			newPeerLock.unlock();
 		}
 	}
 
@@ -81,8 +95,15 @@ public class PeerConnector implements Runnable, IPeerConnector {
 	 */
 	@Override
 	public void run() {
-		if (peers.isEmpty()) {
-			ThreadUtils.wait(peerJobNotify);
+		while (peers.isEmpty()) {
+			newPeerLock.lock();
+			try {
+				newPeerCondition.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			} finally {
+				newPeerLock.unlock();
+			}
 		}
 
 		PeerConnectInfo peerInfo;
@@ -91,35 +112,22 @@ public class PeerConnector implements Runnable, IPeerConnector {
 			peerInfo = peers.remove();
 		}
 
-		if (peerInfo == null) {
-			return;
-		}
-
-		BitTorrentSocket peerSocket = new BitTorrentSocket(torrentClient.getMessageFactory());
+		BitTorrentSocket peerSocket = createUnconnectedSocket();
 		try {
 			peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
 			peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), peerInfo.getTorrent().getHashArray());
-
-			long timeWaited = 0;
-			while (!peerSocket.canReadMessage() && timeWaited < 10_000) {
-				final int INTERVAL = 100;
-				ThreadUtils.sleep(INTERVAL);
-				timeWaited += INTERVAL;
-			}
-
-			if (!peerSocket.canReadMessage()) {
-				throw new IOException(String.format("Handshake timeout (%s)", peerSocket.getHandshakeProgress()));
-			}
-
 			BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getHashArray());
-
 			Peer peer = new Peer(peerSocket, peerInfo.getTorrent(), handshake.getPeerExtensionBytes());
-			BitTorrentUtil.onPostHandshake(peer);
+			peerInfo.getTorrent().addPeer(peer);
 			LOGGER.debug("Connected with {}: {}", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort());
 		} catch (IOException e) {
 			LOGGER.debug("Failed to connect to peer ({}:{})", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort(), e);
 			peerSocket.close();
 		}
+	}
+
+	BitTorrentSocket createUnconnectedSocket() {
+		return new BitTorrentSocket(torrentClient.getMessageFactory());
 	}
 
 	private BitTorrentHandshake checkHandshake(BitTorrentSocket peerSocket, byte[] torrentHash) throws IOException {
@@ -140,8 +148,12 @@ public class PeerConnector implements Runnable, IPeerConnector {
 		return peers.size();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public int getConnectingCountFor(Torrent torrent) {
-		LinkedList<PeerConnectInfo> peerList = null;
+		LinkedList<PeerConnectInfo> peerList;
 
 		synchronized (peerListLock) {
 			peerList = new LinkedList<>(peers);

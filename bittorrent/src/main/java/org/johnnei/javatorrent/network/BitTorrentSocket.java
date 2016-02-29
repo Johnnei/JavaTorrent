@@ -9,13 +9,12 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Queue;
 
-import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +25,11 @@ public class BitTorrentSocket {
 
 	private final Object QUEUE_LOCK = new Object();
 	private final Object BLOCK_QUEUE_LOCK = new Object();
+
+	/**
+	 * Clock instance to allow for speedy unit tests on this.
+	 */
+	private Clock clock = Clock.systemDefaultZone();
 
 	private static final int HANDSHAKE_SIZE = 68;
 
@@ -72,24 +76,15 @@ public class BitTorrentSocket {
 	private LocalDateTime lastBufferCreate;
 
 	/**
-	 * To clock to measure the activity time with
-	 */
-	private Clock clock;
-
-	/**
 	 * The local timestamp at which the last activity on the underlying socket was made
 	 */
 	private LocalDateTime lastActivity;
 
-	public BitTorrentSocket(Clock clock, MessageFactory messageFactory) {
-		this.clock = clock;
+	public BitTorrentSocket(MessageFactory messageFactory) {
 		this.messageFactory = messageFactory;
 		messageQueue = new LinkedList<>();
 		blockQueue = new LinkedList<>();
 		lastActivity = LocalDateTime.now(clock);
-	}
-	public BitTorrentSocket(MessageFactory messageFactory) {
-		this(Clock.systemDefaultZone(), messageFactory);
 	}
 
 	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) throws IOException {
@@ -192,11 +187,15 @@ public class BitTorrentSocket {
 	 * Writes the handshake onto the output stream
 	 *
 	 * @param extensionBytes The bytes indicating which extensions we support
-	 * @param peerId The peer ID which has been received from {@link TrackerManager#getPeerId()}
+	 * @param peerId The peer ID which this peer will send out.
 	 * @param torrentHash The hash of the torrent on which we wish to interact on with this peer.
 	 * @throws IOException
 	 */
 	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
+		if (passedHandshake) {
+			throw new IllegalStateException("Handshake has already been completed.");
+		}
+
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
 		outStream.write(extensionBytes);
@@ -210,9 +209,28 @@ public class BitTorrentSocket {
 	 *
 	 * @return A successfully read handshake
 	 * @throws IOException
-	 *             when either an io error occurs or a protocol error occurs
+	 *             when either an io error occurs, a protocol error occurs or the peer doesn't respond within 5 seconds.
 	 */
 	public BitTorrentHandshake readHandshake() throws IOException {
+		if (passedHandshake) {
+			throw new IllegalStateException("Handshake has already been completed.");
+		}
+
+		LocalDateTime startTime = LocalDateTime.now(clock);
+
+		while (!Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// Honour the cancellation and rethrow it as IOException
+				throw new IOException(e);
+			}
+		}
+
+		if (inStream.available() < HANDSHAKE_SIZE) {
+			throw new IOException("Remote end failed to supply handshake within 5 seconds");
+		}
+
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
 			throw new IOException("Protocol handshake failed");
