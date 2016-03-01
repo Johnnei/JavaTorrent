@@ -61,7 +61,7 @@ public class TcpSocket implements ISocket {
 
 	@Override
 	public String toString() {
-		return socket.getRemoteSocketAddress().toString().substring(1);
+		return String.format("TcpSocket[remoteAddress=%s]", socket.getRemoteSocketAddress().toString().substring(1));
 	}
 
 	@Override
@@ -71,6 +71,7 @@ public class TcpSocket implements ISocket {
 
 	@Override
 	public void flush() throws IOException {
+		socket.getOutputStream().flush();
 	}
 
 	@Override
