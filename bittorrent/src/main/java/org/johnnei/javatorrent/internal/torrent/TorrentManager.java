@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.network.PeerConnectionAccepter;
-import org.johnnei.javatorrent.network.socket.PeersReadRunnable;
-import org.johnnei.javatorrent.network.socket.PeersWriterRunnable;
+import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 public class TorrentManager {
@@ -19,37 +20,29 @@ public class TorrentManager {
 	private final TorrentClient torrentClient;
 
 	private PeerConnectionAccepter connectorThread;
-	private ArrayList<Torrent> activeTorrents;
+	private List<Torrent> activeTorrents;
 
-	private PeersReadRunnable peerReader;
-	private PeersWriterRunnable peerWriter;
-	private Thread[] peerThreads;
+	private LoopingRunnable peerIoRunnable;
 
 	public TorrentManager(TorrentClient torrentClient) {
 		this.torrentClient = torrentClient;
 		activeTorrents = new ArrayList<>();
 
 		// Start reading peer input/output
-		peerReader = new PeersReadRunnable(this);
-		peerWriter = new PeersWriterRunnable(this);
-
-		peerThreads = new Thread[2];
-		peerThreads[0] = new Thread(peerReader, "Peer input reader");
-		peerThreads[1] = new Thread(peerWriter, "Peer output writer");
-
-		for(Thread thread : peerThreads) {
-			thread.setDaemon(true);
-			thread.start();
-		}
+		peerIoRunnable = new LoopingRunnable(new PeerIoRunnable(this));
 	}
 
 	/**
 	 * Starts the connnection listener which will accept new peers
 	 */
-	public void startListener() {
+	public void start() {
 		if (connectorThread != null && connectorThread.isAlive()) {
 			return;
 		}
+
+		Thread thread = new Thread(peerIoRunnable, "Peer IO");
+		thread.setDaemon(true);
+		thread.start();
 
 		try {
 			connectorThread = new PeerConnectionAccepter(torrentClient);

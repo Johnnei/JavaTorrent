@@ -92,7 +92,7 @@ public class TorrentClient {
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
 
-		torrentManager.startListener();
+		torrentManager.start();
 	}
 
 	private byte[] createPeerId() {
