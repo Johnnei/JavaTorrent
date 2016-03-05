@@ -1,10 +1,14 @@
 package org.johnnei.javatorrent.test;
 
+import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.ServerSocket;
+import java.util.Arrays;
 import java.util.Random;
 
+import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.network.BitTorrentSocket;
 
 public class DummyEntity {
 
@@ -18,8 +22,27 @@ public class DummyEntity {
 		byte[] bytes = new byte[20];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = (byte) (random.nextInt() & 0xff);
-		};
+		}
 		return bytes;
+	}
+
+	public static byte[] createUniqueTorrentHash(byte[]... hashes) {
+		boolean passed;
+		byte[] newHash;
+
+		do {
+			passed = true;
+			newHash = createRandomBytes(20);
+			for (byte[] hash : hashes) {
+				if (Arrays.equals(newHash, hash)) {
+					passed = false;
+					break;
+				}
+			}
+
+		} while (!passed);
+
+		return newHash;
 	}
 
 	public static Torrent createTorrent() {
@@ -44,6 +67,38 @@ public class DummyEntity {
 			peerId[i] = (byte) (random.nextInt() & 0xFF);
 		}
 		return peerId;
+	}
+
+	public static int findAvailableTcpPort() throws IOException {
+		ServerSocket socket = null;
+		try {
+			socket = new ServerSocket(0);
+			return socket.getLocalPort();
+		} finally {
+			if (socket != null) {
+				socket.close();
+			}
+		}
+	}
+
+	public static int findAvailableUdpPort() {
+		int port = 27960;
+		DatagramSocket socket = null;
+		while (port <= 0xFFFF) {
+			try {
+				socket = new DatagramSocket(port);
+				return port;
+			} catch (Exception e) {
+				// Port not available.
+				port++;
+			} finally {
+				if (socket != null) {
+					socket.close();
+				}
+			}
+		}
+
+		throw new IllegalStateException("All ports from 27960 and up are in use.");
 	}
 
 }

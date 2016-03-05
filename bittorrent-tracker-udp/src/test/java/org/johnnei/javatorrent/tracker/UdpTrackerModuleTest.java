@@ -21,6 +21,7 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.newCapture;
 import static org.easymock.EasyMock.notNull;
+import static org.johnnei.javatorrent.test.DummyEntity.findAvailableUdpPort;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EasyMockRunner.class)
@@ -52,7 +53,7 @@ public class UdpTrackerModuleTest extends EasyMockSupport {
 
 	@Test
 	public void testOnBuildAndShutdown() throws Exception {
-		final int port = 27960;
+		final int port = findAvailableUdpPort();
 		UdpTrackerModule cut = new UdpTrackerModule.Builder()
 				.setPort(port)
 				.build();

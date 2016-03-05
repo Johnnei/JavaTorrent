@@ -4,52 +4,61 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.network.PeerConnectionAccepter;
+import org.johnnei.javatorrent.network.PeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
 import org.johnnei.javatorrent.torrent.Torrent;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TorrentManager {
 
-	private final Object TORRENTS_LOCK = new Object();
+	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentManager.class);
 
-	private final TorrentClient torrentClient;
+	private final Object torrentListLock = new Object();
 
-	private PeerConnectionAccepter connectorThread;
 	private List<Torrent> activeTorrents;
+
+	private LoopingRunnable connectorRunnable;
 
 	private LoopingRunnable peerIoRunnable;
 
-	public TorrentManager(TorrentClient torrentClient) {
-		this.torrentClient = torrentClient;
+	public TorrentManager() {
 		activeTorrents = new ArrayList<>();
-
-		// Start reading peer input/output
-		peerIoRunnable = new LoopingRunnable(new PeerIoRunnable(this));
 	}
 
 	/**
 	 * Starts the connnection listener which will accept new peers
 	 */
-	public void start() {
-		if (connectorThread != null && connectorThread.isAlive()) {
-			return;
-		}
-
+	public void start(TorrentClient torrentClient) {
+		// Start reading peer input/output
+		peerIoRunnable = new LoopingRunnable(new PeerIoRunnable(this));
 		Thread thread = new Thread(peerIoRunnable, "Peer IO");
 		thread.setDaemon(true);
 		thread.start();
 
 		try {
-			connectorThread = new PeerConnectionAccepter(torrentClient);
+			connectorRunnable = new LoopingRunnable(new PeerConnectionAcceptor(torrentClient));
+			Thread connectorThread = new Thread(connectorRunnable, "Connection Acceptor");
+			connectorThread.setDaemon(true);
 			connectorThread.start();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.warn("Failed to start connection acceptor", e);
 		}
+	}
+
+	/**
+	 * Gracefully stops the connection processing.
+	 */
+	public void stop() {
+		peerIoRunnable.stop();
+		connectorRunnable.stop();
 	}
 
 	/**
@@ -57,7 +66,7 @@ public class TorrentManager {
 	 * @param torrent The torrent to register
 	 */
 	public void addTorrent(Torrent torrent) {
-		synchronized (TORRENTS_LOCK) {
+		synchronized (torrentListLock) {
 			activeTorrents.add(torrent);
 		}
 	}
@@ -78,12 +87,12 @@ public class TorrentManager {
 	}
 
 	/**
-	 * Creates a shallow-copy of the list containing the torrents
+	 * Creates an unmodifiable copy of the list containing the torrents
 	 * @return The list of torrents
 	 */
 	public Collection<Torrent> getTorrents() {
-		synchronized (TORRENTS_LOCK) {
-			return new ArrayList<>(activeTorrents);
+		synchronized (torrentListLock) {
+			return Collections.unmodifiableCollection(activeTorrents);
 		}
 	}
 

@@ -79,7 +79,7 @@ public class TorrentClient {
 		Objects.requireNonNull(builder.trackerFactoryBuilder, "At least one tracker protocol must be configured.");
 		TrackerFactory trackerFactory = builder.trackerFactoryBuilder.setTorrentClient(this).build();
 
-		torrentManager = new TorrentManager(this);
+		torrentManager = new TorrentManager();
 		trackerManager = new TrackerManager(peerConnector, trackerFactory);
 		LOGGER.info(String.format("Configured trackers: %s", trackerFactory));
 
@@ -92,7 +92,7 @@ public class TorrentClient {
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
 
-		torrentManager.start();
+		torrentManager.start(this);
 	}
 
 	private byte[] createPeerId() {
