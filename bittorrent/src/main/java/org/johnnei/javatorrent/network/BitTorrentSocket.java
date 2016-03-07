@@ -99,7 +99,7 @@ public class BitTorrentSocket {
 		}
 
 		BitTorrentSocketException exception = new BitTorrentSocketException("Failed to connect to end point.");
-		socket = degradation.createPreferedSocket();
+		socket = degradation.createPreferredSocket();
 		while (socket != null && (socket.isClosed() || socket.isConnecting())) {
 			try {
 				socket.connect(address);

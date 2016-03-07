@@ -20,14 +20,14 @@ public class ConnectionDegradation {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionDegradation.class);
 
-	private final Class<? extends ISocket> preferedType;
+	private final Class<? extends ISocket> preferredType;
 
-	private final Map<Class<? extends ISocket>, Class<ISocket>> socketDegradation;
+	private final Map<Class<? extends ISocket>, Class<? extends ISocket>> socketDegradation;
 
 	private final Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
 
 	private ConnectionDegradation(Builder builder) {
-		preferedType = builder.preferedType;
+		preferredType = builder.preferredType;
 		socketDegradation = builder.socketDegradation;
 		socketSuppliers = builder.socketSuppliers;
 	}
@@ -36,8 +36,8 @@ public class ConnectionDegradation {
 	 * Creates a new unconnected socket based on the most prefered connection type.
 	 * @return An unconnected socket
 	 */
-	public ISocket createPreferedSocket() {
-		return socketSuppliers.get(preferedType).get();
+	public ISocket createPreferredSocket() {
+		return socketSuppliers.get(preferredType).get();
 	}
 
 	/**
@@ -50,14 +50,14 @@ public class ConnectionDegradation {
 			return Optional.empty();
 		}
 
-		Class<ISocket> fallbackType = socketDegradation.get(socket.getClass());
+		Class<? extends ISocket> fallbackType = socketDegradation.get(socket.getClass());
 		return Optional.of(socketSuppliers.get(fallbackType).get());
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder("ConnectionDegradation[");
-		Class<? extends ISocket> type = preferedType;
+		Class<? extends ISocket> type = preferredType;
 		while (type != null) {
 			stringBuilder.append(type.getSimpleName());
 
@@ -73,9 +73,9 @@ public class ConnectionDegradation {
 
 	public static class Builder {
 
-		private Class<? extends ISocket> preferedType;
+		private Class<? extends ISocket> preferredType;
 
-		private Map<Class<? extends ISocket>, Class<ISocket>> socketDegradation;
+		private Map<Class<? extends ISocket>, Class<? extends ISocket>> socketDegradation;
 
 		private Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
 
@@ -84,18 +84,18 @@ public class ConnectionDegradation {
 			socketSuppliers = new HashMap<>();
 		}
 
-		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<ISocket>> fallbackType) {
+		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<? extends ISocket>> fallbackType) {
 			Objects.requireNonNull(socketType, "Socket type can not be null");
-			if (preferedType != null) {
-				LOGGER.warn(String.format("Overriding existing default connection type: %s.", preferedType.getSimpleName()));
+			if (preferredType != null) {
+				LOGGER.warn("Overriding existing default connection type: {}.", preferredType.getSimpleName());
 			}
 
-			preferedType = socketType;
+			preferredType = socketType;
 			registerConnectionType(socketType, supplier, fallbackType);
 			return this;
 		}
 
-		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<ISocket>> fallbackType) {
+		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<? extends ISocket>> fallbackType) {
 			Objects.requireNonNull(socketType, "Socket type can not be null");
 			Objects.requireNonNull(supplier, "Socket supplier can not be null");
 
@@ -104,7 +104,7 @@ public class ConnectionDegradation {
 			return this;
 		}
 
-		private void registerFallback(Class<? extends ISocket> from, Optional<Class<ISocket>> to) {
+		private void registerFallback(Class<? extends ISocket> from, Optional<Class<? extends ISocket>> to) {
 			if (!to.isPresent()) {
 				return;
 			}
@@ -113,13 +113,11 @@ public class ConnectionDegradation {
 		}
 
 		public ConnectionDegradation build() {
-			if (preferedType == null) {
-				throw new IllegalStateException("No prefered connection type has been configured.");
+			if (preferredType == null) {
+				throw new IllegalStateException("No preferred connection type has been configured.");
 			}
 
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(String.format("Prefered Connection: %s", preferedType.getSimpleName()));
-			}
+			LOGGER.debug("Preferred Connection: {}", preferredType.getSimpleName());
 
 			verifySocketChain();
 
@@ -131,7 +129,7 @@ public class ConnectionDegradation {
 		 */
 		private void verifySocketChain() {
 			int typesSeen = 0;
-			Class<? extends ISocket> type = preferedType;
+			Class<? extends ISocket> type = preferredType;
 			while (type != null) {
 				if (!socketSuppliers.containsKey(type)) {
 					throw new IllegalStateException(String.format("Socket supplier for type %s has not been set.", type.getSimpleName()));
@@ -142,10 +140,9 @@ public class ConnectionDegradation {
 			}
 
 			if (typesSeen != socketSuppliers.size()) {
-				LOGGER.warn(String.format(
-						"Socket chain does not contain all types. Chain contains %d types, whilst %d have been registered.",
+				LOGGER.warn("Socket chain does not contain all types. Chain contains {} types, whilst {} have been registered.",
 						typesSeen,
-						socketSuppliers.size()));
+						socketSuppliers.size());
 			}
 		}
 	}
