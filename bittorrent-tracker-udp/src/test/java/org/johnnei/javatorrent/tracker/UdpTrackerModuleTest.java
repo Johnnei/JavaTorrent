@@ -6,7 +6,6 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
-import org.johnnei.javatorrent.test.Whitebox;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
 import org.easymock.Capture;
@@ -14,6 +13,7 @@ import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.and;
 import static org.easymock.EasyMock.capture;

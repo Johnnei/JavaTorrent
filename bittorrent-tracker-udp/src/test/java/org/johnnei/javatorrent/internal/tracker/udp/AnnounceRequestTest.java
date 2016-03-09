@@ -1,30 +1,30 @@
 package org.johnnei.javatorrent.internal.tracker.udp;
 
-import static org.easymock.EasyMock.eq;
-import static org.johnnei.javatorrent.test.TestUtils.copySection;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Clock;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-
-import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.test.DummyEntity;
-import org.johnnei.javatorrent.test.StubEntity;
-import org.johnnei.javatorrent.test.Whitebox;
-import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.test.StubEntity;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
+
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.reflect.Whitebox;
+
+import static org.easymock.EasyMock.eq;
+import static org.johnnei.javatorrent.test.TestUtils.copySection;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EasyMockRunner.class)
 public class AnnounceRequestTest extends EasyMockSupport {

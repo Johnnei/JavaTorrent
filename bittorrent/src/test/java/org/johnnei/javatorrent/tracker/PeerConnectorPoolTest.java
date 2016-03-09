@@ -4,13 +4,13 @@ import java.util.Arrays;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.test.Whitebox;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.easymock.EasyMock;
 import org.easymock.EasyMockSupport;
 import org.junit.Before;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;

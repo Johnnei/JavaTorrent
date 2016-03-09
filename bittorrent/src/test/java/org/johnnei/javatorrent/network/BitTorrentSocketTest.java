@@ -26,12 +26,12 @@ import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestLinkedClock;
 import org.johnnei.javatorrent.test.TestUtils;
-import org.johnnei.javatorrent.test.Whitebox;
 
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.EasyMockSupport;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.eq;
