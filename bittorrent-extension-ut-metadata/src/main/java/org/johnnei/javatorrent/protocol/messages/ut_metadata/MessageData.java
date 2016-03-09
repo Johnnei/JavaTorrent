@@ -23,7 +23,7 @@ public class MessageData extends Message {
 	@Override
 	public void write(OutStream outStream) {
 		super.write(outStream);
-		outStream.writeByte(data);
+		outStream.write(data);
 	}
 
 	@Override

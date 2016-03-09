@@ -54,8 +54,8 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 	@Override
 	public void writeRequest(OutStream outStream) {
-		outStream.writeByte(torrent.getHashArray());
-		outStream.writeByte(peerId);
+		outStream.write(torrent.getHashArray());
+		outStream.write(peerId);
 
 		// Downloaded Bytes
 		outStream.writeLong(torrent.getDownloadedBytes());

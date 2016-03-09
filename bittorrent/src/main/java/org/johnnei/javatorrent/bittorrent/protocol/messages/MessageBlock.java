@@ -31,7 +31,7 @@ public class MessageBlock implements IMessage {
 	public void write(OutStream outStream) {
 		outStream.writeInt(index);
 		outStream.writeInt(offset);
-		outStream.writeByte(data);
+		outStream.write(data);
 	}
 
 	@Override
