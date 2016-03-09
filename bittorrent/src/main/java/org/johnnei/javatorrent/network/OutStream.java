@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-import org.johnnei.javatorrent.utils.CheckedRunnable;
+import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +71,7 @@ public class OutStream {
 			writeCall.run();
 		} catch (IOException e) {
 			LOGGER.error("Somehow you managed to get an IO exception on a byte array. I'm proud.", e);
-			throw new RuntimeException("IOException on in-memory output stream.", e);
+			throw new RuntimeException("IO Exception on in-memory byte array.", e);
 		}
 	}
 

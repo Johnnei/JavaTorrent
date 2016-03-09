@@ -1,7 +1,14 @@
 package org.johnnei.javatorrent.network;
 
+import java.io.IOException;
+
+import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.powermock.reflect.Whitebox;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -10,6 +17,9 @@ import static org.junit.Assert.assertEquals;
  * Tests {@link OutStream}
  */
 public class OutStreamTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	private OutStream cut;
 
@@ -102,5 +112,16 @@ public class OutStreamTest {
 		assertEquals("Incorrect amount of bytes written", 0x13, cut.size());
 		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
 
+	}
+
+	@Test
+	public void testExceptionWriteUnchecked() throws Exception {
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("IO Exception on in-memory byte array");
+
+		CheckedRunnable<IOException> runnable = () -> { throw new IOException("Test exception path"); };
+		OutStream cut = new OutStream();
+
+		Whitebox.invokeMethod(cut, "writeUnchecked", runnable);
 	}
 }

@@ -3,8 +3,12 @@ package org.johnnei.javatorrent.network;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Optional;
+
+import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
+import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,12 +90,7 @@ public class InStream {
 	 * @return The read boolean
 	 */
 	public boolean readBoolean() {
-		try {
-			return in.readBoolean();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return false;
-		}
+		return doUnchecked(() -> in.readBoolean());
 	}
 
 	/**
@@ -99,12 +98,7 @@ public class InStream {
 	 * @return The read byte.
 	 */
 	public byte readByte() {
-		try {
-			return in.readByte();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return -1;
-		}
+		return doUnchecked(() -> in.readByte());
 	}
 
 	/**
@@ -112,12 +106,7 @@ public class InStream {
 	 * @return The read character.
 	 */
 	public char readChar() {
-		try {
-			return in.readChar();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return 0;
-		}
+		return doUnchecked(() -> in.readChar());
 	}
 
 	/**
@@ -135,11 +124,7 @@ public class InStream {
 	 * @param len The amount of bytes to copy.
 	 */
 	public void readFully(byte[] b, int off, int len) {
-		try {
-			in.readFully(b, off, len);
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-		}
+		doUnchecked(() -> in.readFully(b, off, len));
 	}
 
 	/**
@@ -158,12 +143,7 @@ public class InStream {
 	 * @return The read integer.
 	 */
 	public int readInt() {
-		try {
-			return in.readInt();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return -1;
-		}
+		return doUnchecked(() -> in.readInt());
 	}
 
 	/**
@@ -171,12 +151,7 @@ public class InStream {
 	 * @return The read long.
 	 */
 	public long readLong() {
-		try {
-			return in.readLong();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return -1;
-		}
+		return doUnchecked(() -> in.readLong());
 	}
 
 	/**
@@ -184,12 +159,7 @@ public class InStream {
 	 * @return The read short.
 	 */
 	public short readShort() {
-		try {
-			return in.readShort();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return -1;
-		}
+		return doUnchecked(() -> in.readShort());
 	}
 
 	/**
@@ -197,12 +167,7 @@ public class InStream {
 	 * @return The read byte.
 	 */
 	public int readUnsignedByte() {
-		try {
-			return in.readUnsignedByte();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return 0;
-		}
+		return doUnchecked(() -> in.readUnsignedByte());
 	}
 
 	/**
@@ -210,12 +175,7 @@ public class InStream {
 	 * @return The read short.
 	 */
 	public int readUnsignedShort() {
-		try {
-			return in.readUnsignedShort();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return 0;
-		}
+		return doUnchecked(() -> in.readUnsignedShort());
 	}
 
 	/**
@@ -224,12 +184,7 @@ public class InStream {
 	 * @return The actual amount of bytes skipped.
 	 */
 	public int skipBytes(int n) {
-		try {
-			return in.skipBytes(n);
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return 0;
-		}
+		return doUnchecked(() -> in.skipBytes(n));
 	}
 
 	/**
@@ -250,12 +205,7 @@ public class InStream {
 	 * @return The amount of readable bytes.
 	 */
 	public int available() {
-		try {
-			return in.available();
-		} catch (IOException e) {
-			LOGGER.error("IO Error on in memory buffer", e);
-			return -1;
-		}
+		return doUnchecked(() -> in.available());
 	}
 
 	/**
@@ -264,11 +214,8 @@ public class InStream {
 	 * @return The read string.
 	 */
 	public String readString(int length) {
-		StringBuilder builder = new StringBuilder(length);
-		for (int i = 0; i < length; i++) {
-			builder.append((char) readByte());
-		}
-		return builder.toString();
+		byte[] stringBytes = readFully(length);
+		return new String(stringBytes, Charset.forName("UTF-8"));
 	}
 
 	/**
@@ -291,6 +238,24 @@ public class InStream {
 	 */
 	public Optional<Duration> getReadDuration() {
 		return Optional.ofNullable(readDuration);
+	}
+
+	private void doUnchecked(CheckedRunnable<IOException> readCall) {
+		try {
+			readCall.run();
+		} catch (IOException e) {
+			LOGGER.error("You managed to cause an IO exception on an in-memory byte array. I'm proud.", e);
+			throw new RuntimeException("IO Exception on in-memory byte array", e);
+		}
+	}
+
+	private <T> T doUnchecked(CheckedSupplier<T, IOException> readCall) {
+		try {
+			return readCall.get();
+		} catch (IOException e) {
+			LOGGER.error("You managed to cause an IO exception on an in-memory byte array. I'm proud.", e);
+			throw new RuntimeException("IO Exception on in-memory byte array", e);
+		}
 	}
 
 }

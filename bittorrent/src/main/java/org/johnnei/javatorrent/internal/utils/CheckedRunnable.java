@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.utils;
+package org.johnnei.javatorrent.internal.utils;
 
 @FunctionalInterface
 public interface CheckedRunnable<E extends Exception> {

@@ -1,8 +1,15 @@
 package org.johnnei.javatorrent.network;
 
+import java.io.IOException;
 import java.time.Duration;
 
+import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
+import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.powermock.reflect.Whitebox;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -13,6 +20,9 @@ import static org.junit.Assert.assertTrue;
  * Tests {@link InStream}
  */
 public class InStreamTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testRead() {
@@ -69,6 +79,19 @@ public class InStreamTest {
 	}
 
 	@Test
+	public void testMoveBack() {
+		InStream inStream = new InStream(new byte[] { 0x1, 0x2 });
+
+		assertEquals("Incorrect starting size", 2, inStream.available());
+		assertEquals("Incorrect byte value", 1, inStream.readByte());
+		assertEquals("Incorrect available, should have read only 1 byte at this point.", 1, inStream.available());
+		inStream.moveBack(1);
+		assertEquals("Incorrect available, should have moved back to beginning of stream", 2, inStream.available());
+		assertEquals("Incorrect byte value", 1, inStream.readByte());
+		assertEquals("Incorrect byte value", 2, inStream.readByte());
+	}
+
+	@Test
 	public void testMark() {
 		InStream inStream = new InStream(new byte[] { 0x0, 0x0, 0x0, 0x0 });
 		inStream.mark();
@@ -84,6 +107,28 @@ public class InStreamTest {
 		assertEquals("Incorrect duration", Duration.ZERO, inStream.getReadDuration().get());
 		inStream = new InStream(new byte[] { 0x0, 0x0 }, 1, 1);
 		assertFalse("Incorrect duration", inStream.getReadDuration().isPresent());
+	}
+
+	@Test
+	public void testExceptionDoUncheckedSupplier() throws Exception {
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("IO Exception on in-memory byte array");
+
+		CheckedSupplier<Integer, IOException> runnable = () -> { throw new IOException("Test exception path"); };
+		InStream cut = new InStream(new byte[0]);
+
+		Whitebox.invokeMethod(cut, "doUnchecked", runnable);
+	}
+
+	@Test
+	public void testExceptionDoUncheckedRunnable() throws Exception {
+		thrown.expect(RuntimeException.class);
+		thrown.expectMessage("IO Exception on in-memory byte array");
+
+		CheckedRunnable<IOException> runnable = () -> { throw new IOException("Test exception path"); };
+		InStream cut = new InStream(new byte[0]);
+
+		Whitebox.invokeMethod(cut, "doUnchecked", runnable);
 	}
 
 }
