@@ -409,6 +409,9 @@ public class Torrent implements Runnable {
 		return peerManager.getAnnounceWantAmount(peers.size());
 	}
 
+	/**
+	 * Polls all peers transfer speeds.
+	 */
 	public void pollRates() {
 		synchronized (this) {
 			peers.forEach(p -> p.getBitTorrentSocket().pollRates());

@@ -39,6 +39,8 @@ public interface IMessage {
 	 * The id of this message
 	 *
 	 * @return id
+	 *
+	 * @throws UnsupportedOperationException Will be thrown when the message has no ID. For example: {@link MessageKeepAlive}.
 	 */
 	int getId();
 

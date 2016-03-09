@@ -23,7 +23,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.same;
 import static org.johnnei.javatorrent.test.DummyEntity.createPeerId;
 import static org.johnnei.javatorrent.test.DummyEntity.createRandomBytes;
-import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
+import static org.johnnei.javatorrent.test.DummyEntity.createUniqueTorrent;
 import static org.johnnei.javatorrent.test.DummyEntity.findAvailableTcpPort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -136,7 +136,7 @@ public class PeerConnectionAcceptorTest extends EasyMockSupport {
 		torrentClientMock = createMock(TorrentClient.class);
 		TcpSocket socketMock = createMock(TcpSocket.class);
 		BitTorrentSocket bitTorrentSocketMock = createMock(BitTorrentSocket.class);
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 
 		int port = findAvailableTcpPort();
 		expect(torrentClientMock.getDownloadPort()).andReturn(port);

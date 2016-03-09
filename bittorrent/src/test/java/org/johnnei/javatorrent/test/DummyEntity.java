@@ -19,7 +19,7 @@ public class DummyEntity {
 	public static byte[] createRandomBytes(int amount) {
 		Random random = new Random();
 
-		byte[] bytes = new byte[20];
+		byte[] bytes = new byte[amount];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = (byte) (random.nextInt() & 0xff);
 		}
@@ -45,9 +45,16 @@ public class DummyEntity {
 		return newHash;
 	}
 
-	public static Torrent createTorrent() {
+	public static Torrent createUniqueTorrent(Torrent... torrents) {
+		byte[][] hashes = new byte[torrents.length][];
+		for (int i = 0; i < torrents.length; i++) {
+			hashes[i] = torrents[i].getHashArray();
+		}
+
+		byte[] hash = createUniqueTorrentHash(hashes);
+
 		return new Torrent.Builder()
-				.setHash(createRandomBytes(20))
+				.setHash(hash)
 				.setName("Dummy Torrent")
 				.build();
 	}

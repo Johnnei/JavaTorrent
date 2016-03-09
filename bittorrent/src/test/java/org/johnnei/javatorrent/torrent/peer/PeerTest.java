@@ -25,7 +25,7 @@ public class PeerTest extends EasyMockSupport {
 
 	@Test
 	public void testAddModuleInfo() {
-		Peer peer = new Peer(null, DummyEntity.createTorrent(), new byte[8]);
+		Peer peer = new Peer(null, DummyEntity.createUniqueTorrent(), new byte[8]);
 
 		Object o = new Object();
 		peer.addModuleInfo(o);
@@ -36,7 +36,7 @@ public class PeerTest extends EasyMockSupport {
 
 	@Test(expected=IllegalStateException.class)
 	public void testAddModuleInfoDuplicate() {
-		Peer peer = new Peer(null, DummyEntity.createTorrent(), new byte[8]);
+		Peer peer = new Peer(null, DummyEntity.createUniqueTorrent(), new byte[8]);
 
 		Object o = new Object();
 		Object o2 = new Object();
@@ -46,7 +46,7 @@ public class PeerTest extends EasyMockSupport {
 
 	@Test
 	public void testAddModuleInfoNoElement() {
-		Peer peer = new Peer(null, DummyEntity.createTorrent(), new byte[8]);
+		Peer peer = new Peer(null, DummyEntity.createUniqueTorrent(), new byte[8]);
 
 		Optional<Object> o = peer.getModuleInfo(Object.class);
 

@@ -23,16 +23,16 @@ public class PeerConnectInfo {
 	private final InetSocketAddress address;
 
 	public PeerConnectInfo(Torrent torrent, InetSocketAddress address) {
-		this.torrent = torrent;
-		this.address = address;
+		this.torrent = Objects.requireNonNull(torrent, "Torrent can not be null");
+		this.address = Objects.requireNonNull(address, "Address can not be null");
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((address == null) ? 0 : address.hashCode());
-		result = prime * result + ((torrent == null) ? 0 : torrent.hashCode());
+		result = prime * result + address.hashCode();
+		result = prime * result + torrent.hashCode();
 		return result;
 	}
 

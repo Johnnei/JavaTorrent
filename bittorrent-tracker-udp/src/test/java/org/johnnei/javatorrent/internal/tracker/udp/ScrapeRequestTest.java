@@ -29,9 +29,9 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test
 	public void testWriteRequest() {
-		Torrent torrentOne = DummyEntity.createTorrent();
-		Torrent torrentTwo = DummyEntity.createTorrent();
-		Torrent torrentThree = DummyEntity.createTorrent();
+		Torrent torrentOne = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
+		Torrent torrentThree = DummyEntity.createUniqueTorrent();
 
 		byte[] expectedOutput = new byte[60];
 		copySection(torrentOne.getHashArray(), expectedOutput, 0);
@@ -51,9 +51,9 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test
 	public void testReadAndProcessRequest() throws Exception {
-		Torrent torrentOne = DummyEntity.createTorrent();
-		Torrent torrentTwo = DummyEntity.createTorrent();
-		Torrent torrentThree = DummyEntity.createTorrent();
+		Torrent torrentOne = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
+		Torrent torrentThree = DummyEntity.createUniqueTorrent();
 
 		TorrentInfo infoOne = new TorrentInfo(torrentOne, Clock.systemDefaultZone());
 		TorrentInfo infoTwo = new TorrentInfo(torrentThree, Clock.systemDefaultZone());
@@ -99,9 +99,9 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test(expected=TrackerException.class)
 	public void testReadAndProcessBrokenRequest() throws Exception {
-		Torrent torrentOne = DummyEntity.createTorrent();
-		Torrent torrentTwo = DummyEntity.createTorrent();
-		Torrent torrentThree = DummyEntity.createTorrent();
+		Torrent torrentOne = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
+		Torrent torrentThree = DummyEntity.createUniqueTorrent();
 
 		byte[] inputBytes = {
 				// Torrent one

@@ -6,7 +6,7 @@ import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.johnnei.javatorrent.network.ByteInputStream;
+import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.test.StubEntity;
 import org.johnnei.javatorrent.torrent.AFiles;
 import org.johnnei.javatorrent.torrent.FileInfo;

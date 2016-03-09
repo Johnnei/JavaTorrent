@@ -32,7 +32,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.newCapture;
 import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
-import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
+import static org.johnnei.javatorrent.test.DummyEntity.createUniqueTorrent;
 import static org.johnnei.javatorrent.test.TestUtils.assertEqualsMethod;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -104,7 +104,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 
 	@Test
 	public void testAddAndHasTorrent() {
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 
 		replayAll();
 
@@ -132,7 +132,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 
 		replayAll();
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 
 		cut.addTorrent(torrent);
 		cut.announce(torrent);
@@ -145,7 +145,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 	public void testAnnounceWithinInterval() throws Exception {
 		replayAll();
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 
 		cut.addTorrent(torrent);
 		// Move clock back to simulate that we're still in the interval period
@@ -160,9 +160,9 @@ public class UdpTrackerTest extends EasyMockSupport {
 	public void testGetInfo() {
 		replayAll();
 
-		Torrent torrentOne = createTorrent();
-		Torrent torrentTwo = createTorrent();
-		Torrent torrentThree = createTorrent();
+		Torrent torrentOne = createUniqueTorrent();
+		Torrent torrentTwo = createUniqueTorrent();
+		Torrent torrentThree = createUniqueTorrent();
 
 		cut.addTorrent(torrentOne);
 		cut.addTorrent(torrentTwo);
@@ -182,7 +182,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 		udpTrackerSocketMock.submitRequest(same(cut), and(capture(payloadCapture), notNull()));
 		replayAll();
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 
 		cut.addTorrent(torrent);
 		cut.scrape();
@@ -194,7 +194,7 @@ public class UdpTrackerTest extends EasyMockSupport {
 	@Test
 	public void testScrapeWithinInterval() {
 		replayAll();
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 
 		// Move clock back to simulate that we're still in the interval period
 		clock.setClock(Clock.offset(fixedClock, Duration.ofSeconds(-10)));

@@ -6,14 +6,17 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
+import org.johnnei.javatorrent.internal.network.ByteInputStream;
+import org.johnnei.javatorrent.internal.network.ByteOutputStream;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
 import org.slf4j.Logger;
@@ -66,8 +69,8 @@ public class BitTorrentSocket {
 	 */
 	private Queue<IMessage> blockQueue;
 
-
 	private OutStream buffer;
+
 	private int bufferSize;
 
 	/**
@@ -80,6 +83,10 @@ public class BitTorrentSocket {
 	 */
 	private LocalDateTime lastActivity;
 
+	/**
+	 * Creates a new unbound BitTorrent socket.
+	 * @param messageFactory The factory to create {@link IMessage} instances.
+	 */
 	public BitTorrentSocket(MessageFactory messageFactory) {
 		this.messageFactory = messageFactory;
 		messageQueue = new LinkedList<>();
@@ -87,12 +94,24 @@ public class BitTorrentSocket {
 		lastActivity = LocalDateTime.now(clock);
 	}
 
+	/**
+	 * Creates a new bound BitTorrent socket.
+	 * @param messageFactory The factory to create {@link IMessage} instances.
+	 * @param socket The bound socket.
+	 * @throws IOException When the IO streams can not be wrapped.
+	 */
 	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) throws IOException {
 		this(messageFactory);
-		this.socket = socket;
+		this.socket = Objects.requireNonNull(socket, "Socket cannot be null, use other constructor instead.");
 		createIOStreams();
 	}
 
+	/**
+	 * Attempts to connect to the given endpoint in a blocking manner.
+	 * @param degradation The socket degradation order.
+	 * @param address The address to connect to
+	 * @throws IOException When an IO error occur during the establishing of a connection.
+	 */
 	public void connect(ConnectionDegradation degradation, InetSocketAddress address) throws IOException {
 		if (socket != null) {
 			return;
@@ -100,7 +119,7 @@ public class BitTorrentSocket {
 
 		BitTorrentSocketException exception = new BitTorrentSocketException("Failed to connect to end point.");
 		socket = degradation.createPreferredSocket();
-		while (socket != null && (socket.isClosed() || socket.isConnecting())) {
+		while (socket.isClosed()) {
 			try {
 				socket.connect(address);
 				createIOStreams();
@@ -121,7 +140,7 @@ public class BitTorrentSocket {
 	 * @param message The message to be added to the queue
 	 */
 	public void enqueueMessage(IMessage message) {
-		if (message.getId() == BitTorrent.MESSAGE_PIECE) {
+		if (message instanceof MessageBlock) {
 			synchronized (BLOCK_QUEUE_LOCK) {
 				blockQueue.add(message);
 			}
@@ -218,7 +237,7 @@ public class BitTorrentSocket {
 
 		LocalDateTime startTime = LocalDateTime.now(clock);
 
-		while (!Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
+		while (Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
 			try {
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
@@ -249,14 +268,15 @@ public class BitTorrentSocket {
 		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
 	}
 
+	/**
+	 * Polls all the transfer speeds.
+	 */
 	public void pollRates() {
 		if (inStream != null) {
-			downloadRate = inStream.getSpeed();
-			inStream.reset(downloadRate);
+			downloadRate = inStream.pollSpeed();
 		}
 		if (outStream != null) {
-			uploadRate = outStream.getSpeed();
-			outStream.reset(uploadRate);
+			uploadRate = outStream.pollSpeed();
 		}
 	}
 
@@ -275,11 +295,12 @@ public class BitTorrentSocket {
 		}
 	}
 
+	/**
+	 * Buffers the next message for reading.
+	 * @return Returns <code>true</code> when enough data is buffered to read the next message without blocking.
+	 * @throws IOException When an IO error occurs during the buffering.
+	 */
 	public boolean canReadMessage() throws IOException {
-		if (!passedHandshake) {
-			return inStream.available() >= HANDSHAKE_SIZE;
-		}
-
 		if (buffer == null) {
 			if (inStream.available() < 4) {
 				return false;
@@ -320,10 +341,22 @@ public class BitTorrentSocket {
 	}
 
 
+	/**
+	 * Returns the last polled download rate.
+	 * @return The amount of downloaded bytes
+	 *
+	 * @see #pollRates()
+	 */
 	public int getDownloadRate() {
 		return downloadRate;
 	}
 
+	/**
+	 * Returns the last polled upload rate.
+	 * @return The amount of uploaded bytes
+	 *
+	 * @see #pollRates()
+	 */
 	public int getUploadRate() {
 		return uploadRate;
 	}
@@ -363,10 +396,6 @@ public class BitTorrentSocket {
 		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
 	}
 
-	public String getHandshakeProgress() throws IOException {
-		return String.format("%d/%d bytes", inStream.available(), HANDSHAKE_SIZE);
-	}
-
 	/**
 	 * Gets the class simple name of the underlying socket.
 	 * @return The name of the socket or an empty string when no socket is set.
@@ -379,9 +408,12 @@ public class BitTorrentSocket {
 		return socket.getClass().getSimpleName();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
-		return socket.toString();
+		return String.format("BitTorrentSocket[socket=%s]", socket);
 	}
 
 	/**

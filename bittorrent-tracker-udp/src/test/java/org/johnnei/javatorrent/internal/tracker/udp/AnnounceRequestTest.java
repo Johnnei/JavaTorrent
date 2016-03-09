@@ -31,7 +31,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testAnnounceRequest() {
-		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
 		new AnnounceRequest(info, new byte[0], 5);
 	}
 
@@ -145,7 +145,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		};
 
 		InStream inStream = new InStream(inputData);
-		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
 		AnnounceRequest request = new AnnounceRequest(info, DummyEntity.createPeerId(), 27960);
 
 		request.readResponse(inStream);
@@ -181,7 +181,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		};
 
 		InStream inStream = new InStream(inputData);
-		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
 		AnnounceRequest request = new AnnounceRequest(info, DummyEntity.createPeerId(), 27960);
 
 		request.readResponse(inStream);
@@ -202,7 +202,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 	@Test
 	public void testGetAction() {
 		AnnounceRequest request = new AnnounceRequest(
-				new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone()),
+				new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone()),
 				DummyEntity.createPeerId(),
 				5);
 
@@ -212,7 +212,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 	@Test
 	public void testGetMinimalSize() {
 		AnnounceRequest request = new AnnounceRequest(
-				new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone()),
+				new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone()),
 				DummyEntity.createPeerId(),
 				5);
 

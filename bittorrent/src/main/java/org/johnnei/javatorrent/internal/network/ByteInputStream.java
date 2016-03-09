@@ -1,16 +1,16 @@
-package org.johnnei.javatorrent.network;
+package org.johnnei.javatorrent.internal.network;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class ByteInputStream extends DataInputStream {
-	
+
 	/**
 	 * The speed in bytes that this inputStream is being read
 	 */
 	private int speed;
-	
+
 	public ByteInputStream(InputStream in) {
 		super(in);
 		speed = 0;
@@ -36,18 +36,14 @@ public class ByteInputStream extends DataInputStream {
 
 	public byte[] readByteArray(int length) throws IOException {
 		byte[] array = new byte[length];
-		for (int i = 0; i < array.length; i++) {
-			array[i] = (byte) (read() & 0xFF);
-		}
+		readFully(array);
 		return array;
 	}
 
-	public int getSpeed() {
-		return speed;
-	}
-
-	public void reset(int downloadRate) {
-		speed -= downloadRate;
+	public int pollSpeed() {
+		int polledSpeed = speed;
+		speed -= polledSpeed;
+		return polledSpeed;
 	}
 
 }

@@ -33,7 +33,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.notNull;
-import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
+import static org.johnnei.javatorrent.test.DummyEntity.createUniqueTorrent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -145,7 +145,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 				0x00, 0x00, 0x00, 0x02
 		});
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 		tracker.addTorrent(torrent);
 
 		ScrapeRequest scrapeMessage = new ScrapeRequest(Collections.singletonList(torrent));
@@ -194,7 +194,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 				0x01, 0x23, 0x45, 0x67, (byte) 0x89, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF
 		});
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 		tracker.addTorrent(torrent);
 
 		expect(torrentClientMock.createUniqueTransactionId()).andReturn(++transactionId);
@@ -235,7 +235,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 
 	@Test
 	public void testPacketFullyTimedout() throws Exception {
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 		tracker.addTorrent(torrent);
 
 		tracker = new UdpTrackerWrapper(new UdpTracker.Builder()

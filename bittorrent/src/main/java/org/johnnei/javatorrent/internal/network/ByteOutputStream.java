@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.network;
+package org.johnnei.javatorrent.internal.network;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -26,14 +26,12 @@ public class ByteOutputStream extends FilterOutputStream {
 		}
 	}
 
-	public int getSpeed() {
-		return speed;
+	public int pollSpeed() {
+		int polledSpeed = speed;
+		speed -= polledSpeed;
+		return polledSpeed;
 	}
 
-	public void reset(int uploadRate) {
-		speed -= uploadRate;
-	}
-	
 	public void writeByte(int i) throws IOException {
 		write(i);
 	}
