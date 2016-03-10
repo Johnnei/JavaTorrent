@@ -53,25 +53,42 @@ public class TorrentInfo {
 		lastAnnounceTime = LocalDateTime.now(clock).minus(DEFAULT_ANNOUNCE_INTERVAL);
 	}
 
-	public void updateAnnounceTime() {
-		lastAnnounceTime = LocalDateTime.now(clock);
-	}
-
+	/**
+	 * Sets the current event for this {@link Torrent}
+	 * @param event The event.
+	 */
 	public void setEvent(TrackerEvent event) {
 		this.event = event;
 	}
 
+	/**
+	 * Updates the seeder and leecher counts.
+	 * This is assumed to be the result of a {@link ITracker#announce(Torrent)} request and therefor updates {@link #lastAnnounceTime}
+	 * @param seeders The amount of seeders in the swarm
+	 * @param leechers The amount of leechers in the swarm.
+	 */
 	public void setInfo(int seeders, int leechers) {
+		lastAnnounceTime = LocalDateTime.now(clock);
 		this.seeders = seeders;
 		this.leechers = leechers;
 	}
 
+	/**
+	 * Updates the seeder, leecher and completed downloads count.
+	 * @param seeders The amount of seeders in the swarm
+	 * @param leechers The amount of leechers in the swarm.
+	 * @param downloadCount The amount of times this torrent has been downloaded.
+	 */
 	public void setInfo(int seeders, int leechers, int downloadCount) {
 		this.seeders = seeders;
 		this.leechers = leechers;
 		this.downloaded = downloadCount;
 	}
 
+	/**
+	 * Gets the current tracker event for this {@link Torrent}
+	 * @return The tracker event.
+	 */
 	public TrackerEvent getEvent() {
 		return event;
 	}
