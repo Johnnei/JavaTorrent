@@ -30,7 +30,9 @@ import org.johnnei.javatorrent.test.TestUtils;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.EasyMockSupport;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.capture;
@@ -48,6 +50,9 @@ import static org.junit.Assert.assertTrue;
  * Tests {@link BitTorrentSocket}
  */
 public class BitTorrentSocketTest extends EasyMockSupport {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testConnect() throws Exception {
@@ -86,7 +91,7 @@ public class BitTorrentSocketTest extends EasyMockSupport {
 		verifyAll();
 	}
 
-	@Test(expected = BitTorrentSocketException.class)
+	@Test
 	public void testConnectFailure() throws Exception {
 		InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), 27960);
 
@@ -101,6 +106,9 @@ public class BitTorrentSocketTest extends EasyMockSupport {
 		expectLastCall().andThrow(new IOException("Fail on first connect"));
 
 		expect(connectionDegradationMock.degradeSocket(same(socketMockOne))).andReturn(Optional.empty());
+
+		thrown.expect(BitTorrentSocketException.class);
+		thrown.expectMessage("Connection Stack");
 
 		replayAll();
 
