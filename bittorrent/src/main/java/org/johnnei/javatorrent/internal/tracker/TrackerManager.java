@@ -73,7 +73,7 @@ public class TrackerManager {
 	 * @return a collection of trackers which support the given torrent
 	 */
 	public List<ITracker> getTrackersFor(Torrent torrent) {
-		return trackerFactory.getTrackingsHavingTorrent(torrent);
+		return trackerFactory.getTrackersHavingTorrent(torrent);
 	}
 
 }

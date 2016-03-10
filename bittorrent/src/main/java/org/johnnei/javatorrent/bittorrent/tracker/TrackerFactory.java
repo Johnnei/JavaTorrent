@@ -54,14 +54,16 @@ public class TrackerFactory {
 		}
 
 		try {
-			return Optional.of(trackerSuppliers.get(protocol).apply(trackerUrl, torrentClient));
+			ITracker tracker = trackerSuppliers.get(protocol).apply(trackerUrl, torrentClient);
+			trackerInstances.put(trackerUrl, tracker);
+			return Optional.of(tracker);
 		} catch (TrackerException e) {
 			LOGGER.warn(String.format("Failed create new tracker for url: %s", trackerUrl), e);
 			return Optional.empty();
 		}
 	}
 
-	public List<ITracker> getTrackingsHavingTorrent(Torrent torrent) {
+	public List<ITracker> getTrackersHavingTorrent(Torrent torrent) {
 		return trackerInstances.values().stream()
 				.filter(tracker -> tracker.hasTorrent(torrent))
 				.collect(Collectors.toList());
@@ -105,7 +107,11 @@ public class TrackerFactory {
 
 		public TrackerFactory build() {
 			if (trackerSuppliers.isEmpty()) {
-				throw new IllegalArgumentException("At least one tracker protocol must be configured.");
+				throw new IllegalStateException("At least one tracker protocol must be configured.");
+			}
+
+			if (torrentClient == null) {
+				throw new IllegalStateException("Torrent client must be set");
 			}
 
 			return new TrackerFactory(this);

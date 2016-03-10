@@ -49,7 +49,7 @@ public class TrackerManagerTest extends EasyMockSupport {
 			expectLastCall();
 		});
 
-		expect(trackerFactoryMock.getTrackingsHavingTorrent(same(torrentMock))).andReturn(trackers);
+		expect(trackerFactoryMock.getTrackersHavingTorrent(same(torrentMock))).andReturn(trackers);
 		replayAll();
 
 		cut.announce(torrentMock);
