@@ -108,7 +108,7 @@ public class UdpTracker implements ITracker {
 
 		activeConnection = new Connection(clock);
 		torrentMap = new HashMap<>();
-		announceInterval = (int) TorrentInfo.DEFAULT_ANNOUNCE_INTERVAL.toMillis();
+		announceInterval = (int) Duration.ofSeconds(30).toMillis();
 		lastScrapeTime = LocalDateTime.now(clock).minus(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS);
 
 		// Parse URL
@@ -200,7 +200,7 @@ public class UdpTracker implements ITracker {
 			torrentInfo = torrentMap.get(torrent);
 		}
 
-		if(torrentInfo.getTimeSinceLastAnnouce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
+		if(torrentInfo.getTimeSinceLastAnnounce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
 			// We're not allowed to announce yet
 			return;
 		}

@@ -50,7 +50,7 @@ public class TorrentInfo {
 		this.torrent = torrent;
 		this.clock = clock;
 		this.event = TrackerEvent.EVENT_STARTED;
-		lastAnnounceTime = LocalDateTime.now(clock).minus(DEFAULT_ANNOUNCE_INTERVAL);
+		lastAnnounceTime = LocalDateTime.now(clock).minus(Duration.ofSeconds(30));
 	}
 
 	/**
@@ -126,7 +126,7 @@ public class TorrentInfo {
 	 *
 	 * @return The duration since last announce
 	 */
-	public Duration getTimeSinceLastAnnouce() {
+	public Duration getTimeSinceLastAnnounce() {
 		return Duration.between(lastAnnounceTime, LocalDateTime.now(clock));
 	}
 
