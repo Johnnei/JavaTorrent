@@ -48,15 +48,15 @@ public class MessageFactory {
 			messageSuppliers = new HashMap<>();
 
 			// Register BitTorrent messages
-			registerMessage(BitTorrent.MESSAGE_BITFIELD, () -> new MessageBitfield());
-			registerMessage(BitTorrent.MESSAGE_CANCEL, () -> new MessageCancel());
-			registerMessage(BitTorrent.MESSAGE_CHOKE, () -> new MessageChoke());
-			registerMessage(BitTorrent.MESSAGE_HAVE, () -> new MessageHave());
-			registerMessage(BitTorrent.MESSAGE_INTERESTED, () -> new MessageInterested());
-			registerMessage(BitTorrent.MESSAGE_PIECE, () -> new MessageBlock());
-			registerMessage(BitTorrent.MESSAGE_REQUEST, () -> new MessageRequest());
-			registerMessage(BitTorrent.MESSAGE_UNCHOKE, () -> new MessageUnchoke());
-			registerMessage(BitTorrent.MESSAGE_UNINTERESTED, () -> new MessageUninterested());
+			registerMessage(BitTorrent.MESSAGE_BITFIELD, MessageBitfield::new);
+			registerMessage(BitTorrent.MESSAGE_CANCEL, MessageCancel::new);
+			registerMessage(BitTorrent.MESSAGE_CHOKE, MessageChoke::new);
+			registerMessage(BitTorrent.MESSAGE_HAVE, MessageHave::new);
+			registerMessage(BitTorrent.MESSAGE_INTERESTED, MessageInterested::new);
+			registerMessage(BitTorrent.MESSAGE_PIECE, MessageBlock::new);
+			registerMessage(BitTorrent.MESSAGE_REQUEST, MessageRequest::new);
+			registerMessage(BitTorrent.MESSAGE_UNCHOKE, MessageUnchoke::new);
+			registerMessage(BitTorrent.MESSAGE_UNINTERESTED, MessageUninterested::new);
 		}
 
 		public Builder registerMessage(int id, Supplier<IMessage> messageSupplier) {

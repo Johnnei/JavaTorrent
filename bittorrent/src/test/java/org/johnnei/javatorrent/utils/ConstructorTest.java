@@ -2,6 +2,8 @@ package org.johnnei.javatorrent.utils;
 
 import java.lang.reflect.Constructor;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -14,7 +16,8 @@ public class ConstructorTest {
 
 	private static final Class<?>[] utilClasses = {
 			MathUtils.class,
-			StringUtils.class
+			StringUtils.class,
+			BitTorrent.class
 	};
 
 	@Test
