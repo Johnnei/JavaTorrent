@@ -3,13 +3,10 @@ package org.johnnei.javatorrent.bittorrent.tracker;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 import org.johnnei.javatorrent.torrent.Torrent;
 
 public class TorrentInfo {
-
-	public static final Duration DEFAULT_ANNOUNCE_INTERVAL = Duration.of(30, ChronoUnit.SECONDS);
 
 	/**
 	 * The clock instance to obtain the time
