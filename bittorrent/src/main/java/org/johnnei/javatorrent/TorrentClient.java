@@ -17,14 +17,14 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
+import org.johnnei.javatorrent.internal.torrent.TorrentManager;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
-import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
 import org.slf4j.Logger;

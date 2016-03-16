@@ -12,7 +12,7 @@ public class Bitfield {
 	 * Write lock: Resizing the datastructure
 	 */
 	private ReadWriteLock resizeLock;
-	
+
 	private byte[] bitfield;
 
 	public Bitfield() {
@@ -26,7 +26,7 @@ public class Bitfield {
 
 	/**
 	 * Increases or decreased the bitfield size but it will preserve the old data
-	 * 
+	 *
 	 * @param size The new size to grow/shrink to
 	 */
 	public void setSize(int size) {
@@ -36,26 +36,26 @@ public class Bitfield {
 			return;
 		}
 		resizeLock.readLock().unlock();
-		
+
 		resizeLock.writeLock().lock();
-		
+
 		byte[] newBitfield = new byte[size];
 		System.arraycopy(bitfield, 0, newBitfield, 0, Math.min(size, bitfield.length));
 		bitfield = newBitfield;
-		
+
 		resizeLock.writeLock().unlock();
 	}
 
 	/**
 	 * Checks the bitfield if we have the given piece
-	 * 
+	 *
 	 * @param pieceIndex the piece to check
 	 * @return True if we verified the hash of that piece, else false
 	 */
 	public boolean hasPiece(int pieceIndex) {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
-		
+
 		resizeLock.readLock().lock();
 		if (byteIndex < bitfield.length) {
 			int bitVal = (0x80 >> bit);
@@ -71,7 +71,7 @@ public class Bitfield {
 	/**
 	 * Notify that we have the given piece<br/>
 	 * This will update the bitfield to bitwise OR the bit to 1
-	 * 
+	 *
 	 * @param pieceIndex The piece to add
 	 */
 	public void havePiece(int pieceIndex) {
@@ -81,7 +81,7 @@ public class Bitfield {
 	/**
 	 * Notify that we have the given piece<br/>
 	 * This will update the bitfield to bitwise OR the bit to 1
-	 * 
+	 *
 	 * @param pieceIndex The piece to add
 	 * @param mayExpand If the bitfield may grow to fit the new have data
 	 */
@@ -101,7 +101,7 @@ public class Bitfield {
 		bitfield[byteIndex] |= (0x80 >> bit);
 		resizeLock.readLock().unlock();
 	}
-	
+
 	/**
 	 * Returns a copy of the internal byte array
 	 * @return
@@ -115,7 +115,7 @@ public class Bitfield {
 
 	/**
 	 * Goes through the bitfield and checks how many pieces the client has
-	 * 
+	 *
 	 * @return The amount of pieces the client has
 	 */
 	public int countHavePieces() {
