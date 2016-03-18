@@ -3,7 +3,7 @@ package org.johnnei.javatorrent.torrent.algos.pieceselector;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
@@ -28,7 +28,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		pieceOne.setBlockStatus(1, BlockStatus.Requested);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		expect(filesMock.getNeededPieces()).andReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = createMock(Peer.class);
@@ -53,7 +53,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 		pieceTwo.setBlockStatus(1, BlockStatus.Requested);
 
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		expect(filesMock.getNeededPieces()).andReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = createMock(Peer.class);
@@ -77,7 +77,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		Piece pieceOne = new Piece(null, new byte[20], 0, 10, 5);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		expect(filesMock.getNeededPieces()).andReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = createMock(Peer.class);

@@ -8,7 +8,7 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
-import org.johnnei.javatorrent.torrent.MetadataFile;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
@@ -58,7 +58,7 @@ public class UTMetadataExtension implements IExtension {
 			return;
 		}
 
-		Optional<MetadataFile> metadataFile = peer.getTorrent().getMetadata();
+		Optional<MetadataFileSet> metadataFile = peer.getTorrent().getMetadata();
 		int metadataSize = (int) metadataFile.get().getTotalFileSize();
 		bencoder.string("metadata_size");
 		bencoder.integer(metadataSize);

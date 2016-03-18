@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.test.StubEntity;
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
@@ -42,7 +42,7 @@ public class DiskJobWriteBlockTest {
 
 		File testFile = tempFolder.newFile();
 		FileInfo fileInfo = new FileInfo(18, 0, testFile, 1);
-		AFiles filesStub = StubEntity.stubAFiles(1, fileInfo);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo);
 		Piece piece = new Piece(filesStub, new byte[20], 0, 18, 18);
 		DiskJobWriteBlock cut = new DiskJobWriteBlock(piece, 0, bytes, x -> countDownLatch.countDown());
 		cut.process();

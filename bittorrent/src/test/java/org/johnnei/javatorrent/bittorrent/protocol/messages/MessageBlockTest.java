@@ -4,7 +4,7 @@ import java.time.Duration;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -49,7 +49,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		Job expectedJob = new Job(5, 1);
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFiles()).andStubReturn(filesMock);
@@ -74,7 +74,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		Job expectedJob = new Job(5, 1);
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFiles()).andStubReturn(filesMock);
@@ -101,7 +101,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		Job expectedJob = new Job(5, 1);
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFiles()).andStubReturn(filesMock);
@@ -132,7 +132,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		Job expectedJob = new Job(5, 1);
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFiles()).andStubReturn(filesMock);

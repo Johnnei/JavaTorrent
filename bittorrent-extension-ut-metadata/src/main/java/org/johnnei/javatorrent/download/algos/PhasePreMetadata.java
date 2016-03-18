@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.MetadataFile;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -37,7 +37,7 @@ public class PhasePreMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
-		MetadataFile metadata = new MetadataFile(torrent, metadataFile);
+		MetadataFileSet metadata = new MetadataFileSet(torrent, metadataFile);
 		torrent.setFiles(metadata);
 		torrent.setMetadata(metadata);
 	}

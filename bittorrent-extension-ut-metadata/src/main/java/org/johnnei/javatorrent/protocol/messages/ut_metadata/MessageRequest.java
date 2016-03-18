@@ -6,7 +6,7 @@ import org.johnnei.javatorrent.disk.DiskJobReadBlock;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
-import org.johnnei.javatorrent.torrent.MetadataFile;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -44,14 +44,14 @@ public class MessageRequest extends Message {
 
 			peer.getTorrent().addDiskJob(new DiskJobReadBlock(
 					piece,
-					blockIndex * MetadataFile.BLOCK_SIZE,
+					blockIndex * MetadataFileSet.BLOCK_SIZE,
 					piece.getBlockSize(blockIndex),
 					diskJob -> onReadMetadataBlockCompleted(peer, diskJob)));
 		}
 	}
 
 	private void onReadMetadataBlockCompleted(Peer peer, DiskJobReadBlock readJob) {
-		int blockIndex = readJob.getOffset() / MetadataFile.BLOCK_SIZE;
+		int blockIndex = readJob.getOffset() / MetadataFileSet.BLOCK_SIZE;
 		Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
 		if (!peerExtensions.isPresent() || !peerExtensions.get().hasExtension(UTMetadata.NAME)) {
 			LOGGER.warn("Request to send Metadata block {} to {} has been rejected. Peer doesn't know about UT_METADATA", blockIndex, peer);

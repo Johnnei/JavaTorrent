@@ -3,7 +3,7 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -53,7 +53,7 @@ public class MessageRequestTest extends EasyMockSupport {
 
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFiles()).andStubReturn(filesMock);
@@ -79,7 +79,7 @@ public class MessageRequestTest extends EasyMockSupport {
 
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AFiles filesMock = createMock(AFiles.class);
+		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);

@@ -5,7 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.test.StubEntity;
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
@@ -46,7 +46,7 @@ public class DiskJobCheckHashTest {
 	@Test
 	public void testMatchingHash() throws Exception {
 		FileInfo fileInfo = new FileInfo(11560, 0, testFile, 1);
-		AFiles filesStub = StubEntity.stubAFiles(1, fileInfo);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo);
 		Piece piece = new Piece(filesStub, expectedHash, 0, 11560, 11560);
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> countDownLatch.countDown());
 
@@ -59,7 +59,7 @@ public class DiskJobCheckHashTest {
 	@Test
 	public void testNonMatchingHash() throws Exception {
 		FileInfo fileInfo = new FileInfo(11560, 0, testFileMistmatch, 1);
-		AFiles filesStub = StubEntity.stubAFiles(1, fileInfo);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo);
 		Piece piece = new Piece(filesStub, expectedHash, 0, 11560, 11560);
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> countDownLatch.countDown());
 

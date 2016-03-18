@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutorService;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.torrent.files.Piece;
@@ -46,11 +46,11 @@ public class StubEntity {
 	 * @param pieceCount the amount of pieces reported
 	 * @return
 	 */
-	public static AFiles stubAFiles(int pieceCount) {
+	public static AbstractFileSet stubAFiles(int pieceCount) {
 		return new AFilesStub(pieceCount);
 	}
 
-	public static AFiles stubAFiles(int pieceCount, FileInfo fileInfo) {
+	public static AbstractFileSet stubAFiles(int pieceCount, FileInfo fileInfo) {
 		return new AFilesStub(pieceCount, fileInfo);
 	}
 
@@ -58,7 +58,7 @@ public class StubEntity {
 		return new PeerManagerStub();
 	}
 
-	private static final class AFilesStub extends AFiles {
+	private static final class AFilesStub extends AbstractFileSet {
 
 		public AFilesStub(int pieceCount, FileInfo defaultFile) {
 			this(pieceCount);

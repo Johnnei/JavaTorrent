@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.torrent.files.Piece;
 
-public abstract class AFiles {
+public abstract class AbstractFileSet {
 
 	/**
 	 * The pieces which contain all the information to complete the downloading of the files.
@@ -15,7 +15,7 @@ public abstract class AFiles {
 	protected List<Piece> pieces;
 
 	/**
-	 * The file info about all the files which are contained within this {@link AFiles}
+	 * The file info about all the files which are contained within this {@link AbstractFileSet}
 	 */
 	protected List<FileInfo> fileInfos;
 
@@ -119,7 +119,7 @@ public abstract class AFiles {
 	}
 
 	/**
-	 * Gets the sum of the file sizes which are defined in this {@link AFiles}
+	 * Gets the sum of the file sizes which are defined in this {@link AbstractFileSet}
 	 *
 	 * @return The total size of all files in this file set.
 	 */

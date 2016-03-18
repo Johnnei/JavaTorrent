@@ -53,12 +53,12 @@ public class Torrent implements Runnable {
 	/**
 	 * Contains all data of the actual torrent
 	 */
-	private AFiles files;
+	private AbstractFileSet files;
 
 	/**
 	 * Contains the information about the metadata backing this torrent.
 	 */
-	private Optional<MetadataFile> metadata;
+	private Optional<MetadataFileSet> metadata;
 
 	/**
 	 * Regulates the selection of pieces and the peers to download the pieces
@@ -155,7 +155,7 @@ public class Torrent implements Runnable {
 		}
 
 		Torrent torrent = peer.getTorrent();
-		AFiles files = torrent.getFiles();
+		AbstractFileSet files = torrent.getFiles();
 
 		if (files.countCompletedPieces() == 0) {
 			return;
@@ -384,7 +384,7 @@ public class Torrent implements Runnable {
 	 * Sets the current set of files this torrent is downloading.
 	 * @param files The file set.
 	 */
-	public void setFiles(AFiles files) {
+	public void setFiles(AbstractFileSet files) {
 		this.files = files;
 	}
 
@@ -392,11 +392,11 @@ public class Torrent implements Runnable {
 	 * Sets the associated metadata file of the torrent
 	 * @param metadata the metadata which is backing this torrent
 	 */
-	public void setMetadata(MetadataFile metadata) {
+	public void setMetadata(MetadataFileSet metadata) {
 		this.metadata = Optional.of(metadata);
 	}
 
-	public Optional<MetadataFile> getMetadata() {
+	public Optional<MetadataFileSet> getMetadata() {
 		return metadata;
 	}
 
@@ -420,12 +420,12 @@ public class Torrent implements Runnable {
 
 	/**
 	 * Gets the files which are being downloaded within this torrent. This could be the metadata of the torrent (.torrent file),
-	 * the files in the torrent or something else if a module changed it with {@link #setFiles(AFiles)}.
+	 * the files in the torrent or something else if a module changed it with {@link #setFiles(AbstractFileSet)}.
 	 * @return The set of files being downloaded.
 	 *
-	 * @see #setFiles(AFiles)
+	 * @see #setFiles(AbstractFileSet)
 	 */
-	public AFiles getFiles() {
+	public AbstractFileSet getFiles() {
 		return files;
 	}
 

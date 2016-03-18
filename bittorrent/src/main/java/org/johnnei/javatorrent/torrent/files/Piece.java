@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
-import org.johnnei.javatorrent.torrent.AFiles;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.StringUtils;
@@ -21,7 +21,7 @@ public class Piece {
 	/**
 	 * The files associated with this piece
 	 */
-	protected AFiles files;
+	protected AbstractFileSet files;
 	/**
 	 * The index of this piece in the torrent
 	 */
@@ -37,7 +37,7 @@ public class Piece {
 
 	private byte[] expectedHash;
 
-	public Piece(AFiles files, byte[] hash, int index, int pieceSize, int blockSize) {
+	public Piece(AbstractFileSet files, byte[] hash, int index, int pieceSize, int blockSize) {
 		this.index = index;
 		this.files = files;
 		this.expectedHash = hash;

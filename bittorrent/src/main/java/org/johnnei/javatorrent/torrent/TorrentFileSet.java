@@ -19,9 +19,9 @@ import org.johnnei.javatorrent.utils.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Files extends AFiles {
+public class TorrentFileSet extends AbstractFileSet {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Files.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentFileSet.class);
 
 	public static final int BLOCK_SIZE = 1 << 14;
 
@@ -40,12 +40,12 @@ public class Files extends AFiles {
 	private Bitfield bitfield;
 
 	/**
-	 * Creates a Files instance based upon a .torrent file
+	 * Creates a TorrentFileSet instance based upon a .torrent file
 	 *
 	 * @param torrentFile The metadata file containing the torrent information
 	 * @param downloadFolder The folder in which the downloads need to be stored.
 	 */
-	public Files(File torrentFile, File downloadFolder) {
+	public TorrentFileSet(File torrentFile, File downloadFolder) {
 		parseTorrentFileData(torrentFile, downloadFolder);
 		bitfield = new Bitfield(getBitfieldSize());
 	}
@@ -155,10 +155,6 @@ public class Files extends AFiles {
 	@Override
 	public Piece getPiece(int index) {
 		return pieces.get(index);
-	}
-
-	public File getFolderName() {
-		return new File(folderName);
 	}
 
 	/**

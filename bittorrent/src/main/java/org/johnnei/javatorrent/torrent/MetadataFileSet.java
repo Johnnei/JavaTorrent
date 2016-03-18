@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
-public class MetadataFile extends AFiles {
+public class MetadataFileSet extends AbstractFileSet {
 
 	public static final int BLOCK_SIZE = 16384;
 
@@ -17,7 +17,7 @@ public class MetadataFile extends AFiles {
 	 */
 	private int fileSize;
 
-	public MetadataFile(Torrent torrent, File metadataFile) {
+	public MetadataFileSet(Torrent torrent, File metadataFile) {
 		this.fileInfos = new ArrayList<>();
 		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile, 1));
 		this.fileSize = (int) metadataFile.length();
@@ -54,7 +54,7 @@ public class MetadataFile extends AFiles {
 	}
 
 	@Override
-	public byte[] getBitfieldBytes() throws UnsupportedOperationException {
+	public byte[] getBitfieldBytes() {
 		throw new UnsupportedOperationException("UT_METADATA does not support bitfields.");
 	}
 

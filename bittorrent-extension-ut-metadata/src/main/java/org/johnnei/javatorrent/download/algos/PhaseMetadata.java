@@ -11,7 +11,7 @@ import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
-import org.johnnei.javatorrent.torrent.Files;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
@@ -76,7 +76,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrent.setFiles(new Files(metadataFile, downloadFolder));
+		torrent.setFiles(new TorrentFileSet(metadataFile, downloadFolder));
 		LOGGER.info("Metadata download completed");
 	}
 
