@@ -8,11 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
+import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Bitfield;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
@@ -23,7 +23,8 @@ public class TorrentFileSet extends AbstractFileSet {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentFileSet.class);
 
-	public static final int BLOCK_SIZE = 1 << 14;
+	private static final int BLOCK_SIZE = 1 << 14;
+	public static final String ERR_INCOMPLETE_INFO_ENTRY = "Metadata file appears to be validly encoded but is missing critical information from the 'info' entry.";
 
 	/**
 	 * The folder name to put the files in
@@ -44,8 +45,13 @@ public class TorrentFileSet extends AbstractFileSet {
 	 *
 	 * @param torrentFile The metadata file containing the torrent information
 	 * @param downloadFolder The folder in which the downloads need to be stored.
+	 * @throws IllegalArgumentException When the torrent file is missing or incomplete.
 	 */
 	public TorrentFileSet(File torrentFile, File downloadFolder) {
+		if (!torrentFile.exists()) {
+			throw new IllegalArgumentException(String.format("Torrent file (%s) does not exist.", torrentFile.getAbsolutePath()));
+		}
+
 		parseTorrentFileData(torrentFile, downloadFolder);
 		bitfield = new Bitfield(getBitfieldSize());
 	}
@@ -53,7 +59,20 @@ public class TorrentFileSet extends AbstractFileSet {
 	private void parseTorrentFileData(File torrentFile, File downloadFolder) {
 		try (ByteInputStream in = new ByteInputStream(new FileInputStream(torrentFile))) {
 			Bencode decoder = new Bencode(in.readString(in.available()));
-			parseDictionary(decoder.decodeDictionary(), downloadFolder);
+
+			Map<String, Object> metadataInfo = decoder.decodeDictionary();
+			if (!isInfoDirectory(metadataInfo)) {
+				if (!metadataInfo.containsKey("info")) {
+					throw new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY);
+				}
+
+				metadataInfo = (Map<String, Object>) metadataInfo.get("info");
+				if (!isInfoDirectory(metadataInfo)) {
+					throw new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY);
+				}
+			}
+
+			parseDictionary(metadataInfo, downloadFolder);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to parse torrent data.", e);
 			ThreadUtils.sleep(10);
@@ -102,7 +121,7 @@ public class TorrentFileSet extends AbstractFileSet {
 		pieces = new ArrayList<>(pieceAmount);
 		for (int index = 0; index < pieceAmount; index++) {
 			int hashOffset = index * 20;
-			int size = (remainingSize >= pieceSize) ? pieceSize : (int) remainingSize;
+			int size = (int) Math.min(pieceSize, remainingSize);
 			byte[] sha1Hash = new byte[20];
 			char[] hashBytes = pieceHashes.substring(hashOffset, hashOffset + 20).toCharArray();
 			for (int i = 0; i < sha1Hash.length; i++) {
@@ -111,6 +130,22 @@ public class TorrentFileSet extends AbstractFileSet {
 			pieces.add(new Piece(this, sha1Hash, index, size, BLOCK_SIZE));
 			remainingSize -= size;
 		}
+	}
+
+	private boolean isInfoDirectory(Map<String, Object> metadata) {
+		if (!metadata.containsKey("length") && !metadata.containsKey("files")) {
+			return false;
+		}
+
+		if (!metadata.containsKey("pieces")) {
+			return false;
+		}
+
+		if (!metadata.containsKey("piece length")) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private long getNumberFromDictionary(Object o) {
