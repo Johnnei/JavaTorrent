@@ -3,34 +3,35 @@ package org.johnnei.javatorrent.torrent;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Objects;
 
 public class FileInfo {
 
 	/**
-	 * The filename
+	 * The fileName
 	 */
-	private String filename;
-	
+	private String fileName;
+
 	/**
 	 * The filesize of this file in the torrent
 	 */
 	private long filesize;
-	
+
 	/**
 	 * The amount of pieces which contain a part of data for this file
 	 */
 	private int pieceCount;
-	
+
 	/**
 	 * The offset of the first byte crossed across all files
 	 */
 	private long firstByteOffset;
-	
+
 	/**
 	 * The link between the file on the harddrive
 	 */
-	private RandomAccessFile fileAcces;
-	
+	private RandomAccessFile fileAccess;
+
 	/**
 	 * A lock to prevent concurrent writes to a single file
 	 */
@@ -38,7 +39,7 @@ public class FileInfo {
 
 	public FileInfo(long filesize, long firstByteOffset, File file, int pieceCount) {
 		this.firstByteOffset = firstByteOffset;
-		this.filename = file.getName();
+		this.fileName = file.getName();
 		this.filesize = filesize;
 		this.pieceCount = pieceCount;
 		try {
@@ -46,7 +47,7 @@ public class FileInfo {
 				file.getParentFile().mkdirs();
 				file.createNewFile();
 			}
-			fileAcces = new RandomAccessFile(file, "rw");
+			fileAccess = new RandomAccessFile(file, "rw");
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
@@ -54,7 +55,7 @@ public class FileInfo {
 
 	/**
 	 * The amount of pieces which contain a part of data for this file
-	 * 
+	 *
 	 * @return the amount of pieces for this file
 	 */
 	public int getPieceCount() {
@@ -63,8 +64,8 @@ public class FileInfo {
 
 	/**
 	 * Gets the size of this file
-	 * 
-	 * @return
+	 *
+	 * @return The size of this file.
 	 */
 	public long getSize() {
 		return filesize;
@@ -72,19 +73,62 @@ public class FileInfo {
 
 	/**
 	 * The offset of the first byte as if the entire torrent is a single file
-	 * 
+	 *
 	 * @return the first byte offset
 	 */
 	public long getFirstByteOffset() {
 		return firstByteOffset;
 	}
 
-	public String getFilename() {
-		return filename;
+	/**
+	 * Gets the name of this file.
+	 * @return The name of this file.
+	 */
+	public String getFileName() {
+		return fileName;
 	}
 
-	public RandomAccessFile getFileAcces() {
-		return fileAcces;
+	/**
+	 * Gets the handle to write/read from this file.
+	 * @return The IO handle.
+	 */
+	public RandomAccessFile getFileAccess() {
+		return fileAccess;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null) {
+			return false;
+		}
+
+		if (!(o instanceof FileInfo)) {
+			return false;
+		}
+
+		FileInfo fileInfo = (FileInfo) o;
+		return filesize == fileInfo.filesize && firstByteOffset == fileInfo.firstByteOffset;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int hashCode() {
+		return Objects.hash(filesize, firstByteOffset);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		return String.format("FileInfo[firstByteOffset=%d, length=%d, name=%s]", firstByteOffset, filesize, fileName);
+	}
 }

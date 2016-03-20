@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
@@ -24,7 +23,9 @@ public class TorrentFileSet extends AbstractFileSet {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentFileSet.class);
 
 	private static final int BLOCK_SIZE = 1 << 14;
-	public static final String ERR_INCOMPLETE_INFO_ENTRY = "Metadata file appears to be validly encoded but is missing critical information from the 'info' entry.";
+
+	private static final String ERR_INCOMPLETE_INFO_ENTRY
+			= "Metadata file appears to be validly encoded but is missing critical information from the 'info' entry.";
 
 	/**
 	 * The folder name to put the files in
@@ -48,6 +49,10 @@ public class TorrentFileSet extends AbstractFileSet {
 	 * @throws IllegalArgumentException When the torrent file is missing or incomplete.
 	 */
 	public TorrentFileSet(File torrentFile, File downloadFolder) {
+		if (torrentFile == null) {
+			throw new IllegalArgumentException("Torrent file can not be null");
+		}
+
 		if (!torrentFile.exists()) {
 			throw new IllegalArgumentException(String.format("Torrent file (%s) does not exist.", torrentFile.getAbsolutePath()));
 		}
@@ -160,13 +165,11 @@ public class TorrentFileSet extends AbstractFileSet {
 	}
 
 	private long getNumberFromDictionary(Object o) {
-		long l = 0L;
 		if (o instanceof Integer) {
-			l = ((int) o);
+			return ((int) o);
 		} else {
-			l = (long) o;
+			return (long) o;
 		}
-		return l;
 	}
 
 	/**
@@ -229,13 +232,12 @@ public class TorrentFileSet extends AbstractFileSet {
 	 */
 	@Override
 	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
-		if (pieceIndex < 0 || blockIndex < 0 || byteOffset < 0) {
-			throw new IllegalArgumentException("pieceIndex, blockIndex and byteOffset must all be >= 0.");
-		}
+		validateGetFileForBytes(pieceIndex, blockIndex, byteOffset);
 		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * BLOCK_SIZE) + byteOffset;
 
-		for (FileInfo fileInfo : fileInfos) {
-			// If the file started before or at the wanted byteStartPosition then that file contains the bytes
+		// Iterate in reverse order so that first file having a smaller first byte offset will be the file containing this section.
+		for (int i = fileInfos.size() - 1; i >= 0; i--) {
+			FileInfo fileInfo = fileInfos.get(i);
 			if (fileInfo.getFirstByteOffset() <= bytesStartPosition) {
 				return fileInfo;
 			}
@@ -244,9 +246,22 @@ public class TorrentFileSet extends AbstractFileSet {
 		throw new IllegalArgumentException("Piece is not within fileset.");
 	}
 
-	@Override
-	public boolean hasPiece(int pieceIndex) throws NoSuchElementException {
-		return bitfield.hasPiece(pieceIndex);
+	private void validateGetFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
+		if (pieceIndex < 0 || blockIndex < 0 || byteOffset < 0) {
+			throw new IllegalArgumentException("pieceIndex, blockIndex and byteOffset must all be >= 0.");
+		}
+
+		if (pieceIndex >= pieces.size()) {
+			throw new IllegalArgumentException(String.format("Piece #%d does not exist within file set.", pieceIndex));
+		}
+
+		if (byteOffset >= getBlockSize()) {
+			throw new IllegalArgumentException("Byte offset is out of range (larger or equal to block size).");
+		}
+
+		if (blockIndex >= MathUtils.ceilDivision(getPieceSize(), getBlockSize())) {
+			throw new IllegalArgumentException("Block index out of range (is larger or equal to piece size).");
+		}
 	}
 
 	@Override

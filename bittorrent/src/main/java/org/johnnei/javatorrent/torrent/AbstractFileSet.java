@@ -26,7 +26,13 @@ public abstract class AbstractFileSet {
 	 * @return <code>true</code> if the piece has been completed, otherwise <code>false</code>
 	 * @throws NoSuchElementException if the requested piece index is outside of the amount of pieces.
 	 */
-	public abstract boolean hasPiece(int pieceIndex) throws NoSuchElementException;
+	public boolean hasPiece(int pieceIndex) {
+		if (pieceIndex < 0 || pieceIndex >= pieces.size()) {
+			throw new NoSuchElementException(String.format("Piece #%d is not within this file set.", pieceIndex));
+		}
+
+		return pieces.get(pieceIndex).isDone();
+	}
 
 	/**
 	 * Marks a piece as completed.

@@ -55,7 +55,7 @@ public class MetadataFileSet extends AbstractFileSet {
 
 	@Override
 	public byte[] getBitfieldBytes() {
-		throw new UnsupportedOperationException("UT_METADATA does not support bitfields.");
+		throw new UnsupportedOperationException("UT_METADATA does not support bitfield.");
 	}
 
 	 /**
@@ -68,7 +68,7 @@ public class MetadataFileSet extends AbstractFileSet {
 	public byte[] getBlock(int piece) throws IOException {
 		int blockOffset = piece * BLOCK_SIZE;
 		synchronized (fileInfos.get(0).FILE_LOCK) {
-			RandomAccessFile fileAccess = fileInfos.get(0).getFileAcces();
+			RandomAccessFile fileAccess = fileInfos.get(0).getFileAccess();
 			int blockSize = Math.min(BLOCK_SIZE, (int)(fileAccess.length() - blockOffset));
 			byte[] data = new byte[blockSize];
 			fileAccess.seek(blockOffset);

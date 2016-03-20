@@ -35,11 +35,14 @@ public class TestUtils {
 		assertFalse("Object matches with not castable type", o.equals(7));
 	}
 
-	public static void assertEqualityMethods(Object base, Object equalToBase, Object notEqualToBase) {
+	public static void assertEqualityMethods(Object base, Object equalToBase, Object... notEqualToBase) {
 		assertEqualsMethod(base);
 		assertTrue("Base didn't equal with the given equal", base.equals(equalToBase));
 		assertEquals("Base hashcode didn't match with given equal", base.hashCode(), equalToBase.hashCode());
-		assertFalse("Base did match with the given non-equal", base.equals(notEqualToBase));
+
+		for (Object notEqual : notEqualToBase) {
+			assertFalse("Base did match with the given non-equal", base.equals(notEqual));
+		}
 	}
 
 }
