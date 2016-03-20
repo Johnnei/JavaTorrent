@@ -29,7 +29,7 @@ public class TorrentFileSet extends AbstractFileSet {
 	/**
 	 * The folder name to put the files in
 	 */
-	private String folderName;
+	private File downloadFolder;
 	/**
 	 * The size of a standard block
 	 */
@@ -51,12 +51,17 @@ public class TorrentFileSet extends AbstractFileSet {
 		if (!torrentFile.exists()) {
 			throw new IllegalArgumentException(String.format("Torrent file (%s) does not exist.", torrentFile.getAbsolutePath()));
 		}
+		if (downloadFolder == null) {
+			throw new IllegalArgumentException("Download folder cannot be null");
+		}
 
-		parseTorrentFileData(torrentFile, downloadFolder);
+		this.downloadFolder = downloadFolder;
+
+		parseTorrentFileData(torrentFile);
 		bitfield = new Bitfield(getBitfieldSize());
 	}
 
-	private void parseTorrentFileData(File torrentFile, File downloadFolder) {
+	private void parseTorrentFileData(File torrentFile) {
 		try (ByteInputStream in = new ByteInputStream(new FileInputStream(torrentFile))) {
 			Bencode decoder = new Bencode(in.readString(in.available()));
 
@@ -72,16 +77,22 @@ public class TorrentFileSet extends AbstractFileSet {
 				}
 			}
 
-			parseDictionary(metadataInfo, downloadFolder);
+			parseDictionary(metadataInfo);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to parse torrent data.", e);
 			ThreadUtils.sleep(10);
-			parseTorrentFileData(torrentFile, downloadFolder);
+			parseTorrentFileData(torrentFile);
 		}
 	}
 
-	private void parseDictionary(Map<String, Object> dictionary, File downloadFolder) throws IOException {
-		new File(downloadFolder, dictionary.get("name") + System.lineSeparator()).mkdirs();
+	private void parseDictionary(Map<String, Object> dictionary) throws IOException {
+		if (dictionary.containsKey("name")) {
+			downloadFolder = new File(downloadFolder, (String) dictionary.get("name"));
+		}
+
+		if (!downloadFolder.mkdirs()) {
+			throw new IOException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
+		}
 
 		pieceSize = (int) dictionary.get("piece length");
 		long remainingSize = 0L;
@@ -173,7 +184,7 @@ public class TorrentFileSet extends AbstractFileSet {
 		}
 	}
 
-	public int getBitfieldSize() {
+	private int getBitfieldSize() {
 		return (int) Math.ceil(pieces.size() / 8D);
 	}
 
@@ -184,7 +195,7 @@ public class TorrentFileSet extends AbstractFileSet {
 	 * @return The file within the download folder
 	 */
 	private File getFile(String name) {
-		return new File(folderName + "/" + name);
+		return new File(downloadFolder, name);
 	}
 
 	@Override

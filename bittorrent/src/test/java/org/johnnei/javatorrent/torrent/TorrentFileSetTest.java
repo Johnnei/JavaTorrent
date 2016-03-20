@@ -22,7 +22,7 @@ public class TorrentFileSetTest {
 
 	private static final String SINGLE_FILE_TORRENT = "gimp-2.8.16-setup-1.exe.torrent";
 
-	private static final String MULTI_FILE_TORRENT = "apache.php.and.mysql.windows.torrent";
+	private static final String MULTI_FILE_TORRENT = "my.sql.apache.2.2.php.notepad.torrent";
 
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -60,13 +60,23 @@ public class TorrentFileSetTest {
 
 		TorrentFileSet cut = new TorrentFileSet(file, temporaryFolder.newFolder());
 
-		assertEquals("Should have had a single file info", 30, cut.getFiles().size());
+		assertEquals("Should have had a single file info", 6, cut.getFiles().size());
 
-		FileInfo fileInfo = cut.getFiles().get(0);
-		/*assertEquals("Filename should have been archlinux-2016.03.01-dual.iso", "archlinux-2016.03.01-dual.iso", fileInfo.getFilename());
-		assertEquals("Filesize should have been 743440384", 743440384L, fileInfo.getSize());
-		assertEquals("Piece count should have been 1418", 1418, fileInfo.getPieceCount());
-		assertEquals("First byte offset should have been 0", 0L, fileInfo.getFirstByteOffset());*/
+		final String[] fileNames = {
+				"apache_2.2.9-win32-x86-openssl-0.9.8h-r2.msi", "HowToInstallGuide.txt", "httpd.conf",
+				"mysql-essential-5.0.51b-win32.msi", "npp.5.6.8.Installer.exe", "php-5.3.2-src.zip"
+		};
+		final long[] fileSizes = { 5414400, 547, 18124, 23816192, 3336170, 19823435 };
+		final int[] pieceCounts = { 83, 1, 1, 365, 52, 304 };
+		final long[] firstByteOffsets = { 0, 5414400, 5414947, 5433071, 29249263, 32585433 };
+
+		for (int i = 0; i < cut.getFiles().size(); i++) {
+			FileInfo fileInfo = cut.getFiles().get(i);
+			assertEquals(String.format("Incorrect filename for entry %d", i), fileNames[i], fileInfo.getFilename());
+			assertEquals(String.format("Incorrect file size for entry %d", i), fileSizes[i], fileInfo.getSize());
+			assertEquals(String.format("Incorrect piece count for entry %d", i), pieceCounts[i], fileInfo.getPieceCount());
+			assertEquals(String.format("Incorrect first byte offset for entry %d", i), firstByteOffsets[i], fileInfo.getFirstByteOffset());
+		}
 
 		try (BufferedReader inputStream = new BufferedReader(new InputStreamReader(new FileInputStream(
 				new File(TorrentFileSetTest.class.getResource(MULTI_FILE_TORRENT + ".hashes").toURI()))))) {
