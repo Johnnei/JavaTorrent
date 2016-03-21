@@ -14,7 +14,11 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.powermock.reflect.Whitebox;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link TorrentFileSet}
@@ -187,5 +191,62 @@ public class TorrentFileSetTest {
 		thrown.expect(IllegalArgumentException.class);
 		thrown.expectMessage("Download folder");
 		new TorrentFileSet(file, null);
+	}
+
+	@Test
+	public void testSetHavingPiece() throws Exception {
+		TorrentFileSet cut = getSingleFileTorrent();
+
+		byte[] expectedBitfield = new byte[47];
+
+		assertFalse("Piece is completed before interaction.", cut.hasPiece(1));
+		assertArrayEquals("Bitfield is dirty before interaction.", expectedBitfield, cut.getBitfieldBytes());
+
+		cut.setHavingPiece(1);
+
+		expectedBitfield[0] = 0x40;
+
+		assertTrue("Piece is not completed after interaction.", cut.hasPiece(1));
+		assertArrayEquals("Bitfield has incorrect been altered by interaction.", expectedBitfield, cut.getBitfieldBytes());
+	}
+
+	@Test
+	public void testHasPieceLowerBound() throws Exception {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Piece");
+
+		TorrentFileSet cut = getSingleFileTorrent();
+		assertFalse("Piece 0 is not yet done.", cut.hasPiece(0));
+		cut.hasPiece(-1);
+	}
+
+	@Test
+	public void testHasPieceUpperBound() throws Exception {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Piece");
+
+		TorrentFileSet cut = getSingleFileTorrent();
+		assertFalse("Piece is not yet done.", cut.hasPiece(cut.getPieceCount() - 1));
+		cut.hasPiece(cut.getPieceCount());
+	}
+
+	@Test
+	public void testGetPieceLowerBound() throws Exception {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Piece");
+
+		TorrentFileSet cut = getSingleFileTorrent();
+		assertNotNull("Piece 0 is not yet done.", cut.getPiece(0));
+		cut.getPiece(-1);
+	}
+
+	@Test
+	public void testGetPieceUpperBound() throws Exception {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("Piece");
+
+		TorrentFileSet cut = getSingleFileTorrent();
+		assertNotNull("Piece is not yet done.", cut.getPiece(cut.getPieceCount() - 1));
+		cut.getPiece(cut.getPieceCount());
 	}
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
 public abstract class AbstractFileSet {
@@ -20,15 +21,24 @@ public abstract class AbstractFileSet {
 	protected List<FileInfo> fileInfos;
 
 	/**
+	 * The size of a single block within a {@link Piece} in bytes.
+	 */
+	private final int blockSize;
+
+	public AbstractFileSet(int blockSize) {
+		this.blockSize = blockSize;
+	}
+
+	/**
 	 * Checks if this piece has been completed.
 	 *
 	 * @param pieceIndex the index of the piece
 	 * @return <code>true</code> if the piece has been completed, otherwise <code>false</code>
-	 * @throws NoSuchElementException if the requested piece index is outside of the amount of pieces.
+	 * @throws IllegalArgumentException if the requested piece index is outside of the amount of pieces.
 	 */
 	public boolean hasPiece(int pieceIndex) {
 		if (pieceIndex < 0 || pieceIndex >= pieces.size()) {
-			throw new NoSuchElementException(String.format("Piece #%d is not within this file set.", pieceIndex));
+			throw new IllegalArgumentException(String.format("Piece #%d is not within this file set.", pieceIndex));
 		}
 
 		return pieces.get(pieceIndex).isDone();
@@ -40,7 +50,12 @@ public abstract class AbstractFileSet {
 	 * @param pieceIndex the index of the piece
 	 * @throws NoSuchElementException if the requested piece index is outside of the amount of pieces.
 	 */
-	public abstract void havePiece(int pieceIndex);
+	public void setHavingPiece(int pieceIndex) {
+		Piece piece = pieces.get(pieceIndex);
+		for (int i = 0; i < piece.getBlockCount(); i++) {
+			piece.setBlockStatus(i, BlockStatus.Verified);
+		}
+	}
 
 	/**
 	 * Gets the FileInfo for the given piece and block
@@ -57,11 +72,11 @@ public abstract class AbstractFileSet {
 	 *
 	 * @param index The index of the piece to get
 	 * @return The piece at the index
-	 * @throws NoSuchElementException if the index is outside of the files.
+	 * @throws IllegalArgumentException if the index is outside of the files.
 	 */
 	public Piece getPiece(int index) throws NoSuchElementException {
 		if (index < 0 || index >= pieces.size()) {
-			throw new NoSuchElementException(String.format("%s is outside of the file list.", index));
+			throw new IllegalArgumentException(String.format("Piece %s is outside of the file set.", index));
 		}
 
 		return pieces.get(index);
@@ -79,7 +94,9 @@ public abstract class AbstractFileSet {
 	 *
 	 * @return the size of a block
 	 */
-	public abstract int getBlockSize();
+	public int getBlockSize() {
+		return blockSize;
+	}
 
 	/**
 	 * Tests if all pieces of this fileset have been completed.

@@ -66,6 +66,7 @@ public class StubEntity {
 		}
 
 		public AFilesStub(int pieceCount) {
+			super(1);
 			fileInfos = new ArrayList<>();
 			fileInfos.add(new FileInfo(1, 0, new File("./target/tmp/afilesstub.tmp"), pieceCount));
 			pieces = new ArrayList<>();
@@ -75,7 +76,7 @@ public class StubEntity {
 		}
 
 		@Override
-		public void havePiece(int pieceIndex) throws NoSuchElementException {
+		public void setHavingPiece(int pieceIndex) throws NoSuchElementException {
 		}
 
 		@Override

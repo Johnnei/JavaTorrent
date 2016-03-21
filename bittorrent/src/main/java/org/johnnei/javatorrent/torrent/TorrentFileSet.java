@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
-import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.utils.MathUtils;
@@ -49,6 +48,7 @@ public class TorrentFileSet extends AbstractFileSet {
 	 * @throws IllegalArgumentException When the torrent file is missing or incomplete.
 	 */
 	public TorrentFileSet(File torrentFile, File downloadFolder) {
+		super(BLOCK_SIZE);
 		if (torrentFile == null) {
 			throw new IllegalArgumentException("Torrent file can not be null");
 		}
@@ -178,13 +178,9 @@ public class TorrentFileSet extends AbstractFileSet {
 	 * @param pieceIndex
 	 */
 	@Override
-	public void havePiece(int pieceIndex) {
+	public void setHavingPiece(int pieceIndex) {
+		super.setHavingPiece(pieceIndex);
 		bitfield.havePiece(pieceIndex);
-		if (!pieces.get(pieceIndex).isDone()) {
-			for (int i = 0; i < pieces.get(pieceIndex).getBlockCount(); i++) {
-				pieces.get(pieceIndex).setBlockStatus(i, BlockStatus.Verified);
-			}
-		}
 	}
 
 	private int getBitfieldSize() {
@@ -201,11 +197,6 @@ public class TorrentFileSet extends AbstractFileSet {
 		return new File(downloadFolder, name);
 	}
 
-	@Override
-	public Piece getPiece(int index) {
-		return pieces.get(index);
-	}
-
 	/**
 	 * Gets the default piece size
 	 *
@@ -214,11 +205,6 @@ public class TorrentFileSet extends AbstractFileSet {
 	@Override
 	public long getPieceSize() {
 		return pieceSize;
-	}
-
-	@Override
-	public int getBlockSize() {
-		return BLOCK_SIZE;
 	}
 
 	/**

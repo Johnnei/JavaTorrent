@@ -328,7 +328,7 @@ public class Torrent implements Runnable {
 			return;
 		}
 
-		files.havePiece(checkJob.getPiece().getIndex());
+		files.setHavingPiece(checkJob.getPiece().getIndex());
 		broadcastMessage(new MessageHave(checkJob.getPiece().getIndex()));
 	}
 
@@ -364,7 +364,7 @@ public class Torrent implements Runnable {
 				}
 			}).
 			forEach(p -> {
-				files.havePiece(p.getIndex());
+				files.setHavingPiece(p.getIndex());
 				broadcastMessage(new MessageHave(p.getIndex()));
 			}
 		);
