@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.utils.MathUtils;
 
 public abstract class AbstractFileSet {
 
@@ -56,16 +57,47 @@ public abstract class AbstractFileSet {
 			piece.setBlockStatus(i, BlockStatus.Verified);
 		}
 	}
-
 	/**
 	 * Gets the FileInfo for the given piece and block
 	 *
-	 * @param index The piece index
+	 * @param pieceIndex The piece index
 	 * @param blockIndex The block index within the piece
-	 * @param blockDataOffset The offset within the block
+	 * @param byteOffset The offset within the block
 	 * @return The FileInfo for the given data
+	 * @throws IllegalArgumentException When information being requested is outside of this fileset.
 	 */
-	public abstract FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset);
+	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
+		validateGetFileForBytes(pieceIndex, blockIndex, byteOffset);
+		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * getBlockSize()) + byteOffset;
+
+		// Iterate in reverse order so that first file having a smaller first byte offset will be the file containing this section.
+		for (int i = fileInfos.size() - 1; i >= 0; i--) {
+			FileInfo fileInfo = fileInfos.get(i);
+			if (fileInfo.getFirstByteOffset() <= bytesStartPosition) {
+				return fileInfo;
+			}
+		}
+
+		throw new IllegalArgumentException("Piece is not within fileset.");
+	}
+
+	private void validateGetFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
+		if (pieceIndex < 0 || blockIndex < 0 || byteOffset < 0) {
+			throw new IllegalArgumentException("pieceIndex, blockIndex and byteOffset must all be >= 0.");
+		}
+
+		if (pieceIndex >= pieces.size()) {
+			throw new IllegalArgumentException(String.format("Piece #%d does not exist within file set.", pieceIndex));
+		}
+
+		if (byteOffset >= getBlockSize()) {
+			throw new IllegalArgumentException("Byte offset is out of range (larger or equal to block size).");
+		}
+
+		if (blockIndex >= MathUtils.ceilDivision(getPieceSize(), getBlockSize())) {
+			throw new IllegalArgumentException("Block index out of range (is larger or equal to piece size).");
+		}
+	}
 
 	/**
 	 * Gets the piece with the given index

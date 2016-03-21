@@ -11,6 +11,7 @@ import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Bitfield;
+import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
@@ -49,18 +50,13 @@ public class TorrentFileSet extends AbstractFileSet {
 	 */
 	public TorrentFileSet(File torrentFile, File downloadFolder) {
 		super(BLOCK_SIZE);
-		if (torrentFile == null) {
-			throw new IllegalArgumentException("Torrent file can not be null");
-		}
+		Argument.requireNonNull(torrentFile, "Torrent file can not be null");
 
 		if (!torrentFile.exists()) {
 			throw new IllegalArgumentException(String.format("Torrent file (%s) does not exist.", torrentFile.getAbsolutePath()));
 		}
-		if (downloadFolder == null) {
-			throw new IllegalArgumentException("Download folder cannot be null");
-		}
 
-		this.downloadFolder = downloadFolder;
+		this.downloadFolder = Argument.requireNonNull(downloadFolder, "Download folder cannot be null");
 
 		parseTorrentFileData(torrentFile);
 		bitfield = new Bitfield(getBitfieldSize());
@@ -205,49 +201,6 @@ public class TorrentFileSet extends AbstractFileSet {
 	@Override
 	public long getPieceSize() {
 		return pieceSize;
-	}
-
-	/**
-	 * Gets the FileInfo for the given piece and block
-	 *
-	 * @param pieceIndex The piece index
-	 * @param blockIndex The block index within the piece
-	 * @param byteOffset The offset within the block
-	 * @return The FileInfo for the given data
-	 * @throws IllegalArgumentException When information being requested is outside of this fileset.
-	 */
-	@Override
-	public FileInfo getFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
-		validateGetFileForBytes(pieceIndex, blockIndex, byteOffset);
-		long bytesStartPosition = (pieceIndex * getPieceSize()) + (blockIndex * BLOCK_SIZE) + byteOffset;
-
-		// Iterate in reverse order so that first file having a smaller first byte offset will be the file containing this section.
-		for (int i = fileInfos.size() - 1; i >= 0; i--) {
-			FileInfo fileInfo = fileInfos.get(i);
-			if (fileInfo.getFirstByteOffset() <= bytesStartPosition) {
-				return fileInfo;
-			}
-		}
-
-		throw new IllegalArgumentException("Piece is not within fileset.");
-	}
-
-	private void validateGetFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
-		if (pieceIndex < 0 || blockIndex < 0 || byteOffset < 0) {
-			throw new IllegalArgumentException("pieceIndex, blockIndex and byteOffset must all be >= 0.");
-		}
-
-		if (pieceIndex >= pieces.size()) {
-			throw new IllegalArgumentException(String.format("Piece #%d does not exist within file set.", pieceIndex));
-		}
-
-		if (byteOffset >= getBlockSize()) {
-			throw new IllegalArgumentException("Byte offset is out of range (larger or equal to block size).");
-		}
-
-		if (blockIndex >= MathUtils.ceilDivision(getPieceSize(), getBlockSize())) {
-			throw new IllegalArgumentException("Block index out of range (is larger or equal to piece size).");
-		}
 	}
 
 	@Override

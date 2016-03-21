@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.utils.Argument;
 
 public class MetadataFileSet extends AbstractFileSet {
 
@@ -16,16 +17,17 @@ public class MetadataFileSet extends AbstractFileSet {
 
 	public MetadataFileSet(Torrent torrent, File metadataFile) {
 		super(BLOCK_SIZE);
+		Argument.requireNonNull(torrent, "Torrent cannot be null.");
+		Argument.requireNonNull(metadataFile, "Metadata file cannot be null.");
+		if (!metadataFile.exists()) {
+			throw new IllegalArgumentException("Metadata file must exist.");
+		}
+
 		this.fileInfos = new ArrayList<>();
 		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile, 1));
 		this.fileSize = (int) metadataFile.length();
 		this.pieces = new ArrayList<>(1);
 		this.pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
-	}
-
-	@Override
-	public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) {
-		return fileInfos.get(0);
 	}
 
 	@Override

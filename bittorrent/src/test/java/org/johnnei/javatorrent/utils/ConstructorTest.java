@@ -19,7 +19,8 @@ public class ConstructorTest {
 			MathUtils.class,
 			StringUtils.class,
 			BitTorrent.class,
-			SHA1.class
+			SHA1.class,
+			Argument.class
 	};
 
 	@Test
