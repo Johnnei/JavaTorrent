@@ -127,7 +127,7 @@ public class TorrentFileSetTest {
 	@Test
 	public void testGetFileForBytesNegativePiece() throws Exception {
 		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("piece");
+		thrown.expectMessage("Piece");
 		TorrentFileSet cut = getSingleFileTorrent();
 		cut.getFileForBytes(-1, 0, 0);
 	}
@@ -135,7 +135,7 @@ public class TorrentFileSetTest {
 	@Test
 	public void testGetFileForBytesNegativeBlock() throws Exception {
 		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("block");
+		thrown.expectMessage("Block");
 		TorrentFileSet cut = getSingleFileTorrent();
 		cut.getFileForBytes(0, -1, 0);
 	}
@@ -143,7 +143,7 @@ public class TorrentFileSetTest {
 	@Test
 	public void testGetFileForBytesNegativeByteOffset() throws Exception {
 		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("byte");
+		thrown.expectMessage("Byte");
 		TorrentFileSet cut = getSingleFileTorrent();
 		cut.getFileForBytes(0, 0, -1);
 	}

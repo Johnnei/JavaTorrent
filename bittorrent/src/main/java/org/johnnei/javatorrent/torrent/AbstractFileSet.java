@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
 
 public abstract class AbstractFileSet {
@@ -38,10 +39,7 @@ public abstract class AbstractFileSet {
 	 * @throws IllegalArgumentException if the requested piece index is outside of the amount of pieces.
 	 */
 	public boolean hasPiece(int pieceIndex) {
-		if (pieceIndex < 0 || pieceIndex >= pieces.size()) {
-			throw new IllegalArgumentException(String.format("Piece #%d is not within this file set.", pieceIndex));
-		}
-
+		Argument.requireWithinBounds(pieceIndex, 0, pieces.size(), String.format("Piece #%d is not within this file set.", pieceIndex));
 		return pieces.get(pieceIndex).isDone();
 	}
 
@@ -82,13 +80,9 @@ public abstract class AbstractFileSet {
 	}
 
 	private void validateGetFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
-		if (pieceIndex < 0 || blockIndex < 0 || byteOffset < 0) {
-			throw new IllegalArgumentException("pieceIndex, blockIndex and byteOffset must all be >= 0.");
-		}
-
-		if (pieceIndex >= pieces.size()) {
-			throw new IllegalArgumentException(String.format("Piece #%d does not exist within file set.", pieceIndex));
-		}
+		Argument.requireWithinBounds(pieceIndex, 0, pieces.size(), String.format("Piece %d is not within the file set.", pieceIndex));
+		Argument.requirePositive(blockIndex, "Block index cannot be negative.");
+		Argument.requirePositive(byteOffset, "Byte offset cannot be negative.");
 
 		if (byteOffset >= getBlockSize()) {
 			throw new IllegalArgumentException("Byte offset is out of range (larger or equal to block size).");
@@ -106,11 +100,8 @@ public abstract class AbstractFileSet {
 	 * @return The piece at the index
 	 * @throws IllegalArgumentException if the index is outside of the files.
 	 */
-	public Piece getPiece(int index) throws NoSuchElementException {
-		if (index < 0 || index >= pieces.size()) {
-			throw new IllegalArgumentException(String.format("Piece %s is outside of the file set.", index));
-		}
-
+	public Piece getPiece(int index) {
+		Argument.requireWithinBounds(index, 0, pieces.size(), String.format("Piece %s is outside of the file set.", index));
 		return pieces.get(index);
 	}
 
