@@ -249,4 +249,40 @@ public class TorrentFileSetTest {
 		assertNotNull("Piece is not yet done.", cut.getPiece(cut.getPieceCount() - 1));
 		cut.getPiece(cut.getPieceCount());
 	}
+
+	@Test
+	public void testGetTotalFileSize() throws Exception {
+		TorrentFileSet cut = getMultiFileTorrent();
+
+		assertEquals("Incorrect total size", 52408868, cut.getTotalFileSize());
+	}
+
+	@Test
+	public void testCountRemainingBytes() throws Exception {
+		TorrentFileSet cut = getSingleFileTorrent();
+
+		assertEquals("All bytes should have been remaining", 96823808, cut.countRemainingBytes());
+	}
+
+	@Test
+	public void testCountCompletedPieces() throws Exception {
+		TorrentFileSet cut = getSingleFileTorrent();
+
+		assertEquals("No piece should have been downloaded", 0, cut.countCompletedPieces());
+	}
+
+	@Test
+	public void testIsDone() throws Exception {
+		TorrentFileSet cut = getSingleFileTorrent();
+
+		assertFalse("Should not have been done yet.", cut.isDone());
+		assertEquals("All pieces should have been needed", cut.getPieceCount(), cut.getNeededPieces().count());
+
+		for (int i = 0; i < cut.getPieceCount(); i++) {
+			cut.setHavingPiece(i);
+		}
+
+		assertTrue("Should have been done yet.", cut.isDone());
+		assertEquals("None of the pieces should have been needed", 0, cut.getNeededPieces().count());
+	}
 }

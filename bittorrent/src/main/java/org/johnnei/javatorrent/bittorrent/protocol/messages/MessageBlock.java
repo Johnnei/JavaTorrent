@@ -44,7 +44,7 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.removeJob(new Job(index, peer.getTorrent().getFiles().getBlockIndexByOffset(offset)), PeerDirection.Download);
+		peer.removeJob(new Job(index, getBlockIndex(peer)), PeerDirection.Download);
 		if (data.length <= 0) {
 			peer.addStrike(1);
 			return;
@@ -59,6 +59,10 @@ public class MessageBlock implements IMessage {
 			// Set by trust
 			peer.setRequestLimit(2 * (peer.getRequestLimit() + 1));
 		}
+	}
+
+	private int getBlockIndex(Peer peer) {
+		return offset / peer.getTorrent().getFiles().getBlockSize();
 	}
 
 	@Override

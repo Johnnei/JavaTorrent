@@ -107,23 +107,6 @@ public abstract class AbstractFileSet {
 	}
 
 	/**
-	 * Calculates the amount of pieces which have been completed for a given file.
-	 *
-	 * @param fileInfo The file in this set of files.
-	 * @return The amount of pieces we have of the given file.
-	 */
-	public int getHavePieceCountForFile(FileInfo fileInfo) {
-		int firstPiece = (int) (fileInfo.getFirstByteOffset() / getPieceSize());
-		int pieceCount = fileInfo.getPieceCount();
-
-		return (int) pieces.stream()
-				.skip(firstPiece)
-				.limit(pieceCount)
-				.filter(Piece::isDone)
-				.count();
-	}
-
-	/**
 	 * Creates a stream with only the pieces which are not done
 	 *
 	 * @return A stream with pieces which need to be downloaded
@@ -169,20 +152,11 @@ public abstract class AbstractFileSet {
 	}
 
 	/**
-	 * Calculates the block index based on the given offset.
-	 * @param offset The offset within a piece
-	 * @return The block index which contains the given offset.
-	 */
-	public int getBlockIndexByOffset(int offset) {
-		return offset / getBlockSize();
-	}
-
-	/**
 	 * Gets the have pieces in bitfield format as specified by BEP #3.
 	 * @return The bitfield associated with this fileset.
 	 * @throws UnsupportedOperationException When this implementation doesn't produce the Bitfield as defined in BEP #3.
 	 */
-	public abstract byte[] getBitfieldBytes() throws UnsupportedOperationException;
+	public abstract byte[] getBitfieldBytes();
 
 	/**
 	 * Creates an unmodifiable view of the list of files in this fileset.
