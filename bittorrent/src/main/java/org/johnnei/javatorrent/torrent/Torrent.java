@@ -491,7 +491,7 @@ public class Torrent implements Runnable {
 	 * The regulator which is managing this download
 	 * @return The current assigned regulator
 	 */
-	public IPieceSelector getDownloadRegulator() {
+	public IPieceSelector getPieceSelector() {
 		return pieceSelector;
 	}
 

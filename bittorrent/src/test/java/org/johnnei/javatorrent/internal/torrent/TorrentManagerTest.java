@@ -47,6 +47,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 	@Test
 	public void testStartStopWithoutPeerConnector() throws Exception {
 		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		replayAll();
 
 		TorrentManager cut = new TorrentManager();
 
@@ -57,6 +58,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 
 		cut.stop();
 
+		verifyAll();
 		assertFalse("Peer IO runner should have been tasked to stop", isRunning(peerIoRunnable));
 	}
 
@@ -64,8 +66,10 @@ public class TorrentManagerTest extends EasyMockSupport {
 	public void testStartStopWithPeerConnector() throws Exception {
 		TorrentClient torrentClientMock = createMock(TorrentClient.class);
 		expect(torrentClientMock.getDownloadPort()).andReturn(DummyEntity.findAvailableTcpPort());
+		replayAll();;
 
 		TorrentManager cut = new TorrentManager();
+
 
 		cut.start(torrentClientMock);
 		cut.enableConnectionAcceptor();
@@ -76,6 +80,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 		assertNotNull("Peer connector runner should have been started.", peerConnectorRunnable);
 
 		cut.stop();
+		verifyAll();
 
 		assertFalse("Peer IO runner should have been tasked to stop", isRunning(peerIoRunnable));
 		assertFalse("Peer connector runner should have been tasked to stop", isRunning(peerConnectorRunnable));

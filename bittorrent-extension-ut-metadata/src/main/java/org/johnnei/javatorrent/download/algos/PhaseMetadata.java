@@ -42,7 +42,7 @@ public class PhaseMetadata extends AMetadataPhase {
 	@Override
 	public void process() {
 		for (Peer peer : getRelevantPeers(torrent.getPeers())) {
-			Optional<Piece> pieceOptional = torrent.getDownloadRegulator().getPieceForPeer(peer);
+			Optional<Piece> pieceOptional = torrent.getPieceSelector().getPieceForPeer(peer);
 			if (!pieceOptional.isPresent()) {
 				continue;
 			}

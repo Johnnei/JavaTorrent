@@ -40,7 +40,7 @@ public class PhaseData implements IDownloadPhase {
 	@Override
 	public void process() {
 		for (Peer peer : torrent.getRelevantPeers()) {
-			Optional<Piece> pieceOptional = torrent.getDownloadRegulator().getPieceForPeer(peer);
+			Optional<Piece> pieceOptional = torrent.getPieceSelector().getPieceForPeer(peer);
 			if (!pieceOptional.isPresent()) {
 				continue;
 			}
@@ -69,7 +69,7 @@ public class PhaseData implements IDownloadPhase {
 	@Override
 	public void onPhaseExit() {
 		torrentClient.getTrackersFor(torrent).forEach(tracker -> tracker.getInfo(torrent).get().setEvent(TrackerEvent.EVENT_COMPLETED));
-		LOGGER.info("Download completed");
+		LOGGER.info("Download of {} completed", torrent);
 	}
 
 	@Override
