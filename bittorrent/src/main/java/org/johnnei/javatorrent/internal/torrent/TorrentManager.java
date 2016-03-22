@@ -67,7 +67,10 @@ public class TorrentManager {
 	 */
 	public void stop() {
 		peerIoRunnable.stop();
-		connectorRunnable.stop();
+
+		if (connectorRunnable != null) {
+			connectorRunnable.stop();
+		}
 	}
 
 	/**

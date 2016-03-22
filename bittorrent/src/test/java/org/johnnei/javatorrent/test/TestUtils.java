@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.test;
 
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -43,6 +45,14 @@ public class TestUtils {
 		for (Object notEqual : notEqualToBase) {
 			assertFalse("Base did match with the given non-equal", base.equals(notEqual));
 		}
+	}
+
+	public static void assertNotPresent(String message, Optional<?> optional) {
+		assertFalse(message, optional.isPresent());
+	}
+
+	public static void assertPresent(String message, Optional<?> optional) {
+		assertTrue(message, optional.isPresent());
 	}
 
 }
