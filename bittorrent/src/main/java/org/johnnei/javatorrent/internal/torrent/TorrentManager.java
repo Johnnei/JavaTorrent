@@ -10,8 +10,8 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.network.PeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
+import org.johnnei.javatorrent.network.PeerConnectionAcceptor;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.slf4j.Logger;
@@ -22,6 +22,8 @@ public class TorrentManager {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentManager.class);
 
 	private final Object torrentListLock = new Object();
+
+	private TorrentClient torrentClient;
 
 	private List<Torrent> activeTorrents;
 
@@ -37,12 +39,19 @@ public class TorrentManager {
 	 * Starts the connnection listener which will accept new peers
 	 */
 	public void start(TorrentClient torrentClient) {
+		this.torrentClient = torrentClient;
+
 		// Start reading peer input/output
 		peerIoRunnable = new LoopingRunnable(new PeerIoRunnable(this));
 		Thread thread = new Thread(peerIoRunnable, "Peer IO");
 		thread.setDaemon(true);
 		thread.start();
+	}
 
+	/**
+	 * Attempts to start a server socket to accept incoming TCP connections.
+	 */
+	public void enableConnectionAcceptor() {
 		try {
 			connectorRunnable = new LoopingRunnable(new PeerConnectionAcceptor(torrentClient));
 			Thread connectorThread = new Thread(connectorRunnable, "Connection Acceptor");

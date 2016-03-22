@@ -93,6 +93,9 @@ public class TorrentClient {
 		transactionId = new AtomicInteger(new Random().nextInt());
 
 		torrentManager.start(this);
+		if (builder.acceptIncomingConnections) {
+			torrentManager.enableConnectionAcceptor();
+		}
 	}
 
 	private byte[] createPeerId() {
@@ -255,6 +258,8 @@ public class TorrentClient {
 
 		private IPeerManager peerManager;
 
+		private boolean acceptIncomingConnections;
+
 		private int downloadPort;
 
 		private byte[] extensionBytes;
@@ -289,6 +294,17 @@ public class TorrentClient {
 			final int bitValue = 1 << Math.floorMod(bit, 8);
 
 			extensionBytes[index] |= bitValue;
+			return this;
+		}
+
+		/**
+		 * Enables (or disables) the starting of the peer connection accepts upon building of the torrent client.
+		 * By default this is disabled.
+		 * @param acceptIncomingConnections <code>true</code> when connections should be accepted.
+		 * @return this
+		 */
+		public Builder acceptIncomingConnections(boolean acceptIncomingConnections) {
+			this.acceptIncomingConnections = acceptIncomingConnections;
 			return this;
 		}
 

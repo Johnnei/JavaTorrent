@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
@@ -18,6 +19,7 @@ import org.easymock.EasyMockSupport;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.notNull;
@@ -186,5 +188,31 @@ public class TorrentClientTest extends EasyMockSupport {
 		int id2 = cut.createUniqueTransactionId();
 
 		assertNotEquals("Duplicate transaction IDs", id, id2);
+	}
+
+	@Test
+	public void testAcceptIncomingConnections() throws Exception {
+		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
+		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
+		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		IPeerManager peerManagerMock = createMock(IPeerManager.class);
+		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+
+		replayAll();
+
+		TorrentClient cut = new TorrentClient.Builder()
+				.setConnectionDegradation(connectionDegradationMock)
+				.setPhaseRegulator(phaseRegulatorMock)
+				.setExecutorService(executorServiceMock)
+				.setPeerManager(peerManagerMock)
+				.setPeerConnector((t) -> peerConnectorMock)
+				.registerTrackerProtocol("udp", (url, client) -> null)
+				.acceptIncomingConnections(true)
+				.build();
+
+		verifyAll();
+
+		TorrentManager torrentManager = Whitebox.getInternalState(cut, TorrentManager.class);
+		assertNotNull("Connector should have been attempted to start.", Whitebox.getInternalState(torrentManager, "connectorRunnable"));
 	}
 }
