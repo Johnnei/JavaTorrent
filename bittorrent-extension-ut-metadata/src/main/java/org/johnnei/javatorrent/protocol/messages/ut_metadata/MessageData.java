@@ -35,7 +35,7 @@ public class MessageData extends Message {
 	@Override
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
-		peer.getTorrent().collectPiece(0, blockIndex * peer.getTorrent().getFiles().getBlockSize(), data);
+		peer.getTorrent().collectPiece(0, blockIndex * peer.getTorrent().getFileSet().getBlockSize(), data);
 		peer.removeJob(new Job(0, blockIndex), PeerDirection.Download);
 	}
 

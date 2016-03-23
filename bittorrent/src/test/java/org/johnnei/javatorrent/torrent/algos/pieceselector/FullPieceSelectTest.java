@@ -36,7 +36,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		expect(peerMock.hasPiece(anyInt())).andReturn(true).atLeastOnce();
 
 		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 
 		replayAll();
 
@@ -61,7 +61,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		expect(peerMock.hasPiece(anyInt())).andReturn(true).atLeastOnce();
 
 		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 
 		replayAll();
 
@@ -88,7 +88,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		expect(peerTwoMock.hasPiece(eq(1))).andReturn(false).atLeastOnce();
 
 		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(torrentMock.getRelevantPeers()).andStubReturn(Arrays.asList(peerMock, peerTwoMock));
 
 		replayAll();

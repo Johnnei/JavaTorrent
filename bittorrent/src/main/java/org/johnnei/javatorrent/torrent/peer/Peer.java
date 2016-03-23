@@ -103,8 +103,8 @@ public class Peer implements Comparable<Peer> {
 		extensions = new HashMap<>();
 		clientName = StringUtils.byteArrayToString(id);
 		absoluteRequestLimit = Integer.MAX_VALUE;
-		if (torrent.getFiles() != null) {
-			haveState = new Bitfield(MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+		if (torrent.getFileSet() != null) {
+			haveState = new Bitfield(torrent.getFileSet().getBitfieldBytes().length);
 		} else {
 			haveState = new Bitfield(0);
 		}
@@ -227,7 +227,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public void onTorrentPhaseChange() {
 		if (torrent.isDownloadingMetadata()) {
-			haveState.setSize(MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8));
+			haveState.setSize(MathUtils.ceilDivision(torrent.getFileSet().getPieceCount(), 8));
 		}
 	}
 
@@ -251,7 +251,7 @@ public class Peer implements Comparable<Peer> {
 		synchronized (this) {
 			if (getWorkQueueSize(PeerDirection.Download) > 0) {
 				for (Job job : myClient.getJobs()) {
-					torrent.getFiles().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
+					torrent.getFileSet().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
 				}
 				myClient.clearJobs();
 			}
@@ -469,7 +469,7 @@ public class Peer implements Comparable<Peer> {
 		Job request = peerClient.popNextJob();
 		addToPendingMessages(1);
 
-		Piece piece = torrent.getFiles().getPiece(request.getPieceIndex());
+		Piece piece = torrent.getFileSet().getPiece(request.getPieceIndex());
 		torrent.addDiskJob(new DiskJobReadBlock(piece, request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
 	}
 

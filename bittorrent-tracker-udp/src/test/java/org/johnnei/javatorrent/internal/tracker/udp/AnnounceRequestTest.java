@@ -98,7 +98,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 				.setName("Dummy Torrent")
 				.setPeerManager(StubEntity.stubPeerManager())
 				.build();
-		torrent.setFiles(StubEntity.stubAFiles(3));
+		torrent.setFileSet(StubEntity.stubAFiles(3));
 
 		Whitebox.setInternalState(torrent, "downloadedBytes", 5);
 		torrent.addUploadedBytes(7);

@@ -61,8 +61,8 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 		outStream.writeLong(torrent.getDownloadedBytes());
 
 		// Bytes left (or 0 if we don't know how many we should download)
-		if (torrent.getFiles() != null) {
-			outStream.writeLong(torrent.getFiles().countRemainingBytes()); // Bytes left
+		if (torrent.getFileSet() != null) {
+			outStream.writeLong(torrent.getFileSet().countRemainingBytes()); // Bytes left
 		} else {
 			outStream.writeLong(0);
 		}

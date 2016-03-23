@@ -24,7 +24,6 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
-import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.StringUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;
 
@@ -151,22 +150,25 @@ public class Torrent implements Runnable {
 	}
 
 	private void sendHaveMessages(Peer peer) throws IOException {
-		if (peer.getTorrent().isDownloadingMetadata()) {
+		if (isDownloadingMetadata()) {
 			return;
 		}
-
-		Torrent torrent = peer.getTorrent();
-		AbstractFileSet files = torrent.getFiles();
 
 		if (files.countCompletedPieces() == 0) {
 			return;
 		}
 
-		if (MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8) + 1 < 5 * files.countCompletedPieces()) {
+		final int bitfieldOverhead = 1;
+		final int bitfieldPacketSize = files.getBitfieldBytes().length + bitfieldOverhead;
+
+		final int haveOverheadPerPiece = 5;
+		final int havePacketsSize = files.countCompletedPieces() * haveOverheadPerPiece;
+
+		if (bitfieldPacketSize < havePacketsSize) {
 			peer.getBitTorrentSocket().enqueueMessage(new MessageBitfield(files.getBitfieldBytes()));
 		} else {
-			for (int pieceIndex = 0; pieceIndex < torrent.getFiles().getPieceCount(); pieceIndex++) {
-				if (!torrent.getFiles().hasPiece(pieceIndex)) {
+			for (int pieceIndex = 0; pieceIndex < files.getPieceCount(); pieceIndex++) {
+				if (!files.hasPiece(pieceIndex)) {
 					continue;
 				}
 
@@ -379,7 +381,7 @@ public class Torrent implements Runnable {
 	 *
 	 * @param files The file set.
 	 */
-	public void setFiles(AbstractFileSet files) {
+	public void setFileSet(AbstractFileSet files) {
 		this.files = files;
 	}
 
@@ -416,12 +418,12 @@ public class Torrent implements Runnable {
 
 	/**
 	 * Gets the files which are being downloaded within this torrent. This could be the metadata of the torrent (.torrent file),
-	 * the files in the torrent or something else if a module changed it with {@link #setFiles(AbstractFileSet)}.
+	 * the files in the torrent or something else if a module changed it with {@link #setFileSet(AbstractFileSet)}.
 	 *
 	 * @return The set of files being downloaded.
-	 * @see #setFiles(AbstractFileSet)
+	 * @see #setFileSet(AbstractFileSet)
 	 */
-	public AbstractFileSet getFiles() {
+	public AbstractFileSet getFileSet() {
 		return files;
 	}
 

@@ -59,7 +59,7 @@ public class PhaseDataTest extends EasyMockSupport {
 		replayAll();
 
 		Torrent torrent = DummyEntity.createUniqueTorrent();
-		torrent.setFiles(StubEntity.stubAFiles(5));
+		torrent.setFileSet(StubEntity.stubAFiles(5));
 
 		List<Peer> peerList = Arrays.asList(peerOne, peerTwo, peerThree, peerFour, peerFive);
 
@@ -124,7 +124,7 @@ public class PhaseDataTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
-		expect(torrentMock.getFiles()).andReturn(fileSetMock);
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
 		expect(fileSetMock.isDone()).andReturn(true);
 
 		replayAll();
@@ -181,7 +181,7 @@ public class PhaseDataTest extends EasyMockSupport {
 		expect(torrentMock.getPieceSelector()).andReturn(pieceSelectorMock);
 		expect(pieceSelectorMock.getPieceForPeer(same(peer))).andReturn(Optional.of(piece));
 		bitTorrentSocketMock.enqueueMessage(isA(MessageRequest.class));
-		expect(torrentMock.getFiles()).andReturn(fileSetMock).atLeastOnce();
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock).atLeastOnce();
 		expect(fileSetMock.getBlockSize()).andReturn(4).atLeastOnce();
 
 		replayAll();
@@ -210,7 +210,7 @@ public class PhaseDataTest extends EasyMockSupport {
 		expect(pieceSelectorMock.getPieceForPeer(same(peer))).andReturn(Optional.of(piece));
 		bitTorrentSocketMock.enqueueMessage(isA(MessageRequest.class));
 		expectLastCall().times(2);
-		expect(torrentMock.getFiles()).andReturn(fileSetMock).atLeastOnce();
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock).atLeastOnce();
 		expect(fileSetMock.getBlockSize()).andReturn(4).atLeastOnce();
 
 		replayAll();

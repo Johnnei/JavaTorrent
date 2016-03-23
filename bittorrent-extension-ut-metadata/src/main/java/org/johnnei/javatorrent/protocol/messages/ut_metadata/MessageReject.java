@@ -24,7 +24,7 @@ public class MessageReject extends Message {
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
 		LOGGER.warn("Piece Request got rejected: " + blockIndex);
-		peer.getTorrent().getFiles().getPiece(0).setBlockStatus(blockIndex, BlockStatus.Needed);
+		peer.getTorrent().getFileSet().getPiece(0).setBlockStatus(blockIndex, BlockStatus.Needed);
 		peer.removeJob(new Job(0, blockIndex), PeerDirection.Download);
 		peer.getBitTorrentSocket().close();
 	}

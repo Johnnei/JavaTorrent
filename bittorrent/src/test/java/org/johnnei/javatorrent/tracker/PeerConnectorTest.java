@@ -46,7 +46,7 @@ public class PeerConnectorTest extends EasyMockSupport {
 
 		Torrent torrent = createMock(Torrent.class);
 		expect(torrent.getHashArray()).andStubReturn(torrentHash);
-		expect(torrent.getFiles()).andReturn(null);
+		expect(torrent.getFileSet()).andReturn(null);
 		torrent.addPeer(isA(Peer.class));
 
 		PeerConnectInfo peerConnectInfo = new PeerConnectInfo(torrent, new InetSocketAddress(InetAddress.getLocalHost(), 27960));

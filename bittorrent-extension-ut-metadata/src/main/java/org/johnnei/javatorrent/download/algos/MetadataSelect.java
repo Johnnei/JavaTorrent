@@ -18,7 +18,7 @@ public class MetadataSelect implements IPieceSelector {
 
 	@Override
 	public Optional<Piece> getPieceForPeer(Peer p) {
-		Piece piece = torrent.getFiles().getPiece(0);
+		Piece piece = torrent.getFileSet().getPiece(0);
 		if (piece.hasBlockWithStatus(BlockStatus.Needed)) {
 			return Optional.of(piece);
 		}

@@ -38,7 +38,7 @@ public class PhasePreMetadata extends AMetadataPhase {
 	@Override
 	public void onPhaseExit() {
 		MetadataFileSet metadata = new MetadataFileSet(torrent, metadataFile);
-		torrent.setFiles(metadata);
+		torrent.setFileSet(metadata);
 		torrent.setMetadata(metadata);
 	}
 

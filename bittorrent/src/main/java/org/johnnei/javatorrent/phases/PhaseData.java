@@ -34,7 +34,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public boolean isDone() {
-		return torrent.getFiles().isDone();
+		return torrent.getFileSet().isDone();
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class PhaseData implements IDownloadPhase {
 				}
 
 				final Block block = blockOptional.get();
-				IMessage message = new MessageRequest(piece.getIndex(), block.getIndex() * torrent.getFiles().getBlockSize(), block.getSize());
+				IMessage message = new MessageRequest(piece.getIndex(), block.getIndex() * torrent.getFileSet().getBlockSize(), block.getSize());
 				peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
 				peer.getBitTorrentSocket().enqueueMessage(message);
 			}
@@ -74,7 +74,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
-		Collection<Piece> neededPiece = torrent.getFiles().getNeededPieces().collect(Collectors.toList());
+		Collection<Piece> neededPiece = torrent.getFileSet().getNeededPieces().collect(Collectors.toList());
 
 		return peers.stream()
 				.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())))

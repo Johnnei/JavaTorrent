@@ -42,7 +42,7 @@ public class FullPieceSelect implements IPieceSelector {
 
 	@Override
 	public Optional<Piece> getPieceForPeer(Peer peer) {
-		return torrent.getFiles().getNeededPieces()
+		return torrent.getFileSet().getNeededPieces()
 				.filter(piece -> peer.hasPiece(piece.getIndex()))
 				.sorted(this::comparePieces)
 				.findFirst();

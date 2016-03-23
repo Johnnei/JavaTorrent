@@ -56,7 +56,7 @@ public class MessageRequestTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(filesMock.hasPiece(eq(1))).andReturn(true);
 		peerMock.addJob(eq(expectedJob), eq(PeerDirection.Upload));
 
@@ -83,7 +83,7 @@ public class MessageRequestTest extends EasyMockSupport {
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(filesMock.hasPiece(eq(1))).andReturn(false);
 		expect(peerMock.getBitTorrentSocket()).andStubReturn(socketMock);
 		socketMock.close();

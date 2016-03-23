@@ -28,7 +28,7 @@ public class PermissiveStrategyTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(filesMock.getNeededPieces()).andStubReturn(Stream.of(piece));
 
 		Peer peerMock = createMock(Peer.class);
@@ -53,7 +53,7 @@ public class PermissiveStrategyTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(filesMock.getNeededPieces()).andStubReturn(Stream.of(piece));
 
 		Peer peerMock = createMock(Peer.class);
@@ -77,7 +77,7 @@ public class PermissiveStrategyTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(filesMock.getNeededPieces()).andStubReturn(Stream.of(piece));
 
 		Peer peerMock = createMock(Peer.class);

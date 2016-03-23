@@ -52,7 +52,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 
 		torrentMock.collectPiece(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		expect(filesMock.getBlockSize()).andReturn(0x37FF);
@@ -77,7 +77,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 
 		expect(filesMock.getBlockSize()).andReturn(0x37FF);
 		peerMock.removeJob(eq(expectedJob), eq(PeerDirection.Download));
@@ -104,7 +104,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 
 		torrentMock.collectPiece(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		expect(filesMock.getBlockSize()).andReturn(0x37FF);
@@ -135,7 +135,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFiles()).andStubReturn(filesMock);
+		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 
 		torrentMock.collectPiece(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		expect(filesMock.getBlockSize()).andReturn(0x37FF);

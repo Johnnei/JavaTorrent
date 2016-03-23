@@ -62,7 +62,7 @@ public class MessageBlock implements IMessage {
 	}
 
 	private int getBlockIndex(Peer peer) {
-		return offset / peer.getTorrent().getFiles().getBlockSize();
+		return offset / peer.getTorrent().getFileSet().getBlockSize();
 	}
 
 	@Override

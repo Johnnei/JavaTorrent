@@ -14,7 +14,7 @@ public class PermissiveStrategy implements IChokingStrategy {
 	 */
 	@Override
 	public void updateChoking(Peer peer) {
-		boolean interested = peer.getTorrent().getFiles().getNeededPieces().anyMatch(piece -> peer.hasPiece(piece.getIndex()));
+		boolean interested = peer.getTorrent().getFileSet().getNeededPieces().anyMatch(piece -> peer.hasPiece(piece.getIndex()));
 
 		if (peer.isInterested(PeerDirection.Download) != interested) {
 			peer.setInterested(PeerDirection.Download, interested);

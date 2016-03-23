@@ -36,7 +36,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public boolean isDone() {
-		return foundMatchingFile || torrent.getFiles().isDone();
+		return foundMatchingFile || torrent.getFileSet().isDone();
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrent.setFiles(new TorrentFileSet(metadataFile, downloadFolder));
+		torrent.setFileSet(new TorrentFileSet(metadataFile, downloadFolder));
 		LOGGER.info("Metadata download completed");
 	}
 
