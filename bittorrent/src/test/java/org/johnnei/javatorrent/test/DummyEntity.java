@@ -5,16 +5,15 @@ import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-public class DummyEntity {
+import org.easymock.EasyMock;
 
-	public static Peer createPeer(Torrent torrent) {
-		return new Peer(new BitTorrentSocket(null), torrent, new byte[8]);
-	}
+public class DummyEntity {
 
 	public static byte[] createRandomBytes(int amount) {
 		Random random = new Random();
@@ -27,12 +26,20 @@ public class DummyEntity {
 	}
 
 	public static byte[] createUniqueTorrentHash(byte[]... hashes) {
+		return createUniqueArray(() -> createRandomBytes(20), hashes);
+	}
+
+	public static byte[] createUniquePeerId(byte[]... peerIds) {
+		return createUniqueArray(DummyEntity::createPeerId, peerIds);
+	}
+
+	private static byte[] createUniqueArray(Supplier<byte[]> supplier, byte[]... hashes) {
 		boolean passed;
 		byte[] newHash;
 
 		do {
 			passed = true;
-			newHash = createRandomBytes(20);
+			newHash = supplier.get();
 			for (byte[] hash : hashes) {
 				if (Arrays.equals(newHash, hash)) {
 					passed = false;
@@ -43,6 +50,26 @@ public class DummyEntity {
 		} while (!passed);
 
 		return newHash;
+	}
+
+	public static Peer createPeer() {
+		BitTorrentSocket socketMock = EasyMock.createMock(BitTorrentSocket.class);
+		EasyMock.replay(socketMock);
+
+		return createPeer(socketMock);
+	}
+
+	public static Peer createPeer(BitTorrentSocket socket) {
+		return createPeer(socket, createUniqueTorrent());
+	}
+
+	public static Peer createPeer(BitTorrentSocket socket, Torrent torrent) {
+		return new Peer.Builder()
+				.setSocket(socket)
+				.setTorrent(torrent)
+				.setExtensionBytes(createRandomBytes(8))
+				.setId(createPeerId())
+				.build();
 	}
 
 	public static Torrent createUniqueTorrent(Torrent... torrents) {

@@ -149,7 +149,7 @@ public class PhaseDataTest extends EasyMockSupport {
 		expect(pieceMock.hasBlockWithStatus(eq(BlockStatus.Needed))).andReturn(true);
 		expect(pieceMock.getRequestBlock()).andReturn(Optional.empty());
 
-		Peer peer = new Peer(bitTorrentSocketMock, DummyEntity.createUniqueTorrent(), DummyEntity.createRandomBytes(8));
+		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(1);
 
 		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peer));
@@ -174,7 +174,7 @@ public class PhaseDataTest extends EasyMockSupport {
 
 		Piece piece = new Piece(null, null, 0, 8, 4);
 
-		Peer peer = new Peer(bitTorrentSocketMock, DummyEntity.createUniqueTorrent(), DummyEntity.createRandomBytes(8));
+		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(1);
 
 		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peer));
@@ -202,7 +202,7 @@ public class PhaseDataTest extends EasyMockSupport {
 
 		Piece piece = new Piece(null, null, 0, 8, 4);
 
-		Peer peer = new Peer(bitTorrentSocketMock, DummyEntity.createUniqueTorrent(), DummyEntity.createRandomBytes(8));
+		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(2);
 
 		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peer));

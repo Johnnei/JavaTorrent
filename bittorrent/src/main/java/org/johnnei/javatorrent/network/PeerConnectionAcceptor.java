@@ -42,7 +42,7 @@ public class PeerConnectionAcceptor implements Runnable {
 				return;
 			}
 
-			Peer peer = createPeer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes());
+			Peer peer = createPeer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes(), handshake.getPeerId());
 			peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getHashArray());
 			torrent.get().addPeer(peer);
 		} catch (IOException e) {
@@ -59,8 +59,13 @@ public class PeerConnectionAcceptor implements Runnable {
 		return new BitTorrentSocket(torrentClient.getMessageFactory(), socket);
 	}
 
-	Peer createPeer(BitTorrentSocket socket, Torrent torrent, byte[] extensionBytes) {
-		return new Peer(socket, torrent, extensionBytes);
+	Peer createPeer(BitTorrentSocket socket, Torrent torrent, byte[] extensionBytes, byte[] peerId) {
+		return new Peer.Builder()
+				.setSocket(socket)
+				.setTorrent(torrent)
+				.setExtensionBytes(extensionBytes)
+				.setId(peerId)
+				.build();
 	}
 
 	private void closeQuietly(Socket socket) {

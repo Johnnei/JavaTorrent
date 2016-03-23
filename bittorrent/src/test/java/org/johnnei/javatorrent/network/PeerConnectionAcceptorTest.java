@@ -149,7 +149,7 @@ public class PeerConnectionAcceptorTest extends EasyMockSupport {
 		try {
 			cut = new PeerConnectionAcceptor(torrentClientMock);
 			assertNotNull("Didn't create a socket", cut.createSocket(socketMock));
-			cut.createPeer(bitTorrentSocketMock, torrent, createRandomBytes(8));
+			cut.createPeer(bitTorrentSocketMock, torrent, createRandomBytes(8), createPeerId());
 		} finally {
 			verifyAll();
 		}
@@ -174,10 +174,11 @@ public class PeerConnectionAcceptorTest extends EasyMockSupport {
 		}
 
 		@Override
-		Peer createPeer(BitTorrentSocket socket, Torrent torrent, byte[] extensionBytes) {
+		Peer createPeer(BitTorrentSocket socket, Torrent torrent, byte[] extensionBytes, byte[] peerId) {
 			assertEquals("Incorrect socket", bitTorrentSocketMock, socket);
 			assertNotNull("Creating peer with null torrent", torrent);
-			assertNotNull("Creating peer with null extension bytes");
+			assertNotNull("Creating peer with null extension bytes", extensionBytes);
+			assertNotNull("Creating peer with null id bytes", peerId);
 			return peerMock;
 		}
 	}

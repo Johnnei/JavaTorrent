@@ -117,7 +117,12 @@ public class PeerConnector implements Runnable, IPeerConnector {
 			peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
 			peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), peerInfo.getTorrent().getHashArray());
 			BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getHashArray());
-			Peer peer = new Peer(peerSocket, peerInfo.getTorrent(), handshake.getPeerExtensionBytes());
+			Peer peer = new Peer.Builder()
+					.setSocket(peerSocket)
+					.setTorrent(peerInfo.getTorrent())
+					.setExtensionBytes(handshake.getPeerExtensionBytes())
+					.setId(handshake.getPeerId())
+					.build();
 			peerInfo.getTorrent().addPeer(peer);
 			LOGGER.debug("Connected with {}: {}", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort());
 		} catch (IOException e) {

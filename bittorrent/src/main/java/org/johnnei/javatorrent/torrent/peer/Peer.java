@@ -2,9 +2,9 @@ package org.johnnei.javatorrent.torrent.peer;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
@@ -19,23 +19,33 @@ import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
+import org.johnnei.javatorrent.utils.StringUtils;
 
 public class Peer implements Comparable<Peer> {
 
-	private Torrent torrent;
+	/**
+	 * The torrent on which this peer is participating.
+	 */
+	private final Torrent torrent;
+
+	/**
+	 * The peer id as reported by the peer.
+	 */
+	private final byte[] id;
 
 	/**
 	 * Client information about the connected peer
 	 * This will contain the requests the endpoint made of us
 	 */
-	private Client peerClient;
+	private final Client peerClient;
 
 	/**
 	 * Client information about me retrieved from the connected peer<br/>
 	 * This will contain the requests we made to the endpoint
 	 */
-	private Client myClient;
+	private final Client myClient;
 
 	private String clientName;
 
@@ -59,7 +69,7 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * The extensions which are supported by this peer
 	 */
-	private byte[] extensionBytes;
+	private final byte[] extensionBytes;
 
 	/**
 	 * The absolute maximum amount of requests which the peer can support<br/>
@@ -75,21 +85,23 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * The bittorrent client which handles this peer's socket information and input/outputstreams
 	 */
-	private BitTorrentSocket socket;
+	private final BitTorrentSocket socket;
 
 	/**
 	 * A map of the extra data stored by {@link IModule} which are peer specific
 	 */
 	private Map<Class<?>, Object> extensions;
 
-	public Peer(BitTorrentSocket client, Torrent torrent, byte[] extensionBytes) {
-		this.torrent = torrent;
-		this.socket = client;
-		this.extensionBytes = extensionBytes;
+	private Peer(Builder builder) {
+		this.torrent = Argument.requireNonNull(builder.torrent, "Peer must be assigned to a torrent.");
+		this.socket = Argument.requireNonNull(builder.socket, "Peer must have a socket.");
+		this.extensionBytes = Argument.requireNonNull(builder.extensionBytes, "Peer extension bytes must be set.");
+		this.id = Argument.requireNonNull(builder.id, "Peer ID must be set.");
+
 		peerClient = new Client();
 		myClient = new Client();
 		extensions = new HashMap<>();
-		clientName = "pending";
+		clientName = StringUtils.byteArrayToString(id);
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFiles() != null) {
 			haveState = new Bitfield(MathUtils.ceilDivision(torrent.getFiles().getPieceCount(), 8));
@@ -386,12 +398,12 @@ public class Peer implements Comparable<Peer> {
 
 		Peer other = (Peer) o;
 
-		return Objects.equals(socket, other.socket);
+		return Arrays.equals(id, other.id);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(socket);
+		return Arrays.hashCode(id);
 	}
 
 	/**
@@ -466,6 +478,48 @@ public class Peer implements Comparable<Peer> {
 		socket.enqueueMessage(new MessageBlock(readJob.getPiece().getIndex(), readJob.getOffset(), data));
 		addToPendingMessages(-1);
 		torrent.addUploadedBytes(data.length);
+	}
+
+	public static final class Builder {
+
+		private BitTorrentSocket socket;
+		private Torrent torrent;
+		byte[] extensionBytes;
+		byte[] id;
+
+		public Builder setSocket(BitTorrentSocket socket) {
+			this.socket = socket;
+			return this;
+		}
+
+		public Builder setTorrent(Torrent torrent) {
+			this.torrent = torrent;
+			return this;
+		}
+
+		public Builder setExtensionBytes(byte[] extensionBytes) {
+			Argument.requireNonNull(extensionBytes, "Extension bytes can not be null");
+			if (extensionBytes.length != 8) {
+				throw new IllegalArgumentException("Extension bytes are defined to be 8 bytes. (BEP #03)");
+			}
+
+			this.extensionBytes = extensionBytes;
+			return this;
+		}
+
+		public Builder setId(byte[] id) {
+			Argument.requireNonNull(id, "Id can not be null");
+			if (id.length != 20) {
+				throw new IllegalArgumentException("Id bytes are defined to be 20 bytes. (BEP #03)");
+			}
+
+			this.id = id;
+			return this;
+		}
+
+		public Peer build() {
+			return new Peer(this);
+		}
 	}
 
 }

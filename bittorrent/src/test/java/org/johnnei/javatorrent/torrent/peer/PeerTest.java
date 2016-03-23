@@ -8,6 +8,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.test.TestUtils;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.easymock.EasyMockRunner;
@@ -25,7 +26,7 @@ public class PeerTest extends EasyMockSupport {
 
 	@Test
 	public void testAddModuleInfo() {
-		Peer peer = new Peer(null, DummyEntity.createUniqueTorrent(), new byte[8]);
+		Peer peer = DummyEntity.createPeer();
 
 		Object o = new Object();
 		peer.addModuleInfo(o);
@@ -36,7 +37,7 @@ public class PeerTest extends EasyMockSupport {
 
 	@Test(expected=IllegalStateException.class)
 	public void testAddModuleInfoDuplicate() {
-		Peer peer = new Peer(null, DummyEntity.createUniqueTorrent(), new byte[8]);
+		Peer peer = DummyEntity.createPeer();
 
 		Object o = new Object();
 		Object o2 = new Object();
@@ -46,7 +47,7 @@ public class PeerTest extends EasyMockSupport {
 
 	@Test
 	public void testAddModuleInfoNoElement() {
-		Peer peer = new Peer(null, DummyEntity.createUniqueTorrent(), new byte[8]);
+		Peer peer = DummyEntity.createPeer();
 
 		Optional<Object> o = peer.getModuleInfo(Object.class);
 
@@ -60,7 +61,7 @@ public class PeerTest extends EasyMockSupport {
 				.build();
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
-		Peer peer = new Peer(socketMock, torrentMock, null);
+		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
 
 		socketMock.enqueueMessage(isA(MessageInterested.class));
 
@@ -79,7 +80,7 @@ public class PeerTest extends EasyMockSupport {
 				.build();
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
-		Peer peer = new Peer(socketMock, torrentMock, null);
+		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
 
 		socketMock.enqueueMessage(isA(MessageUninterested.class));
 
@@ -98,7 +99,7 @@ public class PeerTest extends EasyMockSupport {
 				.build();
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
-		Peer peer = new Peer(socketMock, torrentMock, null);
+		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
 
 		replayAll();
 
@@ -115,7 +116,7 @@ public class PeerTest extends EasyMockSupport {
 				.build();
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
-		Peer peer = new Peer(socketMock, torrentMock, null);
+		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
 
 		replayAll();
 
@@ -134,7 +135,7 @@ public class PeerTest extends EasyMockSupport {
 				.build();
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
-		Peer peer = new Peer(socketMock, torrentMock, null);
+		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
 
 		socketMock.enqueueMessage(isA(MessageChoke.class));
 
@@ -153,7 +154,7 @@ public class PeerTest extends EasyMockSupport {
 				.build();
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
-		Peer peer = new Peer(socketMock, torrentMock, null);
+		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
 
 		socketMock.enqueueMessage(isA(MessageUnchoke.class));
 
@@ -163,5 +164,39 @@ public class PeerTest extends EasyMockSupport {
 		assertFalse("Incorrect choked state", peer.isChoked(PeerDirection.Upload));
 
 		verifyAll();
+	}
+
+	@Test
+	public void testEquality() {
+		Torrent torrent = DummyEntity.createUniqueTorrent();
+		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
+
+		replayAll();
+
+		byte[] peerId = DummyEntity.createUniquePeerId();
+		byte[] peerIdTwo = DummyEntity.createUniquePeerId(peerId);
+
+		Peer base = new Peer.Builder()
+				.setSocket(socketMock)
+				.setTorrent(torrent)
+				.setExtensionBytes(DummyEntity.createRandomBytes(8))
+				.setId(peerId)
+				.build();
+
+		Peer equal = new Peer.Builder()
+				.setSocket(socketMock)
+				.setTorrent(torrent)
+				.setExtensionBytes(DummyEntity.createRandomBytes(8))
+				.setId(peerId)
+				.build();
+
+		Peer notEqual = new Peer.Builder()
+				.setSocket(socketMock)
+				.setTorrent(torrent)
+				.setExtensionBytes(DummyEntity.createRandomBytes(8))
+				.setId(peerIdTwo)
+				.build();
+
+		TestUtils.assertEqualityMethods(base, equal, notEqual);
 	}
 }
