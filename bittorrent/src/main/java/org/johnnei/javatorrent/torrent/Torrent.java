@@ -17,7 +17,6 @@ import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.disk.IOManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
-import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
@@ -62,10 +61,7 @@ public class Torrent implements Runnable {
 	 * Regulates the selection of pieces and the peers to download the pieces
 	 */
 	private IPieceSelector pieceSelector;
-	/**
-	 * Regulates the connection with peers
-	 */
-	private IPeerManager peerManager;
+
 	/**
 	 * The amount of downloaded bytes
 	 */
@@ -116,7 +112,6 @@ public class Torrent implements Runnable {
 		displayName = Argument.requireNonNull(builder.displayName, "Torrent name is required");
 		torrentClient = builder.torrentClient;
 		btihHash = builder.hash;
-		peerManager = builder.peerManager;
 		phase = builder.phase;
 		chokingStrategy = builder.chokingStrategy;
 		downloadedBytes = 0L;
@@ -403,10 +398,6 @@ public class Torrent implements Runnable {
 		return String.format("Torrent[hash=%s]", getHash());
 	}
 
-	public int peersWanted() {
-		return peerManager.getAnnounceWantAmount(peers.size());
-	}
-
 	/**
 	 * Polls all peers transfer speeds.
 	 */
@@ -526,8 +517,6 @@ public class Torrent implements Runnable {
 
 		private String displayName;
 
-		private IPeerManager peerManager;
-
 		private IDownloadPhase phase;
 
 		private IChokingStrategy chokingStrategy;
@@ -546,11 +535,6 @@ public class Torrent implements Runnable {
 
 		public Builder setName(String name) {
 			this.displayName = name;
-			return this;
-		}
-
-		public Builder setPeerManager(IPeerManager peerManager) {
-			this.peerManager = peerManager;
 			return this;
 		}
 

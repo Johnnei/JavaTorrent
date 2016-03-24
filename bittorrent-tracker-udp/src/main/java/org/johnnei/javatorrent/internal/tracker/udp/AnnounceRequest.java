@@ -23,6 +23,10 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AnnounceRequest.class);
 
+	private static final int AMOUNT_OF_WANTED_PEERS = 50;
+	private static final int RESPOND_ON_SENDER_IP = 0;
+	private static final int TRACKER_EXTENSIONS = 0;
+
 	// Request
 	private final TorrentInfo torrentInfo;
 
@@ -76,15 +80,15 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 		}
 
 		// Indicate that we want the response on the sending IP
-		outStream.writeInt(0);
+		outStream.writeInt(RESPOND_ON_SENDER_IP);
 		// Really don't know what they 'key' field is used for
 		outStream.writeInt(new Random().nextInt());
 
 		// Request as much as we want for the torrent
-		outStream.writeInt(torrent.peersWanted());
+		outStream.writeInt(AMOUNT_OF_WANTED_PEERS);
 		outStream.writeShort(downloadPort);
 		// No extensions as defined in BEP #41
-		outStream.writeShort(0);
+		outStream.writeShort(TRACKER_EXTENSIONS);
 	}
 
 	@Override

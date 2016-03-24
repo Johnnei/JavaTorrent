@@ -23,7 +23,6 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
@@ -50,8 +49,6 @@ public class TorrentClient {
 
 	private IPeerConnector peerConnector;
 
-	private IPeerManager peerManager;
-
 	private ExecutorService executorService;
 
 	private int downloadPort;
@@ -69,9 +66,6 @@ public class TorrentClient {
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
 		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
 		executorService = Objects.requireNonNull(builder.executorService, "Executor service is required to process torrent tasks.");
-
-		peerManager = Objects.requireNonNull(builder.peerManager, "Peer manager required to handle peer selection mechanism.");
-		LOGGER.info(String.format("Configured %s as Peer Manager", peerManager));
 
 		peerConnector = Objects.requireNonNull(builder.peerConnector, "Peer connector required to allow external connections").apply(this);
 		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
@@ -199,14 +193,6 @@ public class TorrentClient {
 	}
 
 	/**
-	 * Gets the {@link IPeerManager} which handles the choking/unchoking of the connected peers.
-	 * @return The peer manager implementation
-	 */
-	public IPeerManager getPeerManager() {
-		return peerManager;
-	}
-
-	/**
 	 * Gets the port at which we are listening for peers
 	 * @return The port at which we are listening
 	 */
@@ -255,8 +241,6 @@ public class TorrentClient {
 		private Function<TorrentClient, IPeerConnector> peerConnector;
 
 		private ExecutorService executorService;
-
-		private IPeerManager peerManager;
 
 		private boolean acceptIncomingConnections;
 
@@ -335,11 +319,6 @@ public class TorrentClient {
 
 		public Builder setExecutorService(ExecutorService executorService) {
 			this.executorService = executorService;
-			return this;
-		}
-
-		public Builder setPeerManager(IPeerManager peerManager) {
-			this.peerManager = peerManager;
 			return this;
 		}
 

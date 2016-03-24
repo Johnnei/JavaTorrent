@@ -11,7 +11,6 @@ import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
-import org.johnnei.javatorrent.torrent.algos.peermanager.IPeerManager;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
 
@@ -25,7 +24,6 @@ public class StubEntity {
 
 	public static TorrentClient stubTorrentClient(EasyMockSupport context) {
 		IPeerConnector peerConnectorMock = context.createMock(IPeerConnector.class);
-		IPeerManager peerManagerMock = context.createMock(IPeerManager.class);
 		TorrentClient torrentClientMock = context.createMock(TorrentClient.class);
 		PhaseRegulator phaseRegulatorMock = context.createMock(PhaseRegulator.class);
 		IDownloadPhase downloadPhaseMock = context.createMock(IDownloadPhase.class);
@@ -34,7 +32,6 @@ public class StubEntity {
 		// Setup getters
 		expect(torrentClientMock.getPeerConnector()).andStubReturn(peerConnectorMock);
 		expect(torrentClientMock.getExecutorService()).andStubReturn(service);
-		expect(torrentClientMock.getPeerManager()).andStubReturn(peerManagerMock);
 		expect(torrentClientMock.getPhaseRegulator()).andStubReturn(phaseRegulatorMock);
 		expect(phaseRegulatorMock.createInitialPhase(eq(torrentClientMock), notNull())).andStubReturn(downloadPhaseMock);
 
@@ -52,10 +49,6 @@ public class StubEntity {
 
 	public static AbstractFileSet stubAFiles(int pieceCount, FileInfo fileInfo) {
 		return new AFilesStub(pieceCount, fileInfo);
-	}
-
-	public static IPeerManager stubPeerManager() {
-		return new PeerManagerStub();
 	}
 
 	private static final class AFilesStub extends AbstractFileSet {
@@ -105,29 +98,4 @@ public class StubEntity {
 		}
 
 	}
-
-	private static class PeerManagerStub implements IPeerManager {
-
-		@Override
-		public int getMaxPeers() {
-			return 5;
-		}
-
-		@Override
-		public int getMaxPendingPeers() {
-			return 2;
-		}
-
-		@Override
-		public int getAnnounceWantAmount(int connected) {
-			return 3;
-		}
-
-		@Override
-		public String getName() {
-			return "PMStub";
-		}
-
-	}
-
 }

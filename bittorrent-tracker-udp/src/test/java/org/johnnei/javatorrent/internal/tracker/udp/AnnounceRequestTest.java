@@ -42,7 +42,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		final byte[] REMAINING_BYTES = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };
 		final byte[] EVENT_BYTES = new byte[] { 0, 0, 0, 0 };
 		final byte[] SENDER_IP_BYTES = new byte[] { 0, 0, 0, 0 };
-		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 3 };
+		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 0x32 };
 		final byte[] PORT_BYTES = new byte[] { (byte) 0x6D, 0x38 };
 		final byte[] EXTENSION_BYTES = new byte[] { 0, 0 };
 
@@ -51,7 +51,6 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		Torrent torrent = new Torrent.Builder()
 				.setHash(DummyEntity.createRandomBytes(20))
 				.setName("Dummy Torrent")
-				.setPeerManager(StubEntity.stubPeerManager())
 				.build();
 
 		TorrentInfo info = new TorrentInfo(torrent, Clock.systemDefaultZone());
@@ -87,7 +86,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		final byte[] REMAINING_BYTES = new byte[] { 0, 0, 0, 0, 0, 0, 0, 3 };
 		final byte[] EVENT_BYTES = new byte[] { 0, 0, 0, 2 };
 		final byte[] SENDER_IP_BYTES = new byte[] { 0, 0, 0, 0 };
-		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 3 };
+		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 0x32 };
 		final byte[] PORT_BYTES = new byte[] { (byte) 0x6D, 0x38 };
 		final byte[] EXTENSION_BYTES = new byte[] { 0, 0 };
 
@@ -96,7 +95,6 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		Torrent torrent = new Torrent.Builder()
 				.setHash(DummyEntity.createRandomBytes(20))
 				.setName("Dummy Torrent")
-				.setPeerManager(StubEntity.stubPeerManager())
 				.build();
 		torrent.setFileSet(StubEntity.stubAFiles(3));
 
