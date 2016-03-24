@@ -14,6 +14,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.disk.DiskJobReadBlock;
+import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;

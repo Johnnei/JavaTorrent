@@ -10,7 +10,7 @@ import java.util.Map;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.torrent.peer.Bitfield;
+import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.ThreadUtils;

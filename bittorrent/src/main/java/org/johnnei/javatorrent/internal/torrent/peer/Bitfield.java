@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.peer;
+package org.johnnei.javatorrent.internal.torrent.peer;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -14,10 +14,6 @@ public class Bitfield {
 	private ReadWriteLock resizeLock;
 
 	private byte[] bitfield;
-
-	public Bitfield() {
-		this(0);
-	}
 
 	public Bitfield(int size) {
 		bitfield = new byte[size];
