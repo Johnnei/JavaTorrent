@@ -5,7 +5,6 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -49,8 +48,6 @@ public class MessageRequestTest extends EasyMockSupport {
 				0, 0, 0, 3
 		});
 
-		Job expectedJob = new Job(1, 2, 3);
-
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
 		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
@@ -58,7 +55,7 @@ public class MessageRequestTest extends EasyMockSupport {
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
 		expect(filesMock.hasPiece(eq(1))).andReturn(true);
-		peerMock.addJob(eq(expectedJob), eq(PeerDirection.Upload));
+		peerMock.addBlockRequest(eq(1), eq(2), eq(3), eq(PeerDirection.Upload));
 
 		replayAll();
 

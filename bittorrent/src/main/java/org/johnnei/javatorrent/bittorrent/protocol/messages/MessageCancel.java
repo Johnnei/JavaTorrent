@@ -3,7 +3,6 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -39,7 +38,7 @@ public class MessageCancel implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.removeJob(new Job(index, offset, length), PeerDirection.Upload);
+		peer.cancelBlockRequest(index, offset, length, PeerDirection.Upload);
 	}
 
 	@Override

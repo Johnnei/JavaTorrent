@@ -3,7 +3,6 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -45,7 +44,7 @@ public class MessageRequest implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		if (peer.getTorrent().getFileSet().hasPiece(index)) {
-			peer.addJob(new Job(index, offset, length), PeerDirection.Upload);
+			peer.addBlockRequest(index, offset, length, PeerDirection.Upload);
 		} else {
 			LOGGER.error("Requested piece {} which I don't have", index);
 			peer.getBitTorrentSocket().close();

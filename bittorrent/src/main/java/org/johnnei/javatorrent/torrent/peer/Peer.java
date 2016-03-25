@@ -8,13 +8,17 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.disk.DiskJobReadBlock;
 import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
+import org.johnnei.javatorrent.internal.torrent.peer.Client;
+import org.johnnei.javatorrent.internal.torrent.peer.Job;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -174,23 +178,61 @@ public class Peer implements Comparable<Peer> {
 	}
 
 	/**
-	 * Adds a download or upload job to the peer
+	 * Adds a download or upload job to the peer. In case of a download request this will also send out a
+	 * {@link MessageBlock} for the given block.
 	 *
-	 * @param job
-	 * @param type
+	 * @param pieceIndex The index of the requested piece.
+	 * @param byteOffset The offset in bytes within the piece.
+	 * @param blockLength The amount of bytes requested.
+	 * @param type The direction of the request.
 	 */
-	public void addJob(Job job, PeerDirection type) {
+	public void addBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
+		Job job = createJob(pieceIndex, byteOffset, blockLength, type);
 		getClientByDirection(type).addJob(job);
+
+		if (type != PeerDirection.Download) {
+			return;
+		}
+
+		socket.enqueueMessage(new MessageRequest(pieceIndex, byteOffset, blockLength));
 	}
 
 	/**
-	 * Removes the download or upload job from the peer
+	 * Removes the download or upload job from the peer. In case of a download request this will also send out a
+	 * {@link org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel} for the given block.
 	 *
-	 * @param job
-	 * @param type
+	 * @param pieceIndex The index of the requested piece.
+	 * @param byteOffset The offset in bytes within the piece.
+	 * @param blockLength The amount of bytes requested.
+	 * @param type The direction of the request.
 	 */
-	public void removeJob(Job job, PeerDirection type) {
+	public void cancelBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
+		Job job = createJob(pieceIndex, byteOffset, blockLength, type);
 		getClientByDirection(type).removeJob(job);
+
+		if (type != PeerDirection.Download) {
+			return;
+		}
+
+		socket.enqueueMessage(new MessageCancel(pieceIndex, byteOffset, blockLength));
+	}
+
+	/**
+	 * Indicates that we've successfully received the requested block from the peer.
+	 * @param pieceIndex The index of the requested piece.
+	 * @param byteOffset The offset in bytes within the piece.
+	 */
+	public void onReceivedBlock(int pieceIndex, int byteOffset) {
+		int blockLength = torrent.getFileSet().getPiece(pieceIndex).getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
+		getClientByDirection(PeerDirection.Download).removeJob(createJob(pieceIndex, byteOffset, blockLength, PeerDirection.Download));
+	}
+
+	private Job createJob(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
+		if (type == PeerDirection.Download) {
+			return new Job(pieceIndex, byteOffset / torrent.getFileSet().getBlockSize(), blockLength);
+		} else {
+			return new Job(pieceIndex, byteOffset, blockLength);
+		}
 	}
 
 	/**
@@ -202,13 +244,12 @@ public class Peer implements Comparable<Peer> {
 		pendingMessages += i;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
-		if (socket != null) {
-			return socket.toString();
-		} else {
-			return "UNCONNECTED";
-		}
+		return String.format("Peer[id=%s]", StringUtils.byteArrayToString(id));
 	}
 
 	public void setClientName(String clientName) {
@@ -383,6 +424,9 @@ public class Peer implements Comparable<Peer> {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean equals(Object o) {
 		if (o == null) {
@@ -402,6 +446,9 @@ public class Peer implements Comparable<Peer> {
 		return Arrays.equals(id, other.id);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(id);
@@ -416,10 +463,20 @@ public class Peer implements Comparable<Peer> {
 		return requestLimit;
 	}
 
+	/**
+	 * Checks if the client is interested.
+	 * @param direction The direction to check for.
+	 * @return <code>true</code> when the peer for the given direction is in the choke state.
+	 */
 	public boolean isInterested(PeerDirection direction) {
 		return getClientByDirection(direction).isInterested();
 	}
 
+	/**
+	 * Checks if the client is choked.
+	 * @param direction The direction to check for.
+	 * @return <code>true</code> when the peer for the given direction is in the choke state.
+	 */
 	public boolean isChoked(PeerDirection direction) {
 		return getClientByDirection(direction).isChoked();
 	}

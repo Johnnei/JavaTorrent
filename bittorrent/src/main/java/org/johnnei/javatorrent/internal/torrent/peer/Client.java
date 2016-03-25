@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.peer;
+package org.johnnei.javatorrent.internal.torrent.peer;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -71,7 +71,7 @@ public class Client {
 
 	/**
 	 * Grabs the first job on the workingQueue
-	 * 
+	 *
 	 * @return The next job available
 	 */
 	public Job popNextJob() {
@@ -91,7 +91,7 @@ public class Client {
 
 	/**
 	 * Removes a job from the working queue if it was listed
-	 * 
+	 *
 	 * @param job The job to remove
 	 */
 	public void removeJob(Job job) {
@@ -102,7 +102,7 @@ public class Client {
 
 	/**
 	 * Adds a job to the working queue
-	 * 
+	 *
 	 * @param job The job to add.
 	 */
 	public void addJob(Job job) {
@@ -113,7 +113,7 @@ public class Client {
 
 	/**
 	 * The amount of jobs on the working queue
-	 * 
+	 *
 	 * @return the amount
 	 */
 	public int getQueueSize() {

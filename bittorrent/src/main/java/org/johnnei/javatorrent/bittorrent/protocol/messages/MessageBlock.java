@@ -2,12 +2,10 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
 import java.time.Duration;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 public class MessageBlock implements IMessage {
 
@@ -44,7 +42,7 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.removeJob(new Job(index, getBlockIndex(peer)), PeerDirection.Download);
+		peer.onReceivedBlock(index, offset);
 		if (data.length <= 0) {
 			peer.addStrike(1);
 			return;
@@ -59,10 +57,6 @@ public class MessageBlock implements IMessage {
 			// Set by trust
 			peer.setRequestLimit(2 * (peer.getRequestLimit() + 1));
 		}
-	}
-
-	private int getBlockIndex(Peer peer) {
-		return offset / peer.getTorrent().getFileSet().getBlockSize();
 	}
 
 	@Override

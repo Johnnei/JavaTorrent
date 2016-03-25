@@ -11,12 +11,11 @@ import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
-import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -62,7 +61,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 				Block block = blockOptional.get();
 				IMessage message = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
-				peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
+				peer.addBlockRequest(piece.getIndex(), block.getIndex(), block.getSize(), PeerDirection.Download);
 				peer.getBitTorrentSocket().enqueueMessage(message);
 			}
 		}

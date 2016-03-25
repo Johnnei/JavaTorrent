@@ -1,12 +1,12 @@
-package org.johnnei.javatorrent.torrent.peer;
+package org.johnnei.javatorrent.internal.torrent.peer;
 
 import java.util.Objects;
 
 /**
  * A handler to manage the peer their work queue
- * 
+ *
  * @author Johnnei
- * 
+ *
  */
 public class Job {
 
@@ -23,10 +23,6 @@ public class Job {
 	 * <b>Optional</b>, Only used with requests from other peers
 	 */
 	private int length;
-
-	public Job(int pieceIndex) {
-		this(pieceIndex, 0);
-	}
 
 	public Job(int pieceIndex, int block) {
 		this.pieceIndex = pieceIndex;

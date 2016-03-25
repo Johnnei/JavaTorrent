@@ -5,15 +5,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -53,9 +50,7 @@ public class PhaseData implements IDownloadPhase {
 				}
 
 				final Block block = blockOptional.get();
-				IMessage message = new MessageRequest(piece.getIndex(), block.getIndex() * torrent.getFileSet().getBlockSize(), block.getSize());
-				peer.addJob(new Job(piece.getIndex(), block.getIndex()), PeerDirection.Download);
-				peer.getBitTorrentSocket().enqueueMessage(message);
+				peer.addBlockRequest(piece.getIndex(), torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
 			}
 		}
 	}

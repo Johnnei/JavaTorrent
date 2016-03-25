@@ -3,9 +3,7 @@ package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.UTMetadata;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
 public class MessageData extends Message {
 
@@ -36,7 +34,7 @@ public class MessageData extends Message {
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
 		peer.getTorrent().collectPiece(0, blockIndex * peer.getTorrent().getFileSet().getBlockSize(), data);
-		peer.removeJob(new Job(0, blockIndex), PeerDirection.Download);
+		peer.onReceivedBlock(0, blockIndex);
 	}
 
 	@Override

@@ -2,9 +2,8 @@ package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +24,7 @@ public class MessageReject extends Message {
 		int blockIndex = (int) dictionary.get("piece");
 		LOGGER.warn("Piece Request got rejected: " + blockIndex);
 		peer.getTorrent().getFileSet().getPiece(0).setBlockStatus(blockIndex, BlockStatus.Needed);
-		peer.removeJob(new Job(0, blockIndex), PeerDirection.Download);
+		peer.onReceivedBlock(0, blockIndex);
 		peer.getBitTorrentSocket().close();
 	}
 

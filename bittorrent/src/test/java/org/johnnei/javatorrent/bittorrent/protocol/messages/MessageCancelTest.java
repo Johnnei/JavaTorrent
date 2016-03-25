@@ -2,7 +2,6 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.peer.Job;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -45,11 +44,9 @@ public class MessageCancelTest extends EasyMockSupport {
 				0, 0, 0, 3
 		});
 
-		Job expectedJob = new Job(1, 2, 3);
-
 		Peer peerMock = createMock(Peer.class);
 
-		peerMock.removeJob(eq(expectedJob), eq(PeerDirection.Upload));
+		peerMock.cancelBlockRequest(eq(1), eq(2), eq(3), eq(PeerDirection.Upload));
 
 		replayAll();
 

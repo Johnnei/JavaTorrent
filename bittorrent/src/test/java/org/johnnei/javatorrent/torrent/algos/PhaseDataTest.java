@@ -27,6 +27,7 @@ import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.anyInt;
 import static org.easymock.EasyMock.eq;
@@ -186,6 +187,8 @@ public class PhaseDataTest extends EasyMockSupport {
 
 		replayAll();
 
+		Whitebox.setInternalState(peer, Torrent.class, torrentMock);
+
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 		cut.process();
 
@@ -214,6 +217,8 @@ public class PhaseDataTest extends EasyMockSupport {
 		expect(fileSetMock.getBlockSize()).andReturn(4).atLeastOnce();
 
 		replayAll();
+
+		Whitebox.setInternalState(peer, Torrent.class, torrentMock);
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 		cut.process();

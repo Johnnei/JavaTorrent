@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.peer;
+package org.johnnei.javatorrent.internal.torrent.peer;
 
 import java.util.ArrayList;
 import java.util.Collection;
