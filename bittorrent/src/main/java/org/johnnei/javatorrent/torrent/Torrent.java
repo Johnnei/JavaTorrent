@@ -272,13 +272,6 @@ public class Torrent implements Runnable {
 		return !metadata.isDone();
 	}
 
-	public double getProgress() {
-		if (isDownloadingMetadata() || files == null || files.getPieceCount() == 0) {
-			return 0D;
-		}
-		return (files.countCompletedPieces() * 100d) / files.getPieceCount();
-	}
-
 	/**
 	 * Tells the torrent to save a block of data
 	 *

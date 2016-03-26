@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -49,7 +50,7 @@ public class TorrentClient {
 
 	private IPeerConnector peerConnector;
 
-	private ExecutorService executorService;
+	private ScheduledExecutorService executorService;
 
 	private int downloadPort;
 
@@ -240,7 +241,7 @@ public class TorrentClient {
 
 		private Function<TorrentClient, IPeerConnector> peerConnector;
 
-		private ExecutorService executorService;
+		private ScheduledExecutorService executorService;
 
 		private boolean acceptIncomingConnections;
 
@@ -317,7 +318,7 @@ public class TorrentClient {
 			return this;
 		}
 
-		public Builder setExecutorService(ExecutorService executorService) {
+		public Builder setExecutorService(ScheduledExecutorService executorService) {
 			this.executorService = executorService;
 			return this;
 		}

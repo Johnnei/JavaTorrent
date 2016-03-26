@@ -66,6 +66,20 @@ public class TorrentTest extends EasyMockSupport {
 	}
 
 	@Test
+	public void testGetHash() {
+		Torrent cut = DummyEntity.createUniqueTorrent();
+
+		assertTrue("Incorrect hash output", cut.getHash().matches("^[a-fA-F0-9]{40}$"));
+	}
+
+	@Test
+	public void testToString() {
+		Torrent cut = DummyEntity.createUniqueTorrent();
+
+		assertTrue("Incorrect toString start", cut.toString().startsWith("Torrent["));
+	}
+
+	@Test
 	public void testGetRelevantPeers() {
 		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
 		expect(phaseMock.getRelevantPeers(notNull())).andReturn(Collections.emptyList());

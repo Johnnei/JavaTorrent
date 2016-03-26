@@ -1,7 +1,7 @@
 package org.johnnei.javatorrent;
 
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
@@ -35,7 +35,7 @@ public class TorrentClientTest extends EasyMockSupport {
 	public void testBuilder() throws Exception {
 		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
-		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		ITracker trackerMock = createMock(ITracker.class);
 		IMessage messageMock = createMock(IMessage.class);
@@ -103,7 +103,7 @@ public class TorrentClientTest extends EasyMockSupport {
 	public void testGetExtensionBytesEnableSpecificBit() throws Exception {
 		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
-		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 
 		replayAll();
@@ -129,7 +129,7 @@ public class TorrentClientTest extends EasyMockSupport {
 	public void testGetExtensionBytesEnableAllBits() throws Exception {
 		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
-		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 
 		replayAll();
@@ -161,7 +161,7 @@ public class TorrentClientTest extends EasyMockSupport {
 	public void testCreateUniqueTransactionId() throws Exception {
 		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
-		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 
 		replayAll();
@@ -184,7 +184,7 @@ public class TorrentClientTest extends EasyMockSupport {
 	public void testAcceptIncomingConnections() throws Exception {
 		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
-		ExecutorService executorServiceMock = createMock(ExecutorService.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 
 		replayAll();
