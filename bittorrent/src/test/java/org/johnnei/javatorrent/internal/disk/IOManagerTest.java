@@ -1,6 +1,8 @@
-package org.johnnei.javatorrent.disk;
+package org.johnnei.javatorrent.internal.disk;
 
 import java.io.IOException;
+
+import org.johnnei.javatorrent.disk.IDiskJob;
 
 import org.easymock.EasyMockSupport;
 import org.easymock.IMocksControl;
@@ -21,7 +23,7 @@ public class IOManagerTest extends EasyMockSupport {
 		 */
 		IOManager cut = new IOManager();
 
-		cut.processTask();
+		cut.run();
 	}
 
 	@Test
@@ -36,7 +38,7 @@ public class IOManagerTest extends EasyMockSupport {
 		replayAll();
 
 		cut.addTask(diskJobMock);
-		cut.processTask();
+		cut.run();
 
 		verifyAll();
 	}
@@ -55,7 +57,7 @@ public class IOManagerTest extends EasyMockSupport {
 		replayAll();
 
 		cut.addTask(diskJobMock);
-		cut.processTask();
+		cut.run();
 
 		verifyAll();
 	}
@@ -80,11 +82,11 @@ public class IOManagerTest extends EasyMockSupport {
 		// Test twice with the order swapped to ensure that the ordering isn't accidental
 		cut.addTask(diskJobOneMock);
 		cut.addTask(diskJobTwoMock);
-		cut.processTask();
+		cut.run();
 
 		cut.addTask(diskJobTwoMock);
 		cut.addTask(diskJobOneMock);
-		cut.processTask();
+		cut.run();
 
 		verifyAll();
 	}

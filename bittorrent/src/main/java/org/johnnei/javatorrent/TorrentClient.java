@@ -13,11 +13,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
+import org.johnnei.javatorrent.disk.IDiskJob;
+import org.johnnei.javatorrent.internal.disk.IOManager;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.module.IModule;
@@ -51,6 +54,10 @@ public class TorrentClient {
 	private IPeerConnector peerConnector;
 
 	private ScheduledExecutorService executorService;
+
+	private IOManager ioManager;
+
+	private LoopingRunnable ioManagerRunner;
 
 	private int downloadPort;
 
@@ -86,6 +93,11 @@ public class TorrentClient {
 		extensionBytes = builder.extensionBytes;
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
+		ioManager = new IOManager();
+		ioManagerRunner = new LoopingRunnable(ioManager);
+		Thread ioManagerThread = new Thread(ioManagerRunner, "Disk Manager");
+		ioManagerThread.setDaemon(true);
+		ioManagerThread.start();
 
 		torrentManager.start(this);
 		if (builder.acceptIncomingConnections) {
@@ -136,10 +148,19 @@ public class TorrentClient {
 	 */
 	public void shutdown() {
 		torrentManager.stop();
+		ioManagerRunner.stop();
 	}
 
 	public int createUniqueTransactionId() {
 		return transactionId.incrementAndGet();
+	}
+
+	/**
+	 * Submits the disk job to be processed by the IO manager.
+	 * @param task The disk job to execute.
+	 */
+	public void addDiskJob(IDiskJob task) {
+		ioManager.addTask(task);
 	}
 
 	/**

@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.disk.IDiskJob;
+import org.johnnei.javatorrent.internal.disk.IOManager;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
@@ -208,6 +210,34 @@ public class TorrentClientTest extends EasyMockSupport {
 		cut.shutdown();
 
 		assertFalse("Peer IO should have been invoked to start", Whitebox.getInternalState(peerIoRunnable, "keepRunning"));
+
+		verifyAll();
+	}
+
+	@Test
+	public void testAddDiskJob() throws Exception {
+		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
+		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
+		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+		IOManager ioManagerMock = createMock(IOManager.class);
+		IDiskJob diskJobMock = createMock(IDiskJob.class);
+
+		ioManagerMock.addTask(same(diskJobMock));
+
+		replayAll();
+
+		TorrentClient cut = new TorrentClient.Builder()
+				.setConnectionDegradation(connectionDegradationMock)
+				.setPhaseRegulator(phaseRegulatorMock)
+				.setExecutorService(executorServiceMock)
+				.setPeerConnector((t) -> peerConnectorMock)
+				.registerTrackerProtocol("udp", (url, client) -> null)
+				.build();
+
+		Whitebox.setInternalState(cut, ioManagerMock);
+
+		cut.addDiskJob(diskJobMock);
 
 		verifyAll();
 	}

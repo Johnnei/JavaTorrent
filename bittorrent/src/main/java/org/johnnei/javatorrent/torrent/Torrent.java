@@ -14,7 +14,6 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
 import org.johnnei.javatorrent.disk.IDiskJob;
-import org.johnnei.javatorrent.disk.IOManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
@@ -80,10 +79,6 @@ public class Torrent implements Runnable {
 	private long lastPeerUpdate = System.currentTimeMillis();
 
 	/**
-	 * IOManager to manage the transaction between the hdd and the programs so none of the actual network thread need to get block for that
-	 */
-	private IOManager ioManager;
-	/**
 	 * The phase in which the torrent currently is
 	 */
 	private IDownloadPhase phase;
@@ -116,7 +111,6 @@ public class Torrent implements Runnable {
 		chokingStrategy = builder.chokingStrategy;
 		downloadedBytes = 0L;
 		peers = new LinkedList<>();
-		ioManager = new IOManager();
 		pieceSelector = new FullPieceSelect(this);
 		thread = new Thread(this, displayName);
 	}
@@ -190,7 +184,6 @@ public class Torrent implements Runnable {
 			while (!phase.isDone()) {
 				processPeers();
 				phase.process();
-				ioManager.processTask();
 				ThreadUtils.sleep(25);
 			}
 			phase.onPhaseExit();
@@ -322,7 +315,7 @@ public class Torrent implements Runnable {
 	 * @param task The task to add
 	 */
 	public void addDiskJob(IDiskJob task) {
-		ioManager.addTask(task);
+		torrentClient.addDiskJob(task);
 	}
 
 	private void broadcastMessage(IMessage m) {

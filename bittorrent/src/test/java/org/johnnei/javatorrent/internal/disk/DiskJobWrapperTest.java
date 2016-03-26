@@ -1,4 +1,6 @@
-package org.johnnei.javatorrent.disk;
+package org.johnnei.javatorrent.internal.disk;
+
+import org.johnnei.javatorrent.disk.IDiskJob;
 
 import org.easymock.EasyMockSupport;
 import org.junit.Test;

@@ -6,13 +6,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
+import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestUtils;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.easymock.Capture;
@@ -63,6 +66,25 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 
 		TestUtils.assertEqualityMethods(base, equal, notEqual);
+	}
+
+	@Test
+	public void testAddDiskJob() {
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		Piece pieceMock = createMock(Piece.class);
+
+		torrentClientMock.addDiskJob(notNull());
+
+		replayAll();
+
+		Torrent cut = new Torrent.Builder()
+				.setName("Add Disk Job Test")
+				.setTorrentClient(torrentClientMock)
+				.build();
+
+		cut.addDiskJob(new DiskJobCheckHash(pieceMock, job -> {}));
+
+		verifyAll();
 	}
 
 	@Test

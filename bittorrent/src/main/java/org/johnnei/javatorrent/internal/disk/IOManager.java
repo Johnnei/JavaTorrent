@@ -1,8 +1,10 @@
-package org.johnnei.javatorrent.disk;
+package org.johnnei.javatorrent.internal.disk;
 
 import java.util.PriorityQueue;
 
-public class IOManager {
+import org.johnnei.javatorrent.disk.IDiskJob;
+
+public class IOManager implements Runnable {
 
 	private PriorityQueue<DiskJobWrapper> taskQueue;
 
@@ -12,7 +14,7 @@ public class IOManager {
 
 	/**
 	 * Adds a task to the queue
-	 * 
+	 *
 	 * @param task The task to add
 	 */
 	public void addTask(IDiskJob task) {
@@ -22,10 +24,11 @@ public class IOManager {
 	}
 
 	/**
-	 * Processes all pending tasks for the given torrent
-	 * 
+	 * Processes all pending tasks.
+	 *
 	 */
-	public void processTask() {
+	@Override
+	public void run() {
 		while (taskQueue.size() > 0) {
 			DiskJobWrapper task;
 			synchronized (this) {
