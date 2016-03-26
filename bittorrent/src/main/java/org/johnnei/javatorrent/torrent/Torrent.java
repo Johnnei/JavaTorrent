@@ -220,7 +220,7 @@ public class Torrent implements Runnable {
 		synchronized (this) {
 			peers.stream().
 					filter(p -> p.getBitTorrentSocket().closed()).
-					forEach(Peer::cancelAllPieces);
+					forEach(Peer::discardAllBlockRequests);
 			peers.removeIf(p -> p == null || p.getBitTorrentSocket().closed());
 			peers.forEach(Peer::checkDisconnect);
 

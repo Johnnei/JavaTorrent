@@ -35,7 +35,7 @@ public class MessageHaveTest extends EasyMockSupport {
 	@Test
 	public void testReadAndProcess() {
 		Peer peerMock = createMock(Peer.class);
-		peerMock.havePiece(eq(0x12));
+		peerMock.setHavingPiece(eq(0x12));
 
 		replayAll();
 

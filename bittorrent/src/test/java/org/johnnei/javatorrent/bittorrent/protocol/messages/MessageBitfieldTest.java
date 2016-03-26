@@ -46,11 +46,11 @@ public class MessageBitfieldTest extends EasyMockSupport {
 		cut.read(inStream);
 
 		for (int i = 0; i < 8; i++) {
-			peerMock.havePiece(eq(i));
+			peerMock.setHavingPiece(eq(i));
 		}
 
 		for (int i = 0; i < 4; i++) {
-			peerMock.havePiece(eq(20 + i));
+			peerMock.setHavingPiece(eq(20 + i));
 		}
 
 		replayAll();

@@ -1,6 +1,6 @@
 package org.johnnei.javatorrent.internal.torrent.peer;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -85,8 +85,7 @@ public class Client {
 	 * @return An iteratable collection containing the jobs.
 	 */
 	public Iterable<Job> getJobs() {
-		// Return a copy to prevent ModificationExceptions
-		return new ArrayList<>(workingQueue);
+		return Collections.unmodifiableCollection(workingQueue);
 	}
 
 	/**

@@ -41,7 +41,7 @@ public class MessageChokeTest extends EasyMockSupport {
 		Peer peerMock = createMock(Peer.class);
 
 		peerMock.setChoked(eq(PeerDirection.Download), eq(true));
-		peerMock.cancelAllPieces();
+		peerMock.discardAllBlockRequests();
 
 		replayAll();
 

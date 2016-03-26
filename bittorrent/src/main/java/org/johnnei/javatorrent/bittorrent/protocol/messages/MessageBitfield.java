@@ -42,7 +42,7 @@ public class MessageBitfield implements IMessage {
 				boolean isSet = ((b >> (7 - i)) & 0x1) != 0;
 
 				if (isSet) {
-					peer.havePiece(pieceIndex);
+					peer.setHavingPiece(pieceIndex);
 				}
 
 				pieceIndex++;

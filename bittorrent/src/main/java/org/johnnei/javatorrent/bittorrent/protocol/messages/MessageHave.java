@@ -29,7 +29,7 @@ public class MessageHave implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.havePiece(pieceIndex);
+		peer.setHavingPiece(pieceIndex);
 	}
 
 	@Override

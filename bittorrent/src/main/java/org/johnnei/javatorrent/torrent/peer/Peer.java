@@ -25,10 +25,9 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.utils.Argument;
-import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.StringUtils;
 
-public class Peer implements Comparable<Peer> {
+public class Peer {
 
 	/**
 	 * The torrent on which this peer is participating.
@@ -42,13 +41,13 @@ public class Peer implements Comparable<Peer> {
 
 	/**
 	 * Client information about the connected peer
-	 * This will contain the requests the endpoint made of us
+	 * This will contain the requests the endpoint made of us. {@link PeerDirection#Upload}
 	 */
 	private final Client peerClient;
 
 	/**
 	 * Client information about me retrieved from the connected peer<br/>
-	 * This will contain the requests we made to the endpoint
+	 * This will contain the requests we made to the endpoint {@link PeerDirection#Download}
 	 */
 	private final Client myClient;
 
@@ -151,14 +150,12 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * Checks if the {@link #extensionBytes} has the given bit set for the extension which is part of the extension bytes in the handshake
 	 *
-	 * @param index
-	 * @param bit
+	 * @param index The index wihtin the extension bytes.
+	 * @param bit The bit to test.
 	 * @return returns true if the extension bit is set. Otherwise false
 	 */
 	public boolean hasExtension(int index, int bit) {
-		if (index < 0 || index >= extensionBytes.length) {
-			return false;
-		}
+		Argument.requireWithinBounds(index, 0, extensionBytes.length, "Index must be: 0 >= index < 8");
 
 		return (extensionBytes[index] & bit) > 0;
 	}
@@ -252,6 +249,10 @@ public class Peer implements Comparable<Peer> {
 		return String.format("Peer[id=%s]", StringUtils.byteArrayToString(id));
 	}
 
+	/**
+	 * Sets the client as reported by the Client in BEP #10.
+	 * @param clientName The name of the client.
+	 */
 	public void setClientName(String clientName) {
 		this.clientName = clientName;
 	}
@@ -268,11 +269,15 @@ public class Peer implements Comparable<Peer> {
 	 * A callback method which gets invoked when the torrent starts a new phase
 	 */
 	public void onTorrentPhaseChange() {
-		if (torrent.isDownloadingMetadata()) {
-			haveState.setSize(MathUtils.ceilDivision(torrent.getFileSet().getPieceCount(), 8));
+		if (!torrent.isDownloadingMetadata()) {
+			haveState.setSize(torrent.getFileSet().getBitfieldBytes().length);
 		}
 	}
 
+	/**
+	 * Calculates the amount of blocks we can request without overflowing the peer and without slowing us down.
+	 * @return The amount of blocks which can still be requested.
+	 */
 	public int getFreeWorkTime() {
 		return Math.max(0, getRequestLimit() - getWorkQueueSize(PeerDirection.Download));
 	}
@@ -280,7 +285,7 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * Gets the amount of pieces the client still needs to send
 	 *
-	 * @return
+	 * @return The amount of blocks which still need to be send/received.
 	 */
 	public int getWorkQueueSize(PeerDirection direction) {
 		return getClientByDirection(direction).getQueueSize();
@@ -289,14 +294,12 @@ public class Peer implements Comparable<Peer> {
 	/**
 	 * Cancels all pieces
 	 */
-	public void cancelAllPieces() {
+	public void discardAllBlockRequests() {
 		synchronized (this) {
-			if (getWorkQueueSize(PeerDirection.Download) > 0) {
-				for (Job job : myClient.getJobs()) {
-					torrent.getFileSet().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
-				}
-				myClient.clearJobs();
+			for (Job job : myClient.getJobs()) {
+				torrent.getFileSet().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
 			}
+			myClient.clearJobs();
 		}
 	}
 
@@ -305,7 +308,7 @@ public class Peer implements Comparable<Peer> {
 	 *
 	 * @param pieceIndex the piece to marked as "have"
 	 */
-	public void havePiece(int pieceIndex) {
+	public void setHavingPiece(int pieceIndex) {
 		haveState.havePiece(pieceIndex, torrent.isDownloadingMetadata());
 	}
 
@@ -327,26 +330,18 @@ public class Peer implements Comparable<Peer> {
 		return socket.getLastActivity();
 	}
 
+	/**
+	 * Gets the torrent to which this peer is linked.
+	 * @return The torrent.
+	 */
 	public Torrent getTorrent() {
 		return torrent;
-	}
-
-	@Override
-	public int compareTo(Peer p) {
-		int myValue = getCompareValue();
-		int theirValue = p.getCompareValue();
-
-		return myValue - theirValue;
-	}
-
-	private int getCompareValue() {
-		return (getWorkQueueSize(PeerDirection.Download) * 5000) + haveState.countHavePieces() + socket.getDownloadRate();
 	}
 
 	/**
 	 * Adds an amount of strikes to the peer
 	 *
-	 * @param i
+	 * @param i The amount of strikes to add.
 	 */
 	public synchronized void addStrike(int i) {
 		strikes = Math.max(0, strikes + i);
@@ -359,6 +354,7 @@ public class Peer implements Comparable<Peer> {
 	 */
 	public void setAbsoluteRequestLimit(int absoluteRequestLimit) {
 		this.absoluteRequestLimit = absoluteRequestLimit;
+		setRequestLimit(Math.min(absoluteRequestLimit, getRequestLimit()));
 	}
 
 	/**
@@ -500,16 +496,13 @@ public class Peer implements Comparable<Peer> {
 	 * @return returns the amount of pieces which this peer has
 	 */
 	public int countHavePieces() {
-		if (haveState == null) {
-			return 0;
-		}
 		return haveState.countHavePieces();
 	}
 
 	/**
 	 * Gets the socket handler which handles the socket of this peer
 	 *
-	 * @return
+	 * @return The socket associated to this peer.
 	 *
 	 */
 	public BitTorrentSocket getBitTorrentSocket() {
@@ -520,11 +513,15 @@ public class Peer implements Comparable<Peer> {
 	 * Requests to queue the next piece in the socket for sending
 	 */
 	public void queueNextPieceForSending() {
-		if (myClient.getQueueSize() == 0 || pendingMessages > 0) {
+		if (pendingMessages > 0) {
 			return;
 		}
 
 		Job request = peerClient.popNextJob();
+		if (request == null) {
+			return;
+		}
+
 		addToPendingMessages(1);
 
 		Piece piece = torrent.getFileSet().getPiece(request.getPieceIndex());
