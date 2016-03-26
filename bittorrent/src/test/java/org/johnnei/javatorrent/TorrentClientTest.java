@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Pattern;
 
+import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
@@ -25,8 +26,10 @@ import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(EasyMockRunner.class)
 public class TorrentClientTest extends EasyMockSupport {
@@ -178,6 +181,35 @@ public class TorrentClientTest extends EasyMockSupport {
 		int id2 = cut.createUniqueTransactionId();
 
 		assertNotEquals("Duplicate transaction IDs", id, id2);
+	}
+
+	@Test
+	public void testShutdown() throws Exception {
+		ConnectionDegradation connectionDegradationMock = createMock(ConnectionDegradation.class);
+		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
+		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+
+		replayAll();
+
+		TorrentClient cut = new TorrentClient.Builder()
+				.setConnectionDegradation(connectionDegradationMock)
+				.setPhaseRegulator(phaseRegulatorMock)
+				.setExecutorService(executorServiceMock)
+				.setPeerConnector((t) -> peerConnectorMock)
+				.registerTrackerProtocol("udp", (url, client) -> null)
+				.build();
+
+		TorrentManager torrentManager = Whitebox.getInternalState(cut, TorrentManager.class);
+		LoopingRunnable peerIoRunnable = Whitebox.getInternalState(torrentManager, "peerIoRunnable");
+
+		assertTrue("Peer IO should have been invoked to start", Whitebox.getInternalState(peerIoRunnable, "keepRunning"));
+
+		cut.shutdown();
+
+		assertFalse("Peer IO should have been invoked to start", Whitebox.getInternalState(peerIoRunnable, "keepRunning"));
+
+		verifyAll();
 	}
 
 	@Test

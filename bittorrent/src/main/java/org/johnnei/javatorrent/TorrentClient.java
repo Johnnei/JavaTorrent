@@ -131,6 +131,13 @@ public class TorrentClient {
 		torrent.start();
 	}
 
+	/**
+	 * Shuts down all components of the TorrentClient.
+	 */
+	public void shutdown() {
+		torrentManager.stop();
+	}
+
 	public int createUniqueTransactionId() {
 		return transactionId.incrementAndGet();
 	}
