@@ -147,6 +147,7 @@ public class TorrentClient {
 	public void shutdown() {
 		torrentManager.stop();
 		ioManagerRunner.stop();
+		executorService.shutdown();
 	}
 
 	public int createUniqueTransactionId() {

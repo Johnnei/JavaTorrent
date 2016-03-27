@@ -83,9 +83,34 @@ public class TorrentManager {
 		}
 	}
 
+	/**
+	 * Removes a torrent from the list
+	 * @param torrent
+	 */
 	public void removeTorrent(Torrent torrent) {
 		synchronized (torrentListLock) {
-			activeTorrents.remove(torrent);
+			activeTorrents.removeIf(torrentPair -> torrentPair.getTorrent().equals(torrent));
+		}
+	}
+
+	/**
+	 * Shuts down the torrent processing cleanly.
+	 * @param torrent The torrent to stop.
+	 */
+	public void shutdownTorrent(Torrent torrent) {
+		Optional<TorrentPair> pair;
+		synchronized (torrentListLock) {
+			pair = activeTorrents.stream()
+					.filter(torrentPair -> torrentPair.getTorrent().equals(torrent))
+					.findAny();
+
+			if (pair.isPresent()) {
+				activeTorrents.remove(pair.get());
+			}
+		}
+
+		if (pair.isPresent()) {
+			pair.get().getTorrentProcessor().shutdownTorrent();
 		}
 	}
 

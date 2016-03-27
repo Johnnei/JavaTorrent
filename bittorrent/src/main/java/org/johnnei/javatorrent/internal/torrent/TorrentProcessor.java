@@ -13,7 +13,7 @@ import org.johnnei.javatorrent.torrent.Torrent;
 /**
  * A state machine wrapped around the torrent
  */
-public class TorrentProcessor {
+class TorrentProcessor {
 
 	private final TorrentManager torrentManager;
 
@@ -66,7 +66,7 @@ public class TorrentProcessor {
 		downloadPhase.process();
 	}
 
-	private void shutdownTorrent() {
+	public void shutdownTorrent() {
 		for (ScheduledFuture<?> task : scheduledTasks) {
 			task.cancel(false);
 		}

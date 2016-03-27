@@ -197,6 +197,8 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 
+		executorServiceMock.shutdown();
+
 		replayAll();
 
 		TorrentClient cut = new TorrentClient.Builder()
