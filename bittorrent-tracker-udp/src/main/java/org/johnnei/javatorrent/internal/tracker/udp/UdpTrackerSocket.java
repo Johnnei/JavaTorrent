@@ -17,12 +17,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
-import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 import org.johnnei.javatorrent.tracker.UdpTracker;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class UdpTrackerSocket implements Runnable {
 
 	private final Clock clock;
 
-	private final TrackerManager trackerManager;
+	private final TorrentClient torrentClient;
 
 	private volatile boolean keepRunning = true;
 
@@ -74,7 +75,7 @@ public class UdpTrackerSocket implements Runnable {
 	private UdpTrackerSocket(Builder builder) throws TrackerException {
 		clock = builder.clock;
 		newWork = taskLock.newCondition();
-		trackerManager = builder.trackerManager;
+		torrentClient = builder.torrentClient;
 		socketUtils = builder.socketUtils;
 		try {
 			udpSocket = new DatagramSocket(builder.socketPort);
@@ -168,7 +169,7 @@ public class UdpTrackerSocket implements Runnable {
 				continue;
 			}
 
-			TrackerRequest wrappedRequest = new TrackerRequest(request.tracker, trackerManager.createUniqueTransactionId(), request.payload);
+			TrackerRequest wrappedRequest = new TrackerRequest(request.tracker, torrentClient.createUniqueTransactionId(), request.payload);
 
 			// List this packet as sent before the actual write to prevent race conditions
 			synchronized (lock) {
@@ -281,7 +282,7 @@ public class UdpTrackerSocket implements Runnable {
 
 	private void receiveResponse() {
 		SentRequest sentRequest;
-		InStream inStream = null;
+		InStream inStream;
 		try {
 			// Read packet and find the corresponding request
 			inStream = socketUtils.read(udpSocket);
@@ -372,7 +373,7 @@ public class UdpTrackerSocket implements Runnable {
 
 	public static final class Builder {
 
-		private TrackerManager trackerManager;
+		private TorrentClient torrentClient;
 
 		private UdpSocketUtils socketUtils;
 
@@ -389,8 +390,8 @@ public class UdpTrackerSocket implements Runnable {
 			return this;
 		}
 
-		public Builder setTrackerManager(TrackerManager trackerManager) {
-			this.trackerManager = trackerManager;
+		public Builder setTorrentClient(TorrentClient torrentClient) {
+			this.torrentClient = torrentClient;
 			return this;
 		}
 

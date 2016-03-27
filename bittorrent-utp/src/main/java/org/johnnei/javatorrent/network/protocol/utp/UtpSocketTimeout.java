@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.network.protocol.utp;
 
-import org.johnnei.javatorrent.utils.ThreadUtils;
-
 public class UtpSocketTimeout extends Thread {
 
 	public UtpSocketTimeout() {
@@ -11,7 +9,11 @@ public class UtpSocketTimeout extends Thread {
 	@Override
 	public void run() {
 		while (true) {
-			ThreadUtils.sleep(250);
+			try {
+				Thread.sleep(250);
+			} catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
 			UdpMultiplexer.getInstance().updateTimeout();
 		}
 	}

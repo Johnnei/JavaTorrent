@@ -3,9 +3,9 @@ package org.johnnei.javatorrent.protocol.extension;
 import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 
 public interface IExtension {
 

@@ -5,11 +5,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Iterator;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.protocol.UtpSocket;
-import org.johnnei.javatorrent.torrent.network.Stream;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.Packet;
+import org.johnnei.javatorrent.network.Stream;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.Packet;
 import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
-import org.johnnei.javatorrent.utils.config.Config;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +18,8 @@ public class UdpMultiplexer extends Thread {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UdpMultiplexer.class);
 
-	private static UdpMultiplexer instance = new UdpMultiplexer();
+	// TODO Correct this call during the migration to modular system
+	private static UdpMultiplexer instance = new UdpMultiplexer(null);
 
 	public static UdpMultiplexer getInstance() {
 		return instance;
@@ -38,12 +40,12 @@ public class UdpMultiplexer extends Thread {
 	 */
 	private BinarySearchTree<UtpSocket> utpSockets;
 
-	private UdpMultiplexer() {
+	private UdpMultiplexer(TorrentClient torrentClient) {
 		super("UdpMultiplexer");
 		utpSockets = new BinarySearchTree<>();
 		packetFactory = new UtpPacketFactory();
 		try {
-			multiplexerSocket = new DatagramSocket(Config.getConfig().getInt("download-port"));
+			multiplexerSocket = new DatagramSocket(torrentClient.getDownloadPort());
 			new UtpSocketTimeout().start();
 			start();
 		} catch (IOException e) {

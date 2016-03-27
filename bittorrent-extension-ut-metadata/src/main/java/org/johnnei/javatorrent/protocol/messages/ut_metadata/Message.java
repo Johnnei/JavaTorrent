@@ -2,11 +2,11 @@ package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
 import java.util.Map;
 
+import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.torrent.encoding.Bencode;
-import org.johnnei.javatorrent.torrent.encoding.Bencoder;
 
 public abstract class Message implements IMessage {
 
@@ -38,10 +38,6 @@ public abstract class Message implements IMessage {
 		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
 		dictionary = decoder.decodeDictionary();
 		inStream.moveBack(decoder.remainingChars());
-	}
-
-	@Override
-	public void setReadDuration(int duration) {
 	}
 
 }

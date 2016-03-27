@@ -1,39 +1,37 @@
 package org.johnnei.javatorrent.test;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
+import org.johnnei.javatorrent.torrent.FileInfo;
+import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
+
+import org.easymock.EasyMockSupport;
+
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.notNull;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutorService;
-
-import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.torrent.TorrentException;
-import org.johnnei.javatorrent.torrent.download.AFiles;
-import org.johnnei.javatorrent.torrent.download.FileInfo;
-import org.johnnei.javatorrent.torrent.download.algos.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.download.algos.IPeerManager;
-import org.johnnei.javatorrent.torrent.download.files.Piece;
-import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
 
 public class StubEntity {
 
 	public static TorrentClient stubTorrentClient(EasyMockSupport context) {
 		IPeerConnector peerConnectorMock = context.createMock(IPeerConnector.class);
-		IPeerManager peerManagerMock = context.createMock(IPeerManager.class);
 		TorrentClient torrentClientMock = context.createMock(TorrentClient.class);
 		PhaseRegulator phaseRegulatorMock = context.createMock(PhaseRegulator.class);
 		IDownloadPhase downloadPhaseMock = context.createMock(IDownloadPhase.class);
-		ExecutorService service = new ExecutorServiceMock();
+		ScheduledExecutorService service = new ExecutorServiceMock();
 
 		// Setup getters
 		expect(torrentClientMock.getPeerConnector()).andStubReturn(peerConnectorMock);
 		expect(torrentClientMock.getExecutorService()).andStubReturn(service);
-		expect(torrentClientMock.getPeerManager()).andStubReturn(peerManagerMock);
 		expect(torrentClientMock.getPhaseRegulator()).andStubReturn(phaseRegulatorMock);
 		expect(phaseRegulatorMock.createInitialPhase(eq(torrentClientMock), notNull())).andStubReturn(downloadPhaseMock);
 
@@ -45,17 +43,23 @@ public class StubEntity {
 	 * @param pieceCount the amount of pieces reported
 	 * @return
 	 */
-	public static AFiles stubAFiles(int pieceCount) {
+	public static AbstractFileSet stubAFiles(int pieceCount) {
 		return new AFilesStub(pieceCount);
 	}
 
-	public static IPeerManager stubPeerManager() {
-		return new PeerManagerStub();
+	public static AbstractFileSet stubAFiles(int pieceCount, FileInfo fileInfo) {
+		return new AFilesStub(pieceCount, fileInfo);
 	}
 
-	private static final class AFilesStub extends AFiles {
+	private static final class AFilesStub extends AbstractFileSet {
+
+		public AFilesStub(int pieceCount, FileInfo defaultFile) {
+			this(pieceCount);
+			fileInfos = Collections.singletonList(defaultFile);
+		}
 
 		public AFilesStub(int pieceCount) {
+			super(1);
 			fileInfos = new ArrayList<>();
 			fileInfos.add(new FileInfo(1, 0, new File("./target/tmp/afilesstub.tmp"), pieceCount));
 			pieces = new ArrayList<>();
@@ -65,7 +69,7 @@ public class StubEntity {
 		}
 
 		@Override
-		public void havePiece(int pieceIndex) throws NoSuchElementException {
+		public void setHavingPiece(int pieceIndex) throws NoSuchElementException {
 		}
 
 		@Override
@@ -79,8 +83,8 @@ public class StubEntity {
 		}
 
 		@Override
-		public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) throws TorrentException {
-			return null;
+		public FileInfo getFileForBytes(int index, int blockIndex, int blockDataOffset) {
+			return fileInfos.get(0);
 		}
 
 		@Override
@@ -94,30 +98,4 @@ public class StubEntity {
 		}
 
 	}
-
-
-	private static class PeerManagerStub implements IPeerManager {
-
-		@Override
-		public int getMaxPeers() {
-			return 5;
-		}
-
-		@Override
-		public int getMaxPendingPeers() {
-			return 2;
-		}
-
-		@Override
-		public int getAnnounceWantAmount(int connected) {
-			return 3;
-		}
-
-		@Override
-		public String getName() {
-			return "PMStub";
-		}
-
-	}
-
 }

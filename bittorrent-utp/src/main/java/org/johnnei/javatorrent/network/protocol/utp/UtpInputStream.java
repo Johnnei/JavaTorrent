@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
-import org.johnnei.javatorrent.torrent.network.Stream;
-import org.johnnei.javatorrent.torrent.network.protocol.utp.packet.PacketData;
+import org.johnnei.javatorrent.network.Stream;
+import org.johnnei.javatorrent.network.network.protocol.utp.packet.PacketData;
 
 public class UtpInputStream extends InputStream {
 

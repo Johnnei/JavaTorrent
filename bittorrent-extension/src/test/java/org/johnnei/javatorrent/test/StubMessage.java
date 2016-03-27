@@ -1,9 +1,10 @@
 package org.johnnei.javatorrent.test;
 
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.network.protocol.IMessage;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+
 import org.junit.Assert;
 
 public class StubMessage implements IMessage {
@@ -34,11 +35,6 @@ public class StubMessage implements IMessage {
 	@Override
 	public int getId() {
 		return 0;
-	}
-
-	@Override
-	public void setReadDuration(int duration) {
-		/* Nothing to do here for stub message */
 	}
 
 }

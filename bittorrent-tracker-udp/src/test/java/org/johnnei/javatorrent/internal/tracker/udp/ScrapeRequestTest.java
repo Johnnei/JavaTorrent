@@ -13,13 +13,13 @@ import java.util.Optional;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.DummyEntity;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,9 +29,9 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test
 	public void testWriteRequest() {
-		Torrent torrentOne = DummyEntity.createTorrent();
-		Torrent torrentTwo = DummyEntity.createTorrent();
-		Torrent torrentThree = DummyEntity.createTorrent();
+		Torrent torrentOne = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
+		Torrent torrentThree = DummyEntity.createUniqueTorrent();
 
 		byte[] expectedOutput = new byte[60];
 		copySection(torrentOne.getHashArray(), expectedOutput, 0);
@@ -51,9 +51,9 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test
 	public void testReadAndProcessRequest() throws Exception {
-		Torrent torrentOne = DummyEntity.createTorrent();
-		Torrent torrentTwo = DummyEntity.createTorrent();
-		Torrent torrentThree = DummyEntity.createTorrent();
+		Torrent torrentOne = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
+		Torrent torrentThree = DummyEntity.createUniqueTorrent();
 
 		TorrentInfo infoOne = new TorrentInfo(torrentOne, Clock.systemDefaultZone());
 		TorrentInfo infoTwo = new TorrentInfo(torrentThree, Clock.systemDefaultZone());
@@ -99,9 +99,9 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test(expected=TrackerException.class)
 	public void testReadAndProcessBrokenRequest() throws Exception {
-		Torrent torrentOne = DummyEntity.createTorrent();
-		Torrent torrentTwo = DummyEntity.createTorrent();
-		Torrent torrentThree = DummyEntity.createTorrent();
+		Torrent torrentOne = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
+		Torrent torrentThree = DummyEntity.createUniqueTorrent();
 
 		byte[] inputBytes = {
 				// Torrent one

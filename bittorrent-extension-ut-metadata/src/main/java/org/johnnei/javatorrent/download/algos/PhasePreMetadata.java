@@ -1,26 +1,21 @@
 package org.johnnei.javatorrent.download.algos;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.io.File;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.download.MetadataFile;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.algos.AMetadataPhase;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.utils.config.Config;
+import org.johnnei.javatorrent.module.MetadataInformation;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
+import org.johnnei.javatorrent.torrent.Torrent;
 
 public class PhasePreMetadata extends AMetadataPhase {
 
-	private int metadataSize;
-
-	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent) {
-		super(torrentClient, torrent);
+	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent, File metadataFile) {
+		super(torrentClient, torrent, metadataFile);
 	}
 
 	@Override
 	public boolean isDone() {
-		return metadataSize != 0;
+		return torrent.getPeers().stream().anyMatch(p -> p.getModuleInfo(MetadataInformation.class).isPresent());
 	}
 
 	@Override
@@ -31,26 +26,13 @@ public class PhasePreMetadata extends AMetadataPhase {
 	@Override
 	public void onPhaseEnter() {
 		super.onPhaseEnter();
-		if (foundMatchingFile) {
-			metadataSize = (int) Config.getConfig().getTorrentFileFor(torrent.getHash()).length();
-		}
 	}
 
 	@Override
 	public void onPhaseExit() {
-		MetadataFile metadata = new MetadataFile(torrent, metadataSize);
-		torrent.setFiles(metadata);
+		MetadataFileSet metadata = new MetadataFileSet(torrent, metadataFile);
+		torrent.setFileSet(metadata);
 		torrent.setMetadata(metadata);
-	}
-
-	public void setMetadataSize(int metadataSize) {
-		this.metadataSize = metadataSize;
-	}
-
-	@Override
-	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
-		// We don't really have any 'useful' here, we're just waiting until we get our information
-		return Collections.emptyList();
 	}
 
 }

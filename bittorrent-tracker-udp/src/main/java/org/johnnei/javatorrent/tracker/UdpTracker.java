@@ -20,11 +20,11 @@ import org.johnnei.javatorrent.internal.tracker.udp.Connection;
 import org.johnnei.javatorrent.internal.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.tracker.ITracker;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +108,7 @@ public class UdpTracker implements ITracker {
 
 		activeConnection = new Connection(clock);
 		torrentMap = new HashMap<>();
-		announceInterval = (int) TorrentInfo.DEFAULT_ANNOUNCE_INTERVAL.toMillis();
+		announceInterval = (int) Duration.ofSeconds(30).toMillis();
 		lastScrapeTime = LocalDateTime.now(clock).minus(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS);
 
 		// Parse URL
@@ -168,7 +168,7 @@ public class UdpTracker implements ITracker {
 
 	@Override
 	public void connectPeer(PeerConnectInfo peer) {
-		torrentClient.getPeerConnector().connectPeer(peer);
+		torrentClient.getPeerConnector().enqueuePeer(peer);
 	}
 
 	/**
@@ -200,12 +200,12 @@ public class UdpTracker implements ITracker {
 			torrentInfo = torrentMap.get(torrent);
 		}
 
-		if(torrentInfo.getTimeSinceLastAnnouce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
+		if(torrentInfo.getTimeSinceLastAnnounce().compareTo(Duration.of(announceInterval, ChronoUnit.MILLIS)) < 0) {
 			// We're not allowed to announce yet
 			return;
 		}
 
-		trackerSocket.submitRequest(this, new AnnounceRequest(torrentInfo, torrentClient.getTrackerManager().getPeerId(), torrentClient.getDownloadPort()));
+		trackerSocket.submitRequest(this, new AnnounceRequest(torrentInfo, torrentClient.getPeerId(), torrentClient.getDownloadPort()));
 	}
 
 	/**

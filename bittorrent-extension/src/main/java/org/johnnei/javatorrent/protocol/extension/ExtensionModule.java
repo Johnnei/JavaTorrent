@@ -8,11 +8,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.module.IModule;
+import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
 import org.johnnei.javatorrent.protocol.messages.extension.Protocol;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +69,7 @@ public class ExtensionModule implements IModule {
 
 	private void sendExtendedMessages(Peer peer) throws IOException {
 		MessageExtension message = new MessageExtension(Protocol.EXTENDED_MESSAGE_HANDSHAKE, new MessageHandshake(peer, extensionsById));
-		peer.getBitTorrentSocket().queueMessage(message);
+		peer.getBitTorrentSocket().enqueueMessage(message);
 	}
 
 	public static class Builder {

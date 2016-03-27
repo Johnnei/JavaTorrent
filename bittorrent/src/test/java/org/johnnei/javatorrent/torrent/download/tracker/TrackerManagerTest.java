@@ -1,27 +1,27 @@
 package org.johnnei.javatorrent.torrent.download.tracker;
 
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.expectLastCall;
-import static org.easymock.EasyMock.same;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
+
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
 import org.easymock.Mock;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.tracker.IPeerConnector;
-import org.johnnei.javatorrent.torrent.tracker.ITracker;
-import org.johnnei.javatorrent.torrent.tracker.TrackerFactory;
-import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.same;
 
 @RunWith(EasyMockRunner.class)
 public class TrackerManagerTest extends EasyMockSupport {
@@ -49,7 +49,7 @@ public class TrackerManagerTest extends EasyMockSupport {
 			expectLastCall();
 		});
 
-		expect(trackerFactoryMock.getTrackingsHavingTorrent(same(torrentMock))).andReturn(trackers);
+		expect(trackerFactoryMock.getTrackersHavingTorrent(same(torrentMock))).andReturn(trackers);
 		replayAll();
 
 		cut.announce(torrentMock);
@@ -71,16 +71,6 @@ public class TrackerManagerTest extends EasyMockSupport {
 	}
 
 	@Test
-	public void testConstructor() {
-		byte[] peerId = cut.getPeerId();
-
-		// Assert that the peer id is in format: -JTdddd-xxxxxxxxxxxx
-		// The first 8 bytes are always readable ASCII characters.
-		String clientIdentifier = new String(peerId, 0, 8);
-		Assert.assertTrue("Incorrect client identifier in peer ID", Pattern.matches("-JT\\d{4}-", clientIdentifier));
-	}
-
-	@Test
 	public void testAddTorrent() {
 		Torrent torrent = createMock(Torrent.class);
 		ITracker trackerMock = createMock(ITracker.class);
@@ -88,20 +78,11 @@ public class TrackerManagerTest extends EasyMockSupport {
 
 		expect(trackerFactoryMock.getTrackerFor(eq(trackerUrl))).andReturn(Optional.of(trackerMock));
 		trackerMock.addTorrent(same(torrent));
-		expectLastCall();
 
 		replayAll();
 		cut.addTorrent(torrent, trackerUrl);
 
 		verifyAll();
-	}
-
-	@Test
-	public void testCreateUniqueTransactionId() {
-		int id = cut.createUniqueTransactionId();
-		int id2 = cut.createUniqueTransactionId();
-
-		Assert.assertNotEquals("Duplicate transaction IDs", id, id2);
 	}
 
 }

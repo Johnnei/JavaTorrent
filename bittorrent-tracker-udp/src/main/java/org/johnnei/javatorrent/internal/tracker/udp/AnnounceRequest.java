@@ -10,11 +10,11 @@ import java.util.Random;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +22,10 @@ import org.slf4j.LoggerFactory;
 public class AnnounceRequest implements IUdpTrackerPayload {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AnnounceRequest.class);
+
+	private static final int AMOUNT_OF_WANTED_PEERS = 50;
+	private static final int RESPOND_ON_SENDER_IP = 0;
+	private static final int TRACKER_EXTENSIONS = 0;
 
 	// Request
 	private final TorrentInfo torrentInfo;
@@ -54,15 +58,15 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 
 	@Override
 	public void writeRequest(OutStream outStream) {
-		outStream.writeByte(torrent.getHashArray());
-		outStream.writeByte(peerId);
+		outStream.write(torrent.getHashArray());
+		outStream.write(peerId);
 
 		// Downloaded Bytes
 		outStream.writeLong(torrent.getDownloadedBytes());
 
 		// Bytes left (or 0 if we don't know how many we should download)
-		if (torrent.getFiles() != null) {
-			outStream.writeLong(torrent.getFiles().countRemainingBytes()); // Bytes left
+		if (torrent.getFileSet() != null) {
+			outStream.writeLong(torrent.getFileSet().countRemainingBytes()); // Bytes left
 		} else {
 			outStream.writeLong(0);
 		}
@@ -76,15 +80,15 @@ public class AnnounceRequest implements IUdpTrackerPayload {
 		}
 
 		// Indicate that we want the response on the sending IP
-		outStream.writeInt(0);
+		outStream.writeInt(RESPOND_ON_SENDER_IP);
 		// Really don't know what they 'key' field is used for
 		outStream.writeInt(new Random().nextInt());
 
 		// Request as much as we want for the torrent
-		outStream.writeInt(torrent.peersWanted());
+		outStream.writeInt(AMOUNT_OF_WANTED_PEERS);
 		outStream.writeShort(downloadPort);
 		// No extensions as defined in BEP #41
-		outStream.writeShort(0);
+		outStream.writeShort(TRACKER_EXTENSIONS);
 	}
 
 	@Override

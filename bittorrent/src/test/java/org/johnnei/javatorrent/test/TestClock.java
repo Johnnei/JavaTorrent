@@ -5,6 +5,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A clock implementation which returns its values based on the supplied clock.
  * The supplied clock maybe be changed.
@@ -15,6 +18,8 @@ import java.util.Objects;
  *
  */
 public class TestClock extends Clock {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestClock.class);
 
 	private Clock actualClock;
 
@@ -39,6 +44,7 @@ public class TestClock extends Clock {
 
 	public void setClock(Clock actualClock) {
 		this.actualClock = Objects.requireNonNull(actualClock, "Clock cannot be null.");
+		LOGGER.debug("Time is now: {}", actualClock.instant());
 	}
 
 }

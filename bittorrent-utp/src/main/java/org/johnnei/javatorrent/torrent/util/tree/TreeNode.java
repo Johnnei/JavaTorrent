@@ -1,8 +1,5 @@
 package org.johnnei.javatorrent.torrent.util.tree;
 
-import org.johnnei.javatorrent.utils.JMath;
-
-
 
 public class TreeNode<T extends Comparable<T>> {
 	
@@ -144,7 +141,7 @@ public class TreeNode<T extends Comparable<T>> {
 	public boolean fixAVL() {
 		int leftNodeHeight = (leftNode != null) ? leftNode.getHeight() : 0;
 		int rightNodeHeight = (rightNode != null) ? rightNode.getHeight() : 0;
-		if(JMath.diff(leftNodeHeight, rightNodeHeight) > 1) {
+		if(Math.abs(leftNodeHeight - rightNodeHeight) > 1) {
 			if(leftNodeHeight > rightNodeHeight) {
 				if(!leftNode.fixAVL()) { //We detected it is in the left node, but the leftNode has not found the problem
 					rotateLeft();

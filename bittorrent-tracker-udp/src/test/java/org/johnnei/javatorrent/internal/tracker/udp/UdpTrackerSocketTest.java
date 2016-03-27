@@ -1,13 +1,5 @@
 package org.johnnei.javatorrent.internal.tracker.udp;
 
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.expectLastCall;
-import static org.easymock.EasyMock.isA;
-import static org.easymock.EasyMock.notNull;
-import static org.johnnei.javatorrent.test.DummyEntity.createTorrent;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 import java.time.Clock;
@@ -18,29 +10,32 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.internal.tracker.udp.ConnectionRequest;
-import org.johnnei.javatorrent.internal.tracker.udp.IUdpTrackerPayload;
-import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
-import org.johnnei.javatorrent.internal.tracker.udp.UdpSocketUtils;
-import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.RulePrintTestCase;
 import org.johnnei.javatorrent.test.TestClock;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerException;
-import org.johnnei.javatorrent.torrent.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
+
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.isA;
+import static org.easymock.EasyMock.notNull;
+import static org.johnnei.javatorrent.test.DummyEntity.createUniqueTorrent;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(EasyMockRunner.class)
 public class UdpTrackerSocketTest extends EasyMockSupport {
@@ -53,8 +48,6 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 	private TorrentClient torrentClientMock = createMock(TorrentClient.class);
 
 	private int transactionId;
-
-	private TrackerManager trackerManagerMock = createMock(TrackerManager.class);
 
 	private UdpSocketUtils utilsMock = createMock(UdpSocketUtils.class);
 
@@ -93,7 +86,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 		// Prepare context
 		readAttempt = 0;
 		cut = new UdpTrackerSocket.Builder()
-				.setTrackerManager(trackerManagerMock)
+				.setTorrentClient(torrentClientMock)
 				.setSocketPort(27500)
 				.setSocketUtils(utilsMock)
 				.setClock(testClock)
@@ -152,13 +145,13 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 				0x00, 0x00, 0x00, 0x02
 		});
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 		tracker.addTorrent(torrent);
 
 		ScrapeRequest scrapeMessage = new ScrapeRequest(Collections.singletonList(torrent));
 
-		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
-		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+		expect(torrentClientMock.createUniqueTransactionId()).andReturn(++transactionId);
+		expect(torrentClientMock.createUniqueTransactionId()).andReturn(++transactionId);
 
 		utilsMock.write(isA(DatagramSocket.class), notNull(), isA(OutStream.class));
 		expectLastCall().times(2);
@@ -201,10 +194,10 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 				0x01, 0x23, 0x45, 0x67, (byte) 0x89, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF
 		});
 
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 		tracker.addTorrent(torrent);
 
-		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+		expect(torrentClientMock.createUniqueTransactionId()).andReturn(++transactionId);
 
 		utilsMock.write(isA(DatagramSocket.class), notNull(), isA(OutStream.class));
 		expectLastCall().times(3);
@@ -242,7 +235,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 
 	@Test
 	public void testPacketFullyTimedout() throws Exception {
-		Torrent torrent = createTorrent();
+		Torrent torrent = createUniqueTorrent();
 		tracker.addTorrent(torrent);
 
 		tracker = new UdpTrackerWrapper(new UdpTracker.Builder()
@@ -251,7 +244,7 @@ public class UdpTrackerSocketTest extends EasyMockSupport {
 				.setUrl("udp://localhost:80"),
 				resultLock, condition);
 
-		expect(trackerManagerMock.createUniqueTransactionId()).andReturn(++transactionId);
+		expect(torrentClientMock.createUniqueTransactionId()).andReturn(++transactionId);
 
 		utilsMock.write(isA(DatagramSocket.class), notNull(), isA(OutStream.class));
 		expectLastCall().times(9);

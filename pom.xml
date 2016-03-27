@@ -1,32 +1,31 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.johnnei</groupId>
   <artifactId>javatorrent</artifactId>
   <version>0.05.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>JavaTorrent Parent POM</name>
-  <description>BitTorrent Protocol implementation as library and GUI</description>
+  <description>BitTorrent Protocol implementation as java library</description>
   <modules>
-    <module>common</module>
     <module>bittorrent</module>
     <module>bittorrent-extension</module>
     <module>bittorrent-extension-ut-metadata</module>
     <module>bittorrent-tracker-udp</module>
     <module>bittorrent-utp</module>
-    <module>gui</module>
   </modules>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <plugin.org.apache.maven.plugins.maven-jar-plugin>2.6</plugin.org.apache.maven.plugins.maven-jar-plugin>
     <plugin.org.codehaus.mojo.sonar-maven-plugin>3.0.1</plugin.org.codehaus.mojo.sonar-maven-plugin>
-    <dependency.org.slf4j.slf4j-api>1.7.13</dependency.org.slf4j.slf4j-api>
-    <dependency.org.apache.logging.log4j.log4j-api>2.5</dependency.org.apache.logging.log4j.log4j-api>
-    <dependency.org.apache.logging.log4j.log4j-slf4j-impl>2.5</dependency.org.apache.logging.log4j.log4j-slf4j-impl>
-    <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
     <dependency.junit.junit>4.12</dependency.junit.junit>
+    <dependency.org.apache.logging.log4j.log4j-api>2.5</dependency.org.apache.logging.log4j.log4j-api>
+    <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
+    <dependency.org.apache.logging.log4j.log4j-slf4j-impl>2.5</dependency.org.apache.logging.log4j.log4j-slf4j-impl>
     <dependency.org.easymock.easymock>3.4</dependency.org.easymock.easymock>
+    <dependency.org.powermock.powermock-reflect.version>1.6.4</dependency.org.powermock.powermock-reflect.version>
+    <dependency.org.slf4j.slf4j-api>1.7.13</dependency.org.slf4j.slf4j-api>
   </properties>
   <build>
     <pluginManagement>
@@ -121,6 +120,12 @@
         <groupId>org.easymock</groupId>
         <artifactId>easymock</artifactId>
         <version>${dependency.org.easymock.easymock}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-reflect</artifactId>
+        <version>${dependency.org.powermock.powermock-reflect.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

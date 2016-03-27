@@ -1,37 +1,37 @@
 package org.johnnei.javatorrent.internal.tracker.udp;
 
-import static org.easymock.EasyMock.eq;
-import static org.johnnei.javatorrent.test.TestUtils.copySection;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Clock;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.johnnei.javatorrent.internal.tracker.udp.AnnounceRequest;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.StubEntity;
-import org.johnnei.javatorrent.test.Whitebox;
-import org.johnnei.javatorrent.torrent.download.Torrent;
-import org.johnnei.javatorrent.torrent.download.peer.PeerConnectInfo;
-import org.johnnei.javatorrent.torrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.torrent.tracker.TrackerAction;
-import org.johnnei.javatorrent.torrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
+
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.reflect.Whitebox;
+
+import static org.easymock.EasyMock.eq;
+import static org.johnnei.javatorrent.test.TestUtils.copySection;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EasyMockRunner.class)
 public class AnnounceRequestTest extends EasyMockSupport {
 
 	@Test(expected=IllegalArgumentException.class)
 	public void testAnnounceRequest() {
-		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
 		new AnnounceRequest(info, new byte[0], 5);
 	}
 
@@ -42,7 +42,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		final byte[] REMAINING_BYTES = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };
 		final byte[] EVENT_BYTES = new byte[] { 0, 0, 0, 0 };
 		final byte[] SENDER_IP_BYTES = new byte[] { 0, 0, 0, 0 };
-		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 3 };
+		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 0x32 };
 		final byte[] PORT_BYTES = new byte[] { (byte) 0x6D, 0x38 };
 		final byte[] EXTENSION_BYTES = new byte[] { 0, 0 };
 
@@ -51,7 +51,6 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		Torrent torrent = new Torrent.Builder()
 				.setHash(DummyEntity.createRandomBytes(20))
 				.setName("Dummy Torrent")
-				.setPeerManager(StubEntity.stubPeerManager())
 				.build();
 
 		TorrentInfo info = new TorrentInfo(torrent, Clock.systemDefaultZone());
@@ -87,7 +86,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		final byte[] REMAINING_BYTES = new byte[] { 0, 0, 0, 0, 0, 0, 0, 3 };
 		final byte[] EVENT_BYTES = new byte[] { 0, 0, 0, 2 };
 		final byte[] SENDER_IP_BYTES = new byte[] { 0, 0, 0, 0 };
-		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 3 };
+		final byte[] PEERS_WANTED_BYES = new byte[] { 0, 0, 0, 0x32 };
 		final byte[] PORT_BYTES = new byte[] { (byte) 0x6D, 0x38 };
 		final byte[] EXTENSION_BYTES = new byte[] { 0, 0 };
 
@@ -96,9 +95,8 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		Torrent torrent = new Torrent.Builder()
 				.setHash(DummyEntity.createRandomBytes(20))
 				.setName("Dummy Torrent")
-				.setPeerManager(StubEntity.stubPeerManager())
 				.build();
-		torrent.setFiles(StubEntity.stubAFiles(3));
+		torrent.setFileSet(StubEntity.stubAFiles(3));
 
 		Whitebox.setInternalState(torrent, "downloadedBytes", 5);
 		torrent.addUploadedBytes(7);
@@ -145,7 +143,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		};
 
 		InStream inStream = new InStream(inputData);
-		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
 		AnnounceRequest request = new AnnounceRequest(info, DummyEntity.createPeerId(), 27960);
 
 		request.readResponse(inStream);
@@ -181,7 +179,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		};
 
 		InStream inStream = new InStream(inputData);
-		TorrentInfo info = new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone());
+		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
 		AnnounceRequest request = new AnnounceRequest(info, DummyEntity.createPeerId(), 27960);
 
 		request.readResponse(inStream);
@@ -202,7 +200,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 	@Test
 	public void testGetAction() {
 		AnnounceRequest request = new AnnounceRequest(
-				new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone()),
+				new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone()),
 				DummyEntity.createPeerId(),
 				5);
 
@@ -212,7 +210,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 	@Test
 	public void testGetMinimalSize() {
 		AnnounceRequest request = new AnnounceRequest(
-				new TorrentInfo(DummyEntity.createTorrent(), Clock.systemDefaultZone()),
+				new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone()),
 				DummyEntity.createPeerId(),
 				5);
 

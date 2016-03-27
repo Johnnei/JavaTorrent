@@ -3,10 +3,10 @@ package org.johnnei.javatorrent.test;
 import java.util.Map;
 
 import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.protocol.IMessage;
+import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
-import org.johnnei.javatorrent.torrent.download.peer.Peer;
-import org.johnnei.javatorrent.torrent.encoding.Bencoder;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 
 public class StubExtension implements IExtension {
 
