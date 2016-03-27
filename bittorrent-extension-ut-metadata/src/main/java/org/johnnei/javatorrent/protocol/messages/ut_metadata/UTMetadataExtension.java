@@ -3,16 +3,15 @@ package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 import java.util.Map;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.download.algos.PhasePreMetadata;
-import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.module.MetadataInformation;
+import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
-import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 
 public class UTMetadataExtension implements IExtension {
 
@@ -70,11 +69,9 @@ public class UTMetadataExtension implements IExtension {
 			return;
 		}
 
-		IDownloadPhase phase = peer.getTorrent().getDownloadPhase();
-		if (phase instanceof PhasePreMetadata) {
-			PhasePreMetadata preMetaData = (PhasePreMetadata) phase;
-			preMetaData.setMetadataSize((int) dictionary.get("metadata_size"));
-		}
+		MetadataInformation metadataInformation = new MetadataInformation();
+		metadataInformation.setMetadataSize((int) dictionary.get("metadata_size"));
+		peer.addModuleInfo(metadataInformation);
 	}
 
 }

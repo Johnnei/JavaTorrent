@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
@@ -25,7 +25,7 @@ public class TorrentManager {
 
 	private TorrentClient torrentClient;
 
-	private List<Torrent> activeTorrents;
+	private List<TorrentPair> activeTorrents;
 
 	private LoopingRunnable connectorRunnable;
 
@@ -79,7 +79,13 @@ public class TorrentManager {
 	 */
 	public void addTorrent(Torrent torrent) {
 		synchronized (torrentListLock) {
-			activeTorrents.add(torrent);
+			activeTorrents.add(new TorrentPair(this, torrentClient, torrent));
+		}
+	}
+
+	public void removeTorrent(Torrent torrent) {
+		synchronized (torrentListLock) {
+			activeTorrents.remove(torrent);
 		}
 	}
 
@@ -89,22 +95,39 @@ public class TorrentManager {
 	 * @return The torrent if known.
 	 */
 	public Optional<Torrent> getTorrent(byte[] hash) {
-		for (Torrent torrent : activeTorrents) {
-			if (Arrays.equals(torrent.getHashArray(), hash)) {
-				return Optional.of(torrent);
-			}
-		}
-
-		return Optional.empty();
+		return activeTorrents.stream()
+				.map(TorrentPair::getTorrent)
+				.filter(torrent -> Arrays.equals(torrent.getHashArray(), hash))
+				.findAny();
 	}
 
 	/**
-	 * Creates an unmodifiable copy of the list containing the torrents
+	 * Creates a copy of the list containing the torrents
 	 * @return The list of torrents
 	 */
 	public Collection<Torrent> getTorrents() {
 		synchronized (torrentListLock) {
-			return Collections.unmodifiableCollection(activeTorrents);
+			return activeTorrents.stream().map(TorrentPair::getTorrent).collect(Collectors.toList());
+		}
+	}
+
+	private final class TorrentPair {
+
+		private final Torrent torrent;
+
+		private final TorrentProcessor torrentProcessor;
+
+		TorrentPair(TorrentManager torrentManager, TorrentClient torrentClient, Torrent torrent) {
+			this.torrent = torrent;
+			torrentProcessor = new TorrentProcessor(torrentManager, torrentClient, torrent);
+		}
+
+		public Torrent getTorrent() {
+			return torrent;
+		}
+
+		public TorrentProcessor getTorrentProcessor() {
+			return torrentProcessor;
 		}
 	}
 

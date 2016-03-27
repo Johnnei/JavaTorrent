@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +120,6 @@ public class MagnetLink {
 
 	public Torrent getTorrent() throws IllegalStateException {
 		if (torrent == null) {
-			torrentBuilder.setChokingStrategy(new PermissiveStrategy());
 			torrent = torrentBuilder.build();
 		}
 

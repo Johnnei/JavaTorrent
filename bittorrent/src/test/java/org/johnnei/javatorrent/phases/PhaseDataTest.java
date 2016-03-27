@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.torrent.algos;
+package org.johnnei.javatorrent.phases;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,7 +12,6 @@ import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
-import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.StubEntity;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
@@ -144,18 +143,23 @@ public class PhaseDataTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		IPieceSelector pieceSelectorMock = createMock(IPieceSelector.class);
 		BitTorrentSocket bitTorrentSocketMock = createMock(BitTorrentSocket.class);
+		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
 		Piece pieceMock = createMock(Piece.class);
 
 		expect(pieceMock.hasBlockWithStatus(eq(BlockStatus.Needed))).andReturn(true);
 		expect(pieceMock.getRequestBlock()).andReturn(Optional.empty());
+		expect(pieceMock.getIndex()).andReturn(0).atLeastOnce();
 
 		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(1);
+		peer.setHavingPiece(0);
 
-		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peer));
+		expect(torrentMock.getPeers()).andReturn(Collections.singletonList(peer));
 		expect(torrentMock.getPieceSelector()).andReturn(pieceSelectorMock);
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
 		expect(pieceSelectorMock.getPieceForPeer(same(peer))).andReturn(Optional.of(pieceMock));
+		expect(fileSetMock.getNeededPieces()).andReturn(Collections.singletonList(pieceMock).stream());
 
 		replayAll();
 
@@ -177,13 +181,16 @@ public class PhaseDataTest extends EasyMockSupport {
 
 		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(1);
+		peer.setHavingPiece(0);
 
-		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peer));
+		expect(torrentMock.getPeers()).andReturn(Collections.singletonList(peer));
 		expect(torrentMock.getPieceSelector()).andReturn(pieceSelectorMock);
 		expect(pieceSelectorMock.getPieceForPeer(same(peer))).andReturn(Optional.of(piece));
 		bitTorrentSocketMock.enqueueMessage(isA(MessageRequest.class));
 		expect(torrentMock.getFileSet()).andReturn(fileSetMock).atLeastOnce();
 		expect(fileSetMock.getBlockSize()).andReturn(4).atLeastOnce();
+		expect(fileSetMock.getNeededPieces()).andReturn(Collections.singletonList(piece).stream());
+
 
 		replayAll();
 
@@ -207,14 +214,16 @@ public class PhaseDataTest extends EasyMockSupport {
 
 		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(2);
+		peer.setHavingPiece(0);
 
-		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peer));
+		expect(torrentMock.getPeers()).andReturn(Collections.singletonList(peer));
 		expect(torrentMock.getPieceSelector()).andReturn(pieceSelectorMock);
 		expect(pieceSelectorMock.getPieceForPeer(same(peer))).andReturn(Optional.of(piece));
 		bitTorrentSocketMock.enqueueMessage(isA(MessageRequest.class));
 		expectLastCall().times(2);
 		expect(torrentMock.getFileSet()).andReturn(fileSetMock).atLeastOnce();
 		expect(fileSetMock.getBlockSize()).andReturn(4).atLeastOnce();
+		expect(fileSetMock.getNeededPieces()).andReturn(Collections.singletonList(piece).stream());
 
 		replayAll();
 
@@ -231,12 +240,17 @@ public class PhaseDataTest extends EasyMockSupport {
 		TorrentClient torrentClientMock = createMock(TorrentClient.class);
 		Torrent torrentMock = createMock(Torrent.class);
 		IPieceSelector pieceSelectorMock = createMock(IPieceSelector.class);
+		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
 		Peer peerMock = createMock(Peer.class);
+		Piece piece = new Piece(null, null, 0, 8, 4);
 
-		expect(torrentMock.getRelevantPeers()).andReturn(Collections.singletonList(peerMock));
+		expect(torrentMock.getPeers()).andReturn(Collections.singletonList(peerMock));
 		expect(torrentMock.getPieceSelector()).andReturn(pieceSelectorMock);
 		expect(pieceSelectorMock.getPieceForPeer(same(peerMock))).andReturn(Optional.empty());
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
+		expect(peerMock.hasPiece(eq(0))).andReturn(true);
+		expect(fileSetMock.getNeededPieces()).andReturn(Collections.singletonList(piece).stream());
 
 		replayAll();
 

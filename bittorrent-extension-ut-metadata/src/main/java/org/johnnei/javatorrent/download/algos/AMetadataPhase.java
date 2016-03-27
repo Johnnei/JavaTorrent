@@ -9,6 +9,7 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,8 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 	protected TorrentClient torrentClient;
 
 	protected File metadataFile;
+
+	private IChokingStrategy chokingStrategy;
 
 	public AMetadataPhase(TorrentClient torrentClient, Torrent torrent, File metadataFile) {
 		this.torrentClient = torrentClient;
@@ -53,4 +56,8 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 		}
 	}
 
+	@Override
+	public IChokingStrategy getChokingStrategy() {
+		return chokingStrategy;
+	}
 }

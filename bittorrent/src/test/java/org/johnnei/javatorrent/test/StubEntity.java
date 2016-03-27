@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
@@ -27,7 +27,7 @@ public class StubEntity {
 		TorrentClient torrentClientMock = context.createMock(TorrentClient.class);
 		PhaseRegulator phaseRegulatorMock = context.createMock(PhaseRegulator.class);
 		IDownloadPhase downloadPhaseMock = context.createMock(IDownloadPhase.class);
-		ExecutorService service = new ExecutorServiceMock();
+		ScheduledExecutorService service = new ExecutorServiceMock();
 
 		// Setup getters
 		expect(torrentClientMock.getPeerConnector()).andStubReturn(peerConnectorMock);

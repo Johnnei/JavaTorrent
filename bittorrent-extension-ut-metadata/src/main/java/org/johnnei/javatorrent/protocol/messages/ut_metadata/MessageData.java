@@ -33,7 +33,7 @@ public class MessageData extends Message {
 	@Override
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
-		peer.getTorrent().collectPiece(0, blockIndex * peer.getTorrent().getFileSet().getBlockSize(), data);
+		peer.getTorrent().onReceivedBlock(0, blockIndex * peer.getTorrent().getFileSet().getBlockSize(), data);
 		peer.onReceivedBlock(0, blockIndex);
 	}
 

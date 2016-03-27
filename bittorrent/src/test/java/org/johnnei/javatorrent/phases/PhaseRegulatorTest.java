@@ -1,11 +1,10 @@
 package org.johnnei.javatorrent.phases;
 
-import java.util.Collection;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
@@ -132,7 +131,7 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 		}
 
 		@Override
-		public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
+		public IChokingStrategy getChokingStrategy() {
 			return null;
 		}
 	}
@@ -157,7 +156,7 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 		}
 
 		@Override
-		public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
+		public IChokingStrategy getChokingStrategy() {
 			return null;
 		}
 	}

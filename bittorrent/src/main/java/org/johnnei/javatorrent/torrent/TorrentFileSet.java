@@ -9,11 +9,10 @@ import java.util.Map;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
-import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
-import org.johnnei.javatorrent.utils.ThreadUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +80,12 @@ public class TorrentFileSet extends AbstractFileSet {
 			parseDictionary(metadataInfo);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to parse torrent data.", e);
-			ThreadUtils.sleep(10);
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+				LOGGER.trace("Got interrupted while parsing torrent information.", ex);
+			}
 			parseTorrentFileData(torrentFile);
 		}
 	}

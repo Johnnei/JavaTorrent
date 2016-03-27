@@ -12,6 +12,7 @@ import org.johnnei.javatorrent.internal.disk.IOManager;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
@@ -23,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.reflect.Whitebox;
 
+import static org.easymock.EasyMock.anyLong;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
@@ -46,6 +48,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		IMessage messageMock = createMock(IMessage.class);
 		IModule moduleMock = createMock(IModule.class);
 		Torrent torrentMock = createMock(Torrent.class);
+		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
 
 		TorrentClient.Builder builder = new TorrentClient.Builder();
 
@@ -54,7 +57,9 @@ public class TorrentClientTest extends EasyMockSupport {
 		expect(moduleMock.getRelatedBep()).andReturn(3);
 		moduleMock.configureTorrentClient(same(builder));
 		moduleMock.onBuild(notNull());
-		torrentMock.start();
+		expect(phaseRegulatorMock.createInitialPhase(notNull(), notNull())).andReturn(phaseMock);
+		phaseMock.onPhaseEnter();
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), anyLong(), anyLong(), notNull())).andReturn(null).times(3);
 
 		replayAll();
 		TorrentClient torrentClient = builder

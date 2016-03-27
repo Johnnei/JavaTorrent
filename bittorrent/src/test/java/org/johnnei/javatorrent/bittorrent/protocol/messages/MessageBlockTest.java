@@ -48,7 +48,7 @@ public class MessageBlockTest extends EasyMockSupport {
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 
-		torrentMock.collectPiece(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
+		torrentMock.onReceivedBlock(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		peerMock.onReceivedBlock(eq(5), eq(0x3800));
 		peerMock.addStrike(-1);
 		peerMock.setRequestLimit(5);
@@ -92,7 +92,7 @@ public class MessageBlockTest extends EasyMockSupport {
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 
-		torrentMock.collectPiece(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
+		torrentMock.onReceivedBlock(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		peerMock.onReceivedBlock(eq(5), eq(0x3800));
 		peerMock.addStrike(-1);
 		expect(peerMock.getRequestLimit()).andStubReturn(2);
@@ -119,7 +119,7 @@ public class MessageBlockTest extends EasyMockSupport {
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 
-		torrentMock.collectPiece(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
+		torrentMock.onReceivedBlock(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		peerMock.onReceivedBlock(eq(5), eq(0x3800));
 		peerMock.addStrike(-1);
 		expect(peerMock.getRequestLimit()).andStubReturn(5);

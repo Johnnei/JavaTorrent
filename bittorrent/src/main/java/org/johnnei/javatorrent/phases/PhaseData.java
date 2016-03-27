@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
@@ -21,12 +23,16 @@ public class PhaseData implements IDownloadPhase {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseData.class);
 
-	private Torrent torrent;
-	private TorrentClient torrentClient;
+	private final Torrent torrent;
+
+	private final TorrentClient torrentClient;
+
+	private final IChokingStrategy chokingStrategy;
 
 	public PhaseData(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
+		chokingStrategy = new PermissiveStrategy();
 	}
 
 	@Override
@@ -36,7 +42,7 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void process() {
-		for (Peer peer : torrent.getRelevantPeers()) {
+		for (Peer peer : getRelevantPeers(torrent.getPeers())) {
 			Optional<Piece> pieceOptional = torrent.getPieceSelector().getPieceForPeer(peer);
 			if (!pieceOptional.isPresent()) {
 				continue;
@@ -67,12 +73,16 @@ public class PhaseData implements IDownloadPhase {
 		LOGGER.info("Download of {} completed", torrent);
 	}
 
-	@Override
-	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
+	Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
 		Collection<Piece> neededPiece = torrent.getFileSet().getNeededPieces().collect(Collectors.toList());
 
 		return peers.stream()
 				.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())))
 				.collect(Collectors.toList());
+	}
+
+	@Override
+	public IChokingStrategy getChokingStrategy() {
+		return chokingStrategy;
 	}
 }

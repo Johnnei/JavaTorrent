@@ -1,7 +1,13 @@
 package org.johnnei.javatorrent.internal.torrent;
 
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Torrent;
 
@@ -9,7 +15,11 @@ import org.easymock.EasyMockSupport;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 
+import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.notNull;
+import static org.easymock.EasyMock.same;
 import static org.johnnei.javatorrent.test.TestUtils.assertNotPresent;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
 import static org.junit.Assert.assertEquals;
@@ -24,10 +34,37 @@ public class TorrentManagerTest extends EasyMockSupport {
 
 	@Test
 	public void testAddGetTorrent() {
-		Torrent torrent = DummyEntity.createUniqueTorrent();
-		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrent);
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
+		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
+		PhaseRegulator regulatorMock = createMock(PhaseRegulator.class);
+		ScheduledFuture futureMock = createMock(ScheduledFuture.class);
+
+		expect(torrentClientMock.getExecutorService()).andReturn(executorServiceMock).atLeastOnce();
+		expect(torrentClientMock.getPhaseRegulator()).andReturn(regulatorMock).atLeastOnce();
+		expect(regulatorMock.createInitialPhase(same(torrentClientMock), notNull())).andReturn(phaseMock).times(2);
+		phaseMock.onPhaseEnter();
+		expectLastCall().times(2);
+
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(0L), eq(250L), eq(TimeUnit.MILLISECONDS))).andReturn(futureMock).times(2);
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(1L), eq(10L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(30L), eq(60L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
+
+		replayAll();
+
+		Torrent torrent = new Torrent.Builder()
+				.setName("Test")
+				.setHash(DummyEntity.createUniqueTorrentHash())
+				.setTorrentClient(torrentClientMock)
+				.build();
+		Torrent torrentTwo = new Torrent.Builder()
+				.setName("Test Two")
+				.setHash(DummyEntity.createUniqueTorrentHash(torrent.getHashArray()))
+				.setTorrentClient(torrentClientMock)
+				.build();
 
 		TorrentManager cut = new TorrentManager();
+		cut.start(torrentClientMock);
 
 		assertNotPresent("Torrent should not have been found yet", cut.getTorrent(torrent.getHashArray()));
 
@@ -42,6 +79,8 @@ public class TorrentManagerTest extends EasyMockSupport {
 		assertEquals("Torrent two should have been equal", torrentTwo, cut.getTorrent(torrentTwo.getHashArray()).get());
 		assertTrue("Collection should have contained torrent", cut.getTorrents().contains(torrent));
 		assertTrue("Collection should have contained torrent two", cut.getTorrents().contains(torrentTwo));
+
+		verifyAll();
 	}
 
 	@Test

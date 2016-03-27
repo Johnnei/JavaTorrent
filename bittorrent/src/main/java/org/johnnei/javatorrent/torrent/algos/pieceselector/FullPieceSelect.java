@@ -21,7 +21,7 @@ public class FullPieceSelect implements IPieceSelector {
 	}
 
 	private int countAvailability(Piece piece) {
-		return (int) torrent.getRelevantPeers().stream().filter(peer -> peer.hasPiece(piece.getIndex())).count();
+		return (int) torrent.getPeers().stream().filter(peer -> peer.hasPiece(piece.getIndex())).count();
 	}
 
 	/**

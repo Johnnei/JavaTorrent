@@ -1,8 +1,8 @@
 package org.johnnei.javatorrent.torrent;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -14,8 +14,6 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
 import org.johnnei.javatorrent.disk.IDiskJob;
-import org.johnnei.javatorrent.phases.IDownloadPhase;
-import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
@@ -23,12 +21,11 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.StringUtils;
-import org.johnnei.javatorrent.utils.ThreadUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Torrent implements Runnable {
+public class Torrent {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Torrent.class);
 
@@ -69,34 +66,11 @@ public class Torrent implements Runnable {
 	 * The amount of uploaded bytes
 	 */
 	private long uploadedBytes;
-	/**
-	 * The last time all peer has been checked for disconnects
-	 */
-	private long lastPeerCheck = System.currentTimeMillis();
-	/**
-	 * The last time all peer interest states have been updated
-	 */
-	private long lastPeerUpdate = System.currentTimeMillis();
-
-	/**
-	 * The phase in which the torrent currently is
-	 */
-	private IDownloadPhase phase;
-
-	/**
-	 * The strategy used to handle the choking of peers.
-	 */
-	private IChokingStrategy chokingStrategy;
 
 	/**
 	 * The torrent client which created this Torrent object.
 	 */
 	private TorrentClient torrentClient;
-
-	/**
-	 * The thread on which the torrent is being processed
-	 */
-	private Thread thread;
 
 	/**
 	 * Creates a new Torrent.
@@ -107,12 +81,9 @@ public class Torrent implements Runnable {
 		displayName = Argument.requireNonNull(builder.displayName, "Torrent name is required");
 		torrentClient = builder.torrentClient;
 		btihHash = builder.hash;
-		phase = builder.phase;
-		chokingStrategy = builder.chokingStrategy;
 		downloadedBytes = 0L;
 		peers = new LinkedList<>();
 		pieceSelector = new FullPieceSelect(this);
-		thread = new Thread(this, displayName);
 	}
 
 	private boolean hasPeer(Peer peer) {
@@ -121,6 +92,12 @@ public class Torrent implements Runnable {
 		}
 	}
 
+	/**
+	 * Adds a peer to the torrent if not already registered to the torrent. Upon accepting the socket will be marked as passed handshake and the currently
+	 * available message will be shared via either {@link MessageBitfield} or one or more {@link MessageHave}.
+	 * @param peer The peer to add.
+	 * @throws IOException
+	 */
 	public void addPeer(Peer peer) throws IOException {
 		Argument.requireNonNull(peer, "Peer can not be null");
 
@@ -136,6 +113,22 @@ public class Torrent implements Runnable {
 		synchronized (this) {
 			peers.add(peer);
 		}
+	}
+
+	/**
+	 * Removes a peer from the torrent. This will also clean up the peer state which affects the progress state of the torrent (ex. pending block requests).
+	 * @param peer the peer to remove.
+	 */
+	public void removePeer(Peer peer) {
+		Argument.requireNonNull(peer, "Peer can not be null");
+
+		synchronized (this) {
+			if (!peers.remove(peer)) {
+				return;
+			}
+		}
+
+		peer.discardAllBlockRequests();
 	}
 
 	private void sendHaveMessages(Peer peer) throws IOException {
@@ -166,88 +159,26 @@ public class Torrent implements Runnable {
 		}
 	}
 
-	/**
-	 * Registers the torrent and starts downloading it
-	 */
-	public void start() {
-		thread.start();
-	}
-
-	@Override
-	public void run() {
-		while (phase != null) {
-			LOGGER.info(String.format("Torrent phase completed. New phase: %s", phase.getClass().getSimpleName()));
-			synchronized (this) {
-				peers.forEach(Peer::onTorrentPhaseChange);
-			}
-			phase.onPhaseEnter();
-			while (!phase.isDone()) {
-				processPeers();
-				phase.process();
-				ThreadUtils.sleep(25);
-			}
-			phase.onPhaseExit();
-			phase = torrentClient.getPhaseRegulator().createNextPhase(phase, torrentClient, this).orElse(null);
-		}
-		LOGGER.info("Torrent has finished");
-	}
-
-	/**
-	 * Manages all states about peers
-	 */
-	private void processPeers() {
-		if (System.currentTimeMillis() - lastPeerUpdate > 20000) {
-			updatePeers();
-			lastPeerUpdate = System.currentTimeMillis();
-		}
-		if (System.currentTimeMillis() - lastPeerCheck > 5000) {
-			cleanPeerList();
-			lastPeerCheck = System.currentTimeMillis();
-		}
-	}
-
-	/**
-	 * Checks if the peers are still connected
-	 */
-	private void cleanPeerList() {
-		synchronized (this) {
-			peers.stream().
-					filter(p -> p.getBitTorrentSocket().closed()).
-					forEach(Peer::discardAllBlockRequests);
-			peers.removeIf(p -> p == null || p.getBitTorrentSocket().closed());
-			peers.forEach(Peer::checkDisconnect);
-
-		}
-	}
-
-	/**
-	 * Updates the interested states
-	 */
-	private void updatePeers() {
-		if (files == null) {
-			return;
-		}
-		synchronized (this) {
-			for (Peer p : peers) {
-				chokingStrategy.updateChoking(p);
-			}
-		}
-	}
-
 	public String getDisplayName() {
 		return displayName;
 	}
 
+	/**
+	 * Gets the 20 byte BTIH hash of the torrent.
+	 * @return The 20 byte BTIH hash.
+	 */
 	public byte[] getHashArray() {
 		return btihHash;
 	}
 
+	/**
+	 * Gets the {@link #getHashArray()} formatted as hexadecimal.
+	 * @return The BTIH hash in hexadecimal.
+	 *
+	 * @see #getHashArray()
+	 */
 	public String getHash() {
 		return StringUtils.byteArrayToString(btihHash);
-	}
-
-	public IDownloadPhase getDownloadPhase() {
-		return phase;
 	}
 
 	/**
@@ -272,7 +203,7 @@ public class Torrent implements Runnable {
 	 * @param offset The offset within the piece
 	 * @param data The bytes to be stored
 	 */
-	public void collectPiece(int index, int offset, byte[] data) {
+	public void onReceivedBlock(int index, int offset, byte[] data) {
 		int blockIndex = offset / files.getBlockSize();
 
 		Piece piece = files.getPiece(index);
@@ -287,7 +218,7 @@ public class Torrent implements Runnable {
 		Piece piece = storeBlock.getPiece();
 		piece.setBlockStatus(storeBlock.getBlockIndex(), BlockStatus.Stored);
 
-		if (!files.getPiece(piece.getIndex()).isDone()) {
+		if (!piece.isDone()) {
 			return;
 		}
 
@@ -300,13 +231,14 @@ public class Torrent implements Runnable {
 		}
 
 		Piece piece = checkJob.getPiece();
-		if (checkJob.isMatchingHash()) {
+		if (!checkJob.isMatchingHash()) {
 			piece.onHashMismatch();
 			return;
 		}
 
 		files.setHavingPiece(checkJob.getPiece().getIndex());
 		broadcastMessage(new MessageHave(checkJob.getPiece().getIndex()));
+		downloadedBytes += piece.getSize();
 	}
 
 	/**
@@ -320,9 +252,7 @@ public class Torrent implements Runnable {
 
 	private void broadcastMessage(IMessage m) {
 		synchronized (this) {
-			peers.stream().
-					filter(p -> !p.getBitTorrentSocket().closed() && p.getBitTorrentSocket().getPassedHandshake()).
-					forEach(p -> p.getBitTorrentSocket().enqueueMessage(m));
+			peers.stream().forEach(p -> p.getBitTorrentSocket().enqueueMessage(m));
 		}
 	}
 
@@ -404,18 +334,34 @@ public class Torrent implements Runnable {
 		return files;
 	}
 
+	/**
+	 * Sums the download rates of all peers.
+	 * @return The sum of all download rates
+	 *
+	 * @see #pollRates()
+	 */
 	public int getDownloadRate() {
 		synchronized (this) {
 			return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getDownloadRate()).sum();
 		}
 	}
 
+	/**
+	 * Sums the upload rates of all peers.
+	 * @return The sum of all upload rates
+	 *
+	 * @see #pollRates()
+	 */
 	public int getUploadRate() {
 		synchronized (this) {
 			return peers.stream().mapToInt(p -> p.getBitTorrentSocket().getUploadRate()).sum();
 		}
 	}
 
+	/**
+	 * Counts the amount of peers which have all pieces.
+	 * @return The amount of connected seeders.
+	 */
 	public int getSeedCount() {
 		if (isDownloadingMetadata()) {
 			return 0;
@@ -426,14 +372,22 @@ public class Torrent implements Runnable {
 		}
 	}
 
+	/**
+	 * Counts the amount of peers which don't have all pieces yet.
+	 * @return The amount of connected leechers.
+	 */
 	public int getLeecherCount() {
 		synchronized (this) {
-			return (int) (peers.stream().filter(p -> p.getBitTorrentSocket().getPassedHandshake()).count() - getSeedCount());
+			return (int) (peers.stream().count() - getSeedCount());
 		}
 	}
 
+	/**
+	 * Creates a copy of the list of connected peers.
+	 * @return The list of connected peers.
+	 */
 	public List<Peer> getPeers() {
-		return peers;
+		return new ArrayList<>(peers);
 	}
 
 	/**
@@ -452,15 +406,6 @@ public class Torrent implements Runnable {
 	 */
 	public long getUploadedBytes() {
 		return uploadedBytes;
-	}
-
-	/**
-	 * Filters the list of peer to the set of relevant ones for this download phase.
-	 *
-	 * @return The list of relevant peers.
-	 */
-	public synchronized Collection<Peer> getRelevantPeers() {
-		return phase.getRelevantPeers(peers);
 	}
 
 	/**
@@ -503,10 +448,6 @@ public class Torrent implements Runnable {
 
 		private String displayName;
 
-		private IDownloadPhase phase;
-
-		private IChokingStrategy chokingStrategy;
-
 		private byte[] hash;
 
 		public Builder setTorrentClient(TorrentClient torrentClient) {
@@ -521,16 +462,6 @@ public class Torrent implements Runnable {
 
 		public Builder setName(String name) {
 			this.displayName = name;
-			return this;
-		}
-
-		public Builder setInitialPhase(IDownloadPhase phase) {
-			this.phase = phase;
-			return this;
-		}
-
-		public Builder setChokingStrategy(IChokingStrategy chokingStrategy) {
-			this.chokingStrategy = chokingStrategy;
 			return this;
 		}
 

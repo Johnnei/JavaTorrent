@@ -89,7 +89,7 @@ public class FullPieceSelectTest extends EasyMockSupport {
 
 		Torrent torrentMock = createMock(Torrent.class);
 		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(torrentMock.getRelevantPeers()).andStubReturn(Arrays.asList(peerMock, peerTwoMock));
+		expect(torrentMock.getPeers()).andStubReturn(Arrays.asList(peerMock, peerTwoMock));
 
 		replayAll();
 

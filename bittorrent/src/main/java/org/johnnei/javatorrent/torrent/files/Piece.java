@@ -237,7 +237,7 @@ public class Piece {
 	}
 
 	/**
-	 * Gets the total size of all blocks
+	 * Gets the total size of all blocks in bytes
 	 *
 	 * @return The size of this piece
 	 */

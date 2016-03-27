@@ -1,8 +1,6 @@
 package org.johnnei.javatorrent.phases;
 
-import java.util.Collection;
-
-import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 
 /**
  * A phase in the download which will be regulated by this phase
@@ -15,28 +13,27 @@ public interface IDownloadPhase {
 	 * Checks if the phase has been finished
 	 * @return true if the phase can be ended
 	 */
-	public boolean isDone();
+	boolean isDone();
 
 	/**
 	 * Processing the phase of the torrent
 	 */
-	public void process();
+	void process();
 
 	/**
 	 * Prepare the phase
 	 */
-	public void onPhaseEnter();
+	void onPhaseEnter();
 
 	/**
 	 * Clean up the phase
 	 */
-	public void onPhaseExit();
+	void onPhaseExit();
 
 	/**
-	 * Filters the connected peer to just those which can benefit us in this phase.
-	 * @param peers The list of available peers
-	 * @return The list of peers which are useful.
+	 * Gets the choking strategy which is optimal for this phase.
+	 * @return The optimal choking strategy.
 	 */
-	public Collection<Peer> getRelevantPeers(Collection<Peer> peers);
+	IChokingStrategy getChokingStrategy();
 
 }

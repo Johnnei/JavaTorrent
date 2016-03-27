@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -140,7 +139,6 @@ public class TorrentClient {
 	 */
 	public void download(Torrent torrent) {
 		torrentManager.addTorrent(torrent);
-		torrent.start();
 	}
 
 	/**
@@ -206,10 +204,10 @@ public class TorrentClient {
 	}
 
 	/**
-	 * Gets the {@link ExecutorService} which will execute the small tasks
+	 * Gets the {@link ScheduledExecutorService} which will execute the small tasks
 	 * @return The executor service implementation
 	 */
-	public ExecutorService getExecutorService() {
+	public ScheduledExecutorService getExecutorService() {
 		return executorService;
 	}
 

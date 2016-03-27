@@ -1,10 +1,10 @@
 package org.johnnei.javatorrent.phases;
 
-import java.util.Collection;
-
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,13 +12,16 @@ public class PhaseSeed implements IDownloadPhase {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseSeed.class);
 
-	private TorrentClient torrentClient;
+	private final TorrentClient torrentClient;
 
-	private Torrent torrent;
+	private final Torrent torrent;
+
+	private IChokingStrategy chokingStrategy;
 
 	public PhaseSeed(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
+		chokingStrategy = new PermissiveStrategy();
 	}
 
 	@Override
@@ -45,8 +48,7 @@ public class PhaseSeed implements IDownloadPhase {
 	}
 
 	@Override
-	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
-		return null;
+	public IChokingStrategy getChokingStrategy() {
+		return chokingStrategy;
 	}
-
 }

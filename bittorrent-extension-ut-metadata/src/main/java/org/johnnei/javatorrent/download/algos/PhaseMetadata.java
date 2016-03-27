@@ -79,8 +79,7 @@ public class PhaseMetadata extends AMetadataPhase {
 		LOGGER.info("Metadata download completed");
 	}
 
-	@Override
-	public Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
+	private Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
 		return peers.stream()
 				.filter(this::hasUtMetadataExtension)
 				.collect(Collectors.toList());
