@@ -49,6 +49,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		IModule moduleMock = createMock(IModule.class);
 		Torrent torrentMock = createMock(Torrent.class);
 		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
+		peerConnectorMock.start();
 
 		TorrentClient.Builder builder = new TorrentClient.Builder();
 
@@ -115,6 +116,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+		peerConnectorMock.start();
 
 		replayAll();
 
@@ -141,6 +143,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+		peerConnectorMock.start();
 
 		replayAll();
 
@@ -156,9 +159,9 @@ public class TorrentClientTest extends EasyMockSupport {
 			builder.enableExtensionBit(i);
 		}
 
+		byte[] extensionBytes = builder.build().getExtensionBytes();
 		verifyAll();
 
-		byte[] extensionBytes = builder.build().getExtensionBytes();
 		byte[] expectedBytes = {
 				(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
 				(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
@@ -173,6 +176,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+		peerConnectorMock.start();
 
 		replayAll();
 
@@ -196,6 +200,8 @@ public class TorrentClientTest extends EasyMockSupport {
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+		peerConnectorMock.start();
+		peerConnectorMock.stop();
 
 		executorServiceMock.shutdown();
 
@@ -229,6 +235,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IOManager ioManagerMock = createMock(IOManager.class);
 		IDiskJob diskJobMock = createMock(IDiskJob.class);
+		peerConnectorMock.start();
 
 		ioManagerMock.addTask(same(diskJobMock));
 
@@ -255,6 +262,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		PhaseRegulator phaseRegulatorMock = createMock(PhaseRegulator.class);
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
+		peerConnectorMock.start();
 
 		replayAll();
 

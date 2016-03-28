@@ -37,7 +37,7 @@ public class DiskJobReadBlockTest {
 	@Test
 	public void testReadBlock() throws Exception {
 		FileInfo fileInfo = new FileInfo(11560, 0, testFile, 1);
-		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, 18);
 		Piece piece = new Piece(filesStub, new byte[20], 0, 18, 18);
 		DiskJobReadBlock cut = new DiskJobReadBlock(piece, 0, 18, x -> countDownLatch.countDown());
 		cut.process();

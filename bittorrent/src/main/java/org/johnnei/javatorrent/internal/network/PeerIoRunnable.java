@@ -34,9 +34,7 @@ public class PeerIoRunnable implements Runnable {
 	}
 
 	private void processTorrent(final Torrent torrent) {
-		synchronized (torrent) {
-			torrent.getPeers().forEach(this::processPeer);
-		}
+		torrent.getPeers().forEach(this::processPeer);
 	}
 
 	private void processPeer(Peer peer) {

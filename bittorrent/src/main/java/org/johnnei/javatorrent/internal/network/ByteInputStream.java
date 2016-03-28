@@ -37,6 +37,7 @@ public class ByteInputStream extends DataInputStream {
 	public byte[] readByteArray(int length) throws IOException {
 		byte[] array = new byte[length];
 		readFully(array);
+		speed += length;
 		return array;
 	}
 

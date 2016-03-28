@@ -19,7 +19,7 @@ class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 
 	private int attempt;
 
-	public DiskJobWrapper(IDiskJob diskJob) {
+	DiskJobWrapper(IDiskJob diskJob) {
 		this.diskJob = Objects.requireNonNull(diskJob, "Can't wrap a null-job");
 	}
 
@@ -68,6 +68,14 @@ class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 		DiskJobWrapper other = (DiskJobWrapper) obj;
 
 		return Objects.equals(diskJob, other.diskJob);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		return String.format("DiskJobWrapper[value=%s]", diskJob);
 	}
 
 	/**

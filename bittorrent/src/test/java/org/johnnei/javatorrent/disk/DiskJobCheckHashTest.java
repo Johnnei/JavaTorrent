@@ -46,7 +46,7 @@ public class DiskJobCheckHashTest {
 	@Test
 	public void testMatchingHash() throws Exception {
 		FileInfo fileInfo = new FileInfo(11560, 0, testFile, 1);
-		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, 11560);
 		Piece piece = new Piece(filesStub, expectedHash, 0, 11560, 11560);
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> countDownLatch.countDown());
 
@@ -59,7 +59,7 @@ public class DiskJobCheckHashTest {
 	@Test
 	public void testNonMatchingHash() throws Exception {
 		FileInfo fileInfo = new FileInfo(11560, 0, testFileMistmatch, 1);
-		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, 11560);
 		Piece piece = new Piece(filesStub, expectedHash, 0, 11560, 11560);
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> countDownLatch.countDown());
 

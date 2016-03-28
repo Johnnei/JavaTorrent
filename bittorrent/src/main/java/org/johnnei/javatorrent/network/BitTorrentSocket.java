@@ -157,6 +157,7 @@ public class BitTorrentSocket {
 	}
 
 	public IMessage readMessage() {
+
 		InStream stream = getBufferedMessage();
 		int length = stream.readInt();
 		if (length == 0) {
@@ -166,6 +167,7 @@ public class BitTorrentSocket {
 		int id = stream.readByte();
 		IMessage message = messageFactory.createById(id);
 		message.read(stream);
+		LOGGER.trace("Read message: {}", message);
 		return message;
 	}
 
@@ -190,6 +192,8 @@ public class BitTorrentSocket {
 			return;
 		}
 
+		LOGGER.trace("Writing message {}", message);
+
 		OutStream outBuffer = new OutStream(message.getLength() + 4);
 		outBuffer.writeInt(message.getLength());
 
@@ -199,6 +203,7 @@ public class BitTorrentSocket {
 		}
 
 		outStream.write(outBuffer.toByteArray());
+		outStream.flush();
 		lastActivity = LocalDateTime.now(clock);
 	}
 

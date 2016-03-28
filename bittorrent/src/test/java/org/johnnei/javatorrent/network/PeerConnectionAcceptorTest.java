@@ -72,6 +72,7 @@ public class PeerConnectionAcceptorTest extends EasyMockSupport {
 		expect(torrentClientMock.getPeerId()).andReturn(peerId);
 		expect(torrentMock.getHashArray()).andReturn(handshake.getTorrentHash());
 		bitTorrentSocketMock.sendHandshake(aryEq(extensionBytes), aryEq(peerId), aryEq(handshake.getTorrentHash()));
+		expect(socketMock.getRemoteSocketAddress()).andReturn(null);
 		torrentMock.addPeer(same(peerMock));
 
 		replayAll();

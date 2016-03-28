@@ -51,8 +51,18 @@ public class StubEntity {
 		return new AFilesStub(pieceCount, fileInfo);
 	}
 
+	public static AbstractFileSet stubAFiles(int pieceCount, FileInfo fileInfo, int blockSize) {
+		return new AFilesStub(pieceCount, fileInfo, blockSize);
+	}
+
 	private static final class AFilesStub extends AbstractFileSet {
 
+		private int blockSize;
+
+		public AFilesStub(int pieceCount, FileInfo defaultFile, int blockSize) {
+			this(pieceCount, defaultFile);
+			this.blockSize = blockSize;
+		}
 		public AFilesStub(int pieceCount, FileInfo defaultFile) {
 			this(pieceCount);
 			fileInfos = Collections.singletonList(defaultFile);
@@ -89,7 +99,7 @@ public class StubEntity {
 
 		@Override
 		public int getBlockSize() {
-			return 0;
+			return blockSize;
 		}
 
 		@Override

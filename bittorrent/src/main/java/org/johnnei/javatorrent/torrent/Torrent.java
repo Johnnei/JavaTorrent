@@ -218,7 +218,7 @@ public class Torrent {
 		Piece piece = storeBlock.getPiece();
 		piece.setBlockStatus(storeBlock.getBlockIndex(), BlockStatus.Stored);
 
-		if (!piece.isDone()) {
+		if (piece.countBlocksWithStatus(BlockStatus.Stored) != piece.getBlockCount()) {
 			return;
 		}
 
@@ -239,6 +239,7 @@ public class Torrent {
 		files.setHavingPiece(checkJob.getPiece().getIndex());
 		broadcastMessage(new MessageHave(checkJob.getPiece().getIndex()));
 		downloadedBytes += piece.getSize();
+		LOGGER.debug("Completed piece {}", piece.getIndex());
 	}
 
 	/**
@@ -271,9 +272,9 @@ public class Torrent {
 					}
 				}).
 				forEach(p -> {
-							files.setHavingPiece(p.getIndex());
-							broadcastMessage(new MessageHave(p.getIndex()));
-						}
+						files.setHavingPiece(p.getIndex());
+						broadcastMessage(new MessageHave(p.getIndex()));
+					}
 				);
 		LOGGER.info("Checking progress done");
 	}

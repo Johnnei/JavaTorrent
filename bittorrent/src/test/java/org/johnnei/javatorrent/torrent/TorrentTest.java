@@ -230,8 +230,9 @@ public class TorrentTest extends EasyMockSupport {
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
-		expect(pieceMock.isDone()).andReturn(true);
 		expect(pieceMock.checkHash()).andReturn(false);
+		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
+		expect(pieceMock.getBlockCount()).andReturn(2);
 
 		replayAll();
 
@@ -272,8 +273,9 @@ public class TorrentTest extends EasyMockSupport {
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
-		expect(pieceMock.isDone()).andReturn(true);
 		expect(pieceMock.checkHash()).andReturn(true);
+		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
+		expect(pieceMock.getBlockCount()).andReturn(2);
 
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		Peer peerMock = createMock(Peer.class);
@@ -345,7 +347,8 @@ public class TorrentTest extends EasyMockSupport {
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
-		expect(pieceMock.isDone()).andReturn(false);
+		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(1);
+		expect(pieceMock.getBlockCount()).andReturn(2);
 
 		replayAll();
 
@@ -379,7 +382,8 @@ public class TorrentTest extends EasyMockSupport {
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
-		expect(pieceMock.isDone()).andReturn(true);
+		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
+		expect(pieceMock.getBlockCount()).andReturn(2);
 		expect(pieceMock.checkHash()).andReturn(true);
 
 		replayAll();
@@ -415,7 +419,8 @@ public class TorrentTest extends EasyMockSupport {
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
-		expect(pieceMock.isDone()).andReturn(true);
+		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
+		expect(pieceMock.getBlockCount()).andReturn(2);
 
 		replayAll();
 

@@ -90,13 +90,13 @@ public class TorrentFileSet extends AbstractFileSet {
 		}
 	}
 
-	private void parseDictionary(Map<String, Object> dictionary) throws IOException {
+	private void parseDictionary(Map<String, Object> dictionary) {
 		if (dictionary.containsKey("name")) {
 			downloadFolder = new File(downloadFolder, (String) dictionary.get("name"));
 		}
 
-		if (!downloadFolder.mkdirs()) {
-			throw new IOException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
+		if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
+			throw new IllegalStateException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
 		}
 
 		pieceSize = (int) dictionary.get("piece length");

@@ -13,6 +13,7 @@ import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public class PeerConnectionAcceptor implements Runnable {
 
@@ -26,6 +27,7 @@ public class PeerConnectionAcceptor implements Runnable {
 		this.torrentClient = torrentClient;
 		serverSocket = createServerSocket();
 	}
+
 	@Override
 	public void run() {
 		Socket tcpSocket = null;
@@ -44,6 +46,7 @@ public class PeerConnectionAcceptor implements Runnable {
 
 			Peer peer = createPeer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes(), handshake.getPeerId());
 			peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getHashArray());
+			LOGGER.debug("Accepted connection from {}", tcpSocket.getRemoteSocketAddress());
 			torrent.get().addPeer(peer);
 		} catch (IOException e) {
 			LOGGER.debug("Failed to create connection with peer.", e);

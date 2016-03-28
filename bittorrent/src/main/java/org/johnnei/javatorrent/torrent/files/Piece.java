@@ -81,7 +81,7 @@ public class Piece {
 			int alreadyReadOffset = offset + readBytes;
 
 			// Find file for the given offset
-			FileInfo outputFile = files.getFileForBytes(index, 0, alreadyReadOffset);
+			FileInfo outputFile = files.getFileForBytes(index, alreadyReadOffset / files.getBlockSize(), alreadyReadOffset % files.getBlockSize());
 
 			// Calculate offset as if the torrent was one file
 			long pieceIndexOffset = index * files.getPieceSize();
@@ -253,7 +253,7 @@ public class Piece {
 	 * Tests if any of the blocks have the given status.
 	 *
 	 * @param status The status expected
-	 * @return returns <code>true</code> when at least 1 block has the given status, othwise <code>false</code>
+	 * @return returns <code>true</code> when at least 1 block has the given status, otherwise <code>false</code>
 	 */
 	public boolean hasBlockWithStatus(BlockStatus status) {
 		return blocks.stream().anyMatch(block -> block.getStatus() == status);

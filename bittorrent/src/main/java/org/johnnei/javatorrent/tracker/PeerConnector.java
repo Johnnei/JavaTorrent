@@ -123,8 +123,8 @@ public class PeerConnector implements Runnable, IPeerConnector {
 					.setExtensionBytes(handshake.getPeerExtensionBytes())
 					.setId(handshake.getPeerId())
 					.build();
+			LOGGER.debug("Connected with {}:{}", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort());
 			peerInfo.getTorrent().addPeer(peer);
-			LOGGER.debug("Connected with {}: {}", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort());
 		} catch (IOException e) {
 			LOGGER.debug("Failed to connect to peer ({}:{})", peerInfo.getAddress().getAddress(), peerInfo.getAddress().getPort(), e);
 			peerSocket.close();

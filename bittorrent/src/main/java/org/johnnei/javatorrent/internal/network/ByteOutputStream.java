@@ -19,13 +19,6 @@ public class ByteOutputStream extends FilterOutputStream {
 		super.write(i);
 	}
 
-	@Override
-	public void write(byte[] bytes, int offset, int length) throws IOException {
-		for (int i = 0; i < length; i++) {
-			write(bytes[offset + i]);
-		}
-	}
-
 	public int pollSpeed() {
 		int polledSpeed = speed;
 		speed -= polledSpeed;

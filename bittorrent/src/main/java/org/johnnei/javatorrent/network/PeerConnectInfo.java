@@ -13,7 +13,7 @@ import org.johnnei.javatorrent.torrent.Torrent;
 public class PeerConnectInfo {
 
 	/**
-	 * If known the torrent to which this peer tries to connect
+	 * If known: the torrent to which this peer tries to connect
 	 */
 	private final Torrent torrent;
 

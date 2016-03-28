@@ -102,6 +102,7 @@ public class TorrentClient {
 		if (builder.acceptIncomingConnections) {
 			torrentManager.enableConnectionAcceptor();
 		}
+		peerConnector.start();
 	}
 
 	private byte[] createPeerId() {
@@ -148,6 +149,7 @@ public class TorrentClient {
 		torrentManager.stop();
 		ioManagerRunner.stop();
 		executorService.shutdown();
+		peerConnector.stop();
 	}
 
 	public int createUniqueTransactionId() {
