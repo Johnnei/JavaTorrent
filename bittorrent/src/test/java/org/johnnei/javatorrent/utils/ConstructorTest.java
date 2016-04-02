@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.utils;
 
 import java.lang.reflect.Constructor;
 
+import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
@@ -20,7 +21,8 @@ public class ConstructorTest {
 			StringUtils.class,
 			BitTorrent.class,
 			SHA1.class,
-			Argument.class
+			Argument.class,
+			Version.class
 	};
 
 	@Test

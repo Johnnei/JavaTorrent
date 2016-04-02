@@ -7,27 +7,27 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Bitfield {
 
 	/**
-	 * The lock which prevents thread-unsafety when the bitfield gets resized.<br/>
-	 * Read lock: Read/Write data into the {@link #bitfield} (both are allowed as missing one bit is not critical)<br/>
+	 * The lock which prevents thread-unsafety when the bitfieldBytes gets resized.<br/>
+	 * Read lock: Read/Write data into the {@link #bitfieldBytes} (both are allowed as missing one bit is not critical)<br/>
 	 * Write lock: Resizing the datastructure
 	 */
 	private ReadWriteLock resizeLock;
 
-	private byte[] bitfield;
+	private byte[] bitfieldBytes;
 
 	public Bitfield(int size) {
-		bitfield = new byte[size];
+		bitfieldBytes = new byte[size];
 		resizeLock = new ReentrantReadWriteLock();
 	}
 
 	/**
-	 * Increases or decreased the bitfield size but it will preserve the old data
+	 * Increases or decreased the bitfieldBytes size but it will preserve the old data
 	 *
 	 * @param size The new size to grow/shrink to
 	 */
 	public void setSize(int size) {
 		resizeLock.readLock().lock();
-		if (size == bitfield.length) {
+		if (size == bitfieldBytes.length) {
 			resizeLock.readLock().unlock();
 			return;
 		}
@@ -36,14 +36,14 @@ public class Bitfield {
 		resizeLock.writeLock().lock();
 
 		byte[] newBitfield = new byte[size];
-		System.arraycopy(bitfield, 0, newBitfield, 0, Math.min(size, bitfield.length));
-		bitfield = newBitfield;
+		System.arraycopy(bitfieldBytes, 0, newBitfield, 0, Math.min(size, bitfieldBytes.length));
+		bitfieldBytes = newBitfield;
 
 		resizeLock.writeLock().unlock();
 	}
 
 	/**
-	 * Checks the bitfield if we have the given piece
+	 * Checks the bitfieldBytes if we have the given piece
 	 *
 	 * @param pieceIndex the piece to check
 	 * @return True if we verified the hash of that piece, else false
@@ -53,9 +53,9 @@ public class Bitfield {
 		int bit = pieceIndex % 8;
 
 		resizeLock.readLock().lock();
-		if (byteIndex < bitfield.length) {
-			int bitVal = (0x80 >> bit);
-			boolean isSet = (bitfield[byteIndex] & bitVal) > 0;
+		if (byteIndex < bitfieldBytes.length) {
+			int bitVal = 0x80 >> bit;
+			boolean isSet = (bitfieldBytes[byteIndex] & bitVal) > 0;
 			resizeLock.readLock().unlock();
 			return isSet;
 		} else {
@@ -66,7 +66,7 @@ public class Bitfield {
 
 	/**
 	 * Notify that we have the given piece<br/>
-	 * This will update the bitfield to bitwise OR the bit to 1
+	 * This will update the bitfieldBytes to bitwise OR the bit to 1
 	 *
 	 * @param pieceIndex The piece to add
 	 */
@@ -76,16 +76,16 @@ public class Bitfield {
 
 	/**
 	 * Notify that we have the given piece<br/>
-	 * This will update the bitfield to bitwise OR the bit to 1
+	 * This will update the bitfieldBytes to bitwise OR the bit to 1
 	 *
 	 * @param pieceIndex The piece to add
-	 * @param mayExpand If the bitfield may grow to fit the new have data
+	 * @param mayExpand If the bitfieldBytes may grow to fit the new have data
 	 */
 	public void havePiece(int pieceIndex, boolean mayExpand) {
 		int byteIndex = pieceIndex / 8;
 		int bit = pieceIndex % 8;
 		resizeLock.readLock().lock();
-		if (byteIndex >= bitfield.length) {
+		if (byteIndex >= bitfieldBytes.length) {
 			if (mayExpand) {
 				resizeLock.readLock().unlock();
 				setSize(byteIndex + 1);
@@ -94,7 +94,7 @@ public class Bitfield {
 				return; // Prevent IndexOutOfRange
 			}
 		}
-		bitfield[byteIndex] |= (0x80 >> bit);
+		bitfieldBytes[byteIndex] |= (0x80 >> bit);
 		resizeLock.readLock().unlock();
 	}
 
@@ -104,19 +104,19 @@ public class Bitfield {
 	 */
 	public byte[] getBytes() {
 		resizeLock.readLock().lock();
-		byte[] clone = bitfield.clone();
+		byte[] clone = bitfieldBytes.clone();
 		resizeLock.readLock().unlock();
 		return clone;
 	}
 
 	/**
-	 * Goes through the bitfield and checks how many pieces the client has
+	 * Goes through the bitfieldBytes and checks how many pieces the client has
 	 *
 	 * @return The amount of pieces the client has
 	 */
 	public int countHavePieces() {
 		resizeLock.readLock().lock();
-		int pieces = bitfield.length * 8;
+		int pieces = bitfieldBytes.length * 8;
 		int have = 0;
 		for (int pieceIndex = 0; pieceIndex < pieces; pieceIndex++) {
 			if (hasPiece(pieceIndex)) {

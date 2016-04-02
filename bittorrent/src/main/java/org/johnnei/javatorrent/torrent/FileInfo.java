@@ -5,7 +5,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FileInfo {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(FileInfo.class);
 
 	/**
 	 * The fileName
@@ -35,7 +40,7 @@ public class FileInfo {
 	/**
 	 * A lock to prevent concurrent writes to a single file
 	 */
-	public final Object FILE_LOCK = new Object();
+	public final Object fileLock = new Object();
 
 	public FileInfo(long filesize, long firstByteOffset, File file, int pieceCount) {
 		this.firstByteOffset = firstByteOffset;
@@ -49,7 +54,7 @@ public class FileInfo {
 			}
 			fileAccess = new RandomAccessFile(file, "rw");
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			LOGGER.warn("Failed to open read/write access to {}", file.getAbsolutePath(), ex);
 		}
 	}
 

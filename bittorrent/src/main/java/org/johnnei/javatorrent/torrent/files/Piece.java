@@ -100,7 +100,7 @@ public class Piece {
 			}
 
 			// Read the actual files
-			synchronized (outputFile.FILE_LOCK) {
+			synchronized (outputFile.fileLock) {
 				RandomAccessFile file = outputFile.getFileAccess();
 				file.seek(offsetInFile);
 				file.readFully(pieceData, readBytes, bytesToRead);
@@ -153,7 +153,7 @@ public class Piece {
 			}
 
 			// Write the actual bytes
-			synchronized (outputFile.FILE_LOCK) {
+			synchronized (outputFile.fileLock) {
 				RandomAccessFile file = outputFile.getFileAccess();
 				file.seek(offsetInFile);
 				file.write(blockData, dataOffset, bytesToWrite);

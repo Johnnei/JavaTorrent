@@ -107,21 +107,21 @@ public class TorrentClient {
 
 	private byte[] createPeerId() {
 		char[] version = Version.BUILD.split(" ")[1].replace(".", "").toCharArray();
-		byte[] peerId = new byte[20];
-		peerId[0] = '-';
-		peerId[1] = 'J';
-		peerId[2] = 'T';
-		peerId[3] = (byte) version[0];
-		peerId[4] = (byte) version[1];
-		peerId[5] = (byte) version[2];
-		peerId[6] = (byte) version[3];
-		peerId[7] = '-';
+		byte[] newPeerId = new byte[20];
+		newPeerId[0] = '-';
+		newPeerId[1] = 'J';
+		newPeerId[2] = 'T';
+		newPeerId[3] = (byte) version[0];
+		newPeerId[4] = (byte) version[1];
+		newPeerId[5] = (byte) version[2];
+		newPeerId[6] = (byte) version[3];
+		newPeerId[7] = '-';
 
 		Random random = new Random();
-		for (int i = 8; i < peerId.length; i++) {
-			peerId[i] = (byte) (random.nextInt() & 0xFF);
+		for (int i = 8; i < newPeerId.length; i++) {
+			newPeerId[i] = (byte) (random.nextInt() & 0xFF);
 		}
-		return peerId;
+		return newPeerId;
 	}
 
 	/**
@@ -304,7 +304,7 @@ public class TorrentClient {
 		 * @param bit The bit to enable.
 		 */
 		public Builder enableExtensionBit(int bit) {
-			final int index = (extensionBytes.length - 1 - (bit / 8));
+			final int index = extensionBytes.length - 1 - (bit / 8);
 			final int bitValue = 1 << Math.floorMod(bit, 8);
 
 			extensionBytes[index] |= bitValue;

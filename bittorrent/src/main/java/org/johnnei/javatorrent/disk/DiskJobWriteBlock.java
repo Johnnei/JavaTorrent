@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.disk;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.johnnei.javatorrent.internal.disk.DiskJobPriority;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
 public class DiskJobWriteBlock implements IDiskJob {
@@ -55,7 +56,7 @@ public class DiskJobWriteBlock implements IDiskJob {
 	 */
 	@Override
 	public int getPriority() {
-		return CRITICAL;
+		return DiskJobPriority.RECEIVED_DATA.getPriority();
 	}
 
 }

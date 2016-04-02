@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.disk;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.johnnei.javatorrent.internal.disk.DiskJobPriority;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
 /**
@@ -35,7 +36,7 @@ public class DiskJobCheckHash implements IDiskJob {
 
 	@Override
 	public int getPriority() {
-		return HIGH;
+		return DiskJobPriority.LOCAL_ACTION.getPriority();
 	}
 
 	/**

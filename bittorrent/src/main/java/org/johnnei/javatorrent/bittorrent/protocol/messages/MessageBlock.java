@@ -52,7 +52,7 @@ public class MessageBlock implements IMessage {
 
 		peer.addStrike(-1);
 		if (readDuration.minusSeconds(1).isNegative()) { // Set by extreme speed
-			peer.setRequestLimit((int) Math.ceil(1000 / Math.max(1, readDuration.toMillis())));
+			peer.setRequestLimit((int) Math.ceil(1000f / Math.max(1, readDuration.toMillis())));
 		} else if (peer.getRequestLimit() < 5) {
 			// Set by trust
 			peer.setRequestLimit(2 * (peer.getRequestLimit() + 1));

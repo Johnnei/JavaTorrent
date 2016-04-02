@@ -26,8 +26,8 @@ public class BitTorrentSocket {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BitTorrentSocket.class);
 
-	private final Object QUEUE_LOCK = new Object();
-	private final Object BLOCK_QUEUE_LOCK = new Object();
+	private final Object queueLock = new Object();
+	private final Object blockQueueLock = new Object();
 
 	/**
 	 * Clock instance to allow for speedy unit tests on this.
@@ -141,11 +141,11 @@ public class BitTorrentSocket {
 	 */
 	public void enqueueMessage(IMessage message) {
 		if (message instanceof MessageBlock) {
-			synchronized (BLOCK_QUEUE_LOCK) {
+			synchronized (blockQueueLock) {
 				blockQueue.add(message);
 			}
 		} else {
-			synchronized (QUEUE_LOCK) {
+			synchronized (queueLock) {
 				messageQueue.add(message);
 			}
 		}
@@ -179,11 +179,11 @@ public class BitTorrentSocket {
 		IMessage message = null;
 
 		if (!messageQueue.isEmpty()) {
-			synchronized (QUEUE_LOCK) {
+			synchronized (queueLock) {
 				message = messageQueue.poll();
 			}
 		} else if (!blockQueue.isEmpty()) {
-			synchronized (BLOCK_QUEUE_LOCK) {
+			synchronized (blockQueueLock) {
 				message = blockQueue.poll();
 			}
 		}
@@ -240,20 +240,7 @@ public class BitTorrentSocket {
 			throw new IllegalStateException("Handshake has already been completed.");
 		}
 
-		LocalDateTime startTime = LocalDateTime.now(clock);
-
-		while (Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// Honour the cancellation and rethrow it as IOException
-				throw new IOException(e);
-			}
-		}
-
-		if (inStream.available() < HANDSHAKE_SIZE) {
-			throw new IOException("Remote end failed to supply handshake within 5 seconds");
-		}
+		awaitHandshake();
 
 		int protocolLength = inStream.read();
 		if (protocolLength != 0x13) {
@@ -271,6 +258,25 @@ public class BitTorrentSocket {
 		byte[] peerId = inStream.readByteArray(20);
 
 		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
+	}
+
+	private void awaitHandshake() throws IOException {
+		LocalDateTime startTime = LocalDateTime.now(clock);
+
+		while (Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				// Honour the cancellation and rethrow it as IOException
+				throw new IOException(e);
+			}
+		}
+
+		if (inStream.available() < HANDSHAKE_SIZE) {
+			throw new IOException("Remote end failed to supply handshake within 5 seconds");
+		}
+
 	}
 
 	/**

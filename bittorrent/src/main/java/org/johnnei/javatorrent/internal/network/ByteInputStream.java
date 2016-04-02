@@ -27,9 +27,10 @@ public class ByteInputStream extends DataInputStream {
 
 	public String readString(int length) throws IOException {
 		String s = "";
-		while (length > 0) {
-			s += (char) (read() & 0xFF);
-			length--;
+		int remainingBytes = length;
+		while (remainingBytes > 0) {
+			s += Character.toString((char) (read() & 0xFF));
+			remainingBytes--;
 		}
 		return s;
 	}

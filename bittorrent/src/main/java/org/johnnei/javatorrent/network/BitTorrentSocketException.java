@@ -13,7 +13,7 @@ public class BitTorrentSocketException extends IOException {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private Collection<String> connectionTypeErrors;
+	private final Collection<String> connectionTypeErrors;
 
 	public BitTorrentSocketException(String message, Throwable cause) {
 		super(message, cause);

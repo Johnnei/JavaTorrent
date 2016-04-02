@@ -35,9 +35,9 @@ public interface IModule {
 
 	/**
 	 * Event called as the last method in the build process of the {@link TorrentClient.Builder#build()} call.
-	 * @throws Exception When the module can not build itself correctly
+	 * @throws ModuleBuildException When the module can not build itself correctly
 	 */
-	public void onBuild(TorrentClient torrentClient) throws Exception;
+	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException;
 
 	/**
 	 * Event called when the TorrentClient is being shutdown.

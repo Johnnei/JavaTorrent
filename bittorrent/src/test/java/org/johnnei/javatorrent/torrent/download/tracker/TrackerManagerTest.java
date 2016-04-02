@@ -75,11 +75,14 @@ public class TrackerManagerTest extends EasyMockSupport {
 		Torrent torrent = createMock(Torrent.class);
 		ITracker trackerMock = createMock(ITracker.class);
 		final String trackerUrl = "udp://localhost:80";
+		final String missingTrackerUrl = "udp://localhost:8080";
 
 		expect(trackerFactoryMock.getTrackerFor(eq(trackerUrl))).andReturn(Optional.of(trackerMock));
+		expect(trackerFactoryMock.getTrackerFor(eq(missingTrackerUrl))).andReturn(Optional.empty());
 		trackerMock.addTorrent(same(torrent));
 
 		replayAll();
+		cut.addTorrent(torrent, missingTrackerUrl);
 		cut.addTorrent(torrent, trackerUrl);
 
 		verifyAll();

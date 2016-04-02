@@ -13,7 +13,6 @@ import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 public class PeerConnectionAcceptor implements Runnable {
 

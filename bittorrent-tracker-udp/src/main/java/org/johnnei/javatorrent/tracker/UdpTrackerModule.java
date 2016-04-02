@@ -4,8 +4,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.module.IModule;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
+import org.johnnei.javatorrent.module.IModule;
+import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 public class UdpTrackerModule implements IModule {
@@ -43,14 +45,18 @@ public class UdpTrackerModule implements IModule {
 	}
 
 	@Override
-	public void onBuild(TorrentClient torrentClient) throws Exception {
-		socket = new UdpTrackerSocket.Builder()
-				.setTorrentClient(torrentClient)
-				.setSocketPort(trackerPort)
-				.build();
-		Thread thread = new Thread(socket, "UdpTracker Worker Thread");
-		thread.setDaemon(true);
-		thread.start();
+	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException {
+		try {
+			socket = new UdpTrackerSocket.Builder()
+					.setTorrentClient(torrentClient)
+					.setSocketPort(trackerPort)
+					.build();
+			Thread thread = new Thread(socket, "UdpTracker Worker Thread");
+			thread.setDaemon(true);
+			thread.start();
+		} catch (TrackerException e) {
+			throw new ModuleBuildException("Failed to initialize tracker", e);
+		}
 	}
 
 	@Override
