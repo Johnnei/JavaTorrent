@@ -5,7 +5,7 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-public class MessageData extends Message {
+public class MessageData extends AbstractMessage {
 
 	private byte[] data;
 

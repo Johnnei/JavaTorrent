@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
@@ -8,16 +9,17 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 
-public abstract class Message implements IMessage {
+public abstract class AbstractMessage implements IMessage {
 
 	protected Map<String, Object> dictionary;
 	protected String bencodedData;
 
-	public Message() {
+	public AbstractMessage() {
+		dictionary = Collections.emptyMap();
 		bencodedData = "";
 	}
 
-	public Message(int piece) {
+	public AbstractMessage(int piece) {
 		Bencoder encode = new Bencoder();
 		encode.dictionaryStart();
 		encode.string("msg_type");

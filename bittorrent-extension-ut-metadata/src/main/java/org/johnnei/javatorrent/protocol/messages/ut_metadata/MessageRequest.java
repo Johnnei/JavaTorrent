@@ -13,7 +13,7 @@ import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageRequest extends Message {
+public class MessageRequest extends AbstractMessage {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MessageRequest.class);
 

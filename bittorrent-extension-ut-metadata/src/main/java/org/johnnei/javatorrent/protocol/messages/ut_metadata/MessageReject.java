@@ -1,13 +1,16 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
+import java.util.Optional;
+
 import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageReject extends Message {
+public class MessageReject extends AbstractMessage {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MessageReject.class);
 
@@ -23,9 +26,16 @@ public class MessageReject extends Message {
 	public void process(Peer peer) {
 		int blockIndex = (int) dictionary.get("piece");
 		LOGGER.warn("Piece Request got rejected: " + blockIndex);
-		peer.getTorrent().getFileSet().getPiece(0).setBlockStatus(blockIndex, BlockStatus.Needed);
+
+		Optional<MetadataFileSet> optionalMetadata = peer.getTorrent().getMetadata();
+		if (!optionalMetadata.isPresent()) {
+			LOGGER.debug("Received ut_metadata reject even though we don't have the minimal metadata reference yet.");
+			peer.getBitTorrentSocket().close();
+			return;
+		}
+
+		optionalMetadata.get().getPiece(0).setBlockStatus(blockIndex, BlockStatus.Needed);
 		peer.onReceivedBlock(0, blockIndex);
-		peer.getBitTorrentSocket().close();
 	}
 
 	@Override
@@ -40,7 +50,7 @@ public class MessageReject extends Message {
 
 	@Override
 	public String toString() {
-		return "UT_Metadata Reject";
+		return String.format("MessageReject[piece=%s]", dictionary.containsKey("piece"));
 	}
 
 }
