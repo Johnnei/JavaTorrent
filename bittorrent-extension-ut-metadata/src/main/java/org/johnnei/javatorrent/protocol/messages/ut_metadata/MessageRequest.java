@@ -18,6 +18,7 @@ public class MessageRequest extends AbstractMessage {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MessageRequest.class);
 
 	public MessageRequest() {
+		/* Default constructor must be available to read this message */
 	}
 
 	public MessageRequest(int piece) {
@@ -54,7 +55,8 @@ public class MessageRequest extends AbstractMessage {
 		int blockIndex = readJob.getOffset() / MetadataFileSet.BLOCK_SIZE;
 		Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
 		if (!peerExtensions.isPresent() || !peerExtensions.get().hasExtension(UTMetadata.NAME)) {
-			LOGGER.warn("Request to send Metadata block {} to {} has been rejected. Peer doesn't know about UT_METADATA", blockIndex, peer);
+			LOGGER.warn("Can't satisfy request to send Metadata block {} to {}. Missing ut_metadata id assignment for peer.", blockIndex, peer);
+			peer.getBitTorrentSocket().close();
 			return;
 		}
 
@@ -75,7 +77,7 @@ public class MessageRequest extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "UT_Metadata Request";
+		return String.format("MessageRequest[piece=%s]", dictionary.containsKey("piece"));
 	}
 
 }
