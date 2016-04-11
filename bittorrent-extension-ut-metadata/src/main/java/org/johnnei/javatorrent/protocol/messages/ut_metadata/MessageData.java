@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class MessageData extends AbstractMessage {
 
-	private Logger LOGGER = LoggerFactory.getLogger(MessageData.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MessageData.class);
 
 	private byte[] data;
 
