@@ -11,6 +11,7 @@ import org.johnnei.javatorrent.network.OutStream;
 
 public abstract class AbstractMessage implements IMessage {
 
+	protected static final String PIECE_KEY = "piece";
 	protected Map<String, Object> dictionary;
 	protected String bencodedData;
 
@@ -24,7 +25,7 @@ public abstract class AbstractMessage implements IMessage {
 		encode.dictionaryStart();
 		encode.string("msg_type");
 		encode.integer(getId());
-		encode.string("piece");
+		encode.string(PIECE_KEY);
 		encode.integer(piece);
 		encode.dictionaryEnd();
 		bencodedData = encode.getBencodedData();

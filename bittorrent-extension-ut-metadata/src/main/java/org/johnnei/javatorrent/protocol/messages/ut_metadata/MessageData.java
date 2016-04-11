@@ -1,16 +1,24 @@
 package org.johnnei.javatorrent.protocol.messages.ut_metadata;
 
+import java.util.Optional;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MessageData extends AbstractMessage {
+
+	private Logger LOGGER = LoggerFactory.getLogger(MessageData.class);
 
 	private byte[] data;
 
 	public MessageData() {
-
+		// Default constructor for when the message gets received.
 	}
 
 	public MessageData(int piece, byte[] data) {
@@ -32,8 +40,21 @@ public class MessageData extends AbstractMessage {
 
 	@Override
 	public void process(Peer peer) {
-		int blockIndex = (int) dictionary.get("piece");
-		peer.getTorrent().onReceivedBlock(0, blockIndex * peer.getTorrent().getFileSet().getBlockSize(), data);
+		int blockIndex = (int) dictionary.get(PIECE_KEY);
+
+		if (!peer.getTorrent().isDownloadingMetadata()) {
+			LOGGER.debug("Peer {} sent ut_metadata block but we already got all metadata info. Ignoring.", peer);
+			return;
+		}
+
+		Optional<MetadataFileSet> metadataFileSet = peer.getTorrent().getMetadata();
+		if (!metadataFileSet.isPresent()) {
+			LOGGER.warn("Peer {} send ut_metadata block to us but we don't know the size of the metadata yet.", peer);
+			peer.getBitTorrentSocket().close();
+			return;
+		}
+
+		peer.getTorrent().onReceivedBlock(0, blockIndex * metadataFileSet.get().getBlockSize(), data);
 		peer.onReceivedBlock(0, blockIndex);
 	}
 
@@ -49,7 +70,7 @@ public class MessageData extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return "UT_Metadata Data";
+		return String.format("MessageData[piece=%s]", dictionary.get(PIECE_KEY));
 	}
 
 }

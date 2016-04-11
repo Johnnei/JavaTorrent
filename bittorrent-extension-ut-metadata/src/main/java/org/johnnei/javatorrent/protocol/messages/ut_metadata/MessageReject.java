@@ -24,7 +24,7 @@ public class MessageReject extends AbstractMessage {
 
 	@Override
 	public void process(Peer peer) {
-		int blockIndex = (int) dictionary.get("piece");
+		int blockIndex = (int) dictionary.get(PIECE_KEY);
 		LOGGER.warn("Piece Request got rejected: " + blockIndex);
 
 		Optional<MetadataFileSet> optionalMetadata = peer.getTorrent().getMetadata();
@@ -50,7 +50,7 @@ public class MessageReject extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return String.format("MessageReject[piece=%s]", dictionary.containsKey("piece"));
+		return String.format("MessageReject[piece=%s]", dictionary.containsKey(PIECE_KEY));
 	}
 
 }

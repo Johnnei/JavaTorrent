@@ -34,12 +34,12 @@ public class MessageRequest extends AbstractMessage {
 				return;
 			}
 
-			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
+			MessageReject mr = new MessageReject((int) dictionary.get(PIECE_KEY));
 			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mr);
 			peer.getBitTorrentSocket().enqueueMessage(extendedMessage);
 		} else {
 			// The ut_metadata defines each section as a piece, but internally we map them as a single torrent piece so we can re-use the logic.
-			int blockIndex = (int) dictionary.get("piece");
+			int blockIndex = (int) dictionary.get(PIECE_KEY);
 
 			Piece piece = peer.getTorrent().getMetadata().get().getPiece(0);
 
@@ -77,7 +77,7 @@ public class MessageRequest extends AbstractMessage {
 
 	@Override
 	public String toString() {
-		return String.format("MessageRequest[piece=%s]", dictionary.containsKey("piece"));
+		return String.format("MessageRequest[piece=%s]", dictionary.get(PIECE_KEY));
 	}
 
 }
