@@ -37,7 +37,7 @@ public class UTMetadataExtension implements IExtension {
 			break;
 
 		default:
-			message = null;
+			message = new MessageUnknown();
 			break;
 		}
 

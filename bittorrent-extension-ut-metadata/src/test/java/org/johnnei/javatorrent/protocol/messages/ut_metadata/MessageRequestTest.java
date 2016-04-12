@@ -111,7 +111,6 @@ public class MessageRequestTest extends EasyMockSupport {
 	@Test
 	public void testOnReadMetadataBlockCompletedMissingExtensions() throws IOException {
 		prepareSuccessfulRead();
-		PeerExtensions extensionsMock = createNiceMock(PeerExtensions.class);
 		BitTorrentSocket socketMock = createNiceMock(BitTorrentSocket.class);
 
 		Capture<IDiskJob> diskJobCapture = EasyMock.newCapture();

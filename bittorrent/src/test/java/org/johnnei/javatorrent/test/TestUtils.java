@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.test;
 
+import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -53,6 +54,14 @@ public class TestUtils {
 
 	public static void assertPresent(String message, Optional<?> optional) {
 		assertTrue(message, optional.isPresent());
+	}
+
+	public static void assertUtilityClassConstructor(Class<?> clazz) throws Exception {
+		Constructor<?>[] constructor = clazz.getDeclaredConstructors();
+		assertEquals("Incorrect amount of constructors for util class", 1, constructor.length);
+		assertFalse("Incorrect accessibility for constructor", constructor[0].isAccessible());
+		constructor[0].setAccessible(true);
+		constructor[0].newInstance();
 	}
 
 }
