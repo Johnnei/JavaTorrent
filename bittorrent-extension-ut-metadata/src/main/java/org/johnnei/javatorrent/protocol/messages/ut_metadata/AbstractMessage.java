@@ -21,6 +21,7 @@ public abstract class AbstractMessage implements IMessage {
 	}
 
 	public AbstractMessage(int piece) {
+		dictionary = Collections.emptyMap();
 		Bencoder encode = new Bencoder();
 		encode.dictionaryStart();
 		encode.string("msg_type");

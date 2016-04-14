@@ -7,6 +7,10 @@ import org.johnnei.javatorrent.module.MetadataInformation;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 
+/**
+ * The phase in which the torrent needs to wait to connect to peers. Upon handshake with the peers the ut_metadata extension will allow us to discover the
+ * torrent file size. Once the torrent file size is known we can advance to the next phase and start downloading the torrent file.
+ */
 public class PhasePreMetadata extends AMetadataPhase {
 
 	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent, File metadataFile) {
@@ -24,14 +28,8 @@ public class PhasePreMetadata extends AMetadataPhase {
 	}
 
 	@Override
-	public void onPhaseEnter() {
-		super.onPhaseEnter();
-	}
-
-	@Override
 	public void onPhaseExit() {
 		MetadataFileSet metadata = new MetadataFileSet(torrent, metadataFile);
-		torrent.setFileSet(metadata);
 		torrent.setMetadata(metadata);
 	}
 

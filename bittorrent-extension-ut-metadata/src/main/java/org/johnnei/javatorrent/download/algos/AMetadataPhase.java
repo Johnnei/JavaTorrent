@@ -6,10 +6,11 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 		this.metadataFile = metadataFile;
+		chokingStrategy = new PermissiveStrategy();
 	}
 
 	@Override

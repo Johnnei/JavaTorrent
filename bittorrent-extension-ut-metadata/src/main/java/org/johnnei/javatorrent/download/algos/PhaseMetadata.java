@@ -11,6 +11,7 @@ import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.ut_metadata.MessageRequest;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.Block;
@@ -35,7 +36,15 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public boolean isDone() {
-		return foundMatchingFile || torrent.getFileSet().isDone();
+		if (foundMatchingFile) {
+			return true;
+		}
+
+		Optional<MetadataFileSet> metadataFileSet = torrent.getMetadata();
+		if (!metadataFileSet.isPresent()) {
+			return false;
+		}
+		return metadataFileSet.get().isDone();
 	}
 
 	@Override
@@ -53,14 +62,10 @@ public class PhaseMetadata extends AMetadataPhase {
 					break;
 				}
 
-				Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
-				if (!peerExtensions.isPresent()) {
-					LOGGER.warn("Attempted to send metadata request to peer which doesn't support metadata. ", peer);
-					continue;
-				}
-
+				// The getRelevantPeers call only returns peers which support the extensions and has ut_metadata.
+				PeerExtensions peerExtensions = peer.getModuleInfo(PeerExtensions.class).get();
 				Block block = blockOptional.get();
-				IMessage message = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
+				IMessage message = new MessageExtension(peerExtensions.getExtensionId(UTMetadata.NAME), new MessageRequest(block.getIndex()));
 				peer.addBlockRequest(piece.getIndex(), block.getIndex(), block.getSize(), PeerDirection.Download);
 				peer.getBitTorrentSocket().enqueueMessage(message);
 			}
