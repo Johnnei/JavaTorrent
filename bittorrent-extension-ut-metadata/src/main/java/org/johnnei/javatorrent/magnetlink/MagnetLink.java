@@ -16,13 +16,15 @@ public class MagnetLink {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MagnetLink.class);
 
-	private static final Pattern BTIH_BASE16_PATTERN = Pattern.compile("urn:btih:([A-Z0-9]{40})");
-	private static final Pattern BTIH_BASE32_PATTERN = Pattern.compile("urn:btih:([A-Z0-9]{32})");
+	private static final Pattern BTIH_BASE16_PATTERN = Pattern.compile("urn:btih:([a-zA-Z0-9]{40})");
+	private static final Pattern BTIH_BASE32_PATTERN = Pattern.compile("urn:btih:([a-zA-Z0-9]{32})");
 
 	/**
 	 * The resulting torrent from this Magnet link
 	 */
 	private Torrent torrent;
+
+	private boolean hasName;
 
 	private Torrent.Builder torrentBuilder;
 
@@ -34,30 +36,36 @@ public class MagnetLink {
 		trackerUrls = new ArrayList<>();
 
 		if (!magnetLink.startsWith("magnet:?")) {
-			return;
+			throw new IllegalArgumentException("Format does not comply with a magnet link.");
 		}
 
 		String[] linkSections = magnetLink.split("\\?", 2)[1].split("&");
+
 		for (int i = 0; i < linkSections.length; i++) {
 			String[] data = linkSections[i].split("=", 2);
+			if (data.length != 2) {
+				throw new IllegalArgumentException(String.format("Section does not comply with a magnet link: %s", linkSections[i]));
+			}
+
 			final String key = data[0];
 			final String value = data[1];
 
 			switch (key) {
-			case "dn":
-				torrentBuilder.setName(removeHex(spaceFix(value)));
-				break;
+				case "dn":
+					torrentBuilder.setName(decodeEncodedCharacters(spaceFix(value)));
+					hasName = true;
+					break;
 
-			case "tr":
-				trackerUrls.add(removeHex(value));
-				break;
+				case "tr":
+					trackerUrls.add(decodeEncodedCharacters(value));
+					break;
 
-			case "xt":
-				extractHash(value);
-				break;
+				case "xt":
+					extractHash(value);
+					break;
 
-			default:
-				LOGGER.warn("Unhandled Magnet Data: " + linkSections[i]);
+				default:
+					LOGGER.warn("Unhandled magnet link section: {}", linkSections[i]);
 			}
 		}
 	}
@@ -65,7 +73,13 @@ public class MagnetLink {
 	private void extractHash(String value) {
 		Matcher matcher = BTIH_BASE16_PATTERN.matcher(value);
 		if (matcher.find()) {
-			torrentBuilder.setHash(extractBase16Hash(matcher.group(1)));
+			String hashString = matcher.group(1);
+
+			if (!hasName) {
+				torrentBuilder.setName(hashString);
+			}
+
+			torrentBuilder.setHash(extractBase16Hash(hashString));
 			return;
 		}
 
@@ -75,7 +89,7 @@ public class MagnetLink {
 			return;
 		}
 
-		LOGGER.error("Failed to parse XT entry of magnet link.");
+		throw new IllegalArgumentException("Failed to parse XT entry of magnet link.");
 	}
 
 	private byte[] extractBase16Hash(String hashSection) {
@@ -92,16 +106,18 @@ public class MagnetLink {
 	 * @param s
 	 * @return
 	 */
-	private String removeHex(String s) {
+	private String decodeEncodedCharacters(String s) {
 		String[] pieces = s.split("%");
 		for (int i = 1; i < pieces.length; i++) {
 			int hex = Integer.parseInt(pieces[i].substring(0, 2), 16);
 			pieces[i] = (char) hex + pieces[i].substring(2);
 		}
-		s = pieces[0];
-		for (int i = 1; i < pieces.length; i++)
-			s += pieces[i];
-		return s;
+
+		StringBuilder result = new StringBuilder();
+		for (String piece : pieces) {
+			result.append(piece);
+		}
+		return result.toString();
 	}
 
 	/**
@@ -110,15 +126,24 @@ public class MagnetLink {
 	 * @param s
 	 * @return
 	 */
-	public static String spaceFix(String s) {
+	private static String spaceFix(String s) {
 		return s.replaceAll("\\+", " ");
 	}
 
 	private byte[] convertBase32Hash(String hashSection) {
-		throw new IllegalStateException("Base 32 hashes are not yet supported.");
+		throw new IllegalArgumentException("Base 32 hashes are not yet supported.");
 	}
 
-	public Torrent getTorrent() throws IllegalStateException {
+	/**
+	 * Gets the torrent which this magnet link produced.
+	 * @return The torrent based on this magnet link.
+	 *
+	 * @throws IllegalStateException When {@link #isDownloadable()} returns false.
+	 */
+	public Torrent getTorrent() {
+		if (!isDownloadable()) {
+			throw new IllegalStateException("Torrent information is incomplete.");
+		}
 		if (torrent == null) {
 			torrent = torrentBuilder.build();
 		}
@@ -126,10 +151,20 @@ public class MagnetLink {
 		return torrent;
 	}
 
+	/**
+	 * Gets the collection of trackers which are present in the parsed magnet link.
+	 * @return The collection of trackers.
+	 */
 	public Collection<String> getTrackerUrls() {
 		return Collections.unmodifiableCollection(trackerUrls);
 	}
 
+	/**
+	 * Tests if this magnetlink has enough information to be downloadable.
+	 * @return <code>true</code> when the hash is available.
+	 *
+	 * @see Torrent.Builder#canDownload()
+	 */
 	public boolean isDownloadable() {
 		return torrentBuilder.canDownload();
 	}
