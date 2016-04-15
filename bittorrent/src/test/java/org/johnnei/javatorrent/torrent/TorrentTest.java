@@ -243,7 +243,7 @@ public class TorrentTest extends EasyMockSupport {
 		cut.setFileSet(fileSetMock);
 		cut.setMetadata(metadataMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 		checkHashCapture.getValue().process();
@@ -295,7 +295,7 @@ public class TorrentTest extends EasyMockSupport {
 		cut.setMetadata(metadataMock);
 
 		cut.addPeer(peerMock);
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		assertEquals("Incorrect downloaded bytes, nothing is completed yet.", 0, cut.getDownloadedBytes());
 
@@ -327,7 +327,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		verifyAll();
 	}
@@ -358,7 +358,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 
@@ -394,7 +394,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 		checkHashCapture.getValue().process();
@@ -430,7 +430,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 

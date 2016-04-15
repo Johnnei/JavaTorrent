@@ -199,18 +199,19 @@ public class Torrent {
 	/**
 	 * Tells the torrent to save a block of data
 	 *
+	 * @param fileSet The fileset for which the block of data has been received.
 	 * @param index The piece index
 	 * @param offset The offset within the piece
 	 * @param data The bytes to be stored
 	 */
-	public void onReceivedBlock(int index, int offset, byte[] data) {
-		int blockIndex = offset / files.getBlockSize();
+	public void onReceivedBlock(AbstractFileSet fileSet, int index, int offset, byte[] data) {
+		int blockIndex = offset / fileSet.getBlockSize();
 
-		Piece piece = files.getPiece(index);
+		Piece piece = fileSet.getPiece(index);
 		if (piece.getBlockSize(blockIndex) != data.length) {
 			piece.setBlockStatus(blockIndex, BlockStatus.Needed);
 		} else {
-			addDiskJob(new DiskJobWriteBlock(files.getPiece(index), blockIndex, data, this::onStoreBlockComplete));
+			addDiskJob(new DiskJobWriteBlock(piece, blockIndex, data, this::onStoreBlockComplete));
 		}
 	}
 

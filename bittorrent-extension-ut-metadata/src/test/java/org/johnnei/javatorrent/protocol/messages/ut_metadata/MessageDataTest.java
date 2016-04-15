@@ -67,7 +67,7 @@ public class MessageDataTest extends EasyMockSupport {
 		expect(torrentMock.getMetadata()).andReturn(Optional.of(metadataMock));
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 
-		torrentMock.onReceivedBlock(eq(0), eq(42 * 16384), aryEq(dataBytes));
+		torrentMock.onReceivedBlock(eq(metadataMock), eq(0), eq(42 * 16384), aryEq(dataBytes));
 		peerMock.onReceivedBlock(0, 42);
 
 		replayAll();

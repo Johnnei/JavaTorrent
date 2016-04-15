@@ -4,6 +4,7 @@ import java.time.Duration;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -45,10 +46,12 @@ public class MessageBlockTest extends EasyMockSupport {
 		}, Duration.ofMillis(200));
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
+		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
 
-		torrentMock.onReceivedBlock(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
+		torrentMock.onReceivedBlock(eq(fileSetMock), eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		peerMock.onReceivedBlock(eq(5), eq(0x3800));
 		peerMock.addStrike(-1);
 		peerMock.setRequestLimit(5);
@@ -89,10 +92,12 @@ public class MessageBlockTest extends EasyMockSupport {
 		});
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
+		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
 
-		torrentMock.onReceivedBlock(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
+		torrentMock.onReceivedBlock(eq(fileSetMock), eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		peerMock.onReceivedBlock(eq(5), eq(0x3800));
 		peerMock.addStrike(-1);
 		expect(peerMock.getRequestLimit()).andStubReturn(2);
@@ -116,10 +121,12 @@ public class MessageBlockTest extends EasyMockSupport {
 		});
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
+		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
+		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
 
-		torrentMock.onReceivedBlock(eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
+		torrentMock.onReceivedBlock(eq(fileSetMock), eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
 		peerMock.onReceivedBlock(eq(5), eq(0x3800));
 		peerMock.addStrike(-1);
 		expect(peerMock.getRequestLimit()).andStubReturn(5);
