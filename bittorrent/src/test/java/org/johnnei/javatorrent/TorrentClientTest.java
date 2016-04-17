@@ -14,12 +14,12 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.test.TestUtils;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
 
 import org.easymock.EasyMockRunner;
 import org.easymock.EasyMockSupport;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.reflect.Whitebox;
@@ -94,7 +94,8 @@ public class TorrentClientTest extends EasyMockSupport {
 		// Assert that the peer id is in format: -JTdddd-xxxxxxxxxxxx
 		// The first 8 bytes are always readable ASCII characters.
 		String clientIdentifier = new String(peerId, 0, 8);
-		Assert.assertTrue("Incorrect client identifier in peer ID", Pattern.matches("-JT\\d{4}-", clientIdentifier));
+		assertTrue("Incorrect client identifier in peer ID", Pattern.matches("-JT\\d{4}-", clientIdentifier));
+		TestUtils.assertPresent("Missing module", torrentClient.getModule(moduleMock.getClass()));
 	}
 
 	@Test(expected = IllegalStateException.class)

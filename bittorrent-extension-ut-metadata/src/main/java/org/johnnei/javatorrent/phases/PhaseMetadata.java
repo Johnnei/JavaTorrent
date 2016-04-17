@@ -28,11 +28,8 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseMetadata.class);
 
-	private final File downloadFolder;
-
-	public PhaseMetadata(TorrentClient torrentClient, Torrent torrent, File metadataFile, File downloadFolder) {
-		super(torrentClient, torrent, metadataFile);
-		this.downloadFolder = downloadFolder;
+	public PhaseMetadata(TorrentClient torrentClient, Torrent torrent) {
+		super(torrentClient, torrent);
 	}
 
 	@Override
@@ -81,7 +78,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrent.setFileSet(new TorrentFileSet(metadataFile, downloadFolder));
+		torrent.setFileSet(new TorrentFileSet(metadataFile, new File(downloadFolderRoot, torrent.getDisplayName())));
 		LOGGER.info("Metadata download completed");
 	}
 

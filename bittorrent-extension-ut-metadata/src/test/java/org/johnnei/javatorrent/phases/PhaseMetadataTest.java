@@ -4,8 +4,9 @@ import java.io.File;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
-import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
+import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
@@ -18,6 +19,7 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
+import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
 
 import org.easymock.EasyMockSupport;
 import org.junit.Rule;
@@ -39,19 +41,34 @@ public class PhaseMetadataTest extends EasyMockSupport {
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+	private File metadataFile;
+	private Torrent torrentMock;
+	private TorrentClient torrentClientMock;
+
+	private void setUpTorrentClient() throws Exception {
+		metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
+		torrentMock = createMock(Torrent.class);
+		ExtensionModule extensionModuleMock = createMock(ExtensionModule.class);
+		UTMetadataExtension metadataExtensionMock = createMock(UTMetadataExtension.class);
+		torrentClientMock = createMock(TorrentClient.class);
+
+		expect(torrentClientMock.getModule(eq(ExtensionModule.class))).andReturn(Optional.of(extensionModuleMock));
+		expect(extensionModuleMock.getExtensionByName(eq("ut_metadata"))).andReturn(Optional.of(metadataExtensionMock));
+		expect(metadataExtensionMock.getTorrentFile(eq(torrentMock))).andAnswer(() -> metadataFile);
+		expect(metadataExtensionMock.getDownloadFolder()).andReturn(temporaryFolder.newFolder());
+	}
+
 	@Test
 	public void testIsDone() throws Exception {
-		File metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		Torrent torrentMock = createMock(Torrent.class);
+		setUpTorrentClient();
 		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
 
 		expect(torrentMock.getMetadata()).andReturn(Optional.of(metadataFileSetMock));
 		expect(metadataFileSetMock.isDone()).andReturn(true);
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		boolean isDone = cut.isDone();
 
 		verifyAll();
@@ -61,15 +78,13 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 	@Test
 	public void testIsDoneMissingMetadata() throws Exception {
-		File metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		setUpTorrentClient();
 
 		expect(torrentMock.getMetadata()).andReturn(Optional.empty());
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		boolean isDone = cut.isDone();
 
 		verifyAll();
@@ -79,9 +94,8 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 	@Test
 	public void testProcess() throws Exception {
-		File metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		Torrent torrentMock = createNiceMock(Torrent.class);
-		TorrentClient torrentClientMock = createNiceMock(TorrentClient.class);
+		setUpTorrentClient();
+
 		IPieceSelector pieceSelectorMock = createMock(IPieceSelector.class);
 		Piece pieceMockOne = createNiceMock(Piece.class);
 		Piece pieceMockTwo = createNiceMock(Piece.class);
@@ -137,7 +151,7 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		cut.process();
 
 		verifyAll();
@@ -145,15 +159,14 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 	@Test
 	public void testOnPhaseExit() throws Exception {
-		File metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		setUpTorrentClient();
 
+		expect(torrentMock.getDisplayName()).andReturn("OnPhaseExit");
 		torrentMock.setFileSet(isA(TorrentFileSet.class));
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseExit();
 
 		verifyAll();
@@ -161,9 +174,7 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 	@Test
 	public void testOnPhaseEnter() throws Exception {
-		File metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		setUpTorrentClient();
 
 		torrentMock.setPieceSelector(isA(MetadataSelect.class));
 		expect(torrentMock.getHashArray()).andStubReturn(new byte[] {
@@ -172,7 +183,7 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
 		verifyAll();
@@ -183,16 +194,15 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 	@Test
 	public void testOnPhaseEnterMissingFile() throws Exception {
-		File metadataFile = new File("this_file_should_never_exist_hopefully.torrent");
-		Torrent torrentMock = createNiceMock(Torrent.class);
-		TorrentClient torrentClientMock = createNiceMock(TorrentClient.class);
+		setUpTorrentClient();
+		metadataFile = new File("this_file_should_not_exist.torrent");
 
 		torrentMock.setPieceSelector(isA(MetadataSelect.class));
 		expect(torrentMock.getMetadata()).andReturn(Optional.empty());
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 		boolean isDone = cut.isDone();
 
@@ -204,16 +214,14 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 	@Test
 	public void testOnPhaseEnterMismatchedHash() throws Exception {
-		File metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		setUpTorrentClient();
 
 		torrentMock.setPieceSelector(isA(MetadataSelect.class));
 		expect(torrentMock.getHashArray()).andStubReturn(new byte[0]);
 
 		replayAll();
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock, metadataFile, temporaryFolder.newFolder());
+		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
 		verifyAll();

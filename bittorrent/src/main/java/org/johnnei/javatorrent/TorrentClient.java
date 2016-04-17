@@ -66,6 +66,8 @@ public class TorrentClient {
 
 	private AtomicInteger transactionId;
 
+	private Collection<IModule> modules;
+
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
@@ -84,7 +86,8 @@ public class TorrentClient {
 		trackerManager = new TrackerManager(peerConnector, trackerFactory);
 		LOGGER.info(String.format("Configured trackers: %s", trackerFactory));
 
-		LOGGER.info(String.format("Configured modules: %s", builder.modules.stream()
+		modules = builder.modules;
+		LOGGER.info(String.format("Configured modules: %s", modules.stream()
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
 				.reduce((a, b) -> a + ", " + b).orElse("")));
 
@@ -245,6 +248,16 @@ public class TorrentClient {
 	 */
 	public byte[] getPeerId() {
 		return peerId;
+	}
+
+	/**
+	 * Gets the module instance if it is registered to this Torrent Client.
+	 * @param type The module class.
+	 * @param <T> The module type.
+	 * @return The module instance or {@link Optional#empty()} if not found.
+	 */
+	public <T extends IModule> Optional<T> getModule(Class<T> type) {
+		return (Optional<T>) modules.stream().filter(m -> m.getClass().equals(type)).findAny();
 	}
 
 	/**

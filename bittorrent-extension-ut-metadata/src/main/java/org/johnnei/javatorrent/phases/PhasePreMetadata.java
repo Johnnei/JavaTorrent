@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.phases;
 
-import java.io.File;
-
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.module.MetadataInformation;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
@@ -13,8 +11,8 @@ import org.johnnei.javatorrent.torrent.Torrent;
  */
 public class PhasePreMetadata extends AMetadataPhase {
 
-	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent, File metadataFile) {
-		super(torrentClient, torrent, metadataFile);
+	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent) {
+		super(torrentClient, torrent);
 	}
 
 	@Override
