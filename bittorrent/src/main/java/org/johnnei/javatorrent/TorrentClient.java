@@ -3,6 +3,7 @@ package org.johnnei.javatorrent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,6 +67,8 @@ public class TorrentClient {
 
 	private AtomicInteger transactionId;
 
+	private Collection<IModule> modules;
+
 	private TorrentClient(Builder builder) {
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
@@ -84,7 +87,8 @@ public class TorrentClient {
 		trackerManager = new TrackerManager(peerConnector, trackerFactory);
 		LOGGER.info(String.format("Configured trackers: %s", trackerFactory));
 
-		LOGGER.info(String.format("Configured modules: %s", builder.modules.stream()
+		modules = builder.modules;
+		LOGGER.info(String.format("Configured modules: %s", modules.stream()
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
 				.reduce((a, b) -> a + ", " + b).orElse("")));
 
@@ -245,6 +249,24 @@ public class TorrentClient {
 	 */
 	public byte[] getPeerId() {
 		return peerId;
+	}
+
+	/**
+	 * Gets the module instance if it is registered to this Torrent Client.
+	 * @param type The module class.
+	 * @param <T> The module type.
+	 * @return The module instance or {@link Optional#empty()} if not found.
+	 */
+	public <T extends IModule> Optional<T> getModule(Class<T> type) {
+		return (Optional<T>) modules.stream().filter(m -> m.getClass().equals(type)).findAny();
+	}
+
+	/**
+	 * Gets an unmodifiable view of the registered modules to this torrent client.
+	 * @return The collection of modules.
+	 */
+	public Collection<IModule> getModules() {
+		return Collections.unmodifiableCollection(modules);
 	}
 
 	/**

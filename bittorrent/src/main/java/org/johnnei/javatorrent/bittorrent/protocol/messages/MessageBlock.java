@@ -48,7 +48,7 @@ public class MessageBlock implements IMessage {
 			return;
 		}
 
-		peer.getTorrent().onReceivedBlock(index, offset, data);
+		peer.getTorrent().onReceivedBlock(peer.getTorrent().getFileSet(), index, offset, data);
 
 		peer.addStrike(-1);
 		if (readDuration.minusSeconds(1).isNegative()) { // Set by extreme speed

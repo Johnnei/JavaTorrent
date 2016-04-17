@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
 import org.johnnei.javatorrent.disk.IDiskJob;
+import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestUtils;
@@ -118,9 +120,13 @@ public class TorrentTest extends EasyMockSupport {
 		socketMock.setPassedHandshake();
 		socketMock.enqueueMessage(isA(MessageHave.class));
 
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andStubReturn(Collections.emptyList());
+
 		replayAll();
 
 		Torrent cut = new Torrent.Builder()
+				.setTorrentClient(torrentClientMock)
 				.setName("Check for progress test")
 				.build();
 		cut.setFileSet(fileSetMock);
@@ -153,9 +159,13 @@ public class TorrentTest extends EasyMockSupport {
 		expect(peerMockTwo.countHavePieces()).andReturn(3).atLeastOnce();
 		socketMockTwo.setPassedHandshake();
 
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andStubReturn(Collections.emptyList());
+
 		replayAll();
 
 		Torrent cut = new Torrent.Builder()
+				.setTorrentClient(torrentClientMock)
 				.setName("Upload/Download rates test")
 				.build();
 
@@ -194,9 +204,13 @@ public class TorrentTest extends EasyMockSupport {
 		socketMockTwo.pollRates();
 		socketMockTwo.setPassedHandshake();
 
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andStubReturn(Collections.emptyList());
+
 		replayAll();
 
 		Torrent cut = new Torrent.Builder()
+				.setTorrentClient(torrentClientMock)
 				.setName("Upload/Download rates test")
 				.build();
 
@@ -220,7 +234,6 @@ public class TorrentTest extends EasyMockSupport {
 		Capture<IDiskJob> writeJobCapture = EasyMock.newCapture();
 		Capture<IDiskJob> checkHashCapture = EasyMock.newCapture();
 
-		expect(metadataMock.isDone()).andReturn(true);
 		expect(fileSetMock.getBlockSize()).andReturn(15);
 		expect(fileSetMock.getPiece(eq(0))).andReturn(pieceMock).atLeastOnce();
 		expect(pieceMock.getBlockSize(eq(1))).andReturn(15);
@@ -243,7 +256,7 @@ public class TorrentTest extends EasyMockSupport {
 		cut.setFileSet(fileSetMock);
 		cut.setMetadata(metadataMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 		checkHashCapture.getValue().process();
@@ -270,6 +283,7 @@ public class TorrentTest extends EasyMockSupport {
 		fileSetMock.setHavingPiece(eq(1));
 		torrentClient.addDiskJob(and(isA(DiskJobWriteBlock.class), capture(writeJobCapture)));
 		torrentClient.addDiskJob(and(isA(DiskJobCheckHash.class), capture(checkHashCapture)));
+		expect(torrentClient.getModules()).andReturn(Collections.emptyList());
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
@@ -295,7 +309,7 @@ public class TorrentTest extends EasyMockSupport {
 		cut.setMetadata(metadataMock);
 
 		cut.addPeer(peerMock);
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		assertEquals("Incorrect downloaded bytes, nothing is completed yet.", 0, cut.getDownloadedBytes());
 
@@ -327,7 +341,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		verifyAll();
 	}
@@ -358,7 +372,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 
@@ -370,6 +384,7 @@ public class TorrentTest extends EasyMockSupport {
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 		TorrentClient torrentClient = createMock(TorrentClient.class);
 		Piece pieceMock = createMock(Piece.class);
+		MetadataFileSet metadataMock = createMock(MetadataFileSet.class);
 
 		Capture<IDiskJob> writeJobCapture = EasyMock.newCapture();
 		Capture<IDiskJob> checkHashCapture = EasyMock.newCapture();
@@ -377,6 +392,7 @@ public class TorrentTest extends EasyMockSupport {
 		expect(fileSetMock.getBlockSize()).andReturn(15);
 		expect(fileSetMock.getPiece(eq(0))).andReturn(pieceMock).atLeastOnce();
 		expect(pieceMock.getBlockSize(eq(1))).andReturn(15);
+		expect(pieceMock.getIndex()).andStubReturn(0);
 		torrentClient.addDiskJob(and(isA(DiskJobWriteBlock.class), capture(writeJobCapture)));
 		torrentClient.addDiskJob(and(isA(DiskJobCheckHash.class), capture(checkHashCapture)));
 
@@ -385,6 +401,8 @@ public class TorrentTest extends EasyMockSupport {
 		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
 		expect(pieceMock.getBlockCount()).andReturn(2);
 		expect(pieceMock.checkHash()).andReturn(true);
+		metadataMock.setHavingPiece(eq(0));
+		expect(metadataMock.isDone()).andReturn(false);
 
 		replayAll();
 
@@ -393,8 +411,9 @@ public class TorrentTest extends EasyMockSupport {
 				.setTorrentClient(torrentClient)
 				.build();
 		cut.setFileSet(fileSetMock);
+		cut.setMetadata(metadataMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 		checkHashCapture.getValue().process();
@@ -430,7 +449,7 @@ public class TorrentTest extends EasyMockSupport {
 				.build();
 		cut.setFileSet(fileSetMock);
 
-		cut.onReceivedBlock(0, 15, new byte[15]);
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
 		writeJobCapture.getValue().process();
 
@@ -465,7 +484,9 @@ public class TorrentTest extends EasyMockSupport {
 		BitTorrentSocket socketMockThree = createMock(BitTorrentSocket.class);
 		socketMockThree.close();
 
-		Torrent cut = DummyEntity.createUniqueTorrent();
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andStubReturn(Collections.emptyList());
+
 
 		Peer peerMock = createMockBuilder(Peer.class)
 				.addMockedMethod("discardAllBlockRequests")
@@ -474,6 +495,8 @@ public class TorrentTest extends EasyMockSupport {
 		peerMock.discardAllBlockRequests();
 
 		replayAll();
+
+		Torrent cut = DummyEntity.createUniqueTorrent(torrentClientMock);
 
 		Peer peerOne = new Peer.Builder()
 				.setSocket(socketMockOne)
@@ -544,9 +567,15 @@ public class TorrentTest extends EasyMockSupport {
 		expect(fileSetMock.countCompletedPieces()).andReturn(0).atLeastOnce();
 		expect(fileSetMock.getBitfieldBytes()).andReturn(new byte[0]);
 
+		IModule moduleMock = createMock(IModule.class);
+		moduleMock.onPostHandshake(notNull());
+
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andStubReturn(Collections.singletonList(moduleMock));
+
 		replayAll();
 
-		Torrent cut = DummyEntity.createUniqueTorrent();
+		Torrent cut = DummyEntity.createUniqueTorrent(torrentClientMock);
 		cut.setMetadata(createCompletedMetadataFileSet(cut));
 		cut.setFileSet(fileSetMock);
 
@@ -574,9 +603,12 @@ public class TorrentTest extends EasyMockSupport {
 		expect(fileSetMock.countCompletedPieces()).andReturn(7).atLeastOnce();
 		expect(fileSetMock.getBitfieldBytes()).andReturn(new byte[2]).atLeastOnce();
 
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andReturn(Collections.emptyList());
+
 		replayAll();
 
-		Torrent cut = DummyEntity.createUniqueTorrent();
+		Torrent cut = DummyEntity.createUniqueTorrent(torrentClientMock);
 		cut.setMetadata(createCompletedMetadataFileSet(cut));
 		cut.setFileSet(fileSetMock);
 
@@ -611,9 +643,12 @@ public class TorrentTest extends EasyMockSupport {
 		expect(fileSetMock.hasPiece(5)).andReturn(true);
 		expect(fileSetMock.hasPiece(anyInt())).andReturn(false).times(94);
 
+		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		expect(torrentClientMock.getModules()).andStubReturn(Collections.emptyList());
+
 		replayAll();
 
-		Torrent cut = DummyEntity.createUniqueTorrent();
+		Torrent cut = DummyEntity.createUniqueTorrent(torrentClientMock);
 		cut.setMetadata(createCompletedMetadataFileSet(cut));
 		cut.setFileSet(fileSetMock);
 

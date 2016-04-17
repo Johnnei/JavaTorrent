@@ -14,6 +14,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
 import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
 import org.johnnei.javatorrent.disk.IDiskJob;
+import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
@@ -108,6 +109,9 @@ public class Torrent {
 		}
 
 		peer.getBitTorrentSocket().setPassedHandshake();
+		for (IModule module : torrentClient.getModules()) {
+			module.onPostHandshake(peer);
+		}
 		sendHaveMessages(peer);
 
 		synchronized (this) {
@@ -199,18 +203,20 @@ public class Torrent {
 	/**
 	 * Tells the torrent to save a block of data
 	 *
+	 * @param fileSet The fileset for which the block of data has been received.
 	 * @param index The piece index
 	 * @param offset The offset within the piece
 	 * @param data The bytes to be stored
 	 */
-	public void onReceivedBlock(int index, int offset, byte[] data) {
-		int blockIndex = offset / files.getBlockSize();
+	public void onReceivedBlock(AbstractFileSet fileSet, int index, int offset, byte[] data) {
+		int blockIndex = offset / fileSet.getBlockSize();
 
-		Piece piece = files.getPiece(index);
+		Piece piece = fileSet.getPiece(index);
 		if (piece.getBlockSize(blockIndex) != data.length) {
+			LOGGER.debug("Received incorrect sized block for piece {}, offset {}", index, offset);
 			piece.setBlockStatus(blockIndex, BlockStatus.Needed);
 		} else {
-			addDiskJob(new DiskJobWriteBlock(files.getPiece(index), blockIndex, data, this::onStoreBlockComplete));
+			addDiskJob(new DiskJobWriteBlock(piece, blockIndex, data, this::onStoreBlockComplete));
 		}
 	}
 
@@ -226,19 +232,21 @@ public class Torrent {
 	}
 
 	private void onCheckPieceHashComplete(DiskJobCheckHash checkJob) {
-		if (isDownloadingMetadata()) {
-			return;
-		}
-
 		Piece piece = checkJob.getPiece();
 		if (!checkJob.isMatchingHash()) {
+			LOGGER.debug("Piece hash mismatched");
 			piece.onHashMismatch();
 			return;
 		}
 
-		files.setHavingPiece(checkJob.getPiece().getIndex());
-		broadcastMessage(new MessageHave(checkJob.getPiece().getIndex()));
-		downloadedBytes += piece.getSize();
+		// TODO Generalize this code to use fileset of the given piece.
+		if (isDownloadingMetadata()) {
+			metadata.setHavingPiece(piece.getIndex());
+		} else {
+			files.setHavingPiece(piece.getIndex());
+			broadcastMessage(new MessageHave(piece.getIndex()));
+			downloadedBytes += piece.getSize();
+		}
 		LOGGER.debug("Completed piece {}", piece.getIndex());
 	}
 

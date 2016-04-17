@@ -1,19 +1,34 @@
-package org.johnnei.javatorrent.protocol.messages.ut_metadata;
+package org.johnnei.javatorrent.module;
 
+import java.io.File;
 import java.util.Map;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
-import org.johnnei.javatorrent.module.MetadataInformation;
 import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
+import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageData;
+import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageReject;
+import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageRequest;
+import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageUnknown;
+import org.johnnei.javatorrent.utils.Argument;
 
 public class UTMetadataExtension implements IExtension {
+
+	private File torrentFileFolder;
+
+	private File downloadFolder;
+
+	public UTMetadataExtension(File torrentFileFolder, File downloadFolder) {
+		this.torrentFileFolder = Argument.requireNonNull(torrentFileFolder, "Torrent file folder must be configured.");
+		this.downloadFolder = Argument.requireNonNull(downloadFolder, "Download folder must be configured.");
+	}
 
 	@Override
 	public IMessage getMessage(InStream inStream) {
@@ -37,7 +52,7 @@ public class UTMetadataExtension implements IExtension {
 			break;
 
 		default:
-			message = null;
+			message = new MessageUnknown();
 			break;
 		}
 
@@ -72,6 +87,23 @@ public class UTMetadataExtension implements IExtension {
 		MetadataInformation metadataInformation = new MetadataInformation();
 		metadataInformation.setMetadataSize((int) dictionary.get("metadata_size"));
 		peer.addModuleInfo(metadataInformation);
+	}
+
+	/**
+	 * Gets the location of the torrent file for the given torrent.
+	 * @param torrent The torrent for which the metadata file location is requested.
+	 * @return The metadata file location for the given torrent.
+	 */
+	public File getTorrentFile(Torrent torrent) {
+		return new File(torrentFileFolder, String.format("%s.torrent", torrent.getHash().toLowerCase()));
+	}
+
+	/**
+	 * Returns the root of the download folder.
+	 * @return The download folder.
+	 */
+	public File getDownloadFolder() {
+		return downloadFolder;
 	}
 
 }

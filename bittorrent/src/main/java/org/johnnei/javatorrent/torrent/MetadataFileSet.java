@@ -23,9 +23,9 @@ public class MetadataFileSet extends AbstractFileSet {
 			throw new IllegalArgumentException("Metadata file must exist.");
 		}
 
+		this.fileSize = (int) metadataFile.length();
 		this.fileInfos = new ArrayList<>();
 		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile, 1));
-		this.fileSize = (int) metadataFile.length();
 		this.pieces = new ArrayList<>(1);
 		this.pieces.add(new Piece(this, torrent.getHashArray(), 0, fileSize, BLOCK_SIZE));
 	}

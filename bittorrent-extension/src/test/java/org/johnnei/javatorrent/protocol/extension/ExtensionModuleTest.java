@@ -5,11 +5,11 @@ import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageHandshake;
 import org.johnnei.javatorrent.test.StubExtension;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.network.BitTorrentSocket;
 
 import org.easymock.Capture;
 import org.easymock.EasyMockRunner;
@@ -24,6 +24,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.newCapture;
 import static org.easymock.EasyMock.notNull;
+import static org.johnnei.javatorrent.test.TestUtils.assertNotPresent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -86,8 +87,11 @@ public class ExtensionModuleTest extends EasyMockSupport {
 				.build();
 
 		assertEquals("Extension ID 1 was expected to be ut_metadata", utMetadata, cut.getExtensionById(1).get().getExtensionName());
+		assertEquals("Extension ut_metadata was expected to be found", extensionOne, cut.getExtensionByName(utMetadata).get());
 		assertEquals("Extension ID 2 was expected to be jt_test", jtTest, cut.getExtensionById(2).get().getExtensionName());
+		assertEquals("Extension jt_test was expected to be found", extensionTwo, cut.getExtensionByName(jtTest).get());
 		assertEquals("Extension ID 3 was expected to be empty", Optional.empty(), cut.getExtensionById(3));
+		assertNotPresent("No extension with the given name registered", cut.getExtensionByName("jt_nope"));
 	}
 
 	@Test
@@ -112,6 +116,7 @@ public class ExtensionModuleTest extends EasyMockSupport {
 
 		expect(peerMock.hasExtension(eq(5), eq(0x10))).andReturn(true).atLeastOnce();
 		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock).atLeastOnce();
+		peerMock.addModuleInfo(isA(PeerExtensions.class));
 		socketMock.enqueueMessage(and(notNull(), isA(MessageExtension.class)));
 
 		replayAll();

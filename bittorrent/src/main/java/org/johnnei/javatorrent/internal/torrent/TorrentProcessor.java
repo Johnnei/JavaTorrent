@@ -55,22 +55,27 @@ class TorrentProcessor {
 	}
 
 	public void updateTorrentState() {
-		if (downloadPhase.isDone()) {
-			downloadPhase.onPhaseExit();
-			Optional<IDownloadPhase> newPhase = torrentClient.getPhaseRegulator().createNextPhase(downloadPhase, torrentClient, torrent);
+		try {
+			if (downloadPhase.isDone()) {
+				downloadPhase.onPhaseExit();
+				Optional<IDownloadPhase> newPhase = torrentClient.getPhaseRegulator().createNextPhase(downloadPhase, torrentClient, torrent);
 
-			if (newPhase.isPresent()) {
-				LOGGER.info("Torrent transitioning from {} to {}", downloadPhase, newPhase.get());
-				downloadPhase = newPhase.get();
-				downloadPhase.onPhaseEnter();
-			} else {
-				LOGGER.info("Torrent ended from {}", downloadPhase);
-				shutdownTorrent();
-				return;
+				if (newPhase.isPresent()) {
+					LOGGER.info("Torrent transitioning from {} to {}", downloadPhase, newPhase.get());
+					downloadPhase = newPhase.get();
+					downloadPhase.onPhaseEnter();
+				} else {
+					LOGGER.info("Torrent ended from {}", downloadPhase);
+					shutdownTorrent();
+					return;
+				}
 			}
-		}
 
-		downloadPhase.process();
+			downloadPhase.process();
+		} catch (Exception e) {
+			LOGGER.error("Failed to update torrent state", e);
+			shutdownTorrent();
+		}
 	}
 
 	public void shutdownTorrent() {

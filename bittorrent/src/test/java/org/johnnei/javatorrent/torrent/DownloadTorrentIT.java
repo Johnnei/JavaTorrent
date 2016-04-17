@@ -24,6 +24,7 @@ import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,9 @@ public class DownloadTorrentIT {
 
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+	@Rule
+	public Timeout timeout = new Timeout(20, TimeUnit.MINUTES);
 
 	private void assertPreconditions(File torrentFile, File resultFile) throws Exception {
 		if (!resultFile.exists()) {

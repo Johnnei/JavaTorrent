@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.download.algos;
+package org.johnnei.javatorrent.phases;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,10 +6,13 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
-import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.module.UTMetadataExtension;
+import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
+import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
+import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +30,24 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 
 	protected TorrentClient torrentClient;
 
-	protected File metadataFile;
+	protected final File metadataFile;
+
+	protected final File downloadFolderRoot;
 
 	private IChokingStrategy chokingStrategy;
 
-	public AMetadataPhase(TorrentClient torrentClient, Torrent torrent, File metadataFile) {
+	public AMetadataPhase(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
-		this.metadataFile = metadataFile;
+
+		ExtensionModule extensionModule = torrentClient.getModule(ExtensionModule.class)
+				.orElseThrow(() -> new IllegalStateException("Metadata phase registered without registering Extension module."));
+		UTMetadataExtension metadataExtension = (UTMetadataExtension) extensionModule.getExtensionByName(UTMetadata.NAME)
+				.orElseThrow(() -> new IllegalStateException("Metadata phase registered without registering ut_metadata extension."));
+
+		this.metadataFile = metadataExtension.getTorrentFile(torrent);
+		this.downloadFolderRoot = metadataExtension.getDownloadFolder();
+		chokingStrategy = new PermissiveStrategy();
 	}
 
 	@Override

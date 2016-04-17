@@ -54,17 +54,35 @@ public class ExtensionModule implements IModule {
 	@Override
 	public void onPostHandshake(Peer peer) throws IOException {
 		if (peer.hasExtension(5, 0x10)) {
+			// Set up the container for the extensions.
+			peer.addModuleInfo(new PeerExtensions());
 			// Extended Messages extension
 			sendExtendedMessages(peer);
 		}
 	}
 
+	/**
+	 * Gets the extension associated with the given ID.
+	 * @param extensionId The id of the extension
+	 * @return The extension or {@link Optional#empty()} if not existing.
+	 *
+	 * @see #getExtensionByName(String)
+	 */
 	public Optional<IExtension> getExtensionById(int extensionId) {
 		if (!extensionsById.containsKey(extensionId)) {
 			return Optional.empty();
 		}
 
 		return Optional.of(extensionsById.get(extensionId));
+	}
+
+	/**
+	 * Gets the extension associated with the given name.
+	 * @param name The name of the extension
+	 * @return The extension of {@link Optional#empty()}} if not existing.
+	 */
+	public Optional<IExtension> getExtensionByName(String name) {
+		return extensionsById.values().stream().filter(extension -> extension.getExtensionName().equals(name)).findAny();
 	}
 
 	private void sendExtendedMessages(Peer peer) throws IOException {

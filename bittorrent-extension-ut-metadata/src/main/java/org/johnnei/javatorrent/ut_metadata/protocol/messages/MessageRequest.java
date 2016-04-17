@@ -1,9 +1,9 @@
-package org.johnnei.javatorrent.protocol.messages.ut_metadata;
+package org.johnnei.javatorrent.ut_metadata.protocol.messages;
 
 import java.util.Optional;
 
 import org.johnnei.javatorrent.disk.DiskJobReadBlock;
-import org.johnnei.javatorrent.protocol.UTMetadata;
+import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
@@ -13,11 +13,12 @@ import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageRequest extends Message {
+public class MessageRequest extends AbstractMessage {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MessageRequest.class);
 
 	public MessageRequest() {
+		/* Default constructor must be available to read this message */
 	}
 
 	public MessageRequest(int piece) {
@@ -33,12 +34,12 @@ public class MessageRequest extends Message {
 				return;
 			}
 
-			MessageReject mr = new MessageReject((int) dictionary.get("piece"));
+			MessageReject mr = new MessageReject((int) dictionary.get(PIECE_KEY));
 			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mr);
 			peer.getBitTorrentSocket().enqueueMessage(extendedMessage);
 		} else {
 			// The ut_metadata defines each section as a piece, but internally we map them as a single torrent piece so we can re-use the logic.
-			int blockIndex = (int) dictionary.get("piece");
+			int blockIndex = (int) dictionary.get(PIECE_KEY);
 
 			Piece piece = peer.getTorrent().getMetadata().get().getPiece(0);
 
@@ -54,7 +55,8 @@ public class MessageRequest extends Message {
 		int blockIndex = readJob.getOffset() / MetadataFileSet.BLOCK_SIZE;
 		Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
 		if (!peerExtensions.isPresent() || !peerExtensions.get().hasExtension(UTMetadata.NAME)) {
-			LOGGER.warn("Request to send Metadata block {} to {} has been rejected. Peer doesn't know about UT_METADATA", blockIndex, peer);
+			LOGGER.warn("Can't satisfy request to send Metadata block {} to {}. Missing ut_metadata id assignment for peer.", blockIndex, peer);
+			peer.getBitTorrentSocket().close();
 			return;
 		}
 
@@ -75,7 +77,7 @@ public class MessageRequest extends Message {
 
 	@Override
 	public String toString() {
-		return "UT_Metadata Request";
+		return String.format("MessageRequest[piece=%s]", dictionary.get(PIECE_KEY));
 	}
 
 }
