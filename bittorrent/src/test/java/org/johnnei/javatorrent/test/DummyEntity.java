@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.function.Supplier;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -82,6 +83,21 @@ public class DummyEntity {
 
 		return new Torrent.Builder()
 				.setHash(hash)
+				.setName("Dummy Torrent")
+				.build();
+	}
+
+	public static Torrent createUniqueTorrent(TorrentClient torrentClient, Torrent... torrents) {
+		byte[][] hashes = new byte[torrents.length][];
+		for (int i = 0; i < torrents.length; i++) {
+			hashes[i] = torrents[i].getHashArray();
+		}
+
+		byte[] hash = createUniqueTorrentHash(hashes);
+
+		return new Torrent.Builder()
+				.setHash(hash)
+				.setTorrentClient(torrentClient)
 				.setName("Dummy Torrent")
 				.build();
 	}

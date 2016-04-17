@@ -54,6 +54,8 @@ public class ExtensionModule implements IModule {
 	@Override
 	public void onPostHandshake(Peer peer) throws IOException {
 		if (peer.hasExtension(5, 0x10)) {
+			// Set up the container for the extensions.
+			peer.addModuleInfo(new PeerExtensions());
 			// Extended Messages extension
 			sendExtendedMessages(peer);
 		}

@@ -18,7 +18,6 @@ import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
 
 import org.easymock.EasyMockSupport;
@@ -145,7 +144,6 @@ public class PhaseMetadataTest extends EasyMockSupport {
 		expect(pieceMockOne.getRequestBlock()).andReturn(Optional.of(blockMock));
 		expect(pieceMockTwo.getRequestBlock()).andReturn(Optional.empty());
 
-		peerWithThreeBlocks.addBlockRequest(0, 0, 0, PeerDirection.Download);
 		expect(peerWithThreeBlocks.getBitTorrentSocket()).andReturn(socketMock);
 		socketMock.enqueueMessage(isA(MessageExtension.class));
 

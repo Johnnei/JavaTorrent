@@ -84,6 +84,7 @@ public class MessageHandshake implements IMessage {
 
 						peerExtensions.get().registerExtension((Integer) extensionData.get(extension.getExtensionName()), extension.getExtensionName());
 						extension.processHandshakeMetadata(peer, dictionary, extensionData);
+						LOGGER.trace("Registered {}={} to {}", extensionData.get(extension.getExtensionName()), extension.getExtensionName(), peer);
 					});
 			}
 			Object reqq = dictionary.get("reqq");

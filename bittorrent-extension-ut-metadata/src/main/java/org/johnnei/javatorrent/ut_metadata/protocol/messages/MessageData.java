@@ -55,7 +55,6 @@ public class MessageData extends AbstractMessage {
 		}
 
 		peer.getTorrent().onReceivedBlock(metadataFileSet.get(), 0, blockIndex * metadataFileSet.get().getBlockSize(), data);
-		peer.onReceivedBlock(0, blockIndex);
 	}
 
 	@Override

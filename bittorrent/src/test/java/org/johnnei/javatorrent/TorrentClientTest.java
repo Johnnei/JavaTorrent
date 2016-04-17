@@ -96,6 +96,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		String clientIdentifier = new String(peerId, 0, 8);
 		assertTrue("Incorrect client identifier in peer ID", Pattern.matches("-JT\\d{4}-", clientIdentifier));
 		TestUtils.assertPresent("Missing module", torrentClient.getModule(moduleMock.getClass()));
+		assertTrue("Missing module", torrentClient.getModules().contains(moduleMock));
 	}
 
 	@Test(expected = IllegalStateException.class)

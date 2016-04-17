@@ -54,6 +54,7 @@ public class MetadataFileSetTest {
 		MetadataFileSet cut = new MetadataFileSet(DummyEntity.createUniqueTorrent(), torrentFile);
 
 		assertEquals("Piece size should be equal to the file size", torrentFile.length(), cut.getPieceSize());
+		assertEquals("Total size should be equal to the file size", torrentFile.length(), cut.getTotalFileSize());
 	}
 
 	@Test

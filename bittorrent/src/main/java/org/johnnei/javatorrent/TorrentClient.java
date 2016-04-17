@@ -3,6 +3,7 @@ package org.johnnei.javatorrent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -258,6 +259,14 @@ public class TorrentClient {
 	 */
 	public <T extends IModule> Optional<T> getModule(Class<T> type) {
 		return (Optional<T>) modules.stream().filter(m -> m.getClass().equals(type)).findAny();
+	}
+
+	/**
+	 * Gets an unmodifiable view of the registered modules to this torrent client.
+	 * @return The collection of modules.
+	 */
+	public Collection<IModule> getModules() {
+		return Collections.unmodifiableCollection(modules);
 	}
 
 	/**

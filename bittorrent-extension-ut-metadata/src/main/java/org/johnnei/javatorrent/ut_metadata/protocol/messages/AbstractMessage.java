@@ -39,9 +39,15 @@ public abstract class AbstractMessage implements IMessage {
 
 	@Override
 	public void read(InStream inStream) {
-		Bencode decoder = new Bencode(inStream.readString(inStream.available()));
+		inStream.mark();
+		String dictionaryString = inStream.readString(inStream.available());
+		Bencode decoder = new Bencode(dictionaryString);
+
 		dictionary = decoder.decodeDictionary();
-		inStream.moveBack(decoder.remainingChars());
+
+		int readCharacters = dictionaryString.length() - decoder.remainingChars();
+		inStream.resetToMark();
+		inStream.skipBytes(readCharacters);
 	}
 
 }

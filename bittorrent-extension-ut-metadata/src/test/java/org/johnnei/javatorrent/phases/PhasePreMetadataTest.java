@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.phases;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
@@ -13,6 +14,7 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.utils.StringUtils;
 
 import org.easymock.EasyMockSupport;
 import org.junit.Rule;
@@ -22,6 +24,7 @@ import org.junit.rules.TemporaryFolder;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.notNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -70,6 +73,23 @@ public class PhasePreMetadataTest extends EasyMockSupport {
 		verifyAll();
 
 		assertTrue("Peer has information so it should have been done.", result);
+	}
+
+	@Test
+	public void testIsDoneNoPeers() throws Exception {
+		setUpTorrentClient();
+		metadataFile = temporaryFolder.newFile();
+
+		expect(torrentMock.getPeers()).andStubReturn(Collections.emptyList());
+
+		replayAll();
+
+		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		boolean result = cut.isDone();
+
+		verifyAll();
+
+		assertFalse("No peers registered so can't be done.", result);
 	}
 
 	@Test
@@ -140,15 +160,29 @@ public class PhasePreMetadataTest extends EasyMockSupport {
 		setUpTorrentClient();
 		metadataFile = temporaryFolder.newFile();
 
-		expect(torrentMock.getHashArray()).andStubReturn(DummyEntity.createUniqueTorrentHash());
+		byte[] hash = DummyEntity.createUniqueTorrentHash();
+
+		Peer peerMock = createMock(Peer.class);
+
+		MetadataInformation info = new MetadataInformation();
+		info.setMetadataSize(42);
+		expect(torrentMock.getPeers()).andStubReturn(Collections.singletonList(peerMock));
+		expect(peerMock.getModuleInfo(eq(MetadataInformation.class))).andReturn(Optional.of(info));
+
+		expect(torrentMock.getHashArray()).andStubReturn(hash);
+		expect(torrentMock.getHash()).andStubReturn(StringUtils.byteArrayToString(hash));
 		torrentMock.setMetadata(notNull());
 
 		replayAll();
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		cut.isDone();
 		cut.onPhaseExit();
 
 		verifyAll();
+
+		assertTrue(String.format("Metadata file %s should have been created", metadataFile), metadataFile.exists());
+		assertEquals("Incorrect metadata size", 42, metadataFile.length());
 	}
 
 	@Test
