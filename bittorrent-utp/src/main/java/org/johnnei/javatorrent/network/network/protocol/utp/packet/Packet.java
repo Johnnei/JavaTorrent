@@ -4,10 +4,10 @@ import org.johnnei.javatorrent.network.protocol.UtpSocket;
 import org.johnnei.javatorrent.network.Stream;
 
 public abstract class Packet implements Comparable<Packet> {
-	
+
 	public static final int VERSION = 1;
 	protected UtpSocket socket;
-	
+
 	protected short connectionId;
 	protected long sendTimestamp;
 	protected long delay;
@@ -15,20 +15,20 @@ public abstract class Packet implements Comparable<Packet> {
 	protected int sequenceNumber;
 	protected int acknowledgeNumber;
 	protected int timesSent;
-	
+
 	public Packet() {
 		sequenceNumber = -1;
 		timesSent = 0;
 	}
-	
+
 	public Packet(int sequenceNumber) {
 		this.sequenceNumber = sequenceNumber;
 	}
-	
+
 	public void setSocket(UtpSocket socket) {
 		this.socket = socket;
 	}
-	
+
 	/**
 	 * Writes the message to the outputstream
 	 * @param outStream
@@ -51,7 +51,7 @@ public abstract class Packet implements Comparable<Packet> {
 		writePacket(outStream);
 		++timesSent;
 	}
-	
+
 	/**
 	 * Reads the message from the inputstream
 	 * @param inStream
@@ -74,21 +74,21 @@ public abstract class Packet implements Comparable<Packet> {
 		}
 		readPacket(inStream);
 	}
-	
+
 	/**
 	 * Writes the message to the output stream
-	 * 
+	 *
 	 * @param outStream
 	 */
 	protected abstract void writePacket(Stream outStream);
 
 	/***
 	 * Read a message from the inputStream
-	 * 
+	 *
 	 * @param inStream
 	 */
 	protected abstract void readPacket(Stream inStream);
-	
+
 	/**
 	 * Gets the sequence number for this packet<br/>
 	 * In PacketData this will be overriden to increase the number
@@ -102,11 +102,11 @@ public abstract class Packet implements Comparable<Packet> {
 			return sequenceNumber;
 		}
 	}
-	
+
 	public int getSequenceNumber() {
 		return sequenceNumber;
 	}
-	
+
 	public long getSendTime() {
 		return sendTimestamp;
 	}
@@ -122,36 +122,45 @@ public abstract class Packet implements Comparable<Packet> {
 		//Process Packet
 		processPacket(socket);
 	}
-	
+
 	public abstract void processPacket(UtpSocket socket);
-	
+
 	public abstract int getId();
-	
+
 	public abstract int getSize();
-	
+
 	public boolean needAcknowledgement() {
 		return false;
 	}
-	
+
 	@Override
 	public int compareTo(Packet otherPacket) {
 		return sequenceNumber - otherPacket.sequenceNumber;
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
-		if(o instanceof Packet) {
-			Packet p = (Packet)o;
-			return p.sequenceNumber == sequenceNumber;
-		} else {
+		if (o == null) {
 			return false;
 		}
+
+		if (!(o instanceof Packet)) {
+			return false;
+		}
+
+		Packet p = (Packet) o;
+		return p.sequenceNumber == sequenceNumber;
+	}
+
+	@Override
+	public int hashCode() {
+		return sequenceNumber;
 	}
 
 	public short getConnectionId() {
 		return connectionId;
 	}
-	
+
 	/**
 	 * Checks if this packet is allowed to be used in the RTT calculations
 	 * @return true if the packet was sent exactly once

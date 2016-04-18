@@ -3,13 +3,14 @@ package org.johnnei.javatorrent.network.protocol.utp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.protocol.UtpSocket;
 import org.johnnei.javatorrent.network.Stream;
 import org.johnnei.javatorrent.network.network.protocol.utp.packet.Packet;
-import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
+import org.johnnei.javatorrent.network.protocol.UtpSocket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +39,11 @@ public class UdpMultiplexer extends Thread {
 	/**
 	 * All {@link UtpSocket}s which have registered to listen for packets
 	 */
-	private BinarySearchTree<UtpSocket> utpSockets;
+	private Map<Short, UtpSocket> utpSockets;
 
 	private UdpMultiplexer(TorrentClient torrentClient) {
 		super("UdpMultiplexer");
-		utpSockets = new BinarySearchTree<>();
+		utpSockets = new HashMap<>();
 		packetFactory = new UtpPacketFactory();
 		try {
 			multiplexerSocket = new DatagramSocket(torrentClient.getDownloadPort());
@@ -58,26 +59,26 @@ public class UdpMultiplexer extends Thread {
 	 * Packet received will only be directed to registered sockets
 	 * @param socket The socket to register
 	 */
-	public void register(UtpSocket socket) {
+	public void register(short connectionId, UtpSocket socket) {
 		synchronized (BST_LOCK) {
-			utpSockets.add(socket);
+			utpSockets.put(connectionId, socket);
 		}
 	}
 
 	/**
 	 * Removes a socket from the UdpMultiplexer
-	 * @param socket The socket to remove
+	 * @param connectionId The socket to remove
 	 */
-	public void unregister(UtpSocket socket) {
+	public void unregister(short connectionId) {
 		synchronized (BST_LOCK) {
-			utpSockets.remove(socket);
+			utpSockets.remove(connectionId);
 		}
 	}
 
 	public void updateTimeout() {
 		Iterator<UtpSocket> i;
 		synchronized (BST_LOCK) {
-			 i = utpSockets.iterator();
+			 i = utpSockets.values().iterator();
 		}
 		while(i.hasNext()) {
 			UtpSocket socket = i.next();
@@ -116,8 +117,7 @@ public class UdpMultiplexer extends Thread {
 						Packet utpPacket = packetFactory.getFromId(type);
 						Stream inStream = new Stream(packet.getData(), packet.getOffset(), packet.getLength());
 						utpPacket.read(inStream);
-						UtpSocket socket = new UtpSocket(utpPacket.getConnectionId());
-						socket = utpSockets.find(socket);
+						UtpSocket socket = utpSockets.get(utpPacket.getConnectionId());
 						if(socket != null) {
 							socket.updateLastInteraction();
 							utpPacket.process(socket);

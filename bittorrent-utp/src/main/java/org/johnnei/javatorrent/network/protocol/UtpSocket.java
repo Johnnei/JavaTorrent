@@ -6,7 +6,9 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
 
 import org.johnnei.javatorrent.network.Stream;
@@ -22,9 +24,8 @@ import org.johnnei.javatorrent.network.protocol.utp.UtpClient;
 import org.johnnei.javatorrent.network.protocol.utp.UtpInputStream;
 import org.johnnei.javatorrent.network.protocol.utp.UtpOutputStream;
 import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.torrent.util.tree.BinarySearchTree;
 
-public class UtpSocket implements ISocket, Comparable<UtpSocket> {
+public class UtpSocket implements ISocket {
 
 	private InetSocketAddress socketAddress;
 	private ConnectionState connectionState;
@@ -45,7 +46,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	/**
 	 * The packets which not yet have been acked
 	 */
-	private BinarySearchTree<Packet> packetsInFlight;
+	private Map<Integer, Packet> packetsInFlight;
 	/**
 	 * The total amount of bytes in flight
 	 */
@@ -96,7 +97,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		myClient = new UtpClient();
 		peerClient = new UtpClient();
 		packetQueue = new LinkedList<>();
-		packetsInFlight = new BinarySearchTree<>();
+		packetsInFlight = new HashMap<>();
 		inStream = new UtpInputStream();
 		outStream = new UtpOutputStream(this);
 		timeout = 1000;
@@ -105,7 +106,6 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
-		//System.out.println("[uTP] Connecting to " + endpoint);
 		this.socketAddress = endpoint;
 		peerClient.setConnectionId(new Random().nextInt() & 0xFFFF);
 		myClient.setConnectionId(peerClient.getConnectionId() + 1);
@@ -114,7 +114,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		timeout = 1000;
 		PacketSyn connectPacket = new PacketSyn();
 		int tries = 0;
-		UdpMultiplexer.getInstance().register(this);
+		UdpMultiplexer.getInstance().register((short) peerClient.getConnectionId(), this);
 		while(tries < 3 && connectionState != ConnectionState.CONNECTED) {
 			sendPacket(connectPacket);
 			tries++;
@@ -126,7 +126,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		}
 		if(connectionState == ConnectionState.CONNECTING) {
 			connectionState = ConnectionState.CLOSED;
-			UdpMultiplexer.getInstance().unregister(this);
+			UdpMultiplexer.getInstance().unregister((short) peerClient.getConnectionId());
 			throw new IOException("Host unreachable");
 		}
 	}
@@ -169,11 +169,6 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 
 	public UtpClient getPeerClient() {
 		return peerClient;
-	}
-
-	@Override
-	public int compareTo(UtpSocket otherSocket) {
-		return peerClient.getConnectionId() - otherSocket.getPeerClient().getConnectionId();
 	}
 
 	/**
@@ -277,12 +272,11 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		DatagramPacket udpPacket;
 		try {
 			udpPacket = new DatagramPacket(dataBuffer, dataBuffer.length, socketAddress);
-			//System.out.println(myClient.getConnectionId() + "| Send " + packet.getClass().getSimpleName() + " with id: " + packet.getSequenceNumber() + ", their delay: " + peerClient.getDelay());
 			if(!UdpMultiplexer.getInstance().send(udpPacket)) {
 				throw new SocketException("Failed to send packet");
 			}
-			if(packet.needAcknowledgement() && packetsInFlight.find(packet) == null) {
-				packetsInFlight.add(packet);
+			if(packet.needAcknowledgement() && packetsInFlight.get(packet.getSequenceNumber()) == null) {
+				packetsInFlight.put(packet.getSequenceNumber(), packet);
 				bytesInFlight += dataBuffer.length;
 			}
 		} catch (SocketException e) {
@@ -312,7 +306,6 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 	}
 
 	public void setConnectionState(ConnectionState connectionState) {
-		//System.out.println(myClient.getConnectionId() + "| " + connectionState);
 		this.connectionState = connectionState;
 	}
 
@@ -346,7 +339,7 @@ public class UtpSocket implements ISocket, Comparable<UtpSocket> {
 		if(connectionState == ConnectionState.DISCONNECTING) {
 			if(acknowledgeNumber == finalAckNumber && bytesInFlight == 0) {
 				setConnectionState(ConnectionState.CLOSED);
-				UdpMultiplexer.getInstance().unregister(this);
+				UdpMultiplexer.getInstance().unregister((short) peerClient.getConnectionId());
 			}
 		}
 	}
