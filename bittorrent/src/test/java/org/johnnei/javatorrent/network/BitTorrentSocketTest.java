@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.powermock.reflect.Whitebox;
 
+import static org.easymock.EasyMock.anyInt;
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
@@ -233,9 +234,11 @@ public class BitTorrentSocketTest extends EasyMockSupport {
 
 		Capture<byte[]> bufferCapture = EasyMock.newCapture();
 
-		expect(inputStream.read()).andReturn(0).times(3);
-		expect(inputStream.read()).andReturn(1);
-		expect(inputStream.read(capture(bufferCapture), eq(0), eq(1))).andAnswer(() -> {
+		expect(inputStream.read(capture(bufferCapture), eq(0), anyInt())).andAnswer(() -> {
+			bufferCapture.getValue()[3] = 1;
+			return 4;
+		});
+		expect(inputStream.read(capture(bufferCapture), eq(0), anyInt())).andAnswer(() -> {
 			bufferCapture.getValue()[0] = 1;
 			return 1;
 		});

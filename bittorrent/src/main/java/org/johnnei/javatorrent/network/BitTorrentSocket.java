@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.network;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Clock;
@@ -152,8 +154,8 @@ public class BitTorrentSocket {
 	}
 
 	private void createIOStreams() throws IOException {
-		inStream = new ByteInputStream(socket.getInputStream());
-		outStream = new ByteOutputStream(socket.getOutputStream());
+		inStream = new ByteInputStream(new BufferedInputStream(socket.getInputStream()));
+		outStream = new ByteOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 	}
 
 	public IMessage readMessage() {
