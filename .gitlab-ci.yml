@@ -1,0 +1,16 @@
+stages:
+    - build
+    - test
+    - sonar
+
+build:
+    stage: build
+    script: "mvn clean test"
+
+test:
+    stage: test
+    script: "mvn verify"
+
+sonar:
+    stage: sonar
+    script: "mvn sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org"
