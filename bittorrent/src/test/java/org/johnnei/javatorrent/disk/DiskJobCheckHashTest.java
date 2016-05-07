@@ -11,6 +11,8 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -21,11 +23,14 @@ import static org.junit.Assert.assertTrue;
  */
 public class DiskJobCheckHashTest {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobCheckHashTest.class);
+
 	private CountDownLatch countDownLatch;
 
 	private final File testFile;
 	private final long testFileSize;
 	private final File testFileMismatch;
+	private final long testFileMismatchSize;
 
 	private final byte[] expectedHash = new byte[] {
 			(byte) 0xE9,        0x3C, (byte) 0xF8,        0x55, (byte) 0xC6,
@@ -38,6 +43,10 @@ public class DiskJobCheckHashTest {
 		testFile = new File(DiskJobCheckHashTest.class.getResource("checkhashfile.txt").toURI());
 		testFileSize = testFile.length();
 		testFileMismatch = new File(DiskJobCheckHashTest.class.getResource("checkhashfile-mismatch.txt").toURI());
+		testFileMismatchSize = testFileMismatch.length();
+
+		LOGGER.info("Correct hash file: {} bytes", testFileSize);
+		LOGGER.info("Mismatch hash file: {} bytes", testFileMismatchSize);
 	}
 
 	@Before
