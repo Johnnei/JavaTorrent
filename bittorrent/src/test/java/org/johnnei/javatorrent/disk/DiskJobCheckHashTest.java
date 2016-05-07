@@ -24,7 +24,8 @@ public class DiskJobCheckHashTest {
 	private CountDownLatch countDownLatch;
 
 	private final File testFile;
-	private final File testFileMistmatch;
+	private final long testFileSize;
+	private final File testFileMismatch;
 
 	private final byte[] expectedHash = new byte[] {
 			(byte) 0xE9,        0x3C, (byte) 0xF8,        0x55, (byte) 0xC6,
@@ -35,7 +36,8 @@ public class DiskJobCheckHashTest {
 
 	public DiskJobCheckHashTest() throws Exception {
 		testFile = new File(DiskJobCheckHashTest.class.getResource("checkhashfile.txt").toURI());
-		testFileMistmatch = new File(DiskJobCheckHashTest.class.getResource("checkhashfile-mismatch.txt").toURI());
+		testFileSize = testFile.length();
+		testFileMismatch = new File(DiskJobCheckHashTest.class.getResource("checkhashfile-mismatch.txt").toURI());
 	}
 
 	@Before
@@ -45,9 +47,9 @@ public class DiskJobCheckHashTest {
 
 	@Test
 	public void testMatchingHash() throws Exception {
-		FileInfo fileInfo = new FileInfo(11560, 0, testFile, 1);
-		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, 11560);
-		Piece piece = new Piece(filesStub, expectedHash, 0, 11560, 11560);
+		FileInfo fileInfo = new FileInfo(testFileSize, 0, testFile, 1);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, (int) testFileSize);
+		Piece piece = new Piece(filesStub, expectedHash, 0, (int) testFileSize, (int) testFileSize);
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> countDownLatch.countDown());
 
 		cut.process();
@@ -58,9 +60,9 @@ public class DiskJobCheckHashTest {
 
 	@Test
 	public void testNonMatchingHash() throws Exception {
-		FileInfo fileInfo = new FileInfo(11560, 0, testFileMistmatch, 1);
-		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, 11560);
-		Piece piece = new Piece(filesStub, expectedHash, 0, 11560, 11560);
+		FileInfo fileInfo = new FileInfo(testFileSize, 0, testFileMismatch, 1);
+		AbstractFileSet filesStub = StubEntity.stubAFiles(1, fileInfo, (int) testFileSize);
+		Piece piece = new Piece(filesStub, expectedHash, 0, (int) testFileSize, (int) testFileSize);
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> countDownLatch.countDown());
 
 		cut.process();
