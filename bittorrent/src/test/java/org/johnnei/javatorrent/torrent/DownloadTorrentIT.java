@@ -3,8 +3,11 @@ package org.johnnei.javatorrent.torrent;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -21,6 +24,9 @@ import org.johnnei.javatorrent.phases.PhaseSeed;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -140,11 +146,40 @@ public class DownloadTorrentIT {
 		return torrent;
 	}
 
+	private void downloadTestFile(File resultFile) throws Exception {
+		LOGGER.info("Downloading test files...");
+		OkHttpClient client = new OkHttpClient();
+		Request request = new Request.Builder()
+				.url("http://download.gimp.org/pub/gimp/v2.8/windows/gimp-2.8.16-setup-1.exe")
+				.build();
+		Response response = client.newCall(request).execute();
+
+		try (FileOutputStream outputStream = new FileOutputStream(resultFile)) {
+			InputStream inputStream = response.body().byteStream();
+
+			byte[] buffer = new byte[32768];
+			int readBytes;
+			while ((readBytes = inputStream.read(buffer)) > 0) {
+				outputStream.write(buffer, 0, readBytes);
+			}
+		}
+	}
+
 	@Test
 	public void testDownloadTorrent() throws Exception {
-		LOGGER.info("Verifying expected torrent files to exist.");
+		URL resultFileUrl = DownloadTorrentIT.class.getResource("/torrent-output/" + EXECUTABLE_NAME);
+		File resultFile;
+
+		if (resultFileUrl != null) {
+			LOGGER.info("Found cached torrent output, using that.");
+			resultFile = new File(resultFileUrl.toURI());
+		} else {
+			resultFile = temporaryFolder.newFile();
+			downloadTestFile(resultFile);
+		}
+
+		LOGGER.info("Verifying torrent files to be the correct ones.");
 		File torrentFile = new File(DownloadTorrentIT.class.getResource(SINGLE_FILE_TORRENT).toURI());
-		File resultFile = new File(DownloadTorrentIT.class.getResource("/torrent-output/" + EXECUTABLE_NAME).toURI());
 
 		assertPreconditions(torrentFile, resultFile);
 		LOGGER.info("Setting up test environment with two half completed downloads.");
