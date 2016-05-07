@@ -35,6 +35,7 @@
     <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
     <dependency.org.apache.logging.log4j.log4j-slf4j-impl>2.5</dependency.org.apache.logging.log4j.log4j-slf4j-impl>
     <dependency.org.easymock.easymock>3.4</dependency.org.easymock.easymock>
+    <dependency.org.mockito.mockito-core.version>1.10.19</dependency.org.mockito.mockito-core.version>
     <dependency.org.powermock.powermock-reflect.version>1.6.4</dependency.org.powermock.powermock-reflect.version>
     <dependency.org.slf4j.slf4j-api>1.7.13</dependency.org.slf4j.slf4j-api>
   </properties>
@@ -184,6 +185,11 @@
         <groupId>com.squareup.okhttp3</groupId>
         <artifactId>okhttp</artifactId>
         <version>3.2.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${dependency.org.mockito.mockito-core.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

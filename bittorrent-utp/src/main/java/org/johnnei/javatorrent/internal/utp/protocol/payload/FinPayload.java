@@ -1,0 +1,28 @@
+package org.johnnei.javatorrent.internal.utp.protocol.payload;
+
+import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
+
+/**
+ * Payload which indicates that this packet is the final packet in terms of sequence number.
+ */
+public class FinPayload extends AbstractEmptyPayload {
+
+	@Override
+	public byte getType() {
+		return UtpProtocol.ST_FIN;
+	}
+
+	@Override
+	public void process(UtpPacket packet, UtpSocketImpl socket) {
+		socket.setEndOfStreamSequenceNumber(packet.getSequenceNumber());
+		socket.setConnectionState(ConnectionState.DISCONNECTING);
+	}
+
+	@Override
+	public String toString() {
+		return "FinPayload[]";
+	}
+}

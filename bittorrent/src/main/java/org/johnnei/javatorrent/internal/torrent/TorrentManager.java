@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
-import org.johnnei.javatorrent.network.PeerConnectionAcceptor;
+import org.johnnei.javatorrent.network.TcpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class TorrentManager {
 	 */
 	public void enableConnectionAcceptor() {
 		try {
-			connectorRunnable = new LoopingRunnable(new PeerConnectionAcceptor(torrentClient));
+			connectorRunnable = new LoopingRunnable(new TcpPeerConnectionAcceptor(torrentClient));
 			Thread connectorThread = new Thread(connectorRunnable, "Connection Acceptor");
 			connectorThread.setDaemon(true);
 			connectorThread.start();

@@ -1,0 +1,128 @@
+package org.johnnei.javatorrent.internal.utp.protocol;
+
+import java.io.IOException;
+
+import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+/**
+ * Tests {@link UtpOutputStream}
+ */
+@RunWith(MockitoJUnitRunner.class)
+public class UtpOutputStreamTest {
+
+	@Mock
+	private UtpSocketImpl socketMock;
+
+	@InjectMocks
+	private UtpOutputStream cut;
+
+	@Before
+	public void setUp() {
+		when(socketMock.getPacketSize()).thenReturn(5);
+	}
+
+	@Test
+	public void testBufferedWrite() throws IOException {
+		cut.write(5);
+		cut.write(4);
+		cut.write(3);
+		cut.write(2);
+		cut.write(1);
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock).send(payloadArgumentCaptor.capture());
+
+		byte[] output = payloadArgumentCaptor.getValue().getData();
+		assertArrayEquals(new byte[] { 5, 4, 3, 2, 1 }, output);
+	}
+
+	@Test
+	public void testBufferedWriteArray() throws IOException {
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 2, 3);
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock).send(payloadArgumentCaptor.capture());
+
+		byte[] output = payloadArgumentCaptor.getValue().getData();
+		assertArrayEquals(new byte[] { 5, 4, 3, 2, 1 }, output);
+	}
+
+	@Test
+	public void testBufferedWriteMixedWriteArray() throws IOException {
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
+		cut.write(3);
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 3, 2);
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock).send(payloadArgumentCaptor.capture());
+
+		byte[] output = payloadArgumentCaptor.getValue().getData();
+		assertArrayEquals(new byte[] { 5, 4, 3, 2, 1 }, output);
+	}
+
+	@Test
+	public void testBufferedWriteArrayMixedWrite() throws IOException {
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 2, 2);
+		cut.write(1);
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock).send(payloadArgumentCaptor.capture());
+
+		byte[] output = payloadArgumentCaptor.getValue().getData();
+		assertArrayEquals(new byte[] { 5, 4, 3, 2, 1 }, output);
+	}
+
+	@Test
+	public void testBufferingOnScalingPacketSize() throws IOException {
+		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
+		when(socketMock.getPacketSize()).thenReturn(10);
+		cut.write(new byte[] { 5, 4, 3, 2, 1, 5, 4, 3, 2, 1 }, 2, 8);
+		cut.write(1);
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock).send(payloadArgumentCaptor.capture());
+
+		byte[] output = payloadArgumentCaptor.getValue().getData();
+		assertArrayEquals(new byte[] { 5, 4, 3, 2, 1, 5, 4, 3, 2, 1 }, output);
+	}
+
+	@Test
+	public void testFlushOnNoWrittenBytes() throws IOException {
+		cut.flush();
+
+		verifyNoMoreInteractions(socketMock);
+	}
+
+	@Test
+	public void testFlush() throws IOException {
+		cut.write(new byte[] { 5, 4 });
+		cut.flush();
+		cut.write(1);
+		cut.write(2);
+		cut.flush();
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock, times(2)).send(payloadArgumentCaptor.capture());
+
+		assertArrayEquals(new byte[] { 5, 4 }, payloadArgumentCaptor.getAllValues().get(0).getData());
+		assertArrayEquals(new byte[] { 1, 2 }, payloadArgumentCaptor.getAllValues().get(1).getData());
+	}
+
+}

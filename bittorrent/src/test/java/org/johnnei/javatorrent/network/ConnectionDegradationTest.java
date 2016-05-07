@@ -78,11 +78,6 @@ public class ConnectionDegradationTest {
 		}
 
 		@Override
-		public boolean isConnecting() {
-			return false;
-		}
-
-		@Override
 		public boolean isClosed() {
 			return false;
 		}

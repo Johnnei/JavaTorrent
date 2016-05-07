@@ -39,12 +39,6 @@ public interface ISocket extends AutoCloseable {
 	public void close() throws IOException;
 
 	/**
-	 * Checks if this socket is connecting
-	 * @return true if the socket is connecting
-	 */
-	public boolean isConnecting();
-
-	/**
 	 * Checks if the connection has been closed
 	 * @return true if the connection is closing/closed
 	 */
