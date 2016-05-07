@@ -33,10 +33,11 @@ public class DiskJobCheckHashTest {
 	private final long testFileMismatchSize;
 
 	private final byte[] expectedHash = new byte[] {
-			(byte) 0xE9,        0x3C, (byte) 0xF8,        0x55, (byte) 0xC6,
-			(byte) 0x96, (byte) 0xB2,        0x06, (byte) 0xB4,        0x54,
-			(byte) 0xA0,        0x23,        0x49,        0x01, (byte) 0x99,
-			       0x21,( byte) 0xAF,        0x54,        0x1F,        0x7F
+			(byte) 0x11, (byte) 0xfb, (byte) 0x97, (byte) 0x0c,
+			(byte) 0xfe, (byte) 0x8e, (byte) 0xcd, (byte) 0x89,
+			(byte) 0xaf, (byte) 0xa7, (byte) 0x50, (byte) 0xd0,
+			(byte) 0x64, (byte) 0x54, (byte) 0xdc, (byte) 0xd1,
+			(byte) 0x60, (byte) 0xd7, (byte) 0x5e, (byte) 0x19
 	};
 
 	public DiskJobCheckHashTest() throws Exception {
@@ -44,14 +45,14 @@ public class DiskJobCheckHashTest {
 		testFileSize = testFile.length();
 		testFileMismatch = new File(DiskJobCheckHashTest.class.getResource("checkhashfile-mismatch.txt").toURI());
 		testFileMismatchSize = testFileMismatch.length();
-
-		LOGGER.info("Correct hash file: {} bytes", testFileSize);
-		LOGGER.info("Mismatch hash file: {} bytes", testFileMismatchSize);
 	}
 
 	@Before
 	public void setUp() {
 		countDownLatch = new CountDownLatch(1);
+
+		LOGGER.info("Correct hash file: {} bytes", testFileSize);
+		LOGGER.info("Mismatch hash file: {} bytes", testFileMismatchSize);
 	}
 
 	@Test
