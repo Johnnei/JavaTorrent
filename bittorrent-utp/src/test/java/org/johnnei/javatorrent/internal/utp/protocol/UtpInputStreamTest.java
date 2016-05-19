@@ -89,6 +89,19 @@ public class UtpInputStreamTest {
 	}
 
 	@Test
+	public void testReadArrayOverReadOffset() throws IOException {
+		cut.addToBuffer((short) 0, new DataPayload(new byte[] { 5, 4, 3, 2, 1 }));
+
+		byte[] partOne = new byte[6];
+
+		assertEquals("Incorrect amount available", 5, cut.available());
+		assertEquals("Incorrect amount of bytes read.", 3, cut.read(partOne, 0, 3));
+		assertEquals("Incorrect amount of bytes read.", 2, cut.read(partOne, 3, 3));
+		assertArrayEquals("Buffered data is incorrect", new byte[] { 5, 4, 3, 2, 1, 0 }, partOne);
+		assertEquals("Incorrect amount available", 0, cut.available());
+	}
+
+	@Test
 	public void testReadFromMultiplePackets() throws IOException {
 		cut.addToBuffer((short) 0, new DataPayload(new byte[] { 5, 4, 3, 2, 1 }));
 		cut.addToBuffer((short) 1, new DataPayload(new byte[] { 1, 2, 3, 4, 5 }));

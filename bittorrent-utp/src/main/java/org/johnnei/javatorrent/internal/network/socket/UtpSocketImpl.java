@@ -12,7 +12,9 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpInputStream;
@@ -34,7 +36,11 @@ public class UtpSocketImpl {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocketImpl.class);
 
+	private static final int PACKET_OVERHEAD = 20;
+
 	private final Lock notifyLock = new ReentrantLock();
+
+	private final ReadWriteLock packetsInFlightLock = new ReentrantReadWriteLock();
 
 	/**
 	 * A condition which gets triggered when a packet is acknowledged and thus making room in the write queue
@@ -76,6 +82,7 @@ public class UtpSocketImpl {
 	private UtpInputStream inputStream;
 
 	private UtpOutputStream outputStream;
+
 	private short sequenceNumber;
 
 	/**
@@ -87,7 +94,6 @@ public class UtpSocketImpl {
 		connectionIdReceive = (short) new Random().nextInt();
 		connectionIdSend = (short) (connectionIdReceive + 1);
 		sequenceNumberCounter = 1;
-		packetsInFlight = new LinkedList<>();
 	}
 
 	/**
@@ -149,16 +155,27 @@ public class UtpSocketImpl {
 		}
 
 		if (!(payload instanceof StatePayload) || connectionState == ConnectionState.CONNECTING) {
-			packetsInFlight.add(packet);
+			Lock lock = packetsInFlightLock.writeLock();
+			lock.lock();
+			try {
+				packetsInFlight.add(packet);
+			} finally {
+				lock.unlock();
+			}
 		}
 
+		doSend(packet);
+	}
+
+	private void doSend(UtpPacket packet) throws IOException {
 		// Write the packet
 		OutStream outStream = new OutStream();
 		packet.write(this, outStream);
 		byte[] buffer = outStream.toByteArray();
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
-		LOGGER.trace("{} message sent to {} (in flight: {}, {} bytes)", payload, socketAddress, packetsInFlight.size(), getBytesInFlight());
+		LOGGER.trace("{} message sent to {} (in flight: {}, {} bytes)", packet, socketAddress, packetsInFlight.size(), getBytesInFlight());
+
 	}
 
 	public UtpInputStream getInputStream() throws IOException {
@@ -182,7 +199,13 @@ public class UtpSocketImpl {
 	}
 
 	private int getBytesInFlight() {
-		return packetsInFlight.stream().mapToInt(UtpPacket::getPacketSize).sum();
+		Lock lock = packetsInFlightLock.readLock();
+		lock.lock();
+		try {
+			return packetsInFlight.stream().mapToInt(UtpPacket::getPacketSize).sum();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	private int getSendWindowSize() {
@@ -198,9 +221,22 @@ public class UtpSocketImpl {
 			bindIoStreams(packet.getSequenceNumber());
 		}
 
+		short oldAcknowledgeNumber = acknowledgeNumber;
 		acknowledgeNumber = packet.getSequenceNumber();
-		packetsInFlight.removeIf(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber());
+		Lock packetLock = packetsInFlightLock.writeLock();
+		packetLock.lock();
+		try {
+			if (packetsInFlight.removeIf(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber())) {
+				LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
+			}
+		} finally {
+			packetLock.unlock();
+		}
 		packet.processPayload(this);
+
+		if (connectionState == ConnectionState.CONNECTED && oldAcknowledgeNumber != acknowledgeNumber) {
+			doSend(new UtpPacket(this, new StatePayload()));
+		}
 
 		// Notify any waiting threads of the processed packet.
 		notifyLock.lock();
@@ -225,8 +261,8 @@ public class UtpSocketImpl {
 	}
 
 	public synchronized short nextSequenceNumber() {
-		// Return the current number and then advance it.
-		return sequenceNumberCounter++;
+		sequenceNumber = sequenceNumberCounter++;
+		return sequenceNumber;
 	}
 
 	public short getReceivingConnectionId() {
@@ -246,7 +282,7 @@ public class UtpSocketImpl {
 	}
 
 	public int getPacketSize() {
-		return packetSize;
+		return packetSize - PACKET_OVERHEAD;
 	}
 
 	public ConnectionState getConnectionState() {

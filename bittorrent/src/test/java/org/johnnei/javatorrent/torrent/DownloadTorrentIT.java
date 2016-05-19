@@ -171,7 +171,7 @@ public class DownloadTorrentIT {
 		File resultFile;
 
 		if (resultFileUrl != null) {
-			LOGGER.info("Found cached torrent output, using that.");
+			LOGGER.info("Found cached torrent output, using that. Location: {}", resultFileUrl);
 			resultFile = new File(resultFileUrl.toURI());
 		} else {
 			resultFile = temporaryFolder.newFile();

@@ -52,15 +52,19 @@ public class UtpInputStream extends InputStream {
 		if (getAvailableBytesInCurrentBuffer() < 1) {
 			readNextBuffer();
 		}
-		return readBuffer[position++];
+		return readBuffer[position++] & 0xFF;
 	}
 
 	@Override
 	public int read(byte[] buffer, int offset, int length) throws IOException {
 		// TODO Optimize the reading.
-		int readLimit = Math.min(length, available());
+		if (length <= 0) {
+			return 0;
+		}
+
+		int readLimit = Math.min(length, Math.max(1, available()));
 		for (int i = 0; i < readLimit; i++) {
-			buffer[offset + i] = (byte) read();
+			buffer[offset + i] = (byte) (read() & 0xFF);
 		}
 
 		return readLimit;

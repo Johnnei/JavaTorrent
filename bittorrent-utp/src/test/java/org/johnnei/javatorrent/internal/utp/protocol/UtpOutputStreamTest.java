@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
@@ -61,6 +62,22 @@ public class UtpOutputStreamTest {
 
 		byte[] output = payloadArgumentCaptor.getValue().getData();
 		assertArrayEquals(new byte[] { 5, 4, 3, 2, 1 }, output);
+	}
+
+	@Test
+	public void testBufferedWriteArrayMultiplePackets() throws IOException {
+		cut.write(new byte[] { 5, 4, 3, 2, 1, 1, 2, 3, 4, 5 });
+
+		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
+		verify(socketMock, times(2)).send(payloadArgumentCaptor.capture());
+
+		List<DataPayload> payloads = payloadArgumentCaptor.getAllValues();
+
+		byte[] output = payloads.get(0).getData();
+		assertArrayEquals("Incorrect output on first packet", new byte[] { 5, 4, 3, 2, 1 }, output);
+
+		output = payloads.get(1).getData();
+		assertArrayEquals("Incorrect output on second packet", new byte[] { 1, 2, 3, 4, 5 }, output);
 	}
 
 	@Test

@@ -10,9 +10,10 @@
       <AppenderRef ref="Console" />
     </Root>
     <Logger name="org.johnnei.javatorrent" level="info" />
+    <Logger name="org.johnnei.javatorrent.torrent.Torrent" level="debug" />
     <Logger name="org.johnnei.javatorrent.torrent.DownloadTorrentIT" level="debug" />
     <Logger name="org.johnnei.javatorrent.internal.utp" level="debug" />
-    <Logger name="org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl" level="trace" />
+    <Logger name="org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl" level="debug" />
     <Logger name="org.johnnei.javatorrent.utp" level="debug" />
     <Logger name="org.johnnei.javatorrent.network.AbstractPeerConnectionAcceptor" level="debug" />
     <Logger name="org.johnnei.javatorrent.tracker.PeerConnector" level="debug" />

@@ -30,10 +30,12 @@ public class UtpOutputStream extends OutputStream {
 	public void write(byte[] buffer, int offset, int length) throws IOException {
 		ensureBufferSize();
 		int remainingBytes = length;
+		int readBytes = 0;
 		while (remainingBytes > 0) {
 			int chunkLength = Math.min(socket.getPacketSize() - position, remainingBytes);
-			System.arraycopy(buffer, offset, outBuffer, position, chunkLength);
+			System.arraycopy(buffer, offset + readBytes, outBuffer, position, chunkLength);
 			position += chunkLength;
+			readBytes += chunkLength;
 			remainingBytes -= chunkLength;
 
 			if (position >= socket.getPacketSize()) {
