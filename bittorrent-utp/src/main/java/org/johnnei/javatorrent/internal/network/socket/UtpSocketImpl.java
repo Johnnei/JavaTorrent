@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -16,6 +17,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.johnnei.javatorrent.internal.utils.MathUtils;
+import org.johnnei.javatorrent.internal.utp.SlidingTimedValue;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
@@ -36,6 +39,10 @@ public class UtpSocketImpl {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocketImpl.class);
 
+	private static final Duration CONGESTION_CONTROL_TRAGET = Duration.of(100, ChronoUnit.MILLIS);
+
+	private static final int MAX_WINDOW_CHANGE_PER_PACKET = 100;
+
 	private static final int PACKET_OVERHEAD = 20;
 
 	private final Lock notifyLock = new ReentrantLock();
@@ -48,6 +55,8 @@ public class UtpSocketImpl {
 	private final Condition onPacketAcknowledged = notifyLock.newCondition();
 
 	private final UtpMultiplexer utpMultiplexer;
+
+	private Clock clock = Clock.systemDefaultZone();
 
 	private SocketAddress socketAddress;
 
@@ -85,6 +94,10 @@ public class UtpSocketImpl {
 
 	private short sequenceNumber;
 
+	private int measuredDelay;
+
+	private SlidingTimedValue<Integer> slidingBaseDelay;
+
 	/**
 	 * Creates a new socket which is considered the initiating endpoint
 	 */
@@ -116,6 +129,7 @@ public class UtpSocketImpl {
 		packetSize = 150;
 		maxWindow = 150;
 		clientWindowSize = 150;
+		slidingBaseDelay = new SlidingTimedValue<>();
 	}
 
 	public void connect(InetSocketAddress endpoint) throws IOException {
@@ -174,7 +188,7 @@ public class UtpSocketImpl {
 		byte[] buffer = outStream.toByteArray();
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
-		LOGGER.trace("{} message sent to {} (in flight: {}, {} bytes)", packet, socketAddress, packetsInFlight.size(), getBytesInFlight());
+		LOGGER.trace("Sent {} to {} (in flight: {}, {} bytes)", packet, socketAddress, packetsInFlight.size(), getBytesInFlight());
 
 	}
 
@@ -215,27 +229,63 @@ public class UtpSocketImpl {
 	public void process(UtpPacket packet) throws IOException {
 		LOGGER.trace("Received {} from {}", packet, socketAddress);
 
+		boolean packetCausedConnectedState = false;
 		if (connectionState == ConnectionState.CONNECTING && !packetsInFlight.isEmpty()) {
 			// We're on the initiating endpoint and thus we are 'connected' once our SYN gets ACK'ed
 			setConnectionState(ConnectionState.CONNECTED);
 			bindIoStreams(packet.getSequenceNumber());
+			packetCausedConnectedState = true;
 		}
+
+		clientWindowSize = packet.getWindowSize();
 
 		short oldAcknowledgeNumber = acknowledgeNumber;
 		acknowledgeNumber = packet.getSequenceNumber();
 		Lock packetLock = packetsInFlightLock.writeLock();
 		packetLock.lock();
 		try {
-			if (packetsInFlight.removeIf(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber())) {
-				LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
-			}
+			packetsInFlight.stream()
+					.filter(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber())
+					.findAny()
+					.ifPresent(ackedPacket -> {
+						LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
+
+						if (packet.getTimestampDifferenceMicroseconds() != 0) {
+							slidingBaseDelay.addValue(packet.getTimestampDifferenceMicroseconds());
+							Duration ourDelay = Duration.of(packet.getTimestampDifferenceMicroseconds() - slidingBaseDelay.getMinimum(), ChronoUnit.MICROS);
+							Duration offTarget = CONGESTION_CONTROL_TRAGET.minus(ourDelay);
+							float delayFactor = MathUtils.clamp(-1, 1, offTarget.toNanos() / (float) CONGESTION_CONTROL_TRAGET.toNanos());
+							float windowFactor = MathUtils.clamp(-1, 1, getBytesInFlight() / (float) maxWindow);
+							int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
+
+							maxWindow += scaledGain;
+							LOGGER.trace("Base Delay: {}ms, Packet Delay: {}ms, Delay: {}ms, Off Target: {}ms, Delay Factor: {}, Window Factor: {}.",
+									slidingBaseDelay.getMinimum() / 1000,
+									packet.getTimestampDifferenceMicroseconds() / 1000,
+									ourDelay.toMillis(),
+									offTarget.toMillis(),
+									delayFactor,
+									windowFactor);
+							LOGGER.trace("Updated window size based on ACK. Window changed by {}, Now: {}",
+									scaledGain,
+									maxWindow);
+						}
+
+						// Remove the acked packet.
+						packetsInFlight.remove(ackedPacket);
+					});
 		} finally {
 			packetLock.unlock();
 		}
 		packet.processPayload(this);
 
-		if (connectionState == ConnectionState.CONNECTED && oldAcknowledgeNumber != acknowledgeNumber) {
-			doSend(new UtpPacket(this, new StatePayload()));
+		if (!packetCausedConnectedState && connectionState == ConnectionState.CONNECTED) {
+			if (oldAcknowledgeNumber != acknowledgeNumber) {
+				LOGGER.trace("Sending ACK message for {}.", packet);
+				doSend(new UtpPacket(this, new StatePayload()));
+			}
+
+			measuredDelay = Math.abs((clock.instant().getNano() / 1000) - packet.getTimestampMicroseconds());
 		}
 
 		// Notify any waiting threads of the processed packet.
@@ -274,11 +324,11 @@ public class UtpSocketImpl {
 	}
 
 	public int getMeasuredDelay() {
-		return 0;
+		return measuredDelay;
 	}
 
 	public int getWindowSize() {
-		return 0;
+		return utpMultiplexer.getReceiveBufferSize();
 	}
 
 	public int getPacketSize() {

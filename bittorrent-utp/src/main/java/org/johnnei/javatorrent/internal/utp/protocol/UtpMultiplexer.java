@@ -46,6 +46,8 @@ public class UtpMultiplexer implements Runnable {
 	 */
 	private Map<Short, UtpSocketImpl> utpSockets;
 
+	private int receiveBufferSize;
+
 	public UtpMultiplexer(TorrentClient torrentClient) throws ModuleBuildException {
 		utpSockets = new HashMap<>();
 		utpSocketFactory = new UtpSocketImpl.Builder()
@@ -59,6 +61,7 @@ public class UtpMultiplexer implements Runnable {
 	void startMultiplexer(int port) throws ModuleBuildException {
 		try {
 			multiplexerSocket = new DatagramSocket(port);
+			receiveBufferSize = multiplexerSocket.getReceiveBufferSize();
 		} catch (IOException e) {
 			throw new ModuleBuildException("Failed to bind to socket for uTP connections.", e);
 		}
@@ -120,6 +123,10 @@ public class UtpMultiplexer implements Runnable {
 		} catch (IOException e) {
 			LOGGER.warn("Failed to process uTP packet", e);
 		}
+	}
+
+	public int getReceiveBufferSize() {
+		return receiveBufferSize;
 	}
 
 	/**
