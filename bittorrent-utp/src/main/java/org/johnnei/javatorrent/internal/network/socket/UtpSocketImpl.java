@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -32,6 +34,7 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Integer.max;
 import static java.lang.Integer.toUnsignedLong;
 
 /**
@@ -58,6 +61,8 @@ public class UtpSocketImpl {
 
 	private final UtpMultiplexer utpMultiplexer;
 
+	private Clock clock = Clock.systemDefaultZone();
+
 	private PrecisionTimer timer = new PrecisionTimer();
 
 	private SocketAddress socketAddress;
@@ -67,6 +72,12 @@ public class UtpSocketImpl {
 	private Collection<UtpPacket> packetsInFlight;
 
 	private Duration timeout;
+
+	private Instant lastInteraction;
+
+	private int rtt;
+
+	private int rttVariance;
 
 	/**
 	 * The sequence number which as marked as the last packet by {@link org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload}
@@ -159,10 +170,10 @@ public class UtpSocketImpl {
 
 		// Wait for enough space to write the packet
 		while (getAvailableWindowSize() < packet.getPacketSize()) {
-			LOGGER.trace("Waiting to send packet of {} bytes.", packet.getPacketSize());
+			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
 			notifyLock.lock();
 			try {
-				onPacketAcknowledged.await();
+				onPacketAcknowledged.await(1, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				throw new IOException("Interruption on writing packet", e);
 			} finally {
@@ -187,11 +198,12 @@ public class UtpSocketImpl {
 		// Write the packet
 		OutStream outStream = new OutStream();
 		packet.write(this, outStream);
+		packet.updateSentTime();
 		byte[] buffer = outStream.toByteArray();
+		lastInteraction = clock.instant();
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
-		LOGGER.trace("Sent {} to {} (in flight: {}, {} bytes)", packet, socketAddress, packetsInFlight.size(), getBytesInFlight());
-
+		LOGGER.trace("Sent {} to {} (in flight: {}, {} / {} bytes)", packet, socketAddress, packetsInFlight.size(), getBytesInFlight(), getSendWindowSize());
 	}
 
 	public UtpInputStream getInputStream() throws IOException {
@@ -231,6 +243,7 @@ public class UtpSocketImpl {
 	public void process(UtpPacket packet) throws IOException {
 		// Record the time as early as possible to reduce the noise in the uTP packets.
 		int receiveTime = timer.getCurrentMicros();
+		lastInteraction = clock.instant();
 		LOGGER.trace("Received {} from {}", packet, socketAddress);
 
 		boolean packetCausedConnectedState = false;
@@ -252,7 +265,6 @@ public class UtpSocketImpl {
 					.filter(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber())
 					.findAny()
 					.ifPresent(ackedPacket -> {
-						LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
 
 						if (packet.getTimestampDifferenceMicroseconds() != 0) {
 							slidingBaseDelay.addValue(packet.getTimestampDifferenceMicroseconds());
@@ -263,8 +275,7 @@ public class UtpSocketImpl {
 							int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
 
 							maxWindow += scaledGain;
-							LOGGER.trace("CCT: {}us, Base Delay: {}us, Packet Delay: {}us, Delay: {}us, Off Target: {}us, Delay Factor: {}, Window Factor: {}.",
-									CONGESTION_CONTROL_TARGET,
+							LOGGER.trace("Base Delay: {}us, Packet Delay: {}us, Delay: {}us, Off Target: {}us, Delay Factor: {}, Window Factor: {}.",
 									slidingBaseDelay.getMinimum(),
 									packet.getTimestampDifferenceMicroseconds(),
 									ourDelay,
@@ -276,8 +287,17 @@ public class UtpSocketImpl {
 									maxWindow);
 						}
 
+						// Calculate RTT and RTT Variance, and update the timeout value accordingly.
+						int packetRtt = (receiveTime - ackedPacket.getSentTime());
+						int delta = rtt - packetRtt;
+						rttVariance += (Math.abs(delta) - rttVariance) / 4;
+						rtt += (packetRtt - rtt) / 8;
+						// Divide by 1000 to make the RTT measurements into millis.
+						timeout = Duration.of(max((rtt + rttVariance * 4) / 1000, 500), ChronoUnit.MILLIS);
+
 						// Remove the acked packet.
 						packetsInFlight.remove(ackedPacket);
+						LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
 					});
 		} finally {
 			packetLock.unlock();
@@ -309,6 +329,22 @@ public class UtpSocketImpl {
 		}
 		inputStream = new UtpInputStream((short) (sequenceNumber + 1));
 		outputStream = new UtpOutputStream(this);
+	}
+
+	/**
+	 * Handles the timeout case if one occurred.
+	 */
+	public void handleTimeout() {
+		if (Duration.between(lastInteraction, clock.instant()).minus(timeout).isNegative()) {
+			// Timeout has not yet occurred.
+			return;
+		}
+
+		LOGGER.debug("Socket has encountered a timeout after {}ms.", timeout.toMillis());
+		packetSize = 150;
+		// TODO Make this neater, according to the spec this should SET to 150 as it will allow one more packet to be sent.
+		// This implementation won't do that though. So maybe I think of maxWindow incorrectly?
+		maxWindow += 150;
 	}
 
 	public short getAcknowledgeNumber() {

@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
@@ -23,6 +24,8 @@ public class UtpMultiplexer implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpMultiplexer.class);
 
 	private final Object socketListLock = new Object();
+
+	private TorrentClient torrentClient;
 
 	private UtpPeerConnectionAcceptor connectionAcceptor;
 
@@ -49,6 +52,7 @@ public class UtpMultiplexer implements Runnable {
 	private int receiveBufferSize;
 
 	public UtpMultiplexer(TorrentClient torrentClient) throws ModuleBuildException {
+		this.torrentClient = torrentClient;
 		utpSockets = new HashMap<>();
 		utpSocketFactory = new UtpSocketImpl.Builder()
 				.setUtpMultiplexer(this);
@@ -83,6 +87,8 @@ public class UtpMultiplexer implements Runnable {
 			}
 
 			utpSockets.put(socket.getReceivingConnectionId(), socket);
+
+			torrentClient.getExecutorService().scheduleAtFixedRate(socket::handleTimeout, 1000, 500, TimeUnit.MILLISECONDS);
 		}
 		return true;
 	}

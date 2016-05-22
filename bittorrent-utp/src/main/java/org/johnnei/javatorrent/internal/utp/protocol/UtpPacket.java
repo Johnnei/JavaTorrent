@@ -17,6 +17,11 @@ public class UtpPacket {
 	private PrecisionTimer timer = new PrecisionTimer();
 
 	/**
+	 * The time at which this packet was send.
+	 */
+	private int sentTime;
+
+	/**
 	 * The payload type of the packet.
 	 */
 	private byte type;
@@ -118,8 +123,14 @@ public class UtpPacket {
 		outStream.writeInt(socket.getMeasuredDelay());
 		outStream.writeInt(socket.getWindowSize());
 		outStream.writeShort(sequenceNumber);
-		outStream.writeShort(socket.getAcknowledgeNumber());
+		// Assign it so the toString is usefull during debugging.
+		acknowledgeNumber = socket.getAcknowledgeNumber();
+		outStream.writeShort(acknowledgeNumber);
 		payload.write(outStream);
+	}
+
+	public void updateSentTime() {
+		sentTime = timer.getCurrentMicros();
 	}
 
 	/**
@@ -164,6 +175,10 @@ public class UtpPacket {
 
 	public int getPacketSize() {
 		return 20 + payload.getSize();
+	}
+
+	public int getSentTime() {
+		return sentTime;
 	}
 
 	@Override
