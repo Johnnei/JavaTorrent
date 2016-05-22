@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -18,6 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.johnnei.javatorrent.internal.utils.MathUtils;
+import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.SlidingTimedValue;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpInputStream;
@@ -32,6 +32,8 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Integer.toUnsignedLong;
+
 /**
  * Internal implementation of the {@link org.johnnei.javatorrent.network.socket.UtpSocket}
  */
@@ -39,7 +41,7 @@ public class UtpSocketImpl {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocketImpl.class);
 
-	private static final Duration CONGESTION_CONTROL_TRAGET = Duration.of(100, ChronoUnit.MILLIS);
+	private static final long CONGESTION_CONTROL_TARGET = Duration.of(100, ChronoUnit.MILLIS).toNanos() / 1000;
 
 	private static final int MAX_WINDOW_CHANGE_PER_PACKET = 100;
 
@@ -56,7 +58,7 @@ public class UtpSocketImpl {
 
 	private final UtpMultiplexer utpMultiplexer;
 
-	private Clock clock = Clock.systemDefaultZone();
+	private PrecisionTimer timer = new PrecisionTimer();
 
 	private SocketAddress socketAddress;
 
@@ -227,6 +229,8 @@ public class UtpSocketImpl {
 	}
 
 	public void process(UtpPacket packet) throws IOException {
+		// Record the time as early as possible to reduce the noise in the uTP packets.
+		int receiveTime = timer.getCurrentMicros();
 		LOGGER.trace("Received {} from {}", packet, socketAddress);
 
 		boolean packetCausedConnectedState = false;
@@ -252,18 +256,19 @@ public class UtpSocketImpl {
 
 						if (packet.getTimestampDifferenceMicroseconds() != 0) {
 							slidingBaseDelay.addValue(packet.getTimestampDifferenceMicroseconds());
-							Duration ourDelay = Duration.of(packet.getTimestampDifferenceMicroseconds() - slidingBaseDelay.getMinimum(), ChronoUnit.MICROS);
-							Duration offTarget = CONGESTION_CONTROL_TRAGET.minus(ourDelay);
-							float delayFactor = MathUtils.clamp(-1, 1, offTarget.toNanos() / (float) CONGESTION_CONTROL_TRAGET.toNanos());
-							float windowFactor = MathUtils.clamp(-1, 1, getBytesInFlight() / (float) maxWindow);
+							long ourDelay = toUnsignedLong(packet.getTimestampDifferenceMicroseconds()) - toUnsignedLong(slidingBaseDelay.getMinimum());
+							long offTarget = CONGESTION_CONTROL_TARGET - ourDelay;
+							double delayFactor = MathUtils.clamp(-1, 1, offTarget / (double) CONGESTION_CONTROL_TARGET);
+							double windowFactor = MathUtils.clamp(-1, 1, getBytesInFlight() / (double) maxWindow);
 							int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
 
 							maxWindow += scaledGain;
-							LOGGER.trace("Base Delay: {}ms, Packet Delay: {}ms, Delay: {}ms, Off Target: {}ms, Delay Factor: {}, Window Factor: {}.",
-									slidingBaseDelay.getMinimum() / 1000,
-									packet.getTimestampDifferenceMicroseconds() / 1000,
-									ourDelay.toMillis(),
-									offTarget.toMillis(),
+							LOGGER.trace("CCT: {}us, Base Delay: {}us, Packet Delay: {}us, Delay: {}us, Off Target: {}us, Delay Factor: {}, Window Factor: {}.",
+									CONGESTION_CONTROL_TARGET,
+									slidingBaseDelay.getMinimum(),
+									packet.getTimestampDifferenceMicroseconds(),
+									ourDelay,
+									offTarget,
 									delayFactor,
 									windowFactor);
 							LOGGER.trace("Updated window size based on ACK. Window changed by {}, Now: {}",
@@ -285,7 +290,7 @@ public class UtpSocketImpl {
 				doSend(new UtpPacket(this, new StatePayload()));
 			}
 
-			measuredDelay = Math.abs((clock.instant().getNano() / 1000) - packet.getTimestampMicroseconds());
+			measuredDelay = Math.abs(receiveTime - packet.getTimestampMicroseconds());
 		}
 
 		// Notify any waiting threads of the processed packet.

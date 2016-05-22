@@ -1,9 +1,7 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
-import java.time.Clock;
-import java.time.Instant;
-
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.network.InStream;
@@ -92,6 +90,7 @@ public class UtpPacketTest extends EasyMockSupport {
 		OutStream outStream = new OutStream();
 		UtpSocketImpl socketMock = createMock(UtpSocketImpl.class);
 		IPayload payloadMock = createMock(IPayload.class);
+		PrecisionTimer timerMock = createMock(PrecisionTimer.class);
 
 		expect(socketMock.nextSequenceNumber()).andReturn((short) 1);
 		expect(socketMock.getSendingConnectionId()).andReturn((short) 0x1235);
@@ -99,14 +98,14 @@ public class UtpPacketTest extends EasyMockSupport {
 		expect(socketMock.getWindowSize()).andReturn(0x12344321);
 		expect(socketMock.getAcknowledgeNumber()).andReturn((short) 0);
 		expect(payloadMock.getType()).andReturn((byte) UtpProtocol.ST_DATA);
+		expect(timerMock.getCurrentMicros()).andReturn(0x000DAC00);
 
-		Clock fixedClock = Clock.fixed(Instant.ofEpochMilli(0x12345678), Clock.systemDefaultZone().getZone());
 		payloadMock.write(notNull());
 
 		replayAll();
 
 		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
-		Whitebox.setInternalState(cut, Clock.class, fixedClock);
+		Whitebox.setInternalState(cut, PrecisionTimer.class, timerMock);
 		cut.write(socketMock, outStream);
 
 		verifyAll();
@@ -138,6 +137,7 @@ public class UtpPacketTest extends EasyMockSupport {
 		OutStream outStream = new OutStream();
 		UtpSocketImpl socketMock = createMock(UtpSocketImpl.class);
 		IPayload payloadMock = createMock(IPayload.class);
+		PrecisionTimer timerMock = createMock(PrecisionTimer.class);
 
 		expect(socketMock.nextSequenceNumber()).andReturn((short) 1);
 		expect(socketMock.getReceivingConnectionId()).andReturn((short) 0x1234);
@@ -145,14 +145,14 @@ public class UtpPacketTest extends EasyMockSupport {
 		expect(socketMock.getWindowSize()).andReturn(0x12344321);
 		expect(socketMock.getAcknowledgeNumber()).andReturn((short) 0);
 		expect(payloadMock.getType()).andReturn((byte) UtpProtocol.ST_SYN);
+		expect(timerMock.getCurrentMicros()).andReturn(0x000DAC00);
 
-		Clock fixedClock = Clock.fixed(Instant.ofEpochMilli(0x12345678), Clock.systemDefaultZone().getZone());
 		payloadMock.write(notNull());
 
 		replayAll();
 
 		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
-		Whitebox.setInternalState(cut, Clock.class, fixedClock);
+		Whitebox.setInternalState(cut, PrecisionTimer.class, timerMock);
 		cut.write(socketMock, outStream);
 
 		verifyAll();

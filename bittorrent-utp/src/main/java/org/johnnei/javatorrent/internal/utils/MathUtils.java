@@ -5,7 +5,7 @@ package org.johnnei.javatorrent.internal.utils;
  */
 public class MathUtils {
 
-	public static float clamp(float min, float max, float value) {
+	public static double clamp(double min, double max, double value) {
 		return Math.min(Math.max(min, value), max);
 	}
 }

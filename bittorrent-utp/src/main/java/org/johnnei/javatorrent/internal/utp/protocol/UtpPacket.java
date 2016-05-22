@@ -1,9 +1,9 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
 import java.io.IOException;
-import java.time.Clock;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.network.InStream;
@@ -14,10 +14,7 @@ import org.johnnei.javatorrent.network.OutStream;
  */
 public class UtpPacket {
 
-	/**
-	 * The clock used to measure the current timestamp in microseconds.
-	 */
-	private Clock clock = Clock.systemDefaultZone();
+	private PrecisionTimer timer = new PrecisionTimer();
 
 	/**
 	 * The payload type of the packet.
@@ -117,7 +114,7 @@ public class UtpPacket {
 		// We don't support extension yet.
 		outStream.writeByte(0);
 		outStream.writeShort(connectionId);
-		outStream.writeInt(clock.instant().getNano() / 1000);
+		outStream.writeInt(timer.getCurrentMicros());
 		outStream.writeInt(socket.getMeasuredDelay());
 		outStream.writeInt(socket.getWindowSize());
 		outStream.writeShort(sequenceNumber);
