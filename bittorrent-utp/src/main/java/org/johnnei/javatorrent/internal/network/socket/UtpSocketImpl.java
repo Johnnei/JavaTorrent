@@ -285,6 +285,9 @@ public class UtpSocketImpl {
 							LOGGER.trace("Updated window size based on ACK. Window changed by {}, Now: {}",
 									scaledGain,
 									maxWindow);
+
+							packetSize = max(150, maxWindow / 10);
+							LOGGER.trace("Packet Size scaled based on new window size: {} bytes", packetSize);
 						}
 
 						// Calculate RTT and RTT Variance, and update the timeout value accordingly.

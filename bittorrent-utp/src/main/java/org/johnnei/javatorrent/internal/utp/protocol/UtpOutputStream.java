@@ -32,13 +32,13 @@ public class UtpOutputStream extends OutputStream {
 		int remainingBytes = length;
 		int readBytes = 0;
 		while (remainingBytes > 0) {
-			int chunkLength = Math.min(socket.getPacketSize() - position, remainingBytes);
+			int chunkLength = Math.min(outBuffer.length - position, remainingBytes);
 			System.arraycopy(buffer, offset + readBytes, outBuffer, position, chunkLength);
 			position += chunkLength;
 			readBytes += chunkLength;
 			remainingBytes -= chunkLength;
 
-			if (position >= socket.getPacketSize()) {
+			if (position >= outBuffer.length) {
 				sendBuffer();
 			}
 		}
