@@ -8,6 +8,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.network.AbstractPeerConnectionAcceptor;
 import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.network.socket.UtpSocket;
@@ -33,12 +34,7 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 			socketQueue.add(socket);
 		}
 
-		notifyLock.lock();
-		try {
-			onNewConnection.signalAll();
-		} finally {
-			notifyLock.unlock();
-		}
+		Sync.signalAll(notifyLock, onNewConnection);
 	}
 
 	@Override

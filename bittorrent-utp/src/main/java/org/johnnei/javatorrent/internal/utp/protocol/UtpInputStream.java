@@ -7,6 +7,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 
 import org.slf4j.Logger;
@@ -39,12 +40,7 @@ public class UtpInputStream extends InputStream {
 	public void addToBuffer(short sequenceNumber, DataPayload dataPayload) {
 		packets.putIfAbsent(sequenceNumber, dataPayload);
 		LOGGER.trace("Received packet {} (expected: {}). Available: {}", sequenceNumber, nextSequenceNumber, available());
-		notifyLock.lock();
-		try {
-			onPacketArrived.signalAll();
-		} finally {
-			notifyLock.unlock();
-		}
+		Sync.signalAll(notifyLock, onPacketArrived);
 	}
 
 	@Override

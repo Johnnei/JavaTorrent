@@ -7,7 +7,6 @@ import java.net.SocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
@@ -18,9 +17,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.johnnei.javatorrent.internal.utils.MathUtils;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
-import org.johnnei.javatorrent.internal.utp.SlidingTimedValue;
+import org.johnnei.javatorrent.internal.utils.Sync;
+import org.johnnei.javatorrent.internal.utp.UtpTimeout;
+import org.johnnei.javatorrent.internal.utp.UtpWindow;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
@@ -34,8 +34,7 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Integer.max;
-import static java.lang.Integer.toUnsignedLong;
+import static java.lang.Math.max;
 
 /**
  * Internal implementation of the {@link org.johnnei.javatorrent.network.socket.UtpSocket}
@@ -44,11 +43,8 @@ public class UtpSocketImpl {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocketImpl.class);
 
-	private static final long CONGESTION_CONTROL_TARGET = Duration.of(100, ChronoUnit.MILLIS).toNanos() / 1000;
-
-	private static final int MAX_WINDOW_CHANGE_PER_PACKET = 100;
-
 	private static final int PACKET_OVERHEAD = 20;
+	private static final int UNKNOWN_TIMESTAMP_DIFFERENCE = 0;
 
 	private final Lock notifyLock = new ReentrantLock();
 
@@ -71,13 +67,9 @@ public class UtpSocketImpl {
 
 	private Collection<UtpPacket> packetsInFlight;
 
-	private Duration timeout;
-
 	private Instant lastInteraction;
 
-	private int rtt;
-
-	private int rttVariance;
+	private UtpTimeout timeout;
 
 	/**
 	 * The sequence number which as marked as the last packet by {@link org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload}
@@ -99,7 +91,7 @@ public class UtpSocketImpl {
 	 */
 	private int clientWindowSize;
 
-	private int maxWindow;
+	private UtpWindow window;
 
 	private UtpInputStream inputStream;
 
@@ -108,8 +100,6 @@ public class UtpSocketImpl {
 	private short sequenceNumber;
 
 	private int measuredDelay;
-
-	private SlidingTimedValue<Integer> slidingBaseDelay;
 
 	/**
 	 * Creates a new socket which is considered the initiating endpoint
@@ -138,11 +128,10 @@ public class UtpSocketImpl {
 	private void initDefaults() {
 		connectionState = ConnectionState.CONNECTING;
 		packetsInFlight = new LinkedList<>();
-		timeout = Duration.of(1000, ChronoUnit.MILLIS);
 		packetSize = 150;
-		maxWindow = 150;
 		clientWindowSize = 150;
-		slidingBaseDelay = new SlidingTimedValue<>();
+		timeout = new UtpTimeout();
+		window = new UtpWindow(this);
 	}
 
 	public void connect(InetSocketAddress endpoint) throws IOException {
@@ -226,7 +215,7 @@ public class UtpSocketImpl {
 		return getSendWindowSize() - getBytesInFlight();
 	}
 
-	private int getBytesInFlight() {
+	public int getBytesInFlight() {
 		Lock lock = packetsInFlightLock.readLock();
 		lock.lock();
 		try {
@@ -237,7 +226,7 @@ public class UtpSocketImpl {
 	}
 
 	private int getSendWindowSize() {
-		return Math.min(maxWindow, clientWindowSize);
+		return Math.min(window.getSize(), clientWindowSize);
 	}
 
 	public void process(UtpPacket packet) throws IOException {
@@ -264,44 +253,7 @@ public class UtpSocketImpl {
 			packetsInFlight.stream()
 					.filter(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber())
 					.findAny()
-					.ifPresent(ackedPacket -> {
-
-						if (packet.getTimestampDifferenceMicroseconds() != 0) {
-							slidingBaseDelay.addValue(packet.getTimestampDifferenceMicroseconds());
-							long ourDelay = toUnsignedLong(packet.getTimestampDifferenceMicroseconds()) - toUnsignedLong(slidingBaseDelay.getMinimum());
-							long offTarget = CONGESTION_CONTROL_TARGET - ourDelay;
-							double delayFactor = MathUtils.clamp(-1, 1, offTarget / (double) CONGESTION_CONTROL_TARGET);
-							double windowFactor = MathUtils.clamp(-1, 1, getBytesInFlight() / (double) maxWindow);
-							int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
-
-							maxWindow += scaledGain;
-							LOGGER.trace("Base Delay: {}us, Packet Delay: {}us, Delay: {}us, Off Target: {}us, Delay Factor: {}, Window Factor: {}.",
-									slidingBaseDelay.getMinimum(),
-									packet.getTimestampDifferenceMicroseconds(),
-									ourDelay,
-									offTarget,
-									delayFactor,
-									windowFactor);
-							LOGGER.trace("Updated window size based on ACK. Window changed by {}, Now: {}",
-									scaledGain,
-									maxWindow);
-
-							packetSize = max(150, maxWindow / 10);
-							LOGGER.trace("Packet Size scaled based on new window size: {} bytes", packetSize);
-						}
-
-						// Calculate RTT and RTT Variance, and update the timeout value accordingly.
-						int packetRtt = (receiveTime - ackedPacket.getSentTime());
-						int delta = rtt - packetRtt;
-						rttVariance += (Math.abs(delta) - rttVariance) / 4;
-						rtt += (packetRtt - rtt) / 8;
-						// Divide by 1000 to make the RTT measurements into millis.
-						timeout = Duration.of(max((rtt + rttVariance * 4) / 1000, 500), ChronoUnit.MILLIS);
-
-						// Remove the acked packet.
-						packetsInFlight.remove(ackedPacket);
-						LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
-					});
+					.ifPresent(ackedPacket -> onPacketAcknowledged(receiveTime, packet, ackedPacket));
 		} finally {
 			packetLock.unlock();
 		}
@@ -317,13 +269,25 @@ public class UtpSocketImpl {
 		}
 
 		// Notify any waiting threads of the processed packet.
-		notifyLock.lock();
-		try {
-			onPacketAcknowledged.signalAll();
-		} finally {
-			notifyLock.unlock();
+		Sync.signalAll(notifyLock, onPacketAcknowledged);
+	}
+
+	private void onPacketAcknowledged(int receiveTime, UtpPacket packet, UtpPacket ackedPacket) {
+		if (packet.getTimestampDifferenceMicroseconds() != UNKNOWN_TIMESTAMP_DIFFERENCE) {
+			window.update(packet);
+			updatePacketSize();
 		}
 
+		timeout.update(receiveTime, ackedPacket);
+
+		// Remove the acked packet.
+		packetsInFlight.remove(ackedPacket);
+		LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
+	}
+
+	private void updatePacketSize() {
+		packetSize = max(150, window.getSize() / 10);
+		LOGGER.trace("Packet Size scaled based on new window size: {} bytes", packetSize);
 	}
 
 	public void bindIoStreams(short sequenceNumber) {
@@ -338,16 +302,14 @@ public class UtpSocketImpl {
 	 * Handles the timeout case if one occurred.
 	 */
 	public void handleTimeout() {
-		if (Duration.between(lastInteraction, clock.instant()).minus(timeout).isNegative()) {
+		if (Duration.between(lastInteraction, clock.instant()).minus(timeout.getDuration()).isNegative()) {
 			// Timeout has not yet occurred.
 			return;
 		}
 
-		LOGGER.debug("Socket has encountered a timeout after {}ms.", timeout.toMillis());
+		LOGGER.debug("Socket has encountered a timeout after {}ms.", timeout.getDuration().toMillis());
 		packetSize = 150;
-		// TODO Make this neater, according to the spec this should SET to 150 as it will allow one more packet to be sent.
-		// This implementation won't do that though. So maybe I think of maxWindow incorrectly?
-		maxWindow += 150;
+		window.onTimeout();
 	}
 
 	public short getAcknowledgeNumber() {

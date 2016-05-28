@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.utp;
 
+import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
 import org.johnnei.javatorrent.test.TestUtils;
 
@@ -12,6 +13,7 @@ public class ConstructorTest {
 
 	private static final Class<?>[] utilClasses = {
 			UtpProtocol.class,
+			Sync.class
 	};
 
 	@Test
