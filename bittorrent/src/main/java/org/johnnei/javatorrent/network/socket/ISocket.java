@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 
 /**
- * A socket layout to get multiple socket protocols work on the some functions<br/>
+ * A socket facade to get multiple socket protocols work on the some functions<br/>
  * @author Johnnei
  *
  */

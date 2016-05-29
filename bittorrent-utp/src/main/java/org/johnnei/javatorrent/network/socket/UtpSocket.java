@@ -11,6 +11,9 @@ import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.utp.UtpModule;
 
+/**
+ * Socket which implements the {@link ISocket} facade for uTP connections.
+ */
 public class UtpSocket implements ISocket {
 
 	private UtpSocketImpl.Builder socketFactory;
@@ -24,7 +27,7 @@ public class UtpSocket implements ISocket {
 	 *
 	 * Instances of UtpSocket must be created using {@link UtpModule#createSocketFactory()}
 	 *
-	 * @param utpMultiplexer
+	 * @param utpMultiplexer The multiplexer on which this socket will register.
 	 *
 	 * @see UtpModule#createSocketFactory()
 	 */
@@ -34,6 +37,11 @@ public class UtpSocket implements ISocket {
 				.setUtpMultiplexer(multiplexer);
 	}
 
+	/**
+	 * Creates a new socket based on a received connection.
+	 * @param utpMultiplexer The multiplexer on which this socket is registered.
+	 * @param socket The socket.
+	 */
 	public UtpSocket(UtpMultiplexer utpMultiplexer, UtpSocketImpl socket) {
 		this.multiplexer = utpMultiplexer;
 		this.socket = socket;
@@ -61,7 +69,7 @@ public class UtpSocket implements ISocket {
 
 	@Override
 	public void close() throws IOException {
-		throw new UnsupportedOperationException();
+		socket.close();
 	}
 
 	@Override
@@ -71,16 +79,16 @@ public class UtpSocket implements ISocket {
 
 	@Override
 	public boolean isInputShutdown() {
-		throw new UnsupportedOperationException();
+		return socket.isInputShutdown();
 	}
 
 	@Override
 	public boolean isOutputShutdown() {
-		throw new UnsupportedOperationException();
+		return socket.isOutputShutdown();
 	}
 
 	@Override
 	public void flush() throws IOException {
-		throw new UnsupportedOperationException();
+		getOutputStream().flush();
 	}
 }

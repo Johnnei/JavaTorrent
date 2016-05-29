@@ -312,6 +312,30 @@ public class UtpSocketImpl {
 		window.onTimeout();
 	}
 
+	/**
+	 * Initiates the socket shutdown.
+	 * @throws IOException
+	 */
+	public void close() throws IOException {
+
+	}
+
+	/**
+	 * Verifies if there is still the possibility that more packets are to be received.
+	 * @return <code>true</code> when data can still be received, otherwise <code>false</code>.
+	 */
+	public boolean isInputShutdown() {
+		return false;
+	}
+
+	/**
+	 * Verifies if data can still be written on this socket.
+	 * @return <code>true</code> when data can still be written, otherwise <code>false</code>.
+	 */
+	public boolean isOutputShutdown() {
+		return false;
+	}
+
 	public short getAcknowledgeNumber() {
 		return acknowledgeNumber;
 	}
