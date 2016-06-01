@@ -1,7 +1,8 @@
 package org.johnnei.javatorrent.internal.utp.protocol.payload;
 
+import java.io.IOException;
+
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
-import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
 
@@ -16,9 +17,9 @@ public class FinPayload extends AbstractEmptyPayload {
 	}
 
 	@Override
-	public void process(UtpPacket packet, UtpSocketImpl socket) {
+	public void process(UtpPacket packet, UtpSocketImpl socket) throws IOException {
 		socket.setEndOfStreamSequenceNumber(packet.getSequenceNumber());
-		socket.setConnectionState(ConnectionState.DISCONNECTING);
+		socket.close();
 	}
 
 	@Override

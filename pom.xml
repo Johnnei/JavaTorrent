@@ -30,6 +30,7 @@
     <plugin.org.sonarsource.scanner.maven.sonar-maven-plugin>3.0.1</plugin.org.sonarsource.scanner.maven.sonar-maven-plugin>
 
     <!-- Define dependency versions -->
+    <dependency.com.jayway.awaitility.awaitility>1.7.0</dependency.com.jayway.awaitility.awaitility>
     <dependency.junit.junit>4.12</dependency.junit.junit>
     <dependency.org.apache.logging.log4j.log4j-api>2.5</dependency.org.apache.logging.log4j.log4j-api>
     <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
@@ -196,6 +197,12 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${dependency.org.mockito.mockito-core.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.jayway.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${dependency.com.jayway.awaitility.awaitility}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

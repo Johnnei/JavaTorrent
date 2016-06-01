@@ -1,7 +1,8 @@
 package org.johnnei.javatorrent.internal.utp.protocol.payload;
 
+import java.io.IOException;
+
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
-import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 
 import org.junit.Test;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.when;
 public class FinPayloadTest {
 
 	@Test
-	public void testProcess() {
+	public void testProcess() throws IOException {
 		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 		UtpPacket packetMock = mock(UtpPacket.class);
 
@@ -29,7 +30,7 @@ public class FinPayloadTest {
 		cut.process(packetMock, socketMock);
 
 		verify(socketMock).setEndOfStreamSequenceNumber(eq((short) 5));
-		verify(socketMock).setConnectionState(ConnectionState.DISCONNECTING);
+		verify(socketMock).close();
 	}
 
 	@Test

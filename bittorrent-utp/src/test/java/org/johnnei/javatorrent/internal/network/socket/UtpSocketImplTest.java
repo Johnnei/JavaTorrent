@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -29,10 +31,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -73,6 +78,47 @@ public class UtpSocketImplTest {
 		assertEquals("Incorrect receiving connection id", 6, cut.getReceivingConnectionId());
 		assertEquals("Incorrect sending connection id", 5, cut.getSendingConnectionId());
 		assertEquals("Incorrect connection state", ConnectionState.CONNECTING, cut.getConnectionState());
+	}
+
+	@Test
+	public void testClose() throws Exception {
+		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
+		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+
+		// Force this connection to be connected
+		cut.setConnectionState(ConnectionState.CONNECTED);
+		cut.bindIoStreams((short) 5);
+
+		assertFalse("Output stream must not be closed before sending FIN packet.", cut.isOutputShutdown());
+		assertFalse("Input stream should not be closed before sending FIN packet.", cut.isOutputShutdown());
+
+		cut.close();
+
+		ArgumentCaptor<DatagramPacket> packetCapture = ArgumentCaptor.forClass(DatagramPacket.class);
+		verify(multiplexerMock).send(packetCapture.capture());
+
+		assertEquals("Socket must sent FIN packet on close.", UtpProtocol.ST_FIN, (packetCapture.getValue().getData()[0] & 0xF0) >> 4);
+		assertTrue("Output stream must be closed after sending a FIN packet.", cut.isOutputShutdown());
+		assertFalse("Input stream must not be affected by sending a FIN packet.", cut.isInputShutdown());
+	}
+
+	@Test
+	public void testHandleTimeout() {
+		UtpWindow windowMock = mock(UtpWindow.class);
+		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
+
+		// Timeout should not be triggered here.
+		cut.handleTimeout();
+
+		verify(windowMock, never()).onTimeout();
+
+		// Timeout must be triggered here.
+		Clock shiftedClock = Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(1));
+		Whitebox.setInternalState(cut, Clock.class, shiftedClock);
+
+		cut.handleTimeout();
+
+		verify(windowMock).onTimeout();
 	}
 
 	@Test
@@ -131,6 +177,12 @@ public class UtpSocketImplTest {
 
 		verify(windowMock).update(statePacket);
 		verify(timeoutMock).update(anyInt(), same(packetMock));
+	}
+
+	@Test
+	public void testEndOfStreamSequenceNumber() {
+		cut.setEndOfStreamSequenceNumber((short) 42);
+		assertEquals("Incorrect End of Stream sequence number", 42, cut.getEndOfStreamSequenceNumber());
 	}
 
 	@Test

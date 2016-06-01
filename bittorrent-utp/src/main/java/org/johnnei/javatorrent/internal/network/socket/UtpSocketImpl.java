@@ -26,6 +26,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpOutputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.SynPayload;
@@ -132,6 +133,7 @@ public class UtpSocketImpl {
 		clientWindowSize = 150;
 		timeout = new UtpTimeout();
 		window = new UtpWindow(this);
+		lastInteraction = clock.instant();
 	}
 
 	public void connect(InetSocketAddress endpoint) throws IOException {
@@ -259,7 +261,7 @@ public class UtpSocketImpl {
 		}
 		packet.processPayload(this);
 
-		if (!packetCausedConnectedState && connectionState == ConnectionState.CONNECTED) {
+		if (!packetCausedConnectedState && (connectionState != ConnectionState.CONNECTING)) {
 			if (oldAcknowledgeNumber != acknowledgeNumber) {
 				LOGGER.trace("Sending ACK message for {}.", packet);
 				doSend(new UtpPacket(this, new StatePayload()));
@@ -294,7 +296,7 @@ public class UtpSocketImpl {
 		if (inputStream != null || outputStream != null) {
 			return;
 		}
-		inputStream = new UtpInputStream((short) (sequenceNumber + 1));
+		inputStream = new UtpInputStream(this, (short) (sequenceNumber + 1));
 		outputStream = new UtpOutputStream(this);
 	}
 
@@ -313,11 +315,30 @@ public class UtpSocketImpl {
 	}
 
 	/**
+	 * Handles the period between {@link ConnectionState#DISCONNECTING} and {@link ConnectionState#CLOSED}.
+	 */
+	public void handleClose() {
+		if (connectionState != ConnectionState.DISCONNECTING) {
+			return;
+		}
+
+		if (acknowledgeNumber == endOfStreamSequenceNumber && packetsInFlight.isEmpty()) {
+			setConnectionState(ConnectionState.CLOSED);
+			utpMultiplexer.cleanUpSocket(this);
+		}
+	}
+
+	/**
 	 * Initiates the socket shutdown.
 	 * @throws IOException
 	 */
 	public void close() throws IOException {
+		if (connectionState != ConnectionState.CONNECTED) {
+			return;
+		}
 
+		setConnectionState(ConnectionState.DISCONNECTING);
+		send(new FinPayload());
 	}
 
 	/**
@@ -333,7 +354,7 @@ public class UtpSocketImpl {
 	 * @return <code>true</code> when data can still be written, otherwise <code>false</code>.
 	 */
 	public boolean isOutputShutdown() {
-		return false;
+		return connectionState == ConnectionState.DISCONNECTING || connectionState == ConnectionState.CLOSED;
 	}
 
 	public short getAcknowledgeNumber() {
@@ -377,6 +398,10 @@ public class UtpSocketImpl {
 
 	public void setEndOfStreamSequenceNumber(short sequenceNumber) {
 		endOfStreamSequenceNumber = sequenceNumber;
+	}
+
+	public short getEndOfStreamSequenceNumber() {
+		return endOfStreamSequenceNumber;
 	}
 
 	public short getSequenceNumber() {

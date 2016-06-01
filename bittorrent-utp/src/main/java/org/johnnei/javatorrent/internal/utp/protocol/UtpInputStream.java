@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -7,6 +8,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 
@@ -24,6 +26,8 @@ public class UtpInputStream extends InputStream {
 
 	private final Condition onPacketArrived = notifyLock.newCondition();
 
+	private UtpSocketImpl socket;
+
 	private short nextSequenceNumber;
 
 	private HashMap<Short, DataPayload> packets;
@@ -32,7 +36,8 @@ public class UtpInputStream extends InputStream {
 
 	private int position;
 
-	public UtpInputStream(short initialSequenceNumber) {
+	public UtpInputStream(UtpSocketImpl socket, short initialSequenceNumber) {
+		this.socket = socket;
 		nextSequenceNumber = initialSequenceNumber;
 		packets = new HashMap<>();
 	}
@@ -70,6 +75,10 @@ public class UtpInputStream extends InputStream {
 		DataPayload payload = packets.remove(nextSequenceNumber);
 
 		while (payload == null) {
+			if (socket.getConnectionState().isClosedState() && nextSequenceNumber >= socket.getEndOfStreamSequenceNumber()) {
+				throw new EOFException("InputStream has been shutdown by the remote end.");
+			}
+
 			notifyLock.lock();
 			try {
 				onPacketArrived.await();

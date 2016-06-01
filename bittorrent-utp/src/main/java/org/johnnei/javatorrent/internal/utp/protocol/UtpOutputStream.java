@@ -28,6 +28,10 @@ public class UtpOutputStream extends OutputStream {
 
 	@Override
 	public void write(byte[] buffer, int offset, int length) throws IOException {
+		if (socket.getConnectionState().isClosedState()) {
+			throw new IOException("Socket has been closed.");
+		}
+
 		ensureBufferSize();
 		int remainingBytes = length;
 		int readBytes = 0;

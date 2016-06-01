@@ -5,6 +5,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
@@ -21,6 +23,7 @@ import org.powermock.reflect.Whitebox;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.mock;
@@ -75,6 +78,10 @@ public class UtpMultiplexerTest {
 		UtpSocketImpl socketMockTwo = mock(UtpSocketImpl.class);
 		when(socketMockTwo.getReceivingConnectionId()).thenReturn((short) 5);
 
+		executorServiceMock = mock(ScheduledExecutorService.class);
+		when(executorServiceMock.scheduleAtFixedRate(notNull(Runnable.class), anyLong(), anyLong(), notNull(TimeUnit.class)))
+				.thenReturn(mock(ScheduledFuture.class));
+
 		injectMocks();
 
 		assertTrue("First call should have been accepted", cut.registerSocket(socketMock));
@@ -85,6 +92,10 @@ public class UtpMultiplexerTest {
 	public void testReceivePacket() throws Exception {
 		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 		when(socketMock.getReceivingConnectionId()).thenReturn((short) 5);
+
+		executorServiceMock = mock(ScheduledExecutorService.class);
+		when(executorServiceMock.scheduleAtFixedRate(notNull(Runnable.class), anyLong(), anyLong(), notNull(TimeUnit.class)))
+				.thenReturn(mock(ScheduledFuture.class));
 
 		datagramSocketMock = mock(DatagramSocket.class);
 		datagramSocketMock.receive((DatagramPacket) notNull());

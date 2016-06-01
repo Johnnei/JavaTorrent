@@ -5,12 +5,14 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.UtpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utp.UtpSocketRegistration;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.network.InStream;
@@ -47,7 +49,7 @@ public class UtpMultiplexer implements Runnable {
 	/**
 	 * All {@link UtpSocket}s which have registered to listen for packets
 	 */
-	private Map<Short, UtpSocketImpl> utpSockets;
+	private Map<Short, UtpSocketRegistration> utpSockets;
 
 	private int receiveBufferSize;
 
@@ -86,11 +88,22 @@ public class UtpMultiplexer implements Runnable {
 				return false;
 			}
 
-			utpSockets.put(socket.getReceivingConnectionId(), socket);
-
-			torrentClient.getExecutorService().scheduleAtFixedRate(socket::handleTimeout, 1000, 500, TimeUnit.MILLISECONDS);
+			ScheduledFuture<?> pollingTask = torrentClient.getExecutorService().scheduleAtFixedRate(() -> {
+				socket.handleTimeout();
+				socket.handleClose();
+			}, 1000, 500, TimeUnit.MILLISECONDS);
+			utpSockets.put(socket.getReceivingConnectionId(), new UtpSocketRegistration(socket, pollingTask));
 		}
 		return true;
+	}
+
+	/**
+	 * Frees up the connection id used by the given UtpSocket and stops the polling for timeouts.
+	 * @param socket The socket to clean up.
+	 */
+	public void cleanUpSocket(UtpSocketImpl socket) {
+		UtpSocketRegistration registration = utpSockets.remove(socket.getReceivingConnectionId());
+		registration.getPollingTask().cancel(false);
 	}
 
 	public void send(DatagramPacket datagramPacket) throws IOException {
@@ -108,14 +121,17 @@ public class UtpMultiplexer implements Runnable {
 				InStream inStream = new InStream(packet.getData(), packet.getOffset(), packet.getLength());
 				UtpPacket utpPacket = new UtpPacket();
 				utpPacket.read(inStream, packetFactory);
-				UtpSocketImpl socket = utpSockets.get(utpPacket.getConnectionId());
+				UtpSocketRegistration socketRegistration = utpSockets.get(utpPacket.getConnectionId());
 
-				if (socket == null) {
+				UtpSocketImpl socket;
+				if (socketRegistration == null) {
 					LOGGER.debug("Received connection from {}", packet.getSocketAddress());
 					utpSocketFactory.setSocketAddress(packet.getSocketAddress());
 					socket = utpSocketFactory.build(utpPacket.getConnectionId());
 					registerSocket(socket);
 					newSocket = true;
+				} else {
+					socket = socketRegistration.getSocket();
 				}
 
 				socket.process(utpPacket);

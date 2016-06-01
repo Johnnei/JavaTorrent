@@ -7,7 +7,9 @@ import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -26,6 +28,9 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class UtpOutputStreamTest {
 
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+
 	@Mock
 	private UtpSocketImpl socketMock;
 
@@ -38,7 +43,27 @@ public class UtpOutputStreamTest {
 	}
 
 	@Test
+	public void testExceptionOnClosingSocket() throws IOException {
+		thrown.expect(IOException.class);
+		thrown.expectMessage("closed");
+
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.DISCONNECTING);
+		cut.write(5);
+	}
+
+	@Test
+	public void testExceptionOnClosedSocket() throws IOException {
+		thrown.expect(IOException.class);
+		thrown.expectMessage("closed");
+
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CLOSED);
+		cut.write(5);
+	}
+
+	@Test
 	public void testBufferedWrite() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(5);
 		cut.write(4);
 		cut.write(3);
@@ -54,6 +79,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testBufferedWriteArray() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 2, 3);
 
@@ -66,6 +93,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testBufferedWriteArrayMultiplePackets() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(new byte[] { 5, 4, 3, 2, 1, 1, 2, 3, 4, 5 });
 
 		ArgumentCaptor<DataPayload> payloadArgumentCaptor = ArgumentCaptor.forClass(DataPayload.class);
@@ -82,6 +111,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testBufferedWriteMixedWriteArray() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
 		cut.write(3);
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 3, 2);
@@ -95,6 +126,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testBufferedWriteArrayMixedWrite() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 2, 2);
 		cut.write(1);
@@ -108,6 +141,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testBufferingOnScalingPacketSize() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(new byte[] { 5, 4, 3, 2, 1 }, 0, 2);
 		when(socketMock.getPacketSize()).thenReturn(10);
 		cut.write(new byte[] { 5, 4, 3, 2, 1, 5, 4, 3, 2, 1 }, 2, 8);
@@ -122,6 +157,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testFlushOnNoWrittenBytes() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.flush();
 
 		verifyNoMoreInteractions(socketMock);
@@ -129,6 +166,8 @@ public class UtpOutputStreamTest {
 
 	@Test
 	public void testFlush() throws IOException {
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
+
 		cut.write(new byte[] { 5, 4 });
 		cut.flush();
 		cut.write(1);

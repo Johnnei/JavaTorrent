@@ -7,28 +7,42 @@ import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 
-import org.easymock.EasyMockSupport;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.powermock.reflect.Whitebox;
 
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
-import static org.easymock.EasyMock.same;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link UtpPacket}
  */
-public class UtpPacketTest extends EasyMockSupport {
+@RunWith(MockitoJUnitRunner.class)
+public class UtpPacketTest {
+
+	@Mock
+	private PrecisionTimer precisionTimerMock;
+
+	@Mock
+	private IPayload payloadMock;
+
+	@InjectMocks
+	private UtpPacket cut = new UtpPacket();
 
 	@Test
 	public void testReadAndProcess() throws Exception {
-		UtpPayloadFactory factoryMock = createMock(UtpPayloadFactory.class);
-		IPayload payloadMock = createMock(IPayload.class);
-		UtpSocketImpl socketMock = createMock(UtpSocketImpl.class);
+		UtpPayloadFactory factoryMock = mock(UtpPayloadFactory.class);
+		IPayload payloadMock = mock(IPayload.class);
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 		InStream inStream = new InStream(new byte[] {
 				// Type and version
 				0x01,
@@ -48,18 +62,12 @@ public class UtpPacketTest extends EasyMockSupport {
 				0x12, 0x21
 		});
 
-		expect(factoryMock.createPayloadFromType(0)).andReturn(payloadMock);
-		payloadMock.read(notNull());
-
-		UtpPacket cut = new UtpPacket();
-		payloadMock.process(same(cut), same(socketMock));
-
-		replayAll();
+		when(factoryMock.createPayloadFromType(0)).thenReturn(payloadMock);
 
 		cut.read(inStream, factoryMock);
 		cut.processPayload(socketMock);
 
-		verifyAll();
+		verify(payloadMock).process(same(cut), same(socketMock));
 
 		assertEquals("Incorrect version has been read.", 1, cut.getVersion());
 		assertFalse("Packet did not have any extensions in header.", cut.hasExtensions());
@@ -73,42 +81,47 @@ public class UtpPacketTest extends EasyMockSupport {
 
 	@Test
 	public void testReadIncorrectVersion() throws Exception {
-		UtpPayloadFactory factoryMock = createMock(UtpPayloadFactory.class);
+		UtpPayloadFactory factoryMock = mock(UtpPayloadFactory.class);
 		InStream inStream = new InStream(new byte[] { 0x02 });
 
-		replayAll();
-
-		UtpPacket cut = new UtpPacket();
 		cut.read(inStream, factoryMock);
-
-		verifyAll();
 
 		assertEquals("Incorrect version has been read.", 2, cut.getVersion());
 	}
+
+	@Test
+	public void testUpdateSentTime() {
+		when(precisionTimerMock.getCurrentMicros()).thenReturn(42);
+
+		cut.updateSentTime();
+
+		assertEquals("Timestamp was not correctly copied from the precision timer", 42, cut.getSentTime());
+	}
+
+	@Test
+	public void testPacketSize() {
+		when(payloadMock.getSize()).thenReturn(5);
+
+		assertEquals("Packet size + payload size must be added together.", 25, cut.getPacketSize());
+	}
+
 	@Test
 	public void testWritePacket() {
 		OutStream outStream = new OutStream();
-		UtpSocketImpl socketMock = createMock(UtpSocketImpl.class);
-		IPayload payloadMock = createMock(IPayload.class);
-		PrecisionTimer timerMock = createMock(PrecisionTimer.class);
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+		PrecisionTimer timerMock = mock(PrecisionTimer.class);
 
-		expect(socketMock.nextSequenceNumber()).andReturn((short) 1);
-		expect(socketMock.getSendingConnectionId()).andReturn((short) 0x1235);
-		expect(socketMock.getMeasuredDelay()).andReturn(0);
-		expect(socketMock.getWindowSize()).andReturn(0x12344321);
-		expect(socketMock.getAcknowledgeNumber()).andReturn((short) 0);
-		expect(payloadMock.getType()).andReturn((byte) UtpProtocol.ST_DATA);
-		expect(timerMock.getCurrentMicros()).andReturn(0x000DAC00);
-
-		payloadMock.write(notNull());
-
-		replayAll();
+		when(socketMock.nextSequenceNumber()).thenReturn((short) 1);
+		when(socketMock.getSendingConnectionId()).thenReturn((short) 0x1235);
+		when(socketMock.getMeasuredDelay()).thenReturn(0);
+		when(socketMock.getWindowSize()).thenReturn(0x12344321);
+		when(socketMock.getAcknowledgeNumber()).thenReturn((short) 0);
+		when(payloadMock.getType()).thenReturn((byte) UtpProtocol.ST_DATA);
+		when(timerMock.getCurrentMicros()).thenReturn(0x000DAC00);
 
 		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
 		Whitebox.setInternalState(cut, PrecisionTimer.class, timerMock);
 		cut.write(socketMock, outStream);
-
-		verifyAll();
 
 		byte[] expectedOutput = new byte[] {
 				// Type and version
@@ -135,27 +148,21 @@ public class UtpPacketTest extends EasyMockSupport {
 	@Test
 	public void testWriteSynPacket() {
 		OutStream outStream = new OutStream();
-		UtpSocketImpl socketMock = createMock(UtpSocketImpl.class);
-		IPayload payloadMock = createMock(IPayload.class);
-		PrecisionTimer timerMock = createMock(PrecisionTimer.class);
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+		IPayload payloadMock = mock(IPayload.class);
+		PrecisionTimer timerMock = mock(PrecisionTimer.class);
 
-		expect(socketMock.nextSequenceNumber()).andReturn((short) 1);
-		expect(socketMock.getReceivingConnectionId()).andReturn((short) 0x1234);
-		expect(socketMock.getMeasuredDelay()).andReturn(0);
-		expect(socketMock.getWindowSize()).andReturn(0x12344321);
-		expect(socketMock.getAcknowledgeNumber()).andReturn((short) 0);
-		expect(payloadMock.getType()).andReturn((byte) UtpProtocol.ST_SYN);
-		expect(timerMock.getCurrentMicros()).andReturn(0x000DAC00);
-
-		payloadMock.write(notNull());
-
-		replayAll();
+		when(socketMock.nextSequenceNumber()).thenReturn((short) 1);
+		when(socketMock.getReceivingConnectionId()).thenReturn((short) 0x1234);
+		when(socketMock.getMeasuredDelay()).thenReturn(0);
+		when(socketMock.getWindowSize()).thenReturn(0x12344321);
+		when(socketMock.getAcknowledgeNumber()).thenReturn((short) 0);
+		when(payloadMock.getType()).thenReturn((byte) UtpProtocol.ST_SYN);
+		when(timerMock.getCurrentMicros()).thenReturn(0x000DAC00);
 
 		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
 		Whitebox.setInternalState(cut, PrecisionTimer.class, timerMock);
 		cut.write(socketMock, outStream);
-
-		verifyAll();
 
 		byte[] expectedOutput = new byte[] {
 				// Type and version
@@ -181,15 +188,13 @@ public class UtpPacketTest extends EasyMockSupport {
 
 	@Test
 	public void testToString() {
-		UtpSocketImpl socketMock = createMock(UtpSocketImpl.class);
-		IPayload payloadMock = createMock(IPayload.class);
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+		IPayload payloadMock = mock(IPayload.class);
 
-		expect(socketMock.getConnectionState()).andReturn(ConnectionState.CONNECTING);
-		expect(payloadMock.getType()).andReturn((byte) 3);
-		expect(socketMock.nextSequenceNumber()).andReturn((short) 5);
-		expect(socketMock.getSendingConnectionId()).andReturn((short) 7);
-
-		replayAll();
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTING);
+		when(payloadMock.getType()).thenReturn((byte) 3);
+		when(socketMock.nextSequenceNumber()).thenReturn((short) 5);
+		when(socketMock.getSendingConnectionId()).thenReturn((short) 7);
 
 		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
 		assertTrue("Incorrect toString start", cut.toString().startsWith("UtpPacket["));
