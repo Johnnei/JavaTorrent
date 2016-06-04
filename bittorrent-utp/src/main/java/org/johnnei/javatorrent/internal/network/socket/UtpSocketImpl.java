@@ -28,6 +28,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpOutputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.SynPayload;
 import org.johnnei.javatorrent.network.OutStream;
@@ -160,16 +161,21 @@ public class UtpSocketImpl {
 		UtpPacket packet = new UtpPacket(this, payload);
 
 		// Wait for enough space to write the packet
-		while (getAvailableWindowSize() < packet.getPacketSize()) {
+		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
 			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
 			notifyLock.lock();
 			try {
 				onPacketAcknowledged.await(1, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 				throw new IOException("Interruption on writing packet", e);
 			} finally {
 				notifyLock.unlock();
 			}
+		}
+
+		if (connectionState == ConnectionState.CLOSED) {
+			throw new IOException("Socket is closed or reset during write.");
 		}
 
 		if (!(payload instanceof StatePayload) || connectionState == ConnectionState.CONNECTING) {
@@ -292,6 +298,41 @@ public class UtpSocketImpl {
 		LOGGER.trace("Packet Size scaled based on new window size: {} bytes", packetSize);
 	}
 
+	/**
+	 * This method should be triggered when a RESET packet is received.
+	 */
+	public void onReset() throws IOException {
+		if (connectionState.isClosedState()) {
+			// Ignore duplicates.
+			return;
+		}
+
+		LOGGER.debug("Connection got reset.");
+
+		// Create the RESET packet to kill-off the remote.
+		UtpPacket resetPacket = new UtpPacket(this, new ResetPayload());
+
+		// Shutdown the connection before sending the packet to reduce the changes on race conditions on duplicate packets.
+		setConnectionState(ConnectionState.CLOSED);
+
+		// Send the packet without caring about window restrictions.
+		doSend(resetPacket);
+
+		// Stop any waiting threads of sending packets as we don't care about them anymore.
+		notifyLock.lock();
+		try {
+			onPacketAcknowledged.signalAll();
+		} finally {
+			notifyLock.unlock();
+		}
+
+		// Clean the un-acked packets so that the {@link #handleClose()} will clean up this socket one the RESET is ack'ed.
+		packetsInFlightLock.writeLock().lock();
+		packetsInFlight.clear();
+		packetsInFlightLock.writeLock().unlock();
+
+	}
+
 	public void bindIoStreams(short sequenceNumber) {
 		if (inputStream != null || outputStream != null) {
 			return;
@@ -318,7 +359,7 @@ public class UtpSocketImpl {
 	 * Handles the period between {@link ConnectionState#DISCONNECTING} and {@link ConnectionState#CLOSED}.
 	 */
 	public void handleClose() {
-		if (connectionState != ConnectionState.DISCONNECTING) {
+		if (!connectionState.isClosedState()) {
 			return;
 		}
 

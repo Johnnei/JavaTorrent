@@ -7,8 +7,12 @@ import java.net.SocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.internal.utp.UtpTimeout;
 import org.johnnei.javatorrent.internal.utp.UtpWindow;
@@ -30,6 +34,9 @@ import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.jayway.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.isA;
+import static org.johnnei.javatorrent.test.DummyEntity.createRandomBytes;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -57,6 +64,8 @@ public class UtpSocketImplTest {
 	private UtpMultiplexer multiplexerMock;
 
 	private UtpSocketImpl cut;
+
+	private UtpWindow windowMock;
 
 	@Before
 	public void setUp() {
@@ -183,6 +192,76 @@ public class UtpSocketImplTest {
 	public void testEndOfStreamSequenceNumber() {
 		cut.setEndOfStreamSequenceNumber((short) 42);
 		assertEquals("Incorrect End of Stream sequence number", 42, cut.getEndOfStreamSequenceNumber());
+	}
+
+	@Test
+	public void testOnReset() throws Exception {
+		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
+		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+
+		// Force this connection to be connected
+		cut.setConnectionState(ConnectionState.CONNECTED);
+
+		cut.onReset();
+	}
+
+	@Test
+	public void testOnResetWakeUpPendingWrites() throws Exception {
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(IOException.class));
+
+		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
+		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+
+		windowMock = mock(UtpWindow.class);
+		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
+
+		when(windowMock.getSize()).thenReturn(5);
+
+		// Get the locks to make the test reliable.
+		ReentrantLock cutLock = Whitebox.getInternalState(cut, "notifyLock");
+		Condition cutCondition = Whitebox.getInternalState(cut, "onPacketAcknowledged");
+
+		FutureTask<Boolean> future = new FutureTask<>(() -> {
+			cut.getOutputStream().write(createRandomBytes(150));
+			return false;
+		});
+
+		// Force this connection to be connected
+		cut.setConnectionState(ConnectionState.CONNECTED);
+		cut.bindIoStreams((short) 0);
+
+		// Start the blocking write
+		Thread thread = new Thread(future);
+		thread.start();
+
+		// Wait until the thread is blocking for the write action.
+		await().atMost(1, TimeUnit.SECONDS).until(() -> {
+			cutLock.lock();
+			try {
+				cutLock.hasWaiters(cutCondition);
+			} finally {
+				cutLock.unlock();
+			}
+		});
+
+		// Reset the connection.
+		cut.onReset();
+
+		future.get(1, TimeUnit.SECONDS);
+	}
+
+	@Test
+	public void testOnResetDisconnecting() throws Exception {
+		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
+		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+
+		// Force this connection to be connected
+		cut.setConnectionState(ConnectionState.DISCONNECTING);
+
+		cut.onReset();
+
+		verifyNoMoreInteractions(multiplexerMock);
 	}
 
 	@Test

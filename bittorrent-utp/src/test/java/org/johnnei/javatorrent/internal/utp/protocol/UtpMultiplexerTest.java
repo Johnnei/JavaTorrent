@@ -142,6 +142,10 @@ public class UtpMultiplexerTest {
 		when(utpSocketFactoryMock.build(eq((short) 5))).thenReturn(socketMock);
 		when(socketMock.getReceivingConnectionId()).thenReturn((short) 5);
 
+		executorServiceMock = mock(ScheduledExecutorService.class);
+		when(executorServiceMock.scheduleAtFixedRate(notNull(Runnable.class), anyLong(), anyLong(), notNull(TimeUnit.class)))
+				.thenReturn(mock(ScheduledFuture.class));
+
 		datagramSocketMock = mock(DatagramSocket.class);
 		Mockito.doAnswer(invocation -> {
 			DatagramPacket p = (DatagramPacket) invocation.getArguments()[0];
