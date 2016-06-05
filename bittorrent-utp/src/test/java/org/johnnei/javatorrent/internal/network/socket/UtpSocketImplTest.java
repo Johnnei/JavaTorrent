@@ -203,6 +203,8 @@ public class UtpSocketImplTest {
 		cut.setConnectionState(ConnectionState.CONNECTED);
 
 		cut.onReset();
+
+		assertEquals("Connection should be closed after reset", ConnectionState.CLOSED, cut.getConnectionState());
 	}
 
 	@Test
@@ -261,7 +263,7 @@ public class UtpSocketImplTest {
 
 		cut.onReset();
 
-		verifyNoMoreInteractions(multiplexerMock);
+		assertEquals("Connection should be closed after reset", ConnectionState.CLOSED, cut.getConnectionState());
 	}
 
 	@Test

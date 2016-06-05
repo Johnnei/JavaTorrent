@@ -302,7 +302,7 @@ public class UtpSocketImpl {
 	 * This method should be triggered when a RESET packet is received.
 	 */
 	public void onReset() throws IOException {
-		if (connectionState.isClosedState()) {
+		if (connectionState == ConnectionState.CLOSED) {
 			// Ignore duplicates.
 			return;
 		}
