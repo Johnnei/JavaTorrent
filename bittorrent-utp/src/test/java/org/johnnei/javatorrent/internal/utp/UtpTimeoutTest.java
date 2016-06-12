@@ -51,4 +51,15 @@ public class UtpTimeoutTest {
 		assertEquals("Timeout should have decreased", 731, cut.getDuration().toMillis());
 	}
 
+	@Test
+	public void testUpdateIgnoreResentPackets() {
+		UtpPacket packetMock = mock(UtpPacket.class);
+		when(packetMock.getTimesSent()).thenReturn(2);
+
+		UtpTimeout cut = new UtpTimeout();
+		cut.update(700_000, packetMock);
+
+		assertEquals("Timeout should not have changed.", 1000, cut.getDuration().toMillis());
+	}
+
 }

@@ -23,13 +23,26 @@ public class UtpTimeout {
 
 	private int rttVariance;
 
+	/**
+	 * Creates a new UTP Timeout handler with the initial timeout of 1 second.
+	 */
 	public UtpTimeout() {
 		timeout = Duration.of(1000, ChronoUnit.MILLIS);
 	}
 
-	public void update(int receiveTime, UtpPacket ackedPacket) {
+	/**
+	 * Calculates the new timeout based on the round trip time of a packet.
+	 * @param receiveTime The time as close as possible to the time of receiving.
+	 * @param packet The packet which has completed the round trip.
+	 */
+	public void update(int receiveTime, UtpPacket packet) {
+		if (packet.getTimesSent() > 1) {
+			// Don't include packets which have been reset.
+			return;
+		}
+
 		// Calculate RTT and RTT Variance, and update the timeout value accordingly.
-		int packetRtt = receiveTime - ackedPacket.getSentTime();
+		int packetRtt = receiveTime - packet.getSentTime();
 		int delta = rtt - packetRtt;
 		rttVariance += (Math.abs(delta) - rttVariance) / 4;
 		rtt += (packetRtt - rtt) / 8;
@@ -40,6 +53,9 @@ public class UtpTimeout {
 		LOGGER.trace("Timeout changed from {}ms to {}ms", oldTimeout.toMillis(), timeout.toMillis());
 	}
 
+	/**
+	 * @return The timeout duration.
+	 */
 	public Duration getDuration() {
 		return timeout;
 	}

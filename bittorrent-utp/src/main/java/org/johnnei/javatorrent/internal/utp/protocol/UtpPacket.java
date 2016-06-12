@@ -22,6 +22,11 @@ public class UtpPacket {
 	private int sentTime;
 
 	/**
+	 * The amount of times this packet was sent.
+	 */
+	private int timesSent;
+
+	/**
 	 * The payload type of the packet.
 	 */
 	private byte type;
@@ -75,6 +80,11 @@ public class UtpPacket {
 		// Constructor for reading
 	}
 
+	/**
+	 * Creates a new UtpPacket which will be send.
+	 * @param socket The socket on which this packet will be send.
+	 * @param payload The payload which will be send with this packet.
+	 */
 	public UtpPacket(UtpSocketImpl socket, IPayload payload) {
 		this.version = UtpProtocol.VERSION;
 		this.type = payload.getType();
@@ -93,6 +103,11 @@ public class UtpPacket {
 		}
 	}
 
+	/**
+	 * Reads the packet including the payload.
+	 * @param inStream The stream from which the packet must be read.
+	 * @param payloadFactory The payload factory to read the payload data.
+	 */
 	public void read(InStream inStream, UtpPayloadFactory payloadFactory) {
 		int typeAndVersion = inStream.readByte();
 		version = (byte) (typeAndVersion & 0x0F);
@@ -113,6 +128,11 @@ public class UtpPacket {
 		payload.read(inStream);
 	}
 
+	/**
+	 * Writes the packet including the payload.
+	 * @param socket The socket for which this packet will be written.
+	 * @param outStream The stream on which the packet will be written.
+	 */
 	public void write(UtpSocketImpl socket, OutStream outStream) {
 		int typeAndVersion = (type << 4) | (version & 0xF);
 		outStream.writeByte(typeAndVersion);
@@ -129,8 +149,12 @@ public class UtpPacket {
 		payload.write(outStream);
 	}
 
+	/**
+	 * Updates the time at which this packet was sent and increments the amount of times it is send.
+	 */
 	public void updateSentTime() {
 		sentTime = timer.getCurrentMicros();
+		timesSent++;
 	}
 
 	/**
@@ -141,44 +165,81 @@ public class UtpPacket {
 		payload.process(this, socket);
 	}
 
+	/**
+	 * @return The connection ID for this packet.
+	 */
 	public short getConnectionId() {
 		return connectionId;
 	}
 
+	/**
+	 * @return The last packet which was received.
+	 */
 	public short getAcknowledgeNumber() {
 		return acknowledgeNumber;
 	}
 
+	/**
+	 * @return The sequence number of this packet.
+	 */
 	public short getSequenceNumber() {
 		return sequenceNumber;
 	}
 
+	/**
+	 * @return The advertised window size.
+	 */
 	public int getWindowSize() {
 		return windowSize;
 	}
 
+	/**
+	 * @return The timestamp at which this packet was sent.
+	 */
 	public int getTimestampMicroseconds() {
 		return timestampMicroseconds;
 	}
 
+	/**
+	 * @return The measured difference between packet timestamp and local timestamp.
+	 */
 	public int getTimestampDifferenceMicroseconds() {
 		return timestampDifferenceMicroseconds;
 	}
 
+	/**
+	 * @return <code>true</code> when the extension indication field is non-zero.
+	 */
 	public boolean hasExtensions() {
 		return extension != 0;
 	}
 
+	/**
+	 * @return The protocol version of this packet.
+	 */
 	public byte getVersion() {
 		return version;
 	}
 
+	/**
+	 * @return The size of the packet including the payload size.
+	 */
 	public int getPacketSize() {
 		return 20 + payload.getSize();
 	}
 
+	/**
+	 * @return The time at which this packet was sent.
+	 */
 	public int getSentTime() {
 		return sentTime;
+	}
+
+	/**
+	 * @return The amount of times this packet was sent.
+	 */
+	public int getTimesSent() {
+		return timesSent;
 	}
 
 	@Override
