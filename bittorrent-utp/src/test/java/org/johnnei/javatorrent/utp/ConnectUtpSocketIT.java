@@ -62,7 +62,7 @@ public class ConnectUtpSocketIT {
 		LOGGER.info("Preparing test environment.");
 
 		UtpModule localUtpModule = new UtpModule();
-		TorrentClient localClient = createTorrentClient(localUtpModule, DummyEntity.findAvailableUdpPort());
+		createTorrentClient(localUtpModule, DummyEntity.findAvailableUdpPort());
 
 		UtpModule remoteUtpModule = new UtpModule();
 		TorrentClient remoteClient = createTorrentClient(remoteUtpModule, DummyEntity.findAvailableUdpPort());

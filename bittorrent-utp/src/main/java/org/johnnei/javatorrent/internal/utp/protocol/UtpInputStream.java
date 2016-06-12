@@ -15,6 +15,8 @@ import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Short.toUnsignedInt;
+
 /**
  * Ensures that the received {@link DataPayload} are being read in order.
  */
@@ -44,7 +46,7 @@ public class UtpInputStream extends InputStream {
 
 	public void addToBuffer(short sequenceNumber, DataPayload dataPayload) {
 		packets.putIfAbsent(sequenceNumber, dataPayload);
-		LOGGER.trace("Received packet {} (expected: {}). Available: {}", sequenceNumber, nextSequenceNumber, available());
+		LOGGER.trace("Received packet {} (expected: {}). Available: {}", toUnsignedInt(sequenceNumber), toUnsignedInt(nextSequenceNumber), available());
 		Sync.signalAll(notifyLock, onPacketArrived);
 	}
 

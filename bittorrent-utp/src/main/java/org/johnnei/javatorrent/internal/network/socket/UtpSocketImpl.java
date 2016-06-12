@@ -7,25 +7,24 @@ import java.net.SocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.UtpTimeout;
 import org.johnnei.javatorrent.internal.utp.UtpWindow;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpAckHandler;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpOutputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
@@ -50,8 +49,6 @@ public class UtpSocketImpl {
 
 	private final Lock notifyLock = new ReentrantLock();
 
-	private final ReadWriteLock packetsInFlightLock = new ReentrantReadWriteLock();
-
 	/**
 	 * A condition which gets triggered when a packet is acknowledged and thus making room in the write queue
 	 */
@@ -67,7 +64,7 @@ public class UtpSocketImpl {
 
 	private ConnectionState connectionState;
 
-	private Collection<UtpPacket> packetsInFlight;
+	private UtpAckHandler ackHandler;
 
 	private Instant lastInteraction;
 
@@ -77,8 +74,6 @@ public class UtpSocketImpl {
 	 * The sequence number which as marked as the last packet by {@link org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload}
 	 */
 	private short endOfStreamSequenceNumber;
-
-	private short acknowledgeNumber;
 
 	private short sequenceNumberCounter;
 
@@ -129,12 +124,12 @@ public class UtpSocketImpl {
 
 	private void initDefaults() {
 		connectionState = ConnectionState.CONNECTING;
-		packetsInFlight = new LinkedList<>();
 		packetSize = 150;
 		clientWindowSize = 150;
 		timeout = new UtpTimeout();
 		window = new UtpWindow(this);
 		lastInteraction = clock.instant();
+		ackHandler = new UtpAckHandler(this);
 	}
 
 	public void connect(InetSocketAddress endpoint) throws IOException {
@@ -160,8 +155,8 @@ public class UtpSocketImpl {
 	public void send(IPayload payload) throws IOException {
 		UtpPacket packet = new UtpPacket(this, payload);
 
-		// Wait for enough space to write the packet
-		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
+		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
+		while (payload.getType() != UtpProtocol.ST_STATE && connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
 			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
 			notifyLock.lock();
 			try {
@@ -179,13 +174,7 @@ public class UtpSocketImpl {
 		}
 
 		if (!(payload instanceof StatePayload) || connectionState == ConnectionState.CONNECTING) {
-			Lock lock = packetsInFlightLock.writeLock();
-			lock.lock();
-			try {
-				packetsInFlight.add(packet);
-			} finally {
-				lock.unlock();
-			}
+			ackHandler.registerPacket(packet);
 		}
 
 		doSend(packet);
@@ -200,7 +189,7 @@ public class UtpSocketImpl {
 		lastInteraction = clock.instant();
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
-		LOGGER.trace("Sent {} to {} (in flight: {}, {} / {} bytes)", packet, socketAddress, packetsInFlight.size(), getBytesInFlight(), getSendWindowSize());
+		LOGGER.trace("Sent {} to {} ({} / {} bytes)", packet, socketAddress, ackHandler, getSendWindowSize());
 	}
 
 	public UtpInputStream getInputStream() throws IOException {
@@ -224,13 +213,7 @@ public class UtpSocketImpl {
 	}
 
 	public int getBytesInFlight() {
-		Lock lock = packetsInFlightLock.readLock();
-		lock.lock();
-		try {
-			return packetsInFlight.stream().mapToInt(UtpPacket::getPacketSize).sum();
-		} finally {
-			lock.unlock();
-		}
+		return ackHandler.countBytesInFlight();
 	}
 
 	private int getSendWindowSize() {
@@ -243,38 +226,20 @@ public class UtpSocketImpl {
 		lastInteraction = clock.instant();
 		LOGGER.trace("Received {} from {}", packet, socketAddress);
 
-		boolean packetCausedConnectedState = false;
-		if (connectionState == ConnectionState.CONNECTING && !packetsInFlight.isEmpty()) {
+		if (connectionState == ConnectionState.CONNECTING && ackHandler.hasPacketsInFlight()) {
 			// We're on the initiating endpoint and thus we are 'connected' once our SYN gets ACK'ed
 			setConnectionState(ConnectionState.CONNECTED);
 			bindIoStreams(packet.getSequenceNumber());
-			packetCausedConnectedState = true;
 		}
 
 		clientWindowSize = packet.getWindowSize();
 
-		short oldAcknowledgeNumber = acknowledgeNumber;
-		acknowledgeNumber = packet.getSequenceNumber();
-		Lock packetLock = packetsInFlightLock.writeLock();
-		packetLock.lock();
-		try {
-			packetsInFlight.stream()
-					.filter(packetInFlight -> packetInFlight.getSequenceNumber() == packet.getAcknowledgeNumber())
-					.findAny()
-					.ifPresent(ackedPacket -> onPacketAcknowledged(receiveTime, packet, ackedPacket));
-		} finally {
-			packetLock.unlock();
-		}
-		packet.processPayload(this);
-
-		if (!packetCausedConnectedState && (connectionState != ConnectionState.CONNECTING)) {
-			if (oldAcknowledgeNumber != acknowledgeNumber) {
-				LOGGER.trace("Sending ACK message for {}.", packet);
-				doSend(new UtpPacket(this, new StatePayload()));
-			}
-
+		Optional<UtpPacket> ackedPacket = ackHandler.onReceivedPacket(packet);
+		ackedPacket.ifPresent(p -> {
+			onPacketAcknowledged(receiveTime, packet, p);
 			measuredDelay = Math.abs(receiveTime - packet.getTimestampMicroseconds());
-		}
+		});
+		packet.processPayload(this);
 
 		// Notify any waiting threads of the processed packet.
 		Sync.signalAll(notifyLock, onPacketAcknowledged);
@@ -289,8 +254,7 @@ public class UtpSocketImpl {
 		timeout.update(receiveTime, ackedPacket);
 
 		// Remove the acked packet.
-		packetsInFlight.remove(ackedPacket);
-		LOGGER.trace("{} message ACKed a packet in flight. (in flight: {}, {} bytes)", packet, packetsInFlight.size(), getBytesInFlight());
+		LOGGER.trace("{} message ACKed a packet in flight. ({})", packet, ackHandler);
 	}
 
 	private void updatePacketSize() {
@@ -327,10 +291,7 @@ public class UtpSocketImpl {
 		}
 
 		// Clean the un-acked packets so that the {@link #handleClose()} will clean up this socket one the RESET is ack'ed.
-		packetsInFlightLock.writeLock().lock();
-		packetsInFlight.clear();
-		packetsInFlightLock.writeLock().unlock();
-
+		ackHandler.onReset();
 	}
 
 	public void bindIoStreams(short sequenceNumber) {
@@ -363,7 +324,7 @@ public class UtpSocketImpl {
 			return;
 		}
 
-		if (acknowledgeNumber == endOfStreamSequenceNumber && packetsInFlight.isEmpty()) {
+		if (getAcknowledgeNumber() == endOfStreamSequenceNumber && !ackHandler.hasPacketsInFlight()) {
 			setConnectionState(ConnectionState.CLOSED);
 			utpMultiplexer.cleanUpSocket(this);
 		}
@@ -399,7 +360,7 @@ public class UtpSocketImpl {
 	}
 
 	public short getAcknowledgeNumber() {
-		return acknowledgeNumber;
+		return ackHandler.getAcknowledgeNumber();
 	}
 
 	public synchronized short nextSequenceNumber() {
@@ -431,7 +392,7 @@ public class UtpSocketImpl {
 		return connectionState;
 	}
 
-	public void setConnectionState(ConnectionState connectionState) {
+	void setConnectionState(ConnectionState connectionState) {
 		LOGGER.debug("Connection state transitioned from {} to {}", this.connectionState, connectionState);
 		this.connectionState = connectionState;
 

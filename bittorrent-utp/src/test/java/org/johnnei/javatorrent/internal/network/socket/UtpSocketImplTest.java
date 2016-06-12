@@ -6,7 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -17,10 +17,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.johnnei.javatorrent.internal.utp.UtpTimeout;
 import org.johnnei.javatorrent.internal.utp.UtpWindow;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpAckHandler;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
-import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.test.DummyEntity;
 
@@ -41,6 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
@@ -70,7 +71,9 @@ public class UtpSocketImplTest {
 	@Before
 	public void setUp() {
 		multiplexerMock = mock(UtpMultiplexer.class);
-		cut = new UtpSocketImpl(multiplexerMock);
+		cut = new UtpSocketImpl.Builder()
+				.setUtpMultiplexer(multiplexerMock)
+				.build();
 	}
 
 	@Test
@@ -82,7 +85,10 @@ public class UtpSocketImplTest {
 
 	@Test
 	public void testCreateAcceptingSocket() {
-		cut = new UtpSocketImpl(multiplexerMock, new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort()), (short) 5);
+		cut = new UtpSocketImpl.Builder()
+				.setUtpMultiplexer(multiplexerMock)
+				.setSocketAddress(new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort()))
+				.build((short) 5);
 
 		assertEquals("Incorrect receiving connection id", 6, cut.getReceivingConnectionId());
 		assertEquals("Incorrect sending connection id", 5, cut.getSendingConnectionId());
@@ -131,34 +137,10 @@ public class UtpSocketImplTest {
 	}
 
 	@Test
-	public void testAckDataPacket() throws Exception {
-		UtpSocketImpl remoteSocket = mock(UtpSocketImpl.class);
-
-		when(remoteSocket.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
-		when(remoteSocket.nextSequenceNumber()).thenReturn((short) 5);
-		when(remoteSocket.getAcknowledgeNumber()).thenReturn((short) 5);
-
-		UtpPacket dataPacket = new UtpPacket(remoteSocket, new DataPayload(new byte[] { 1, 2, 3, 4, 5 }));
-
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
-
-		// Force this connection to be connected
-		cut.setConnectionState(ConnectionState.CONNECTED);
-		cut.bindIoStreams((short) 5);
-
-		cut.process(dataPacket);
-
-		ArgumentCaptor<DatagramPacket> packetCapture = ArgumentCaptor.forClass(DatagramPacket.class);
-		verify(multiplexerMock).send(packetCapture.capture());
-
-		assertEquals("Incorrect response packet", UtpProtocol.ST_STATE, (packetCapture.getValue().getData()[0] & 0xF0) >> 4);
-	}
-
-	@Test
 	public void testUpdateWindowTimeoutAndPacketSize() throws Exception {
 		UtpTimeout timeoutMock = mock(UtpTimeout.class);
 		UtpWindow windowMock = mock(UtpWindow.class);
+		UtpAckHandler handlerMock = mock(UtpAckHandler.class);
 
 		// Create a packet which is going to be ack'ed.
 		UtpPacket packetMock = mock(UtpPacket.class);
@@ -173,8 +155,10 @@ public class UtpSocketImplTest {
 		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
 		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
 
+		when(handlerMock.onReceivedPacket(eq(statePacket))).thenReturn(Optional.of(packetMock));
+
 		// Inject the packet to be ack'ed.
-		Whitebox.<Collection<UtpPacket>>getInternalState(cut, "packetsInFlight").add(packetMock);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, handlerMock);
 		Whitebox.setInternalState(cut, UtpTimeout.class, timeoutMock);
 		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
 
