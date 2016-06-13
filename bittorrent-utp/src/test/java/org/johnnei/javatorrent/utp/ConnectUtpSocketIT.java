@@ -71,13 +71,13 @@ public class ConnectUtpSocketIT {
 
 		UtpMultiplexer remoteMultiplexer = getInternalState(remoteUtpModule, UtpMultiplexer.class);
 
-		assertNotNull("Failed to get UtpMultiplexer instance on remote UtpModule", remoteMultiplexer);
+		assertNotNull("Failed to putIfAbsent UtpMultiplexer instance on remote UtpModule", remoteMultiplexer);
 
 		LOGGER.info("Connecting sockets.");
 		localSocket.connect(new InetSocketAddress("localhost", remoteClient.getDownloadPort()));
 
 		UtpSocketImpl localSocketImpl = getInternalState(localSocket, UtpSocketImpl.class);
-		assertNotNull("Failed to get the UtpSocketImpl instance on local socket", localSocketImpl);
+		assertNotNull("Failed to putIfAbsent the UtpSocketImpl instance on local socket", localSocketImpl);
 
 		assertEquals("Connection state on local socket must have transitioned to connected.", ConnectionState.CONNECTED, localSocketImpl.getConnectionState());
 

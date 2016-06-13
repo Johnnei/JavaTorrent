@@ -242,6 +242,14 @@ public class UtpPacket {
 		return timesSent;
 	}
 
+	/**
+	 * @return The type of packet.
+	 * @see UtpProtocol
+	 */
+	public byte getType() {
+		return type;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("UtpPacket[payload=%s, seq=%s, ack=%s]", payload, Short.toUnsignedInt(sequenceNumber), Short.toUnsignedInt(acknowledgeNumber));

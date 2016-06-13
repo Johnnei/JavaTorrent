@@ -1,5 +1,8 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
+/**
+ * Class containing constants which define the uTP type and version values.
+ */
 public class UtpProtocol {
 
 	public static final int VERSION = 1;

@@ -66,8 +66,6 @@ public class UtpSocketImplTest {
 
 	private UtpSocketImpl cut;
 
-	private UtpWindow windowMock;
-
 	@Before
 	public void setUp() {
 		multiplexerMock = mock(UtpMultiplexer.class);
@@ -199,7 +197,7 @@ public class UtpSocketImplTest {
 		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
 		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
 
-		windowMock = mock(UtpWindow.class);
+		UtpWindow windowMock = mock(UtpWindow.class);
 		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
 
 		when(windowMock.getSize()).thenReturn(5);

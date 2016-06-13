@@ -28,7 +28,6 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
-import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.SynPayload;
 import org.johnnei.javatorrent.network.OutStream;
 
@@ -169,11 +168,20 @@ public class UtpSocketImpl {
 			}
 		}
 
+		sendUnbounded(packet);
+	}
+
+	/**
+	 * Send a packet without honoring the {@link #window}.
+	 * @param packet The packet
+	 * @see #send(IPayload)
+	 */
+	public void sendUnbounded(UtpPacket packet) throws IOException {
 		if (connectionState == ConnectionState.CLOSED) {
 			throw new IOException("Socket is closed or reset during write.");
 		}
 
-		if (!(payload instanceof StatePayload) || connectionState == ConnectionState.CONNECTING) {
+		if (packet.getType() != UtpProtocol.ST_STATE || connectionState == ConnectionState.CONNECTING) {
 			ackHandler.registerPacket(packet);
 		}
 

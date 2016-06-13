@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,6 +12,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utils.RecentLinkedList;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 
 import org.slf4j.Logger;
@@ -53,23 +55,35 @@ public class UtpAckHandler {
 	 */
 	private short acknowledgeNumber;
 
+	private RecentLinkedList<Acknowledgement> acknowledgements;
+
 	/**
 	 * Creates a new Utp Acknowledgement handler.
 	 */
 	public UtpAckHandler(UtpSocketImpl socket) {
 		this.socket = socket;
 		packetsInFlight = new LinkedList<>();
+		acknowledgements = new RecentLinkedList<>(10);
 		futurePackets = new HashSet<>();
 		firstPacket = new AtomicBoolean(true);
 	}
 
 	/**
 	 * Registers the we've sent a new packet.
+	 *
 	 * @param packet The packet we've sent.
 	 */
 	public void registerPacket(UtpPacket packet) {
 		lock.writeLock().lock();
 		try {
+			Optional<UtpPacket> duplicatePacket = packetsInFlight.stream()
+					.filter(p -> packet.getSequenceNumber() == p.getSequenceNumber())
+					.findAny();
+
+			if (duplicatePacket.isPresent()) {
+				return;
+			}
+
 			packetsInFlight.add(packet);
 		} finally {
 			lock.writeLock().unlock();
@@ -78,6 +92,7 @@ public class UtpAckHandler {
 
 	/**
 	 * Event to be called on every packet we receive from the other end.
+	 *
 	 * @param receivedPacket The packet we received.
 	 * @return The packet which has been acked.
 	 */
@@ -99,17 +114,37 @@ public class UtpAckHandler {
 			lock.readLock().unlock();
 		}
 
-		ackedPacket.ifPresent(packet -> {
-			lock.writeLock().lock();
-			try {
-				packetsInFlight.removeIf(p -> p.getSequenceNumber() == packet.getSequenceNumber());
-			} finally {
-				lock.writeLock().unlock();
-			}
-		});
+		lock.writeLock().lock();
+		try {
+			packetsInFlight.removeIf(p -> p.getSequenceNumber() == receivedPacket.getAcknowledgeNumber());
+		} finally {
+			lock.writeLock().unlock();
+		}
 
+		handleResend(receivedPacket);
 
 		return ackedPacket;
+	}
+
+	private void handleResend(UtpPacket packet) throws IOException {
+		Acknowledgement acknowledgement = acknowledgements.putIfAbsent(new Acknowledgement(packet.getAcknowledgeNumber()));
+		acknowledgement.incrementCount();
+
+		if (acknowledgement.getCount() != 3) {
+			return;
+		}
+
+		acknowledgement.resetCount();
+		short nextSequenceNumber = (short) (packet.getAcknowledgeNumber() + 1);
+		Optional<UtpPacket> lostPacketOptional = packetsInFlight.stream().filter(p -> p.getSequenceNumber() == nextSequenceNumber).findAny();
+
+		if (!lostPacketOptional.isPresent()) {
+			return;
+		}
+
+		UtpPacket lostPacket = lostPacketOptional.get();
+		LOGGER.trace("Resending lost packet {}", lostPacket);
+		socket.sendUnbounded(lostPacket);
 	}
 
 	private void updateAcknowledgeNumber(UtpPacket packet) throws IOException {
@@ -169,6 +204,53 @@ public class UtpAckHandler {
 
 	public String toString() {
 		return String.format("UtpAckHandler[ack=%d, packetsInFlight=%d, bytes in flight=%d]", toUnsignedInt(acknowledgeNumber), packetsInFlight.size(), countBytesInFlight());
+	}
+
+	private final class Acknowledgement {
+
+		private final int sequenceNumber;
+
+		private int count;
+
+		Acknowledgement(int sequenceNumber) {
+			this.sequenceNumber = sequenceNumber;
+			count = 0;
+		}
+
+		void incrementCount() {
+			count++;
+		}
+
+		void resetCount() {
+			count = 0;
+		}
+
+		int getCount() {
+			return count;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+
+			if (o == null) {
+				return false;
+			}
+
+			if (!(o instanceof Acknowledgement)) {
+				return false;
+			}
+
+			Acknowledgement that = (Acknowledgement) o;
+			return sequenceNumber == that.sequenceNumber;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(sequenceNumber);
+		}
 	}
 
 }
