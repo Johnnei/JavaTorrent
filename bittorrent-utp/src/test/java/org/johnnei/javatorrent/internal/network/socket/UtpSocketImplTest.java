@@ -47,7 +47,6 @@ import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -246,28 +245,6 @@ public class UtpSocketImplTest {
 		cut.onReset();
 
 		assertEquals("Connection should be closed after reset", ConnectionState.CLOSED, cut.getConnectionState());
-	}
-
-	@Test
-	public void testNoAckOnStatePacket() throws Exception {
-		UtpSocketImpl remoteSocket = mock(UtpSocketImpl.class);
-
-		when(remoteSocket.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
-		when(remoteSocket.nextSequenceNumber()).thenReturn((short) 5);
-		when(remoteSocket.getAcknowledgeNumber()).thenReturn((short) 5);
-
-		UtpPacket dataPacket = new UtpPacket(remoteSocket, new StatePayload());
-
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
-
-		// Force this connection to be connected
-		cut.setConnectionState(ConnectionState.CONNECTED);
-		cut.bindIoStreams((short) 5);
-
-		cut.process(dataPacket);
-
-		verifyNoMoreInteractions(multiplexerMock);
 	}
 
 	@Test

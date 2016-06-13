@@ -45,7 +45,7 @@ public class UtpPacketTest {
 		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 		InStream inStream = new InStream(new byte[] {
 				// Type and version
-				0x01,
+				0x21,
 				// Extension
 				0x00,
 				// Connection Id
@@ -62,7 +62,7 @@ public class UtpPacketTest {
 				0x12, 0x21
 		});
 
-		when(factoryMock.createPayloadFromType(0)).thenReturn(payloadMock);
+		when(factoryMock.createPayloadFromType(2)).thenReturn(payloadMock);
 
 		cut.read(inStream, factoryMock);
 		cut.processPayload(socketMock);
@@ -70,6 +70,7 @@ public class UtpPacketTest {
 		verify(payloadMock).process(same(cut), same(socketMock));
 
 		assertEquals("Incorrect version has been read.", 1, cut.getVersion());
+		assertEquals("Incorrect type has been read.", 2, cut.getType());
 		assertFalse("Packet did not have any extensions in header.", cut.hasExtensions());
 		assertEquals("Incorrect connection id has been read.", 0x1234, cut.getConnectionId());
 		assertEquals("Incorrect timestamp has been read.", 0x12345678, cut.getTimestampMicroseconds());

@@ -136,7 +136,16 @@ public class UtpAckHandler {
 
 		acknowledgement.resetCount();
 		short nextSequenceNumber = (short) (packet.getAcknowledgeNumber() + 1);
-		Optional<UtpPacket> lostPacketOptional = packetsInFlight.stream().filter(p -> p.getSequenceNumber() == nextSequenceNumber).findAny();
+		lock.readLock().lock();
+		Optional<UtpPacket> lostPacketOptional = Optional.empty();
+		try {
+			lostPacketOptional = packetsInFlight.stream().filter(p -> {
+				short s = p.getSequenceNumber();
+				return s == nextSequenceNumber;
+			}).findAny();
+		} finally {
+			lock.readLock().unlock();
+		}
 
 		if (!lostPacketOptional.isPresent()) {
 			return;
@@ -148,6 +157,11 @@ public class UtpAckHandler {
 	}
 
 	private void updateAcknowledgeNumber(UtpPacket packet) throws IOException {
+		if (packet.getType() == UtpProtocol.ST_STATE) {
+			// Don't process ST_STATE packets.
+			return;
+		}
+
 		synchronized (futurePackets) {
 			futurePackets.add(packet.getSequenceNumber());
 

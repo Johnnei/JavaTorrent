@@ -132,6 +132,59 @@ public class UtpAckHandlerTest {
 	}
 
 	@Test
+	public void testDoNotAckOnStatePackets() throws IOException {
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+		UtpPacket packetOne = mock(UtpPacket.class);
+		UtpPacket packetTwo = mock(UtpPacket.class);
+
+		when(packetOne.getSequenceNumber()).thenReturn((short) 1);
+		when(packetOne.getPacketSize()).thenReturn(5);
+		when(packetTwo.getSequenceNumber()).thenReturn((short) 2);
+		when(packetTwo.getPacketSize()).thenReturn(7);
+
+		// Packet to initialize the ACK numbers.
+		UtpPacket initPacket = mock(UtpPacket.class);
+		when(initPacket.getSequenceNumber()).thenReturn((short) 5);
+
+		UtpPacket ackOne = mock(UtpPacket.class);
+		UtpPacket ackTwo = mock(UtpPacket.class);
+
+		when(ackOne.getSequenceNumber()).thenReturn((short) 6);
+		when(ackOne.getAcknowledgeNumber()).thenReturn((short) 1);
+
+		// ST_STATE with higher seq_nr but also ACK one of our packets.
+		when(ackTwo.getSequenceNumber()).thenReturn((short) 7);
+		when(ackTwo.getAcknowledgeNumber()).thenReturn((short) 2);
+		when(ackTwo.getType()).thenReturn((byte) UtpProtocol.ST_STATE);
+
+		UtpAckHandler cut = new UtpAckHandler(socketMock);
+		cut.registerPacket(packetOne);
+		cut.registerPacket(packetTwo);
+
+		assertEquals("Bytes in flight before acks is incorrect", 12, cut.countBytesInFlight());
+
+		cut.onReceivedPacket(initPacket);
+		assertEquals("After init packet the return ACK number must be 5.", 5, cut.getAcknowledgeNumber());
+		// Initial packet must not cause a ST_STATE as it will be received during the SYN-phase.
+		verify(socketMock, never()).send(isA(StatePayload.class));
+
+		cut.onReceivedPacket(ackOne);
+
+		assertEquals("Bytes in flight after first ack is incorrect", 7, cut.countBytesInFlight());
+		assertEquals("After first ack the return ACK number is incorrect.", 6, cut.getAcknowledgeNumber());
+
+		verify(socketMock, times(1)).send(isA(StatePayload.class));
+
+		cut.onReceivedPacket(ackTwo);
+
+		assertEquals("Bytes in flight after second ack is incorrect", 0, cut.countBytesInFlight());
+		assertEquals("After second ack the return ACK number is incorrect.", 6, cut.getAcknowledgeNumber());
+
+		// Don't send out another ST_STATE to confirm that we received seq_nr 7 as it is not the data packet.
+		verify(socketMock, times(1)).send(isA(StatePayload.class));
+	}
+
+	@Test
 	public void testResendLostPacketNoLostPacket() throws IOException {
 		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 		UtpPacket packetOne = mock(UtpPacket.class);

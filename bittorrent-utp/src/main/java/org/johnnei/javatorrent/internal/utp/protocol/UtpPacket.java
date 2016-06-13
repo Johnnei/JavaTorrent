@@ -117,7 +117,8 @@ public class UtpPacket {
 			return;
 		}
 
-		payload = payloadFactory.createPayloadFromType(typeAndVersion >>> 4);
+		type = (byte) (typeAndVersion >>> 4);
+		payload = payloadFactory.createPayloadFromType(type);
 		extension = inStream.readByte();
 		connectionId = inStream.readShort();
 		timestampMicroseconds = inStream.readInt();
