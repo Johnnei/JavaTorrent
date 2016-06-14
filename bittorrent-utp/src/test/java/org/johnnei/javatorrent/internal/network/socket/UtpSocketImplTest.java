@@ -21,7 +21,6 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpAckHandler;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
-import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.test.DummyEntity;
 
 import org.junit.Before;
@@ -40,6 +39,7 @@ import static org.johnnei.javatorrent.test.DummyEntity.createRandomBytes;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
@@ -115,9 +115,13 @@ public class UtpSocketImplTest {
 	}
 
 	@Test
-	public void testHandleTimeout() {
+	public void testHandleTimeout() throws IOException {
 		UtpWindow windowMock = mock(UtpWindow.class);
 		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
+
+		// Inject a socket address to allow sending of packets the multiplexer mock.
+		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
+		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
 
 		// Timeout should not be triggered here.
 		cut.handleTimeout();
@@ -131,6 +135,7 @@ public class UtpSocketImplTest {
 		cut.handleTimeout();
 
 		verify(windowMock).onTimeout();
+		verify(multiplexerMock).send(any());
 	}
 
 	@Test
@@ -245,43 +250,6 @@ public class UtpSocketImplTest {
 		cut.onReset();
 
 		assertEquals("Connection should be closed after reset", ConnectionState.CLOSED, cut.getConnectionState());
-	}
-
-	@Test
-	public void testConnect() throws Exception {
-		Mockito.doAnswer(invocation -> {
-			Thread thread = new Thread(() -> {
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					LOGGER.info("Non-fatal interruption, test will take longer than usual", e);
-				}
-
-				UtpSocketImpl remoteSocket = mock(UtpSocketImpl.class);
-				when(remoteSocket.getConnectionState()).thenReturn(ConnectionState.CONNECTING);
-				when(remoteSocket.nextSequenceNumber()).thenReturn((short) 5);
-
-				UtpPacket responsePacket = new UtpPacket(remoteSocket, new StatePayload());
-
-				try {
-					cut.process(responsePacket);
-				} catch (Exception e) {
-					threadException = e;
-				}
-			});
-			thread.setDaemon(true);
-			thread.start();
-			return null;
-		}).when(multiplexerMock).send((DatagramPacket) notNull());
-
-		cut.connect(new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort()));
-
-		if (threadException != null) {
-			throw threadException;
-		}
-
-		assertEquals("Socket should have been connected", ConnectionState.CONNECTED, cut.getConnectionState());
-		assertEquals("Packet should have been registered as acked", 5, cut.getAcknowledgeNumber());
 	}
 
 	@Test

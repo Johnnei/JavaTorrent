@@ -41,6 +41,7 @@ public class DataPayload implements IPayload {
 
 	@Override
 	public void process(UtpPacket packet, UtpSocketImpl socket) throws IOException {
+		socket.onReceivedData();
 		socket.getInputStream().addToBuffer(packet.getSequenceNumber(), this);
 	}
 

@@ -86,11 +86,21 @@ public class UtpPacket {
 	 * @param payload The payload which will be send with this packet.
 	 */
 	public UtpPacket(UtpSocketImpl socket, IPayload payload) {
+		this(socket, payload, false);
+	}
+
+	/**
+	 * Creates a new UtpPacket which will be send.
+	 * @param socket The socket on which this packet will be send.
+	 * @param payload The payload which will be send with this packet.
+	 * @param isSynResponse If this packet is a repsonse to {@link org.johnnei.javatorrent.internal.utp.protocol.payload.SynPayload}.
+	 */
+	public UtpPacket(UtpSocketImpl socket, IPayload payload, boolean isSynResponse) {
 		this.version = UtpProtocol.VERSION;
 		this.type = payload.getType();
 		this.payload = payload;
 
-		if (type == UtpProtocol.ST_STATE && socket.getConnectionState() != ConnectionState.CONNECTING) {
+		if (type == UtpProtocol.ST_STATE && !isSynResponse) {
 			this.sequenceNumber = socket.getSequenceNumber();
 		} else {
 			this.sequenceNumber = socket.nextSequenceNumber();

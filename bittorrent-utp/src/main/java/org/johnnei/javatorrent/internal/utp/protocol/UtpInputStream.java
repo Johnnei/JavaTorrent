@@ -45,8 +45,9 @@ public class UtpInputStream extends InputStream {
 	}
 
 	public void addToBuffer(short sequenceNumber, DataPayload dataPayload) {
+		int expectedSequenceNumber = toUnsignedInt(nextSequenceNumberToReceive());
 		packets.putIfAbsent(sequenceNumber, dataPayload);
-		LOGGER.trace("Received packet {} (expected: {}). Available: {}", toUnsignedInt(sequenceNumber), toUnsignedInt(nextSequenceNumber), available());
+		LOGGER.trace("Received packet {} (expected: {}). Available: {}", toUnsignedInt(sequenceNumber), expectedSequenceNumber, available());
 		Sync.signalAll(notifyLock, onPacketArrived);
 	}
 
@@ -95,6 +96,15 @@ public class UtpInputStream extends InputStream {
 		readBuffer = payload.getData();
 		position = 0;
 		nextSequenceNumber++;
+	}
+
+	private short nextSequenceNumberToReceive() {
+		short sequenceNumber = nextSequenceNumber;
+		while (packets.get(sequenceNumber) != null) {
+			sequenceNumber++;
+		}
+
+		return sequenceNumber;
 	}
 
 	@Override

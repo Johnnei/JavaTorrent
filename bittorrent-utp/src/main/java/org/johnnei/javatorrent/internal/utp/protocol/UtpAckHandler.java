@@ -74,6 +74,16 @@ public class UtpAckHandler {
 	 * @param packet The packet we've sent.
 	 */
 	public void registerPacket(UtpPacket packet) {
+		if (packet.getTimesSent() != 0) {
+			// Only register the packet if this is the first time it will be send.
+			return;
+		}
+
+		if (packet.getType() == UtpProtocol.ST_STATE) {
+			// There won't be ACKs for state packets, so don't add it.
+			return;
+		}
+
 		lock.writeLock().lock();
 		try {
 			Optional<UtpPacket> duplicatePacket = packetsInFlight.stream()
@@ -98,8 +108,10 @@ public class UtpAckHandler {
 	 */
 	public Optional<UtpPacket> onReceivedPacket(UtpPacket receivedPacket) throws IOException {
 		if (firstPacket.compareAndSet(true, false)) {
+			LOGGER.trace("Initialised base acknowledgeNumber to be {}", Short.toUnsignedInt(receivedPacket.getSequenceNumber()));
 			// If the atomic set passed then we are receiving the first packet, assign the ack number here as a base point.
 			acknowledgeNumber = receivedPacket.getSequenceNumber();
+			socket.bindIoStreams(acknowledgeNumber);
 		} else {
 			updateAcknowledgeNumber(receivedPacket);
 		}
@@ -165,12 +177,17 @@ public class UtpAckHandler {
 		synchronized (futurePackets) {
 			futurePackets.add(packet.getSequenceNumber());
 
+			// TODO Always send out a state packet.
+
 			while (true) {
 				short nextPacket = (short) (acknowledgeNumber + 1);
 				if (futurePackets.remove(nextPacket)) {
 					acknowledgeNumber = nextPacket;
-					LOGGER.trace("Sending ACK message for {}, caused by {}.", acknowledgeNumber, packet);
-					socket.send(new StatePayload());
+
+					UtpPacket statePacket = new UtpPacket(socket, new StatePayload());
+					LOGGER.trace("Sending ACK message for {}, caused by {}.", Short.toUnsignedInt(acknowledgeNumber), packet);
+					socket.sendUnbounded(statePacket);
+					LOGGER.trace("Sent ACK {} for {}.", statePacket, Short.toUnsignedInt(acknowledgeNumber));
 				} else {
 					break;
 				}
@@ -214,6 +231,13 @@ public class UtpAckHandler {
 	 */
 	public boolean hasPacketsInFlight() {
 		return !packetsInFlight.isEmpty();
+	}
+
+	/**
+	 * @return <code>true</code> when the socket has engaged with the handshake and thus has a base {@link #acknowledgeNumber} set.
+	 */
+	public boolean isInitialised() {
+		return !firstPacket.get();
 	}
 
 	public String toString() {

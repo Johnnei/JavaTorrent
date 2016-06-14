@@ -44,6 +44,38 @@ public class UtpAckHandlerTest {
 	}
 
 	@Test
+	public void testRegisterPacketIgnoreResend() {
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+		UtpPacket packetOne = mock(UtpPacket.class);
+
+		when(packetOne.getSequenceNumber()).thenReturn((short) 1);
+		when(packetOne.getPacketSize()).thenReturn(5);
+		when(packetOne.getTimesSent()).thenReturn(1);
+
+		UtpAckHandler cut = new UtpAckHandler(socketMock);
+		assertEquals("Initial bytes in flight must be 0", 0, cut.countBytesInFlight());
+
+		cut.registerPacket(packetOne);
+		assertEquals("Packet should have been ignored.", 0, cut.countBytesInFlight());
+	}
+
+	@Test
+	public void testRegisterPacketIgnoreState() {
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+		UtpPacket packetOne = mock(UtpPacket.class);
+
+		when(packetOne.getSequenceNumber()).thenReturn((short) 1);
+		when(packetOne.getPacketSize()).thenReturn(5);
+		when(packetOne.getType()).thenReturn((byte) UtpProtocol.ST_STATE);
+
+		UtpAckHandler cut = new UtpAckHandler(socketMock);
+		assertEquals("Initial bytes in flight must be 0", 0, cut.countBytesInFlight());
+
+		cut.registerPacket(packetOne);
+		assertEquals("Packet should have been ignored.", 0, cut.countBytesInFlight());
+	}
+
+	@Test
 	public void testRegisterPacketsIgnoreDuplicates() {
 		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 		UtpPacket packetOne = mock(UtpPacket.class);
@@ -115,20 +147,20 @@ public class UtpAckHandlerTest {
 		cut.onReceivedPacket(initPacket);
 		assertEquals("After init packet the return ACK number must be 5.", 5, cut.getAcknowledgeNumber());
 		// Initial packet must not cause a ST_STATE as it will be received during the SYN-phase.
-		verify(socketMock, never()).send(isA(StatePayload.class));
+		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
 
 		cut.onReceivedPacket(ackTwo);
 
 		assertEquals("After first ack the second packet should no longer be in flight.", 5, cut.countBytesInFlight());
 		assertEquals("After first ack the return ACK number must be 5 (Packet 6 is not acked yet).", 5, cut.getAcknowledgeNumber());
 		// Even though a packet got ack'ed we don't know about packet 6 yet, so we MUST NOT send out a 7 (which also confirms 6).
-		verify(socketMock, never()).send(isA(StatePayload.class));
+		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
 
 		cut.onReceivedPacket(ackOne);
 
 		assertEquals("Bytes in flight after acks is incorrect", 0, cut.countBytesInFlight());
 		assertEquals("After second ack the return ACK number must be 7.", 7, cut.getAcknowledgeNumber());
-		verify(socketMock, times(2)).send(isA(StatePayload.class));
+		verify(socketMock, times(2)).sendUnbounded(isA(UtpPacket.class));
 	}
 
 	@Test
@@ -166,14 +198,15 @@ public class UtpAckHandlerTest {
 		cut.onReceivedPacket(initPacket);
 		assertEquals("After init packet the return ACK number must be 5.", 5, cut.getAcknowledgeNumber());
 		// Initial packet must not cause a ST_STATE as it will be received during the SYN-phase.
-		verify(socketMock, never()).send(isA(StatePayload.class));
+		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
 
 		cut.onReceivedPacket(ackOne);
 
 		assertEquals("Bytes in flight after first ack is incorrect", 7, cut.countBytesInFlight());
 		assertEquals("After first ack the return ACK number is incorrect.", 6, cut.getAcknowledgeNumber());
 
-		verify(socketMock, times(1)).send(isA(StatePayload.class));
+		verify(socketMock, times(1)).sendUnbounded(isA(UtpPacket.class));
+
 
 		cut.onReceivedPacket(ackTwo);
 
@@ -181,7 +214,7 @@ public class UtpAckHandlerTest {
 		assertEquals("After second ack the return ACK number is incorrect.", 6, cut.getAcknowledgeNumber());
 
 		// Don't send out another ST_STATE to confirm that we received seq_nr 7 as it is not the data packet.
-		verify(socketMock, times(1)).send(isA(StatePayload.class));
+		verify(socketMock, times(1)).sendUnbounded(isA(UtpPacket.class));
 	}
 
 	@Test
@@ -198,7 +231,7 @@ public class UtpAckHandlerTest {
 
 		UtpPacket ackOne = mock(UtpPacket.class);
 
-		when(ackOne.getSequenceNumber()).thenReturn((short) 6);
+		when(ackOne.getSequenceNumber()).thenReturn((short) 5);
 		when(ackOne.getAcknowledgeNumber()).thenReturn((short) 1);
 
 		UtpAckHandler cut = new UtpAckHandler(socketMock);

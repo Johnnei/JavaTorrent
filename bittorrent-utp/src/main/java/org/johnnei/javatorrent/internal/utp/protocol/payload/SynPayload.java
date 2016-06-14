@@ -25,8 +25,7 @@ public class SynPayload extends AbstractEmptyPayload {
 		}
 
 		// TODO Implement detection of resending and NOT increase the seq_nr on that one.
-		socket.send(new StatePayload());
-		socket.bindIoStreams(packet.getSequenceNumber());
+		socket.sendUnbounded(new UtpPacket(socket, new StatePayload(), true));
 	}
 
 	@Override

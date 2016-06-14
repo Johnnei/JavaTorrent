@@ -96,11 +96,12 @@ public class ConnectUtpSocketIT {
 		localSocket.flush();
 
 		// This transition might take a few seconds due to the physical connection usage.
-		await("Remote socket failed to transition on connect.")
+		await("Remote socket failed to transition to connect.")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> remoteSocketImpl.getConnectionState() == ConnectionState.CONNECTED);
 
 		assertEquals("Data packet was corrupted on remote socket", 42, remoteSocketImpl.getInputStream().read());
+		LOGGER.info("Testing if local socket can receive data.");
 
 		remoteSocketImpl.getOutputStream().write(24);
 		remoteSocketImpl.getOutputStream().flush();

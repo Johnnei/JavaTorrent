@@ -28,6 +28,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.SynPayload;
 import org.johnnei.javatorrent.network.OutStream;
 
@@ -181,11 +182,19 @@ public class UtpSocketImpl {
 			throw new IOException("Socket is closed or reset during write.");
 		}
 
-		if (packet.getType() != UtpProtocol.ST_STATE || connectionState == ConnectionState.CONNECTING) {
-			ackHandler.registerPacket(packet);
-		}
+		ackHandler.registerPacket(packet);
 
 		doSend(packet);
+	}
+
+	/**
+	 * Called when a {@link org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload} has been received.
+	 */
+	public void onReceivedData() {
+		if (connectionState == ConnectionState.CONNECTING && ackHandler.isInitialised()) {
+			LOGGER.info("Data packet has been received after SYN ack, connection is ok.");
+			setConnectionState(ConnectionState.CONNECTED);
+		}
 	}
 
 	private void doSend(UtpPacket packet) throws IOException {
@@ -234,12 +243,6 @@ public class UtpSocketImpl {
 		lastInteraction = clock.instant();
 		LOGGER.trace("Received {} from {}", packet, socketAddress);
 
-		if (connectionState == ConnectionState.CONNECTING && ackHandler.hasPacketsInFlight()) {
-			// We're on the initiating endpoint and thus we are 'connected' once our SYN gets ACK'ed
-			setConnectionState(ConnectionState.CONNECTED);
-			bindIoStreams(packet.getSequenceNumber());
-		}
-
 		clientWindowSize = packet.getWindowSize();
 
 		Optional<UtpPacket> ackedPacket = ackHandler.onReceivedPacket(packet);
@@ -254,15 +257,18 @@ public class UtpSocketImpl {
 	}
 
 	private void onPacketAcknowledged(int receiveTime, UtpPacket packet, UtpPacket ackedPacket) {
+		LOGGER.trace("{} ACKed {} which was in flight. ({})", packet, ackedPacket, ackHandler);
 		if (packet.getTimestampDifferenceMicroseconds() != UNKNOWN_TIMESTAMP_DIFFERENCE) {
 			window.update(packet);
 			updatePacketSize();
 		}
 
-		timeout.update(receiveTime, ackedPacket);
+		if (ackedPacket.getType() == UtpProtocol.ST_SYN) {
+			LOGGER.info("Received ACK on SYN, connection is ok.");
+			setConnectionState(ConnectionState.CONNECTED);
+		}
 
-		// Remove the acked packet.
-		LOGGER.trace("{} message ACKed a packet in flight. ({})", packet, ackHandler);
+		timeout.update(receiveTime, ackedPacket);
 	}
 
 	private void updatePacketSize() {
@@ -306,6 +312,7 @@ public class UtpSocketImpl {
 		if (inputStream != null || outputStream != null) {
 			return;
 		}
+
 		inputStream = new UtpInputStream(this, (short) (sequenceNumber + 1));
 		outputStream = new UtpOutputStream(this);
 	}
@@ -313,7 +320,7 @@ public class UtpSocketImpl {
 	/**
 	 * Handles the timeout case if one occurred.
 	 */
-	public void handleTimeout() {
+	public void handleTimeout() throws IOException {
 		if (Duration.between(lastInteraction, clock.instant()).minus(timeout.getDuration()).isNegative()) {
 			// Timeout has not yet occurred.
 			return;
@@ -322,6 +329,8 @@ public class UtpSocketImpl {
 		LOGGER.debug("Socket has encountered a timeout after {}ms.", timeout.getDuration().toMillis());
 		packetSize = 150;
 		window.onTimeout();
+
+		sendUnbounded(new UtpPacket(this, new StatePayload()));
 	}
 
 	/**
@@ -416,6 +425,15 @@ public class UtpSocketImpl {
 
 	public short getSequenceNumber() {
 		return sequenceNumber;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("UtpSocketImpl[state=%s, window=%s, timeout=%sms, ackHandler=%s]",
+				connectionState,
+				window.getSize(),
+				timeout.getDuration().toMillis(),
+				ackHandler);
 	}
 
 	public static class Builder {

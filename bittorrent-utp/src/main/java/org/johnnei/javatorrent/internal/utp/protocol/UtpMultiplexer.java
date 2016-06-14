@@ -89,12 +89,26 @@ public class UtpMultiplexer implements Runnable {
 			}
 
 			ScheduledFuture<?> pollingTask = torrentClient.getExecutorService().scheduleAtFixedRate(() -> {
-				socket.handleTimeout();
-				socket.handleClose();
+				try {
+					socket.handleTimeout();
+					socket.handleClose();
+				} catch (IOException e) {
+					LOGGER.warn("Failed to handle socket timeout/close cases. Triggering reset on socket.", e);
+					resetSocket(socket);
+				}
 			}, 1000, 500, TimeUnit.MILLISECONDS);
 			utpSockets.put(socket.getReceivingConnectionId(), new UtpSocketRegistration(socket, pollingTask));
 		}
 		return true;
+	}
+
+	private void resetSocket(UtpSocketImpl socket) {
+		try {
+			socket.onReset();
+		} catch (IOException e) {
+			LOGGER.warn("Failed to trigger reset on socket, state is corrupted removing socket from system.", e);
+			cleanUpSocket(socket);
+		}
 	}
 
 	/**

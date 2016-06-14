@@ -66,8 +66,7 @@ public class SynPayloadTest {
 		SynPayload cut = new SynPayload();
 		cut.process(packetMock, socketMock);
 
-		verify(socketMock).send(isA(StatePayload.class));
-		verify(socketMock).bindIoStreams((short) 3);
+		verify(socketMock).sendUnbounded(isA(UtpPacket.class));
 	}
 
 	@Test
