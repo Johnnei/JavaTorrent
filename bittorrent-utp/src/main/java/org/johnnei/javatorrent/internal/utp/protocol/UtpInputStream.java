@@ -38,12 +38,22 @@ public class UtpInputStream extends InputStream {
 
 	private int position;
 
+	/**
+	 * Creates a new inputstream for the given socket.
+	 * @param socket The socket from which the packets will be read.
+	 * @param initialSequenceNumber The sequence number of the first {@link UtpProtocol#ST_DATA} packet.
+	 */
 	public UtpInputStream(UtpSocketImpl socket, short initialSequenceNumber) {
 		this.socket = socket;
 		nextSequenceNumber = initialSequenceNumber;
 		packets = new HashMap<>();
 	}
 
+	/**
+	 * Adds the received data payload to the queue of payload to be read.
+	 * @param sequenceNumber The sequence number of the {@link UtpPacket} containing the payload.
+	 * @param dataPayload The actual payload.
+	 */
 	public void addToBuffer(short sequenceNumber, DataPayload dataPayload) {
 		int expectedSequenceNumber = toUnsignedInt(nextSequenceNumberToReceive());
 		packets.putIfAbsent(sequenceNumber, dataPayload);
@@ -86,6 +96,7 @@ public class UtpInputStream extends InputStream {
 			try {
 				onPacketArrived.await();
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 				throw new IOException("Interrupted while blocking for new data", e);
 			} finally {
 				notifyLock.unlock();

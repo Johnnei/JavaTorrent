@@ -65,6 +65,9 @@ public class UtpModule implements IModule {
 		multiplexerRunnable.stop();
 	}
 
+	/**
+	 * @return A supplier capable of creating new {@link UtpSocket}
+	 */
 	public Supplier<UtpSocket> createSocketFactory() {
 		return () -> new UtpSocket(utpMultiplexer);
 	}

@@ -10,7 +10,9 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
- * Created by johnn on 21/05/2016.
+ * A class which tracks the minimum value out of a set of values within a given time window. The data is ordered by using a {@link TreeMap}.
+ *
+ * @param <T> The type of data to store.
  */
 public class SlidingTimedValue<T> {
 
@@ -18,14 +20,25 @@ public class SlidingTimedValue<T> {
 
 	private TreeMap<T, Instant> values;
 
+	/**
+	 * Creates a new instance to track the minimum value.
+	 */
 	public SlidingTimedValue() {
 		values = new TreeMap<>();
 	}
 
+	/**
+	 * Registers a value to be considered the minimum. The item will expire in two minutes from being called.
+	 * @param value The value to add.
+	 */
 	public void addValue(T value) {
 		values.put(value, clock.instant());
 	}
 
+	/**
+	 * Finds the minimum value of the set of values.
+	 * @return The minimum value.
+	 */
 	public T getMinimum() {
 		// Remove all values which are no longer recent
 		Collection<Map.Entry<T, Instant>> entriesToRemove = new ArrayList<>();

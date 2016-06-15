@@ -17,6 +17,10 @@ public class UtpOutputStream extends OutputStream {
 
 	private int position;
 
+	/**
+	 * Creates a new outputstream for the given socket.
+	 * @param socket The socket on which the packet must be written.
+	 */
 	public UtpOutputStream(UtpSocketImpl socket) {
 		this.socket = socket;
 	}

@@ -29,12 +29,20 @@ public class UtpWindow {
 
 	private int maxWindow;
 
+	/**
+	 * Creates a new window manager.
+	 * @param socket The socket for which the window is managed.
+	 */
 	public UtpWindow(UtpSocketImpl socket) {
 		this.socket = socket;
 		slidingBaseDelay = new SlidingTimedValue<>();
 		maxWindow = 150;
 	}
 
+	/**
+	 * Calculates the new window size based on the given packet.
+	 * @param packet The packet which affects the window size.
+	 */
 	public void update(UtpPacket packet) {
 		slidingBaseDelay.addValue(packet.getTimestampDifferenceMicroseconds());
 		long ourDelay = toUnsignedLong(packet.getTimestampDifferenceMicroseconds()) - toUnsignedLong(slidingBaseDelay.getMinimum());
@@ -60,6 +68,9 @@ public class UtpWindow {
 		return maxWindow;
 	}
 
+	/**
+	 * Event to be called when a timeout occurs on {@link #socket}.
+	 */
 	public void onTimeout() {
 		// TODO Make this neater, according to the spec this should SET to 150 as it will allow one more packet to be sent.
 		// This implementation won't do that though. So maybe I think of maxWindow incorrectly?

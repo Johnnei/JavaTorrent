@@ -14,6 +14,11 @@ public class UtpSocketRegistration {
 
 	private final ScheduledFuture<?> pollingTask;
 
+	/**
+	 * Creates a new registration of a {@link UtpSocketImpl}.
+	 * @param socket The socket instance.
+	 * @param pollingTask The associated polling task which cleans up the socket state.
+	 */
 	public UtpSocketRegistration(UtpSocketImpl socket, ScheduledFuture<?> pollingTask) {
 		this.socket = Argument.requireNonNull(socket, "Socket can not be null.");
 		this.pollingTask = Argument.requireNonNull(pollingTask, "Polling task can not be null.");

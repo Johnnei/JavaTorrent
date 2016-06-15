@@ -1,5 +1,8 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
+/**
+ * The possible connection states of {@link org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl}
+ */
 public enum ConnectionState {
 
 	/**

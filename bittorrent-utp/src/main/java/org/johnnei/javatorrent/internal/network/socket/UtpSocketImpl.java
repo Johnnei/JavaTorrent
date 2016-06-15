@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.sql.Date;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -100,6 +101,8 @@ public class UtpSocketImpl {
 
 	/**
 	 * Creates a new socket which is considered the initiating endpoint
+	 *
+	 * @param utpMultiplexer The multiplexer on which this socket will be registered.
 	 */
 	public UtpSocketImpl(UtpMultiplexer utpMultiplexer) {
 		initDefaults();
@@ -111,6 +114,9 @@ public class UtpSocketImpl {
 
 	/**
 	 * Creates a new socket which is considered the accepting endpoint.
+	 *
+	 * @param utpMultiplexer The multiplexer on which this socket will be registered.
+	 * @param socketAddress The socket address on which the remote end is listening.
 	 * @param connectionId The connection id which we will use to send packets with.
 	 */
 	public UtpSocketImpl(UtpMultiplexer utpMultiplexer, SocketAddress socketAddress, short connectionId) {
@@ -132,17 +138,29 @@ public class UtpSocketImpl {
 		ackHandler = new UtpAckHandler(this);
 	}
 
+	/**
+	 * Attempts to connect the socket to the given endpoint.
+	 *
+	 * @param endpoint The address on which a client is expected to be listening.
+	 * @throws IOException When the connection cannot be established.
+	 */
 	public void connect(InetSocketAddress endpoint) throws IOException {
 		socketAddress = endpoint;
 		connectionState = ConnectionState.CONNECTING;
 		send(new SynPayload());
 
+		// Calculate the time until we'll be waiting for our syn packet to get ACK'ed.
+		Instant endTime = clock.instant().plusSeconds(10);
+
 		// Wait for the acknowledgement of the connection.
 		notifyLock.lock();
 		try {
-			onPacketAcknowledged.await(10, TimeUnit.SECONDS);
+			while (connectionState != ConnectionState.CONNECTED && clock.instant().isBefore(endTime)) {
+				onPacketAcknowledged.awaitUntil(Date.from(endTime));
+			}
 		} catch (InterruptedException e) {
-			throw new IOException("Interruption while waiting for connection confirmation.");
+			Thread.currentThread().interrupt();
+			throw new IOException("Interruption while waiting for connection confirmation.", e);
 		} finally {
 			notifyLock.unlock();
 		}
@@ -152,11 +170,17 @@ public class UtpSocketImpl {
 		}
 	}
 
+	/**
+	 * Writes the given payload with respect to the {@link #window}.
+	 *
+	 * @param payload The payload to send.
+	 * @throws IOException When an IO error occurs.
+	 */
 	public void send(IPayload payload) throws IOException {
 		UtpPacket packet = new UtpPacket(this, payload);
 
 		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
-		while (payload.getType() != UtpProtocol.ST_STATE && connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
+		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
 			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
 			notifyLock.lock();
 			try {
@@ -174,6 +198,7 @@ public class UtpSocketImpl {
 
 	/**
 	 * Send a packet without honoring the {@link #window}.
+	 *
 	 * @param packet The packet
 	 * @see #send(IPayload)
 	 */
@@ -237,6 +262,12 @@ public class UtpSocketImpl {
 		return Math.min(window.getSize(), clientWindowSize);
 	}
 
+	/**
+	 * Processes the payload of the given <code>packet</code> and updates the socket state accordingly.
+	 *
+	 * @param packet The packet to process.
+	 * @throws IOException When the payload cannot be processed.
+	 */
 	public void process(UtpPacket packet) throws IOException {
 		// Record the time as early as possible to reduce the noise in the uTP packets.
 		int receiveTime = timer.getCurrentMicros();
@@ -308,11 +339,14 @@ public class UtpSocketImpl {
 		ackHandler.onReset();
 	}
 
+	/**
+	 * Initialises the input and output stream of this socket.
+	 *
+	 * @param sequenceNumber The sequence number of the packet which is the last packet of the connection establishment.
+	 * @see #getInputStream()
+	 * @see #getOutputStream()
+	 */
 	public void bindIoStreams(short sequenceNumber) {
-		if (inputStream != null || outputStream != null) {
-			return;
-		}
-
 		inputStream = new UtpInputStream(this, (short) (sequenceNumber + 1));
 		outputStream = new UtpOutputStream(this);
 	}
@@ -349,6 +383,7 @@ public class UtpSocketImpl {
 
 	/**
 	 * Initiates the socket shutdown.
+	 *
 	 * @throws IOException
 	 */
 	public void close() throws IOException {
@@ -362,6 +397,7 @@ public class UtpSocketImpl {
 
 	/**
 	 * Verifies if there is still the possibility that more packets are to be received.
+	 *
 	 * @return <code>true</code> when data can still be received, otherwise <code>false</code>.
 	 */
 	public boolean isInputShutdown() {
@@ -370,6 +406,7 @@ public class UtpSocketImpl {
 
 	/**
 	 * Verifies if data can still be written on this socket.
+	 *
 	 * @return <code>true</code> when data can still be written, otherwise <code>false</code>.
 	 */
 	public boolean isOutputShutdown() {
@@ -380,6 +417,9 @@ public class UtpSocketImpl {
 		return ackHandler.getAcknowledgeNumber();
 	}
 
+	/**
+	 * @return The next unique sequence number to use to send out a packet.
+	 */
 	public synchronized short nextSequenceNumber() {
 		sequenceNumber = sequenceNumberCounter++;
 		return sequenceNumber;
@@ -436,6 +476,9 @@ public class UtpSocketImpl {
 				ackHandler);
 	}
 
+	/**
+	 * The class capable of building {@link UtpSocketImpl} instances progressively.
+	 */
 	public static class Builder {
 
 		private UtpMultiplexer utpMultiplexer;
@@ -451,10 +494,17 @@ public class UtpSocketImpl {
 			return this;
 		}
 
+		/**
+		 * @return A new socket which is considered to connect to an endpoint.
+		 */
 		public UtpSocketImpl build() {
 			return new UtpSocketImpl(utpMultiplexer);
 		}
 
+		/**
+		 * @param connectionId The ID of the connection on which we'll send out.
+		 * @return A new socket which is considered the receiving endpoint.
+		 */
 		public UtpSocketImpl build(short connectionId) {
 			return new UtpSocketImpl(utpMultiplexer, socketAddress, connectionId);
 		}

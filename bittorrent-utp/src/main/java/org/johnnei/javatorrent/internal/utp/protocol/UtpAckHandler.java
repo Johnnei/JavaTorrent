@@ -59,6 +59,8 @@ public class UtpAckHandler {
 
 	/**
 	 * Creates a new Utp Acknowledgement handler.
+	 *
+	 * @param socket The socket for which this handler is handling acknowledgements.
 	 */
 	public UtpAckHandler(UtpSocketImpl socket) {
 		this.socket = socket;
@@ -240,6 +242,7 @@ public class UtpAckHandler {
 		return !firstPacket.get();
 	}
 
+	@Override
 	public String toString() {
 		return String.format("UtpAckHandler[ack=%d, packetsInFlight=%d, bytes in flight=%d]", toUnsignedInt(acknowledgeNumber), packetsInFlight.size(), countBytesInFlight());
 	}

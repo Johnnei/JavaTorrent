@@ -21,6 +21,9 @@ import org.johnnei.javatorrent.network.socket.UtpSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is capable of multiplexing all {@link UtpSocket} instances on a single {@link DatagramSocket} and forwarding the packets to the sockets.
+ */
 public class UtpMultiplexer implements Runnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpMultiplexer.class);
@@ -53,6 +56,11 @@ public class UtpMultiplexer implements Runnable {
 
 	private int receiveBufferSize;
 
+	/**
+	 * Creates a new multiplexer based on the given <code>torrentClient</code>
+	 * @param torrentClient The torrent client containing the desired configuration.
+	 * @throws ModuleBuildException When the datagram socket cannot be bound.
+	 */
 	public UtpMultiplexer(TorrentClient torrentClient) throws ModuleBuildException {
 		this.torrentClient = torrentClient;
 		utpSockets = new HashMap<>();
@@ -120,6 +128,11 @@ public class UtpMultiplexer implements Runnable {
 		registration.getPollingTask().cancel(false);
 	}
 
+	/**
+	 * Sends the given datagram packet onto the socket.
+	 * @param datagramPacket The packet to send.
+	 * @throws IOException When the sending fails.
+	 */
 	public void send(DatagramPacket datagramPacket) throws IOException {
 		multiplexerSocket.send(datagramPacket);
 	}
@@ -127,40 +140,47 @@ public class UtpMultiplexer implements Runnable {
 	@Override
 	public void run() {
 		try {
-			boolean newSocket = false;
 			byte[] dataBuffer = new byte[25600]; //25kB buffer
 			DatagramPacket packet = new DatagramPacket(dataBuffer, dataBuffer.length);
 			multiplexerSocket.receive(packet);
-			try {
-				InStream inStream = new InStream(packet.getData(), packet.getOffset(), packet.getLength());
-				UtpPacket utpPacket = new UtpPacket();
-				utpPacket.read(inStream, packetFactory);
-				UtpSocketRegistration socketRegistration = utpSockets.get(utpPacket.getConnectionId());
-
-				UtpSocketImpl socket;
-				if (socketRegistration == null) {
-					LOGGER.debug("Received connection from {}", packet.getSocketAddress());
-					utpSocketFactory.setSocketAddress(packet.getSocketAddress());
-					socket = utpSocketFactory.build(utpPacket.getConnectionId());
-					registerSocket(socket);
-					newSocket = true;
-				} else {
-					socket = socketRegistration.getSocket();
-				}
-
-				socket.process(utpPacket);
-
-				if (newSocket) {
-					connectionAcceptor.onReceivedConnection(new UtpSocket(this, socket));
-				}
-			} catch (IllegalArgumentException e) {
-				LOGGER.debug("Invalid Packet of {} bytes ({}:{}).", packet.getLength(), packet.getAddress(), packet.getPort(), e);
-			}
+			handlePacket(packet);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to process uTP packet", e);
 		}
 	}
 
+	private void handlePacket(DatagramPacket packet) throws IOException {
+		try {
+			boolean newSocket = false;
+			InStream inStream = new InStream(packet.getData(), packet.getOffset(), packet.getLength());
+			UtpPacket utpPacket = new UtpPacket();
+			utpPacket.read(inStream, packetFactory);
+			UtpSocketRegistration socketRegistration = utpSockets.get(utpPacket.getConnectionId());
+
+			UtpSocketImpl socket;
+			if (socketRegistration == null) {
+				LOGGER.debug("Received connection from {}", packet.getSocketAddress());
+				utpSocketFactory.setSocketAddress(packet.getSocketAddress());
+				socket = utpSocketFactory.build(utpPacket.getConnectionId());
+				registerSocket(socket);
+				newSocket = true;
+			} else {
+				socket = socketRegistration.getSocket();
+			}
+
+			socket.process(utpPacket);
+
+			if (newSocket) {
+				connectionAcceptor.onReceivedConnection(new UtpSocket(this, socket));
+			}
+		} catch (IllegalArgumentException e) {
+			LOGGER.debug("Invalid Packet of {} bytes ({}:{}).", packet.getLength(), packet.getAddress(), packet.getPort(), e);
+		}
+	}
+
+	/**
+	 * @return The buffer size as reported by {@link #multiplexerSocket}.
+	 */
 	public int getReceiveBufferSize() {
 		return receiveBufferSize;
 	}

@@ -15,10 +15,20 @@ public class DataPayload implements IPayload {
 
 	private byte[] data;
 
+	/**
+	 * Creates a data payload intended for writing.
+	 * @param data The data to send as payload.
+	 */
 	public DataPayload(byte[] data) {
 		this.data = data;
 	}
 
+	/**
+	 * Creates a data payload used for reading.
+	 *
+	 * @implNote
+	 * Initialises the data field with an zero length byte array.
+	 */
 	public DataPayload() {
 		// Constructor for the purpose of receiving packets
 		this.data = new byte[0];

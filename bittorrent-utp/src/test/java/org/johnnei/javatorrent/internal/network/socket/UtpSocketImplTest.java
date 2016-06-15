@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.internal.utp.UtpTimeout;
@@ -21,6 +20,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpAckHandler;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.test.DummyEntity;
 
 import org.junit.Before;
@@ -59,8 +59,6 @@ public class UtpSocketImplTest {
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
-	private Exception threadException;
-
 	private UtpMultiplexer multiplexerMock;
 
 	private UtpSocketImpl cut;
@@ -94,8 +92,7 @@ public class UtpSocketImplTest {
 
 	@Test
 	public void testClose() throws Exception {
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+		injectMultiplexerMock();
 
 		// Force this connection to be connected
 		cut.setConnectionState(ConnectionState.CONNECTED);
@@ -115,13 +112,89 @@ public class UtpSocketImplTest {
 	}
 
 	@Test
+	public void testCloseOnClosedSocket() throws Exception {
+		injectMultiplexerMock();
+
+		// Force this connection to be connected
+		cut.setConnectionState(ConnectionState.CLOSED);
+		cut.close();
+
+		verify(multiplexerMock, never()).send(any());
+	}
+
+	@Test
+	public void testHandleClose() throws IOException {
+		// Inject a socket address to allow sending of packets the multiplexer mock.
+		injectMultiplexerMock();
+
+		cut.setConnectionState(ConnectionState.DISCONNECTING);
+
+		cut.handleClose();
+
+		verify(multiplexerMock).cleanUpSocket(same(cut));
+		assertEquals("Socket should have been closed", ConnectionState.CLOSED, cut.getConnectionState());
+		assertTrue("Output stream must be closed after socket has been cleaned up.", cut.isOutputShutdown());
+	}
+
+	@Test
+	public void testHandleCloseNotClosing() throws IOException {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+		injectMultiplexerMock();
+
+		when(ackHandlerMock.hasPacketsInFlight()).thenReturn(true);
+		cut.setConnectionState(ConnectionState.CONNECTED);
+
+		cut.handleClose();
+
+		verify(multiplexerMock, never()).cleanUpSocket(same(cut));
+		assertEquals("Socket must not have been closed", ConnectionState.CONNECTED, cut.getConnectionState());
+	}
+
+	@Test
+	public void testHandleCloseWaitingForPacket() throws IOException {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+		injectMultiplexerMock();
+
+		when(ackHandlerMock.hasPacketsInFlight()).thenReturn(false);
+		cut.setConnectionState(ConnectionState.DISCONNECTING);
+		cut.setEndOfStreamSequenceNumber((short) 1);
+
+		cut.handleClose();
+
+		verify(multiplexerMock, never()).cleanUpSocket(same(cut));
+		assertEquals("Socket must not have been closed", ConnectionState.DISCONNECTING, cut.getConnectionState());
+	}
+
+	@Test
+	public void testHandleCloseWaitingForAcks() throws IOException {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+		injectMultiplexerMock();
+
+		when(ackHandlerMock.hasPacketsInFlight()).thenReturn(true);
+		cut.setConnectionState(ConnectionState.DISCONNECTING);
+
+		cut.handleClose();
+
+		verify(multiplexerMock, never()).cleanUpSocket(same(cut));
+		assertEquals("Socket must not have been closed", ConnectionState.DISCONNECTING, cut.getConnectionState());
+	}
+
+	private void injectMultiplexerMock() {
+		// Inject a socket address to allow sending of packets the multiplexer mock.
+		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
+		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+	}
+
+	@Test
 	public void testHandleTimeout() throws IOException {
 		UtpWindow windowMock = mock(UtpWindow.class);
 		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
 
 		// Inject a socket address to allow sending of packets the multiplexer mock.
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+		injectMultiplexerMock();
 
 		// Timeout should not be triggered here.
 		cut.handleTimeout();
@@ -154,8 +227,7 @@ public class UtpSocketImplTest {
 		when(statePacket.getTimestampDifferenceMicroseconds()).thenReturn(52);
 
 		// Inject a socket address to allow sending of packets the multiplexer mock.
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+		injectMultiplexerMock();
 
 		when(handlerMock.onReceivedPacket(eq(statePacket))).thenReturn(Optional.of(packetMock));
 
@@ -182,8 +254,7 @@ public class UtpSocketImplTest {
 
 	@Test
 	public void testOnReset() throws Exception {
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+		injectMultiplexerMock();
 
 		// Force this connection to be connected
 		cut.setConnectionState(ConnectionState.CONNECTED);
@@ -198,8 +269,7 @@ public class UtpSocketImplTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IOException.class));
 
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+		injectMultiplexerMock();
 
 		UtpWindow windowMock = mock(UtpWindow.class);
 		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
@@ -225,12 +295,7 @@ public class UtpSocketImplTest {
 
 		// Wait until the thread is blocking for the write action.
 		await().atMost(1, TimeUnit.SECONDS).until(() -> {
-			cutLock.lock();
-			try {
-				cutLock.hasWaiters(cutCondition);
-			} finally {
-				cutLock.unlock();
-			}
+			hasWaiters(cutLock, cutCondition);
 		});
 
 		// Reset the connection.
@@ -241,8 +306,7 @@ public class UtpSocketImplTest {
 
 	@Test
 	public void testOnResetDisconnecting() throws Exception {
-		InetSocketAddress socketAddress = new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort());
-		Whitebox.setInternalState(cut, SocketAddress.class, socketAddress);
+		injectMultiplexerMock();
 
 		// Force this connection to be connected
 		cut.setConnectionState(ConnectionState.DISCONNECTING);
@@ -257,17 +321,14 @@ public class UtpSocketImplTest {
 		thrown.expect(IOException.class);
 		thrown.expectMessage("Interruption");
 
+		ReentrantLock lock = Whitebox.getInternalState(cut, "notifyLock");
+		Condition wakeUpCondition = Whitebox.getInternalState(cut, "onPacketAcknowledged");
+
 		Mockito.doAnswer(invocation -> {
 			Thread testRunnerThread = Thread.currentThread();
 			Thread thread = new Thread(() -> {
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					LOGGER.info("Non-fatal interruption, test will take longer than usual but will still fail.", e);
-				}
-
+				await("Wake up condition to be locked").atMost(5, TimeUnit.SECONDS).until(() -> hasWaiters(lock, wakeUpCondition));
 				testRunnerThread.interrupt();
-
 			});
 			thread.setDaemon(true);
 			thread.start();
@@ -275,7 +336,6 @@ public class UtpSocketImplTest {
 		}).when(multiplexerMock).send((DatagramPacket) notNull());
 
 		cut.connect(new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort()));
-
 	}
 
 	@Test
@@ -284,30 +344,138 @@ public class UtpSocketImplTest {
 		thrown.expectMessage("did not respond");
 
 		// Get the locks to fake that we reached the timeout
-		Lock lock = Whitebox.getInternalState(cut, "notifyLock");
+		ReentrantLock lock = Whitebox.getInternalState(cut, "notifyLock");
 		Condition wakeUpCondition = Whitebox.getInternalState(cut, "onPacketAcknowledged");
 
+		Thread thread = new Thread(() -> {
+			await("Wake up condition to be locked").atMost(5, TimeUnit.SECONDS).until(() -> hasWaiters(lock, wakeUpCondition));
+
+			// Speed up time.
+			Whitebox.setInternalState(cut, Clock.class, Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(10)));
+
+			lock.lock();
+			try {
+				wakeUpCondition.signalAll();
+			} finally {
+				lock.unlock();
+			}
+		});
+		thread.setUncaughtExceptionHandler((t, e) -> LOGGER.error("Error occurred on unlock thread", e));
+
 		Mockito.doAnswer(invocation -> {
-			Thread thread = new Thread(() -> {
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					LOGGER.info("Non-fatal interruption, test will take longer than usual", e);
-				}
-				lock.lock();
-				try {
-					wakeUpCondition.signalAll();
-				} finally {
-					lock.unlock();
-				}
-			});
-			thread.setDaemon(true);
 			thread.start();
 			return null;
 		}).when(multiplexerMock).send((DatagramPacket) notNull());
 
-		cut.connect(new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort()));
+		clearInterruptionState();
 
+		cut.connect(new InetSocketAddress("localhost", DummyEntity.findAvailableUdpPort()));
+		thread.join(5000);
+	}
+
+	private void clearInterruptionState() {
+		// Clear the interrupted state if the current thread has it.
+		if (Thread.interrupted()) {
+			LOGGER.warn("A test failed to clear interrupted state, corrected that.");
+		}
+	}
+
+	@Test
+	public void testToString() {
+		assertTrue("Incorrect toString start", cut.toString().startsWith("UtpSocketImpl["));
+	}
+
+	@Test
+	public void testGetOutputStreamExceptionOnUnConnected() throws Exception {
+		thrown.expect(IOException.class);
+		thrown.expectMessage("not bound");
+
+		cut.getOutputStream();
+	}
+
+	@Test
+	public void testGetInputStreamExceptionOnUnConnected() throws Exception {
+		thrown.expect(IOException.class);
+		thrown.expectMessage("not bound");
+
+		cut.getInputStream();
+	}
+
+	@Test
+	public void testSendOnInterrupt() throws Exception {
+		thrown.expect(IOException.class);
+		thrown.expectCause(isA(InterruptedException.class));
+		thrown.expectMessage("Interruption");
+
+		IPayload payloadMock = mock(IPayload.class);
+		when(payloadMock.getSize()).thenReturn(4000);
+
+		ReentrantLock lock = Whitebox.getInternalState(cut, "notifyLock");
+		Condition wakeUpCondition = Whitebox.getInternalState(cut, "onPacketAcknowledged");
+
+		final Thread testRunnerThread = Thread.currentThread();
+		Thread thread = new Thread(() -> {
+			await("Wake up condition to be locked").atMost(5, TimeUnit.SECONDS).until(() -> hasWaiters(lock, wakeUpCondition));
+			testRunnerThread.interrupt();
+		});
+		thread.start();
+
+		clearInterruptionState();
+
+		try {
+			cut.send(payloadMock);
+		} catch (IOException e) {
+			clearInterruptionState();
+			throw e;
+		}
+	}
+
+	@Test
+	public void testOnReceivedData() {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+
+		when(ackHandlerMock.isInitialised()).thenReturn(true);
+		cut.setConnectionState(ConnectionState.CONNECTING);
+
+		cut.onReceivedData();
+
+		assertEquals("Socket state must have transitioned.", ConnectionState.CONNECTED, cut.getConnectionState());
+	}
+
+	@Test
+	public void testOnReceivedDataNotConnecting() {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+
+		when(ackHandlerMock.isInitialised()).thenReturn(true);
+		cut.setConnectionState(ConnectionState.DISCONNECTING);
+
+		cut.onReceivedData();
+
+		assertEquals("Socket state must not have transitioned.", ConnectionState.DISCONNECTING, cut.getConnectionState());
+	}
+
+	@Test
+	public void testOnReceivedDataAckNotInitialised() {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+
+		when(ackHandlerMock.isInitialised()).thenReturn(false);
+		cut.setConnectionState(ConnectionState.CONNECTING);
+
+		cut.onReceivedData();
+
+		assertEquals("Socket state must not have transitioned.", ConnectionState.CONNECTING, cut.getConnectionState());
+	}
+
+	private void hasWaiters(ReentrantLock lock, Condition wakeUpCondition) {
+		lock.lock();
+		try {
+			lock.hasWaiters(wakeUpCondition);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 }
