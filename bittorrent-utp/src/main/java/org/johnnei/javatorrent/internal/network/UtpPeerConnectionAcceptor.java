@@ -53,6 +53,7 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 				onNewConnection.await();
 			}
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			throw new IOException("Interrupted while waiting for a new connection", e);
 		} finally {
 			notifyLock.unlock();
