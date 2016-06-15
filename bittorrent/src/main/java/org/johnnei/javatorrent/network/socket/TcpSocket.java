@@ -65,11 +65,6 @@ public class TcpSocket implements ISocket {
 	}
 
 	@Override
-	public boolean isConnecting() {
-		return false;
-	}
-
-	@Override
 	public void flush() throws IOException {
 		socket.getOutputStream().flush();
 	}

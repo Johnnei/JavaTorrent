@@ -115,15 +115,6 @@ public class TcpSocketTest extends EasyMockSupport {
 	}
 
 	@Test
-	public void testIsConnecting() {
-		replayAll();
-
-		assertFalse(cut.isConnecting());
-
-		verifyAll();
-	}
-
-	@Test
 	public void testFlush() throws Exception {
 		OutputStream outputStreamMock = createMock(OutputStream.class);
 

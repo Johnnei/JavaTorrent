@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 
 /**
- * A socket layout to get multiple socket protocols work on the some functions<br/>
+ * A socket facade to get multiple socket protocols work on the some functions<br/>
  * @author Johnnei
  *
  */
@@ -37,12 +37,6 @@ public interface ISocket extends AutoCloseable {
 	 */
 	@Override
 	public void close() throws IOException;
-
-	/**
-	 * Checks if this socket is connecting
-	 * @return true if the socket is connecting
-	 */
-	public boolean isConnecting();
 
 	/**
 	 * Checks if the connection has been closed

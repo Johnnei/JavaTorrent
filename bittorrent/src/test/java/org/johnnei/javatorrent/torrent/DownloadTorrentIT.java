@@ -111,7 +111,7 @@ public class DownloadTorrentIT {
 		}
 	}
 
-	private TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
+	protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
 		return new TorrentClient.Builder()
 				.acceptIncomingConnections(true)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
@@ -171,7 +171,7 @@ public class DownloadTorrentIT {
 		File resultFile;
 
 		if (resultFileUrl != null) {
-			LOGGER.info("Found cached torrent output, using that.");
+			LOGGER.info("Found cached torrent output, using that. Location: {}", resultFileUrl);
 			resultFile = new File(resultFileUrl.toURI());
 		} else {
 			resultFile = temporaryFolder.newFile();
@@ -212,11 +212,15 @@ public class DownloadTorrentIT {
 
 		LOGGER.info("Waiting for download completion");
 		do {
-			latch.await(1, TimeUnit.SECONDS);
+			final int INTERVAL_IN_SECONDS = 10;
+			latch.await(INTERVAL_IN_SECONDS, TimeUnit.SECONDS);
 			torrentOne.pollRates();
 			torrentTwo.pollRates();
-			LOGGER.debug("[CLIENT ONE] Download: {}kb/s, Upload: {}kb/s", torrentOne.getDownloadRate() / 1024, torrentOne.getUploadRate() / 1024);
-			LOGGER.debug("[CLIENT TWO] Download: {}kb/s, Upload: {}kb/s", torrentTwo.getDownloadRate() / 1024, torrentTwo.getUploadRate() / 1024);
+			LOGGER.debug("[CLIENT ONE] Download: {}KiB/s, Upload: {}KiB/s [CLIENT TWO] Download: {}KiB/s, Upload: {}KiB/s",
+					torrentOne.getDownloadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentOne.getUploadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentTwo.getDownloadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentTwo.getUploadRate() / 1024 / INTERVAL_IN_SECONDS);
 
 		} while (latch.getCount() > 0);
 
@@ -224,11 +228,11 @@ public class DownloadTorrentIT {
 		clientTwo.shutdown();
 	}
 
-	private static class PhaseSeedCountdown extends PhaseSeed {
+	protected static class PhaseSeedCountdown extends PhaseSeed {
 
 		private final CountDownLatch latch;
 
-		PhaseSeedCountdown(CountDownLatch latch, TorrentClient torrentClient, Torrent torrent) {
+		public PhaseSeedCountdown(CountDownLatch latch, TorrentClient torrentClient, Torrent torrent) {
 			super(torrentClient, torrent);
 			this.latch = latch;
 		}
