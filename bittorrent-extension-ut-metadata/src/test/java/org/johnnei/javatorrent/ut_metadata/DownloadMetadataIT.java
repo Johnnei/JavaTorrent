@@ -74,6 +74,7 @@ public class DownloadMetadataIT {
 		LOGGER.info("Preparing torrent client to download with magnetlink.");
 		CountDownLatch latch = new CountDownLatch(1);
 		TorrentClient clientWithLink = prepareTorrentClient(downloadFolderOne)
+				.setPeerDistributor((t) -> false)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, Optional.of(PhaseMetadata.class))
 						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, Optional.of(PhaseDataCountDown.class))
@@ -83,6 +84,7 @@ public class DownloadMetadataIT {
 
 		LOGGER.info("Preparing torrent client to download with file.");
 		TorrentClient clientWithTorrent = prepareTorrentClient(downloadFolderTwo)
+				.setPeerDistributor((t) -> false)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.empty())
 						.build())

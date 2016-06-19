@@ -120,6 +120,7 @@ public class DownloadTorrentIT {
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))
 				.setPeerConnector(PeerConnector::new)
+				.setPeerDistributor((t) -> false)
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseSeedCountdown.class))

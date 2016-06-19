@@ -28,6 +28,8 @@ import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
+import org.johnnei.javatorrent.tracker.IPeerDistributor;
+import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
 import org.slf4j.Logger;
@@ -53,6 +55,8 @@ public class TorrentClient {
 
 	private IPeerConnector peerConnector;
 
+	private IPeerDistributor peerDistributor;
+
 	private ScheduledExecutorService executorService;
 
 	private IOManager ioManager;
@@ -70,6 +74,7 @@ public class TorrentClient {
 	private Collection<IModule> modules;
 
 	private TorrentClient(Builder builder) {
+		peerDistributor = Objects.requireNonNull(builder.peerDistributor, "Peer distributor is invalid.");
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
 		messageFactory = builder.messageFactoryBuilder.build();
@@ -278,6 +283,13 @@ public class TorrentClient {
 		return torrentManager.getTorrent(torrentHash);
 	}
 
+	/**
+	 * @return The configured {@link IPeerDistributor} for this {@link TorrentClient}
+	 */
+	public IPeerDistributor getPeerDistributor() {
+		return peerDistributor;
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -291,6 +303,8 @@ public class TorrentClient {
 		private TrackerFactory.Builder trackerFactoryBuilder;
 
 		private Function<TorrentClient, IPeerConnector> peerConnector;
+
+		private IPeerDistributor peerDistributor;
 
 		private ScheduledExecutorService executorService;
 
@@ -384,6 +398,16 @@ public class TorrentClient {
 			return this;
 		}
 
+		/**
+		 * Sets the peer distributor which is being used by the {@link IPeerConnector} implementation.
+		 * @param peerDistributor The peer distributor.
+		 */
+		public Builder setPeerDistributor(IPeerDistributor peerDistributor) {
+			Argument.requireNonNull(peerDistributor, "Peer distributors cannot be null");
+			this.peerDistributor = peerDistributor;
+			return this;
+		}
+
 		public TorrentClient build() throws Exception {
 			TorrentClient client = new TorrentClient(this);
 			for (IModule module : modules) {
@@ -391,7 +415,6 @@ public class TorrentClient {
 			}
 			return client;
 		}
-
 	}
 
 }

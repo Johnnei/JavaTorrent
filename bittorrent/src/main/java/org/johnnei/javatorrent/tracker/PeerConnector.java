@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.tracker;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -101,6 +102,7 @@ public class PeerConnector implements Runnable, IPeerConnector {
 				newPeerCondition.await();
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				return;
 			} finally {
 				newPeerLock.unlock();
 			}
@@ -110,6 +112,12 @@ public class PeerConnector implements Runnable, IPeerConnector {
 
 		synchronized (peerListLock) {
 			peerInfo = peers.remove();
+		}
+
+		if (torrentClient.getPeerDistributor().hasReachedPeerLimit(peerInfo.getTorrent())) {
+			// Later on we might need to peer.
+			torrentClient.getExecutorService().schedule(() -> enqueuePeer(peerInfo), 10, TimeUnit.SECONDS);
+			return;
 		}
 
 		BitTorrentSocket peerSocket = createUnconnectedSocket();
