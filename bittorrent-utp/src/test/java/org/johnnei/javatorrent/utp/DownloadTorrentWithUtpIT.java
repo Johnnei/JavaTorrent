@@ -12,6 +12,7 @@ import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.DownloadTorrentIT;
 import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
 /**
  * Tests the ability to cleanly download a torrent.
@@ -31,6 +32,7 @@ public class DownloadTorrentWithUtpIT extends DownloadTorrentIT {
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))
 				.setPeerConnector(PeerConnector::new)
+				.setPeerDistributor(UncappedDistributor::new)
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseSeedCountdown.class))

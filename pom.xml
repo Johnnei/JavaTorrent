@@ -198,6 +198,13 @@
         <artifactId>mockito-core</artifactId>
         <version>${dependency.org.mockito.mockito-core.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <!-- JUnit imports hamcrest, mockito overrides it to runtime causing it to be missing -->
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.jayway.awaitility</groupId>
