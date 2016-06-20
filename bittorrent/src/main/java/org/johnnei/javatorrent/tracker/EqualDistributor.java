@@ -15,6 +15,11 @@ public class EqualDistributor implements IPeerDistributor {
 
 	private final TorrentClient torrentClient;
 
+	/**
+	 * Creates a distributor which attempts to equally distribute the peers over the torrents.
+	 * @param torrentClient The torrent client for which this distributor is working.
+	 * @param globalLimit The soft limit on the amount of connections.
+	 */
 	public EqualDistributor(TorrentClient torrentClient, int globalLimit) {
 		this.torrentClient = torrentClient;
 		this.globalLimit = globalLimit;
