@@ -67,7 +67,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		replayAll();
 		TorrentClient torrentClient = builder
 				.setConnectionDegradation(connectionDegradationMock)
-				.setPeerDistributor(peerDistributorMock)
+				.setPeerDistributor(tc -> peerDistributorMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
@@ -132,7 +132,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
-				.setPeerDistributor(peerDistributor)
+				.setPeerDistributor(tc -> peerDistributor)
 				.registerTrackerProtocol("udp", (url, client) -> null)
 				.enableExtensionBit(20)
 				.build();
@@ -161,7 +161,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
-				.setPeerDistributor(peerDistributorMock)
+				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null);
 
 		// There are 8 extension bytes, enable them all
@@ -196,7 +196,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
-				.setPeerDistributor(peerDistributorMock)
+				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)
 				.build();
 
@@ -225,7 +225,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
-				.setPeerDistributor(peerDistributorMock)
+				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)
 				.build();
 
@@ -261,7 +261,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
-				.setPeerDistributor(peerDistributor)
+				.setPeerDistributor(tc -> peerDistributor)
 				.registerTrackerProtocol("udp", (url, client) -> null)
 				.build();
 
@@ -288,7 +288,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
 				.setPeerConnector((t) -> peerConnectorMock)
-				.setPeerDistributor(peerDistributorMock)
+				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)
 				.acceptIncomingConnections(true)
 				.build();

@@ -74,7 +74,7 @@ public class TorrentClient {
 	private Collection<IModule> modules;
 
 	private TorrentClient(Builder builder) {
-		peerDistributor = Objects.requireNonNull(builder.peerDistributor, "Peer distributor is invalid.");
+		peerDistributor = Objects.requireNonNull(builder.peerDistributor.apply(this), "Peer distributor is invalid.");
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
 		messageFactory = builder.messageFactoryBuilder.build();
@@ -290,6 +290,13 @@ public class TorrentClient {
 		return peerDistributor;
 	}
 
+	/**
+	 * @return The amount of torrents that are being downloaded.
+	 */
+	public int getTorrentCount() {
+		return torrentManager.getTorrents().size();
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -304,7 +311,7 @@ public class TorrentClient {
 
 		private Function<TorrentClient, IPeerConnector> peerConnector;
 
-		private IPeerDistributor peerDistributor;
+		private Function<TorrentClient, IPeerDistributor> peerDistributor;
 
 		private ScheduledExecutorService executorService;
 
@@ -402,7 +409,7 @@ public class TorrentClient {
 		 * Sets the peer distributor which is being used by the {@link IPeerConnector} implementation.
 		 * @param peerDistributor The peer distributor.
 		 */
-		public Builder setPeerDistributor(IPeerDistributor peerDistributor) {
+		public Builder setPeerDistributor(Function<TorrentClient, IPeerDistributor> peerDistributor) {
 			Argument.requireNonNull(peerDistributor, "Peer distributors cannot be null");
 			this.peerDistributor = peerDistributor;
 			return this;

@@ -27,6 +27,7 @@ import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class DownloadMetadataIT {
 		LOGGER.info("Preparing torrent client to download with magnetlink.");
 		CountDownLatch latch = new CountDownLatch(1);
 		TorrentClient clientWithLink = prepareTorrentClient(downloadFolderOne)
-				.setPeerDistributor((t) -> false)
+				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, Optional.of(PhaseMetadata.class))
 						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, Optional.of(PhaseDataCountDown.class))
@@ -84,7 +85,7 @@ public class DownloadMetadataIT {
 
 		LOGGER.info("Preparing torrent client to download with file.");
 		TorrentClient clientWithTorrent = prepareTorrentClient(downloadFolderTwo)
-				.setPeerDistributor((t) -> false)
+				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.empty())
 						.build())
