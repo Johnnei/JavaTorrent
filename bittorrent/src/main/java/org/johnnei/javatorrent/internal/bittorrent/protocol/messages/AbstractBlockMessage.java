@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.bitorrent.protocol.messages;
+package org.johnnei.javatorrent.internal.bittorrent.protocol.messages;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
