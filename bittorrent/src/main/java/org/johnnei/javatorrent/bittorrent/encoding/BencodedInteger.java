@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.bittorrent.encoding;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A bencoded integer.
@@ -55,5 +56,33 @@ public class BencodedInteger implements IBencodedValue {
 	@Override
 	public String serialize() {
 		return String.format("i%se", bigInteger.toString());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null) {
+			return false;
+		}
+
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof BencodedInteger)) {
+			return false;
+		}
+
+		BencodedInteger integer = (BencodedInteger) o;
+		return Objects.equals(bigInteger, integer.bigInteger);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(bigInteger);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("BencodedInteger[value=%s]", bigInteger);
 	}
 }

@@ -6,7 +6,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.johnnei.javatorrent.test.TestUtils.assertEqualityMethods;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link BencodedInteger}
@@ -87,6 +89,20 @@ public class BencodedIntegerTest {
 		thrown.expect(UnsupportedOperationException.class);
 
 		new BencodedInteger(42L).asMap();
+	}
+
+	@Test
+	public void testEquality() {
+		BencodedInteger base = new BencodedInteger(42);
+		BencodedInteger equal = new BencodedInteger(BigInteger.valueOf(42));
+		BencodedInteger different = new BencodedInteger(7);
+
+		assertEqualityMethods(base, equal, different);
+	}
+
+	@Test
+	public void testToString() {
+		assertTrue("Incorrect toString start", new BencodedInteger(42L).toString().startsWith("BencodedInteger["));
 	}
 
 }

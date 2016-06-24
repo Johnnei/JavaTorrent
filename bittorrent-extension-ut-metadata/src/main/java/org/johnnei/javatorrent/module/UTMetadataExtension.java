@@ -5,7 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
@@ -67,15 +68,14 @@ public class UTMetadataExtension implements IExtension {
 	}
 
 	@Override
-	public void addHandshakeMetadata(Peer peer, Bencoder bencoder) {
+	public void addHandshakeMetadata(Peer peer, BencodedMap bencoder) {
 		if (peer.getTorrent().isDownloadingMetadata()) {
 			return;
 		}
 
 		Optional<MetadataFileSet> metadataFile = peer.getTorrent().getMetadata();
 		int metadataSize = (int) metadataFile.get().getTotalFileSize();
-		bencoder.string("metadata_size");
-		bencoder.integer(metadataSize);
+		bencoder.put("metadata_size", new BencodedInteger(metadataSize));
 	}
 
 	@Override

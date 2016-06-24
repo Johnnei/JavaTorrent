@@ -2,10 +2,10 @@ package org.johnnei.javatorrent.protocol.extension;
 
 import java.util.Map;
 
-import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
+import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
 
 public interface IExtension {
 
@@ -22,7 +22,7 @@ public interface IExtension {
 	 * @param peer The peer for which the handshake is created
 	 * @param bencoder The bencoder which is currently writing a dictionary
 	 */
-	void addHandshakeMetadata(Peer peer, Bencoder bencoder);
+	void addHandshakeMetadata(Peer peer, BencodedMap bencoder);
 
 	/**
 	 * Process the information in the dictionary which is relevant to the torrent.

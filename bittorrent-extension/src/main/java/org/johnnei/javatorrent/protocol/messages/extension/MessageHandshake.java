@@ -7,7 +7,9 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedString;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -34,24 +36,22 @@ public class MessageHandshake implements IMessage {
 	}
 
 	public MessageHandshake(Peer peer, Map<Integer, IExtension> extensionMap) {
-		Bencoder encoder = new Bencoder();
-		encoder.dictionaryStart();
-		encoder.string("m");
-		encoder.dictionaryStart();
+		BencodedMap extensionHandshake = new BencodedMap();
+		BencodedMap extensionMessages = new BencodedMap();
+
+		extensionHandshake.put("m", extensionMessages);
+
 		for (Entry<Integer, IExtension> extension : extensionMap.entrySet()) {
-			encoder.string(extension.getValue().getExtensionName());
-			encoder.integer(extension.getKey());
+			extensionMessages.put(extension.getValue().getExtensionName(), new BencodedInteger(extension.getKey()));
 		}
-		encoder.dictionaryEnd();
-		encoder.string("v");
-		encoder.string(Version.BUILD);
+
+		extensionHandshake.put("v", new BencodedString(Version.BUILD));
 
 		for (IExtension extension : extensionMap.values()) {
-			extension.addHandshakeMetadata(peer, encoder);
+			extension.addHandshakeMetadata(peer, extensionHandshake);
 		}
 
-		encoder.dictionaryEnd();
-		bencodedHandshake = encoder.getBencodedData();
+		bencodedHandshake = extensionHandshake.serialize();
 	}
 
 	@Override

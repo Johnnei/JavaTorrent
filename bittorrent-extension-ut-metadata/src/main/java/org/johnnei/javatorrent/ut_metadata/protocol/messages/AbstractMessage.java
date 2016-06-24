@@ -4,7 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -22,14 +23,10 @@ public abstract class AbstractMessage implements IMessage {
 
 	public AbstractMessage(int piece) {
 		dictionary = Collections.emptyMap();
-		Bencoder encode = new Bencoder();
-		encode.dictionaryStart();
-		encode.string("msg_type");
-		encode.integer(getId());
-		encode.string(PIECE_KEY);
-		encode.integer(piece);
-		encode.dictionaryEnd();
-		bencodedData = encode.getBencodedData();
+		BencodedMap bencodedMap = new BencodedMap();
+		bencodedMap.put("msg_type", new BencodedInteger(getId()));
+		bencodedMap.put(PIECE_KEY, new BencodedInteger(piece));
+		bencodedData = bencodedMap.serialize();
 	}
 
 	@Override
