@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.torrent.algos.pieceselector;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -21,7 +22,9 @@ public class FullPieceSelect implements IPieceSelector {
 	}
 
 	private int countAvailability(Piece piece) {
-		return (int) torrent.getPeers().stream().filter(peer -> peer.hasPiece(piece.getIndex())).count();
+		return (int) torrent.getPeers().stream()
+				.filter(peer -> peer.hasPiece(piece.getIndex()))
+				.count();
 	}
 
 	/**
@@ -43,6 +46,7 @@ public class FullPieceSelect implements IPieceSelector {
 	@Override
 	public Optional<Piece> getPieceForPeer(Peer peer) {
 		return torrent.getFileSet().getNeededPieces()
+				.filter(piece -> piece.hasBlockWithStatus(BlockStatus.Needed))
 				.filter(piece -> peer.hasPiece(piece.getIndex()))
 				.sorted(this::comparePieces)
 				.findFirst();
