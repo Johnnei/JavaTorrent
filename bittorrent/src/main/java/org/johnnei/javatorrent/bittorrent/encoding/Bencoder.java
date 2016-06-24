@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
+@Deprecated
 public class Bencoder {
 
 	private String bencoded;

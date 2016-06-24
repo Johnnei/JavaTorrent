@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class Bencode {
 	private String bencoded;
 
@@ -47,7 +48,7 @@ public class Bencode {
 		return dictionary;
 	}
 
-	public List<Object> decodeList() {
+	List<Object> decodeList() {
 		if (getNextToken() != 'l') {
 			throw new IllegalStateException("The next item in the bencoded string is not a List.");
 		}
@@ -68,7 +69,7 @@ public class Bencode {
 		return list;
 	}
 
-	public Object decodeInteger() {
+	Object decodeInteger() {
 		if (getNextToken() != 'i') {
 			throw new IllegalStateException("The next item in the bencoded string is not an Integer.");
 		}
@@ -83,7 +84,7 @@ public class Bencode {
 		return o;
 	}
 
-	public String decodeString() {
+	String decodeString() {
 		String data[] = bencoded.split(":", 2);
 		int headerLength = data[0].length() + 1; // Integer in base-10 string and 1 char for colon
 		if (isInt(data[0])) {
