@@ -9,18 +9,18 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockSupport;
 import org.junit.Test;
 
-import static org.easymock.EasyMock.anyInt;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link FullPieceSelect}
  */
-public class FullPieceSelectTest extends EasyMockSupport {
+public class FullPieceSelectTest {
 
 	@Test
 	public void testSelectStartedPiecesOverUnstarted() {
@@ -28,23 +28,43 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		pieceOne.setBlockStatus(1, BlockStatus.Requested);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
-		expect(filesMock.getNeededPieces()).andReturn(Arrays.asList(pieceOne, pieceTwo).stream());
+		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
-		Peer peerMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
 
-		expect(peerMock.hasPiece(anyInt())).andReturn(true).atLeastOnce();
+		when(peerMock.hasPiece(anyInt())).thenReturn(true);
 
-		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-
-		replayAll();
+		Torrent torrentMock = mock(Torrent.class);
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
 
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		verifyAll();
 		assertEquals("Incorrect piece has been selected", pieceOne, chosenPiece.get());
+	}
+
+	@Test
+	public void testSelectStartedPiecesOverUnstartedExcludingPiecesWithoutAnyNeededBlock() {
+		Piece pieceOne = new Piece(null, new byte[20], 0, 10, 5);
+		pieceOne.setBlockStatus(0, BlockStatus.Requested);
+		pieceOne.setBlockStatus(1, BlockStatus.Requested);
+		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
+
+		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
+
+		Peer peerMock = mock(Peer.class);
+
+		when(peerMock.hasPiece(anyInt())).thenReturn(true);
+
+		Torrent torrentMock = mock(Torrent.class);
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+
+		FullPieceSelect cut = new FullPieceSelect(torrentMock);
+		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
+
+		assertEquals("Incorrect piece has been selected", pieceTwo, chosenPiece.get());
 	}
 
 	@Test
@@ -53,22 +73,19 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 		pieceTwo.setBlockStatus(1, BlockStatus.Requested);
 
-		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
-		expect(filesMock.getNeededPieces()).andReturn(Arrays.asList(pieceOne, pieceTwo).stream());
+		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
-		Peer peerMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
 
-		expect(peerMock.hasPiece(anyInt())).andReturn(true).atLeastOnce();
+		when(peerMock.hasPiece(anyInt())).thenReturn(true);
 
-		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-
-		replayAll();
+		Torrent torrentMock = mock(Torrent.class);
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
 
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		verifyAll();
 		assertEquals("Incorrect piece has been selected", pieceTwo, chosenPiece.get());
 	}
 
@@ -77,26 +94,23 @@ public class FullPieceSelectTest extends EasyMockSupport {
 		Piece pieceOne = new Piece(null, new byte[20], 0, 10, 5);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
-		expect(filesMock.getNeededPieces()).andReturn(Arrays.asList(pieceOne, pieceTwo).stream());
+		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
-		Peer peerMock = createMock(Peer.class);
-		Peer peerTwoMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
+		Peer peerTwoMock = mock(Peer.class);
 
-		expect(peerMock.hasPiece(anyInt())).andReturn(true).atLeastOnce();
-		expect(peerTwoMock.hasPiece(eq(0))).andReturn(true).atLeastOnce();
-		expect(peerTwoMock.hasPiece(eq(1))).andReturn(false).atLeastOnce();
+		when(peerMock.hasPiece(anyInt())).thenReturn(true);
+		when(peerTwoMock.hasPiece(eq(0))).thenReturn(true);
+		when(peerTwoMock.hasPiece(eq(1))).thenReturn(false);
 
-		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(torrentMock.getPeers()).andStubReturn(Arrays.asList(peerMock, peerTwoMock));
-
-		replayAll();
+		Torrent torrentMock = mock(Torrent.class);
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+		when(torrentMock.getPeers()).thenReturn(Arrays.asList(peerMock, peerTwoMock));
 
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		verifyAll();
 		assertEquals("Incorrect piece has been selected", pieceTwo, chosenPiece.get());
 	}
 }
