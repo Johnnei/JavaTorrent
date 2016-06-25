@@ -1,7 +1,7 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.io.IOException;
-import java.io.StringReader;
+import java.io.Reader;
 import java.math.BigInteger;
 
 /**
@@ -11,20 +11,30 @@ import java.math.BigInteger;
  */
 public class Bencoding {
 
+	private int charactersRead;
+
 	/**
 	 * Decodes the given string reader into the bencoded data structure.
-	 * @param reader The reader containing the string input.
+	 * @param reader The reader containing the string input. The implementation <b>must</b> support {@link Reader#markSupported()}
 	 * @return The bencoded data structure.
 	 */
-	public IBencodedValue decode(StringReader reader) {
+	public IBencodedValue decode(Reader reader) {
 		try {
+			charactersRead = 0;
 			return decodeNextValue(reader);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to decode bencoded values.", e);
 		}
 	}
 
-	private IBencodedValue decodeNextValue(StringReader reader) throws IOException {
+	/**
+	 * @return The amount of characters read from the reader in the last invocation of {@link #decode(Reader)}.
+	 */
+	public int getCharactersRead() {
+		return charactersRead;
+	}
+
+	private IBencodedValue decodeNextValue(Reader reader) throws IOException {
 		char token = peekCharacter(reader);
 
 		IBencodedValue value;
@@ -41,7 +51,7 @@ public class Bencoding {
 		return value;
 	}
 
-	private BencodedList decodeList(StringReader reader) throws IOException {
+	private BencodedList decodeList(Reader reader) throws IOException {
 		consumeToken('l', reader);
 
 		BencodedList list = new BencodedList();
@@ -58,11 +68,11 @@ public class Bencoding {
 		return list;
 	}
 
-	private BencodedString decodeString(StringReader reader) throws IOException {
+	private BencodedString decodeString(Reader reader) throws IOException {
 		StringBuilder length = new StringBuilder();
 		char token = peekCharacter(reader);
 		while (':' != token) {
-			length.append((char) reader.read());
+			length.append(readCharacter(reader));
 
 			token = peekCharacter(reader);
 		}
@@ -79,13 +89,14 @@ public class Bencoding {
 				throw new IOException("Failed to read string");
 			}
 
+			charactersRead += read;
 			totalRead += read;
 		} while (totalRead != characters.length);
 
 		return new BencodedString(new String(characters));
 	}
 
-	private BencodedMap decodeMap(StringReader reader) throws IOException {
+	private BencodedMap decodeMap(Reader reader) throws IOException {
 		BencodedMap map = new BencodedMap();
 
 		consumeToken('d', reader);
@@ -104,14 +115,14 @@ public class Bencoding {
 		return map;
 	}
 
-	private BencodedInteger decodeInteger(StringReader reader) throws IOException {
+	private BencodedInteger decodeInteger(Reader reader) throws IOException {
 		consumeToken('i', reader);
 
 		StringBuilder integer = new StringBuilder();
 
 		char nextToken = peekCharacter(reader);
 		while ('e' != nextToken) {
-			integer.append((char) reader.read());
+			integer.append(readCharacter(reader));
 
 			nextToken = peekCharacter(reader);
 		}
@@ -121,15 +132,26 @@ public class Bencoding {
 		return new BencodedInteger(new BigInteger(integer.toString()));
 	}
 
-	private char peekCharacter(StringReader reader) throws IOException {
-		reader.mark(0);
+	private char readCharacter(Reader reader) throws IOException {
+		int character = reader.read();
+		if (character == -1) {
+			throw new IOException("End of Stream reached");
+		}
+
+		charactersRead++;
+
+		return (char) character;
+	}
+
+	private char peekCharacter(Reader reader) throws IOException {
+		reader.mark(1);
 		char result = (char) reader.read();
 		reader.reset();
 		return result;
 	}
 
-	private void consumeToken(char token, StringReader reader) throws IOException {
-		char readToken = (char) reader.read();
+	private void consumeToken(char token, Reader reader) throws IOException {
+		char readToken = readCharacter(reader);
 		if (token != readToken) {
 			throw new IOException(String.format("Incorrect token consumed, expected '%s' but read '%s'", token, readToken));
 		}

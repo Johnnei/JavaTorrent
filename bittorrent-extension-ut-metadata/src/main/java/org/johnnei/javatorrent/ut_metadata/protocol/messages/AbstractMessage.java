@@ -1,28 +1,34 @@
 package org.johnnei.javatorrent.ut_metadata.protocol.messages;
 
-import java.util.Collections;
-import java.util.Map;
+import java.io.StringReader;
 
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class AbstractMessage implements IMessage {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessage.class);
+
+	private Bencoding bencoding = new Bencoding();
+
 	protected static final String PIECE_KEY = "piece";
-	protected Map<String, Object> dictionary;
+	protected BencodedMap dictionary;
 	protected String bencodedData;
 
 	public AbstractMessage() {
-		dictionary = Collections.emptyMap();
+		dictionary = new BencodedMap();
 		bencodedData = "";
 	}
 
 	public AbstractMessage(int piece) {
-		dictionary = Collections.emptyMap();
+		dictionary = new BencodedMap();
 		BencodedMap bencodedMap = new BencodedMap();
 		bencodedMap.put("msg_type", new BencodedInteger(getId()));
 		bencodedMap.put(PIECE_KEY, new BencodedInteger(piece));
@@ -37,14 +43,11 @@ public abstract class AbstractMessage implements IMessage {
 	@Override
 	public void read(InStream inStream) {
 		inStream.mark();
-		String dictionaryString = inStream.readString(inStream.available());
-		Bencode decoder = new Bencode(dictionaryString);
-
-		dictionary = decoder.decodeDictionary();
-
-		int readCharacters = dictionaryString.length() - decoder.remainingChars();
+		StringReader reader = new StringReader(inStream.readString(inStream.available()));
 		inStream.resetToMark();
-		inStream.skipBytes(readCharacters);
+
+		dictionary = (BencodedMap) bencoding.decode(reader);
+		inStream.skipBytes(bencoding.getCharactersRead());
 	}
 
 }

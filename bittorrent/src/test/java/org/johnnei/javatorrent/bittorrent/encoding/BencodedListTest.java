@@ -25,9 +25,12 @@ public class BencodedListTest {
 
 		BencodedList cut = new BencodedList();
 		cut.add(valueMockOne);
+
+		assertEquals("Incorrect amount of items in list", 1, cut.size());
 		assertEquals("Incorrect value got returned", valueMockOne, cut.get(0));
 
 		cut.add(valueMockTwo);
+		assertEquals("Incorrect amount of items in list", 2, cut.size());
 		assertEquals("Incorrect value got returned for index 0", valueMockOne, cut.get(0));
 		assertEquals("Incorrect value got returned for index 1", valueMockTwo, cut.get(1));
 	}

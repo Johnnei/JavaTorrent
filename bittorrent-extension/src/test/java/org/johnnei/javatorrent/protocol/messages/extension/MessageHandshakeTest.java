@@ -102,6 +102,8 @@ public class MessageHandshakeTest extends EasyMockSupport {
 
 		String input = "de";
 
+		expect(extensionMock.getExtensionName()).andReturn("jt_mock");
+
 		replayAll();
 		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));
 		cut.read(new InStream(input.getBytes(Charset.forName("UTF-8"))));

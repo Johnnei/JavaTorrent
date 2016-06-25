@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.test;
 
-import java.util.Map;
-
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
@@ -27,7 +25,7 @@ public class StubExtension implements IExtension {
 	}
 
 	@Override
-	public void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry) {
+	public void processHandshakeMetadata(Peer peer, BencodedMap dictionary, BencodedMap mEntry) {
 		/* Don't do anything in this stub */
 	}
 

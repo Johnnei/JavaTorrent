@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.protocol.extension;
 
-import java.util.Map;
-
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
@@ -30,7 +28,7 @@ public interface IExtension {
 	 * @param dictionary The handshake dictionary
 	 * @param mEntry The 'm' entry of the handshake
 	 */
-	void processHandshakeMetadata(Peer peer, Map<String, Object> dictionary, Map<?, ?> mEntry);
+	void processHandshakeMetadata(Peer peer, BencodedMap dictionary, BencodedMap mEntry);
 
 	/**
 	 * The name of this extension. The advised format for new extensions is: &ltclient-token&gt_&ltname&gt

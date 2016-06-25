@@ -21,10 +21,11 @@ public class BencodingTest {
 
 	@Test
 	public void testDecode() {
-		String bencodedInfo = "d4:spaml1:ai2ee4:eggsi12eei12e";
+		String bencodedInfo = "d4:spaml1:ai2ee4:eggsi12ee";
+		String unreadInfo = "i12e";
 
 		Bencoding cut = new Bencoding();
-		IBencodedValue value = cut.decode(new StringReader(bencodedInfo));
+		IBencodedValue value = cut.decode(new StringReader(bencodedInfo + unreadInfo));
 		Map<String, IBencodedValue> dictionary = value.asMap();
 
 		assertEquals("Incorrect element count in dictionary", 2, dictionary.size());
@@ -35,6 +36,7 @@ public class BencodingTest {
 		assertEquals("List doesn't contain 2 items", 2, spam.size());
 		assertEquals("List[0] doesn't equal a", "a", spam.get(0).asString());
 		assertEquals("List[1] doesn't equal 2", 2, spam.get(1).asLong());
+		assertEquals("Incorrect amount of characters read, the 'unreadInfo' should not be consumed.", bencodedInfo.length(), cut.getCharactersRead());
 	}
 
 	@Test
@@ -48,6 +50,7 @@ public class BencodingTest {
 
 		assertEquals("Incorrect element count in nested-dictionary", 1, nestedDictionary.size());
 		assertEquals("Incorrect string in nested-dictionary", "fresh", nestedDictionary.get("eggs").asString());
+		assertEquals("Incorrect amount of characters read, all should have been read", bencodedInfo.length(), cut.getCharactersRead());
 	}
 
 	@Test
@@ -65,6 +68,7 @@ public class BencodingTest {
 		List<IBencodedValue> nestedList = list.get(1).asList();
 		assertEquals("Incorrect nested list element count", 1, nestedList.size());
 		assertEquals("Incorrect integer as second element", 42, nestedList.get(0).asLong());
+		assertEquals("Incorrect amount of characters read, all should have been read", bencodedInfo.length(), cut.getCharactersRead());
 	}
 
 	@Test

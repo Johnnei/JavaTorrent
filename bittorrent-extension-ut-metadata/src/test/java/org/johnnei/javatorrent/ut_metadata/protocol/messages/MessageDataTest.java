@@ -38,7 +38,7 @@ public class MessageDataTest extends EasyMockSupport {
 
 		cut.write(outStream);
 
-		String expectedDictionary = "d8:msg_typei1e5:piecei42ee";
+		String expectedDictionary = "d5:piecei42e8:msg_typei1ee";
 		String dictionary = new String(outStream.toByteArray(), 0, 26, Charset.forName("UTF-8"));
 		assertEquals("Incorrect dictionary part", expectedDictionary, dictionary);
 

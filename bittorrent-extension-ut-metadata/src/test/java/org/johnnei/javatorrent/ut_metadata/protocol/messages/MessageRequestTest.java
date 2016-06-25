@@ -49,7 +49,7 @@ public class MessageRequestTest extends EasyMockSupport {
 		cut.write(outStream);
 
 		byte[] result = outStream.toByteArray();
-		String expectedOutput = "d8:msg_typei0e5:piecei5ee";
+		String expectedOutput = "d5:piecei5e8:msg_typei0ee";
 
 		assertEquals("Incorrect length", expectedOutput.getBytes(Charset.forName("UTF-8")).length, cut.getLength());
 		assertEquals("Incorrect output", expectedOutput, new String(result, Charset.forName("UTF-8")));

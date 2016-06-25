@@ -13,16 +13,35 @@ public class BencodedList implements IBencodedValue {
 
 	private List<IBencodedValue> bencodedValues;
 
+	/**
+	 * Creates a new empty bencoded list.
+	 */
 	public BencodedList() {
 		bencodedValues = new ArrayList<>();
 	}
 
+	/**
+	 * Gets an item from the bencoded list.
+	 * @param index The index to get the item at.
+	 * @return The item at the given index.
+	 */
 	public IBencodedValue get(int index) {
 		return bencodedValues.get(index);
 	}
 
+	/**
+	 * Adds a value to the bencoded list.
+	 * @param value The value to add.
+	 */
 	public void add(IBencodedValue value) {
 		bencodedValues.add(value);
+	}
+
+	/**
+	 * @return The amount of bencoded items in this list.
+	 */
+	public int size() {
+		return bencodedValues.size();
 	}
 
 	@Override

@@ -1,15 +1,16 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
+import java.io.StringReader;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.Version;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedString;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -23,6 +24,8 @@ import org.slf4j.LoggerFactory;
 public class MessageHandshake implements IMessage {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MessageHandshake.class);
+
+	private Bencoding bencoding = new Bencoding();
 
 	private String bencodedHandshake;
 
@@ -66,35 +69,26 @@ public class MessageHandshake implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		Bencode decoder = new Bencode(bencodedHandshake);
 		try {
-			Map<String, Object> dictionary = decoder.decodeDictionary();
-			Object m = dictionary.get("m");
-			if (m != null && m instanceof Map<?, ?>) {
-				Map<?, ?> extensionData = (Map<?, ?>) m;
-				extensions.stream()
-					.filter(extension -> extensionData.containsKey(extension.getExtensionName()))
-					.forEach(extension -> {
-						Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
+			BencodedMap handshakeMap = (BencodedMap) bencoding.decode(new StringReader(bencodedHandshake));
+			BencodedMap messageMap = (BencodedMap) handshakeMap.get("m").orElse(new BencodedMap());
+			extensions.stream()
+				.filter(extension -> messageMap.get(extension.getExtensionName()).isPresent())
+				.forEach(extension -> {
+					Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
 
-						if (!peerExtensions.isPresent()) {
-							LOGGER.warn("Received Extension handshake from peer but PeerExtensions aren't registed");
-							return;
-						}
+					if (!peerExtensions.isPresent()) {
+						LOGGER.warn("Received Extension handshake from peer but PeerExtensions aren't registed");
+						return;
+					}
 
-						peerExtensions.get().registerExtension((Integer) extensionData.get(extension.getExtensionName()), extension.getExtensionName());
-						extension.processHandshakeMetadata(peer, dictionary, extensionData);
-						LOGGER.trace("Registered {}={} to {}", extensionData.get(extension.getExtensionName()), extension.getExtensionName(), peer);
-					});
-			}
-			Object reqq = dictionary.get("reqq");
-			if (reqq != null) {
-				peer.setAbsoluteRequestLimit((int) reqq);
-			}
-			Object v = dictionary.get("v");
-			if (v != null) {
-				peer.setClientName((String) v);
-			}
+					peerExtensions.get().registerExtension((int) messageMap.get(extension.getExtensionName()).get().asLong(), extension.getExtensionName());
+					extension.processHandshakeMetadata(peer, handshakeMap, messageMap);
+					LOGGER.trace("Registered {}={} to {}", messageMap.get(extension.getExtensionName()), extension.getExtensionName(), peer);
+				});
+
+			handshakeMap.get("reqq").ifPresent(reqq -> peer.setAbsoluteRequestLimit((int) reqq.asLong()));
+			handshakeMap.get("v").ifPresent(v -> peer.setClientName(v.asString()));
 		} catch (Exception e) {
 			LOGGER.error("Extension handshake error", e);
 			peer.getBitTorrentSocket().close();
