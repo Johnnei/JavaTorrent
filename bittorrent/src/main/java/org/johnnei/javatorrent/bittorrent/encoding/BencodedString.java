@@ -1,16 +1,16 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-
 /**
  * A bencoded string.
  */
-public class BencodedString implements IBencodedValue {
+public class BencodedString extends AbstractBencodedValue {
 
 	private String value;
 
+	/**
+	 * Creates a new bencoded string based on the given value.
+	 * @param value The string to bencode.
+	 */
 	public BencodedString(String value) {
 		this.value = value;
 	}
@@ -18,26 +18,6 @@ public class BencodedString implements IBencodedValue {
 	@Override
 	public String asString() {
 		return value;
-	}
-
-	@Override
-	public long asLong() {
-		throw new UnsupportedOperationException("String cannot be converted to long");
-	}
-
-	@Override
-	public BigInteger asBigInteger() {
-		throw new UnsupportedOperationException("String cannot be converted to big integer");
-	}
-
-	@Override
-	public Map<String, IBencodedValue> asMap() {
-		throw new UnsupportedOperationException("String cannot be converted to map");
-	}
-
-	@Override
-	public List<IBencodedValue> asList() {
-		throw new UnsupportedOperationException("String cannot be converted to list");
 	}
 
 	@Override

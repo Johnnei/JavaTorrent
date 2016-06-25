@@ -9,12 +9,10 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+/**
+ * Base class for ut_metadata messages.
+ */
 public abstract class AbstractMessage implements IMessage {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMessage.class);
 
 	private Bencoding bencoding = new Bencoding();
 
@@ -22,11 +20,18 @@ public abstract class AbstractMessage implements IMessage {
 	protected BencodedMap dictionary;
 	protected String bencodedData;
 
+	/**
+	 * Creates a new empty message.
+	 */
 	public AbstractMessage() {
 		dictionary = new BencodedMap();
 		bencodedData = "";
 	}
 
+	/**
+	 * Creates a new message for the given piece.
+	 * @param piece The piece for which this message will be send.
+	 */
 	public AbstractMessage(int piece) {
 		dictionary = new BencodedMap();
 		BencodedMap bencodedMap = new BencodedMap();

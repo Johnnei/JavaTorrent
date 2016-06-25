@@ -5,7 +5,7 @@ import org.johnnei.javatorrent.internal.bittorrent.protocol.messages.AbstractBlo
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-public class MessageCancel extends AbstractBlockMessage implements IMessage {
+public class MessageCancel extends AbstractBlockMessage {
 
 	public MessageCancel() {
 		/* Constructor to receive packets */

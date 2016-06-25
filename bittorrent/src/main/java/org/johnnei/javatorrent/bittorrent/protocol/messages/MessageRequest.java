@@ -8,7 +8,7 @@ import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageRequest extends AbstractBlockMessage implements IMessage {
+public class MessageRequest extends AbstractBlockMessage {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MessageRequest.class);
 
