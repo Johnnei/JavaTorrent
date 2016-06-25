@@ -40,7 +40,7 @@ public class MessageData extends AbstractMessage {
 
 	@Override
 	public void process(Peer peer) {
-		int blockIndex = (int) dictionary.get(PIECE_KEY);
+		int blockIndex = (int) dictionary.get(PIECE_KEY).get().asLong();
 
 		if (!peer.getTorrent().isDownloadingMetadata()) {
 			LOGGER.debug("Peer {} sent ut_metadata block but we already got all metadata info. Ignoring.", peer);

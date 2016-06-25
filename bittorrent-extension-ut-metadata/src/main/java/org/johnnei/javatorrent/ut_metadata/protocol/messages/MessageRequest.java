@@ -27,6 +27,9 @@ public class MessageRequest extends AbstractMessage {
 
 	@Override
 	public void process(Peer peer) {
+		// The ut_metadata defines each section as a piece, but internally we map them as a single torrent piece so we can re-use the logic.
+		int blockIndex = (int) dictionary.get(PIECE_KEY).get().asLong();
+
 		if (peer.getTorrent().isDownloadingMetadata()) {
 			Optional<PeerExtensions> peerExtensions = peer.getModuleInfo(PeerExtensions.class);
 			if (!peerExtensions.isPresent() || !peerExtensions.get().hasExtension(UTMetadata.NAME)) {
@@ -34,13 +37,10 @@ public class MessageRequest extends AbstractMessage {
 				return;
 			}
 
-			MessageReject mr = new MessageReject((int) dictionary.get(PIECE_KEY));
+			MessageReject mr = new MessageReject(blockIndex);
 			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mr);
 			peer.getBitTorrentSocket().enqueueMessage(extendedMessage);
 		} else {
-			// The ut_metadata defines each section as a piece, but internally we map them as a single torrent piece so we can re-use the logic.
-			int blockIndex = (int) dictionary.get(PIECE_KEY);
-
 			Piece piece = peer.getTorrent().getMetadata().get().getPiece(0);
 
 			peer.getTorrent().addDiskJob(new DiskJobReadBlock(

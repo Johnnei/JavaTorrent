@@ -3,12 +3,10 @@ package org.johnnei.javatorrent.module;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
@@ -51,14 +49,15 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 	public void testProcessHandshakeMetadataNoMetadataSize() throws IOException {
 		Peer peerMock = createMock(Peer.class);
 
-		Map<String, Object> handshakeDictionary = new HashMap<>();
-		Map<String, Object> emptyDictionary = Collections.emptyMap();
-		handshakeDictionary.put("m", emptyDictionary);
+		BencodedMap handshakeDictionary = new BencodedMap();
+		BencodedMap mEntry = new BencodedMap();
+
+		handshakeDictionary.put("m", mEntry);
 
 		replayAll();
 
 		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
-		cut.processHandshakeMetadata(peerMock, handshakeDictionary, emptyDictionary);
+		cut.processHandshakeMetadata(peerMock, handshakeDictionary, mEntry);
 
 		verifyAll();
 	}
@@ -67,10 +66,11 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 	public void testProcessHandshakeMetadata() throws IOException {
 		Peer peerMock = createMock(Peer.class);
 
-		Map<String, Object> handshakeDictionary = new HashMap<>();
-		Map<String, Object> emptyDictionary = Collections.emptyMap();
-		handshakeDictionary.put("metadata_size", 512);
-		handshakeDictionary.put("m", emptyDictionary);
+		BencodedMap handshakeDictionary = new BencodedMap();
+		BencodedMap mEntry = new BencodedMap();
+
+		handshakeDictionary.put("metadata_size", new BencodedInteger(512));
+		handshakeDictionary.put("m", mEntry);
 
 		Capture<MetadataInformation> informationCapture = EasyMock.newCapture();
 		peerMock.addModuleInfo(capture(informationCapture));
@@ -78,7 +78,7 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 		replayAll();
 
 		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
-		cut.processHandshakeMetadata(peerMock, handshakeDictionary, emptyDictionary);
+		cut.processHandshakeMetadata(peerMock, handshakeDictionary, mEntry);
 
 		verifyAll();
 
@@ -90,7 +90,7 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 	public void testAddHandshakeMetadataDownloadingMetadata() throws IOException {
 		Torrent torrent = createNiceMock(Torrent.class);
 		Peer peerMock = createNiceMock(Peer.class);
-		Bencoder bencoderMock = createMock(Bencoder.class);
+		BencodedMap bencodedMapMock = createMock(BencodedMap.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrent);
 		expect(torrent.isDownloadingMetadata()).andReturn(true);
@@ -98,7 +98,7 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 		replayAll();
 
 		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
-		cut.addHandshakeMetadata(peerMock, bencoderMock);
+		cut.addHandshakeMetadata(peerMock, bencodedMapMock);
 
 		verifyAll();
 	}
@@ -107,20 +107,19 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 	public void testAddHandshakeMetadata() throws IOException {
 		Torrent torrent = createNiceMock(Torrent.class);
 		Peer peerMock = createNiceMock(Peer.class);
-		Bencoder bencoderMock = createMock(Bencoder.class);
+		BencodedMap bencodedMapMock = createMock(BencodedMap.class);
 		MetadataFileSet metadataMock = createNiceMock(MetadataFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrent);
 		expect(torrent.isDownloadingMetadata()).andReturn(false);
 		expect(torrent.getMetadata()).andReturn(Optional.of(metadataMock));
 		expect(metadataMock.getTotalFileSize()).andReturn(512L);
-		bencoderMock.string("metadata_size");
-		bencoderMock.integer(512);
+		bencodedMapMock.put("metadata_size", new BencodedInteger(512));
 
 		replayAll();
 
 		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
-		cut.addHandshakeMetadata(peerMock, bencoderMock);
+		cut.addHandshakeMetadata(peerMock, bencodedMapMock);
 
 		verifyAll();
 	}

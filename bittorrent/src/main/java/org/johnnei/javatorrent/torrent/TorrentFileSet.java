@@ -3,11 +3,16 @@ package org.johnnei.javatorrent.torrent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedList;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
+import org.johnnei.javatorrent.bittorrent.encoding.IBencodedValue;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.torrent.files.Piece;
@@ -25,6 +30,8 @@ public class TorrentFileSet extends AbstractFileSet {
 
 	private static final String ERR_INCOMPLETE_INFO_ENTRY
 			= "Metadata file appears to be validly encoded but is missing critical information from the 'info' entry.";
+
+	private Bencoding bencoding = new Bencoding();
 
 	/**
 	 * The folder name to put the files in
@@ -63,16 +70,12 @@ public class TorrentFileSet extends AbstractFileSet {
 
 	private void parseTorrentFileData(File torrentFile) {
 		try (ByteInputStream in = new ByteInputStream(new FileInputStream(torrentFile))) {
-			Bencode decoder = new Bencode(in.readString(in.available()));
+			BencodedMap metadataInfo = (BencodedMap) bencoding.decode(new StringReader(in.readString(in.available())));
 
-			Map<String, Object> metadataInfo = decoder.decodeDictionary();
-			if (!isInfoDirectory(metadataInfo)) {
-				if (!metadataInfo.containsKey("info")) {
-					throw new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY);
-				}
+			if (!isInfoDirectory(metadataInfo.asMap())) {
+				metadataInfo = (BencodedMap) metadataInfo.get("info").orElseThrow(() -> new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY));
 
-				metadataInfo = (Map<String, Object>) metadataInfo.get("info");
-				if (!isInfoDirectory(metadataInfo)) {
+				if (!isInfoDirectory(metadataInfo.asMap())) {
 					throw new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY);
 				}
 			}
@@ -90,32 +93,33 @@ public class TorrentFileSet extends AbstractFileSet {
 		}
 	}
 
-	private void parseDictionary(Map<String, Object> dictionary) {
-		if (dictionary.containsKey("name")) {
-			downloadFolder = new File(downloadFolder, (String) dictionary.get("name"));
-		}
+	private void parseDictionary(BencodedMap dictionary) {
+		dictionary.get("name").ifPresent(name -> downloadFolder = new File(downloadFolder, name.asString()));
 
 		if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
 			throw new IllegalStateException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
 		}
 
-		pieceSize = (int) dictionary.get("piece length");
+		// Because we got here the test in isInfoDirectory have passed, the size is available.
+		pieceSize = (int) dictionary.get("piece length").get().asLong();
 		long remainingSize = 0L;
 
-		if (dictionary.containsKey("files")) { // Multi-file torrent
-			ArrayList<?> files = (ArrayList<?>) dictionary.get("files");
+		Optional<IBencodedValue> filesEntry = dictionary.get("files");
+		if (filesEntry.isPresent()) {
+			// Multi-file torrent
+			List<IBencodedValue> files = filesEntry.get().asList();
 			fileInfos = new ArrayList<>(files.size());
-			for (int i = 0; i < files.size(); i++) {
-				HashMap<?, ?> file = (HashMap<?, ?>) files.get(i);
-				long fileSize = getNumberFromDictionary(file.get("length"));
-				ArrayList<?> fileStructure = (ArrayList<?>) file.get("path");
+			for (IBencodedValue fileEntry : files) {
+				BencodedMap file = (BencodedMap) fileEntry;
+				long fileSize = file.get("length").get().asLong();
+				BencodedList fileStructure = (BencodedList) file.get("path").get();
 				String fileName = "";
 				if (fileStructure.size() > 1) {
 					for (int j = 0; j < fileStructure.size(); j++) {
 						fileName += "/" + fileStructure.get(j);
 					}
 				} else {
-					fileName = (String) fileStructure.get(0);
+					fileName = fileStructure.get(0).asString();
 				}
 				int pieceCount = (int) MathUtils.ceilDivision(fileSize, pieceSize);
 				if (remainingSize % pieceSize != 0 && fileSize >= pieceSize) {
@@ -125,14 +129,15 @@ public class TorrentFileSet extends AbstractFileSet {
 				fileInfos.add(info);
 				remainingSize += fileSize;
 			}
-		} else { // Single file torrent
+		} else {
+			// Single file torrent
 			fileInfos = new ArrayList<>(1);
-			String filename = (String) dictionary.get("name");
-			long fileSize = getNumberFromDictionary(dictionary.get("length"));
+			String filename = dictionary.get("name").get().asString();
+			long fileSize = dictionary.get("length").get().asLong();
 			fileInfos.add(new FileInfo(fileSize, remainingSize, getFile(filename), (int) MathUtils.ceilDivision(fileSize, pieceSize)));
 			remainingSize += fileSize;
 		}
-		String pieceHashes = (String) dictionary.get("pieces");
+		String pieceHashes = dictionary.get("pieces").get().asString();
 		int pieceAmount = pieceHashes.length() / 20;
 		pieces = new ArrayList<>(pieceAmount);
 		for (int index = 0; index < pieceAmount; index++) {
@@ -148,7 +153,7 @@ public class TorrentFileSet extends AbstractFileSet {
 		}
 	}
 
-	private boolean isInfoDirectory(Map<String, Object> metadata) {
+	private boolean isInfoDirectory(Map<String, IBencodedValue> metadata) {
 		if (!metadata.containsKey("length") && !metadata.containsKey("files")) {
 			return false;
 		}
@@ -162,14 +167,6 @@ public class TorrentFileSet extends AbstractFileSet {
 		}
 
 		return true;
-	}
-
-	private long getNumberFromDictionary(Object o) {
-		if (o instanceof Integer) {
-			return ((int) o);
-		} else {
-			return (long) o;
-		}
 	}
 
 	/**

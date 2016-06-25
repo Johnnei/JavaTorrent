@@ -1,35 +1,43 @@
 package org.johnnei.javatorrent.ut_metadata.protocol.messages;
 
-import java.util.Collections;
-import java.util.Map;
+import java.io.StringReader;
 
-import org.johnnei.javatorrent.bittorrent.encoding.Bencode;
-import org.johnnei.javatorrent.bittorrent.encoding.Bencoder;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
+import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
+import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 
+/**
+ * Base class for ut_metadata messages.
+ */
 public abstract class AbstractMessage implements IMessage {
 
+	private Bencoding bencoding = new Bencoding();
+
 	protected static final String PIECE_KEY = "piece";
-	protected Map<String, Object> dictionary;
+	protected BencodedMap dictionary;
 	protected String bencodedData;
 
+	/**
+	 * Creates a new empty message.
+	 */
 	public AbstractMessage() {
-		dictionary = Collections.emptyMap();
+		dictionary = new BencodedMap();
 		bencodedData = "";
 	}
 
+	/**
+	 * Creates a new message for the given piece.
+	 * @param piece The piece for which this message will be send.
+	 */
 	public AbstractMessage(int piece) {
-		dictionary = Collections.emptyMap();
-		Bencoder encode = new Bencoder();
-		encode.dictionaryStart();
-		encode.string("msg_type");
-		encode.integer(getId());
-		encode.string(PIECE_KEY);
-		encode.integer(piece);
-		encode.dictionaryEnd();
-		bencodedData = encode.getBencodedData();
+		dictionary = new BencodedMap();
+		BencodedMap bencodedMap = new BencodedMap();
+		bencodedMap.put("msg_type", new BencodedInteger(getId()));
+		bencodedMap.put(PIECE_KEY, new BencodedInteger(piece));
+		bencodedData = bencodedMap.serialize();
 	}
 
 	@Override
@@ -40,14 +48,11 @@ public abstract class AbstractMessage implements IMessage {
 	@Override
 	public void read(InStream inStream) {
 		inStream.mark();
-		String dictionaryString = inStream.readString(inStream.available());
-		Bencode decoder = new Bencode(dictionaryString);
-
-		dictionary = decoder.decodeDictionary();
-
-		int readCharacters = dictionaryString.length() - decoder.remainingChars();
+		StringReader reader = new StringReader(inStream.readString(inStream.available()));
 		inStream.resetToMark();
-		inStream.skipBytes(readCharacters);
+
+		dictionary = (BencodedMap) bencoding.decode(reader);
+		inStream.skipBytes(bencoding.getCharactersRead());
 	}
 
 }
