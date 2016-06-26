@@ -27,7 +27,9 @@ import org.easymock.Capture;
 import org.easymock.CaptureType;
 import org.easymock.EasyMock;
 import org.easymock.EasyMockSupport;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.and;
@@ -51,6 +53,9 @@ import static org.junit.Assert.assertTrue;
 public class TorrentTest extends EasyMockSupport {
 
 	private static final String METADATA_FILE = "gimp-2.8.16-setup-1.exe.torrent";
+
+	@Rule
+	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Test
 	public void testSetGetPieceSelector() {
@@ -753,5 +758,15 @@ public class TorrentTest extends EasyMockSupport {
 		assertFalse("Metadata should have returned that it is done", cut.isDownloadingMetadata());
 
 		verifyAll();
+	}
+
+	@Test
+	public void testBuildFromMetadataFile() throws Exception {
+		Torrent torrent = new Torrent.Builder()
+				.setName("GIMP Torrent file")
+				.buildFromMetata(new File(TorrentTest.class.getResource(METADATA_FILE).toURI()), temporaryFolder.newFolder());
+
+		assertTrue("Metadata was supplied, metadata download is completed.", torrent.getMetadata().get().isDone());
+		assertTrue("Torrent file set have several pieces as defined in metadata", torrent.getFileSet().getPieceCount() > 0);
 	}
 }

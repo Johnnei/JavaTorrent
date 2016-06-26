@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
@@ -131,21 +132,11 @@ public class DownloadTorrentIT {
 				).build();
 	}
 
-	private Torrent createTorrent(String name, TorrentClient client, File torrentFile, File downloadFolder) {
-		Torrent torrent = new Torrent.Builder()
+	private Torrent createTorrent(String name, TorrentClient client, File torrentFile, File downloadFolder) throws IOException {
+		return new Torrent.Builder()
 				.setTorrentClient(client)
 				.setName(name)
-				.setHash(TORRENT_FILE_HASH)
-				.build();
-
-		MetadataFileSet metadata = new MetadataFileSet(torrent, torrentFile);
-		metadata.getNeededPieces().forEach(p -> metadata.setHavingPiece(p.getIndex()));
-		TorrentFileSet fileSet = new TorrentFileSet(torrentFile, downloadFolder);
-
-		torrent.setMetadata(metadata);
-		torrent.setFileSet(fileSet);
-
-		return torrent;
+				.buildFromMetata(torrentFile, downloadFolder);
 	}
 
 	private void downloadTestFile(File resultFile) throws Exception {

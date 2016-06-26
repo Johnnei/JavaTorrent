@@ -1,5 +1,8 @@
 package org.johnnei.javatorrent.torrent;
 
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
@@ -451,6 +455,9 @@ public class Torrent {
 		this.pieceSelector = downloadRegulator;
 	}
 
+	/**
+	 * A builder to create new instances of {@link Torrent}
+	 */
 	public static final class Builder {
 
 		private TorrentClient torrentClient;
@@ -459,16 +466,31 @@ public class Torrent {
 
 		private byte[] hash;
 
+		/**
+		 * Sets the torrent client on which this torrent will be registered.
+		 * @param torrentClient The client.
+		 * @return The adjusted builder.
+		 */
 		public Builder setTorrentClient(TorrentClient torrentClient) {
 			this.torrentClient = torrentClient;
 			return this;
 		}
 
+		/**
+		 * Sets the hash of the torrent.
+		 * @param hash The expected hash.
+		 * @return The adjusted builder.
+		 */
 		public Builder setHash(byte[] hash) {
 			this.hash = hash;
 			return this;
 		}
 
+		/**
+		 * Sets the display name for this torrent.
+		 * @param name The name to set.
+		 * @return The adjusted builder.
+		 */
 		public Builder setName(String name) {
 			this.displayName = name;
 			return this;
@@ -484,8 +506,38 @@ public class Torrent {
 			return hash != null;
 		}
 
+		/**
+		 * Creates a torrent without metadata information (the .torrent file is not present).
+		 * @return The newly created torrent.
+		 */
 		public Torrent build() {
 			return new Torrent(this);
+		}
+
+		/**
+		 * Creates a torrent with metadata information (the .torrent file is present).
+		 * @param metadata The metadata file to provision this torrent instance with.
+		 * @param downloadFolder The folder in which the torrent should be downloaded.
+		 * @return The newly created torrent.
+		 * @throws IOException When the metadata file cannot be read.
+		 */
+		public Torrent buildFromMetata(File metadata, File downloadFolder) throws IOException {
+			try (DataInputStream inputStream = new DataInputStream(new FileInputStream(metadata))) {
+				byte[] data = new byte[(int) metadata.length()];
+				inputStream.readFully(data);
+				setHash(SHA1.hash(data));
+			}
+
+			Torrent torrent = build();
+
+			MetadataFileSet metadataFileSet = new MetadataFileSet(torrent, metadata);
+			metadataFileSet.getNeededPieces().forEach(p -> metadataFileSet.setHavingPiece(p.getIndex()));
+			TorrentFileSet fileSet = new TorrentFileSet(metadata, downloadFolder);
+
+			torrent.setMetadata(metadataFileSet);
+			torrent.setFileSet(fileSet);
+
+			return torrent;
 		}
 
 	}
