@@ -7,7 +7,7 @@ import org.johnnei.javatorrent.torrent.peer.PeerDirection;
  * A simple choking strategy which attempt to get unchoked by everyone who has any piece we don't have and unchokes
  * anyone who's interested in us.
  */
-public class PermissiveStrategy implements IChokingStrategy {
+public class PermissiveStrategy extends PermissiveUploadStrategy {
 
 	/**
 	 * {@inheritDoc}
@@ -20,9 +20,6 @@ public class PermissiveStrategy implements IChokingStrategy {
 			peer.setInterested(PeerDirection.Download, interested);
 		}
 
-		boolean shouldUnchoke = !peer.isInterested(PeerDirection.Upload);
-		if (peer.isChoked(PeerDirection.Upload) != shouldUnchoke) {
-			peer.setChoked(PeerDirection.Upload, shouldUnchoke);
-		}
+		super.updateChoking(peer);
 	}
 }
