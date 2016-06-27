@@ -5,7 +5,7 @@ stages:
 
 # Cache Maven output
 cache:
-    key: "$CI_BUILD_NAME/$CI_BUILD_REF_NAME"
+    key: "$CI_BUILD_REF_NAME"
     untracked: true
 
 # Compile the code, must succeed before we start testing.
@@ -16,12 +16,12 @@ build:
 # Run the quick test suite (Unit tests mostly)
 quicktests:
     stage: test
-    script: "mvn test -B"
+    script: "mvn test -B --fail-at-end"
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
-    script: "mvn verify -B"
+    script: "mvn verify -B --fail-at-end"
     allow_failure: true
 
 # Run a sonar analysis.
