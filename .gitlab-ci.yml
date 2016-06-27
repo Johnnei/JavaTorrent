@@ -27,4 +27,4 @@ integration-tests:
 # Run a sonar analysis.
 sonar:
     stage: qa
-    script: "mvn sonar:sonar -B -Dsonar.host.url=https://sonarqube.johnnei.org"
+    script: "mvn compile sonar:sonar -B -Dsonar.host.url=https://sonarqube.johnnei.org"
