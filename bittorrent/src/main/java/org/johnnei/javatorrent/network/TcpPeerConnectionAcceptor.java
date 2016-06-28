@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 
 public class TcpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 

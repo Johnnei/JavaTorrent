@@ -10,8 +10,8 @@ import java.util.Optional;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
-import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 

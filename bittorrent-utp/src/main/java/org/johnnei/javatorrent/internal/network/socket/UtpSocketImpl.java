@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 import static java.lang.Math.max;
 
 /**
- * Internal implementation of the {@link org.johnnei.javatorrent.network.socket.UtpSocket}
+ * Internal implementation of the {@link org.johnnei.javatorrent.internal.network.socket.UtpSocket}
  */
 public class UtpSocketImpl {
 

@@ -16,7 +16,7 @@ import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseMetadata;
 import org.johnnei.javatorrent.phases.PhasePreMetadata;

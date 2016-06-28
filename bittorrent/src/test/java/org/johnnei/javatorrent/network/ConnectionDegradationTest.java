@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
 
 import org.junit.Test;
 

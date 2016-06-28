@@ -7,12 +7,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.UtpSocketRegistration;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
-import org.johnnei.javatorrent.network.socket.UtpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
@@ -47,7 +47,7 @@ public class ConnectUtpSocketIT {
 				.setPeerDistributor(UncappedDistributor::new)
 				.registerModule(utpModule)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(UtpSocket.class, utpModule.createSocketFactory(), Optional.empty())
+						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), Optional.empty())
 						.build())
 				.setDownloadPort(port)
 				.setExecutorService(Executors.newScheduledThreadPool(2))
@@ -69,7 +69,7 @@ public class ConnectUtpSocketIT {
 		UtpModule remoteUtpModule = new UtpModule();
 		TorrentClient remoteClient = createTorrentClient(remoteUtpModule, DummyEntity.findAvailableUdpPort());
 
-		UtpSocket localSocket = localUtpModule.createSocketFactory().get();
+		ISocket localSocket = localUtpModule.createSocketFactory().get();
 
 		UtpMultiplexer remoteMultiplexer = getInternalState(remoteUtpModule, UtpMultiplexer.class);
 

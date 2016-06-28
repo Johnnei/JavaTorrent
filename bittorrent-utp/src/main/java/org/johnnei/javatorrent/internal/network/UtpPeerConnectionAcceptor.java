@@ -10,8 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.network.AbstractPeerConnectionAcceptor;
-import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.network.socket.UtpSocket;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
 
 /**
  * Accepts connection which have been detected as a new connection in {@link org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer}

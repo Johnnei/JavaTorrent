@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.network.socket;
+package org.johnnei.javatorrent.internal.network.socket;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

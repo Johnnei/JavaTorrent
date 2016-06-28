@@ -16,7 +16,7 @@ import org.johnnei.javatorrent.internal.utp.UtpSocketRegistration;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.socket.UtpSocket;
+import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
