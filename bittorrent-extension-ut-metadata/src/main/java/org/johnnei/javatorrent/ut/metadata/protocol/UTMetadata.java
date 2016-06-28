@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.ut_metadata.protocol;
+package org.johnnei.javatorrent.ut.metadata.protocol;
 
 public class UTMetadata {
 

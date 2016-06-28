@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.ut_metadata;
+package org.johnnei.javatorrent.ut.metadata;
 
 import java.io.DataInputStream;
 import java.io.File;

@@ -17,8 +17,8 @@ import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
-import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageRequest;
+import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
+import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
