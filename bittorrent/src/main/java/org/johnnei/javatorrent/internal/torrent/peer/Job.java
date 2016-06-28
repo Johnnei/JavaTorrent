@@ -19,7 +19,7 @@ public class Job {
 	 */
 	private int block;
 	/**
-	 * The length of the block<br/>
+	 * The length of the block<br>
 	 * <b>Optional</b>, Only used with requests from other peers
 	 */
 	private int length;

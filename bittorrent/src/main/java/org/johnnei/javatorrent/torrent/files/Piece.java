@@ -227,7 +227,7 @@ public class Piece {
 	}
 
 	/**
-	 * Gets the index of this Piece<br/>
+	 * Gets the index of this Piece<br>
 	 * The index is equal to the offset in the file divided by the default piece size
 	 *
 	 * @return The index of the piece within the fileset.

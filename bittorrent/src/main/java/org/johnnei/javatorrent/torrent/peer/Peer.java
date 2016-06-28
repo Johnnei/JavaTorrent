@@ -46,7 +46,7 @@ public class Peer {
 	private final Client peerClient;
 
 	/**
-	 * Client information about me retrieved from the connected peer<br/>
+	 * Client information about me retrieved from the connected peer<br>
 	 * This will contain the requests we made to the endpoint {@link PeerDirection#Download}
 	 */
 	private final Client myClient;
@@ -59,7 +59,7 @@ public class Peer {
 	private int pendingMessages;
 
 	/**
-	 * The amount of errors the client made<br/>
+	 * The amount of errors the client made<br>
 	 * If the amount reaches 5 the client will be disconnected on the next
 	 * peerCheck
 	 */
@@ -76,7 +76,7 @@ public class Peer {
 	private final byte[] extensionBytes;
 
 	/**
-	 * The absolute maximum amount of requests which the peer can support<br/>
+	 * The absolute maximum amount of requests which the peer can support<br>
 	 * Default value will be {@link Integer#MAX_VALUE}
 	 */
 	private int absoluteRequestLimit;
@@ -358,7 +358,7 @@ public class Peer {
 	}
 
 	/**
-	 * Sets the amount of requests we think this peer can handle properly.<br/>
+	 * Sets the amount of requests we think this peer can handle properly.<br>
 	 * This amount will be limited by {@link #absoluteRequestLimit}
 	 *
 	 * @param requestLimit The new limit.

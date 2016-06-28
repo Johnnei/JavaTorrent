@@ -39,7 +39,7 @@ public class UtpMultiplexer implements Runnable {
 	private UtpSocketImpl.Builder utpSocketFactory;
 
 	/**
-	 * The Factory to create the packet instances<br/>
+	 * The Factory to create the packet instances<br>
 	 * If JavaTorrent will need to update the protocol then we can use multiple factory's to create the correct version of the packet
 	 */
 	private UtpPayloadFactory packetFactory;

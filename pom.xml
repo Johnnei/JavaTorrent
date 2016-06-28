@@ -224,6 +224,16 @@
                 </goals>
               </execution>
             </executions>
+            <configuration>
+              <tags>
+                <!-- Introduced in Java 8, but not officially promoted for outside JDK use. But I like them! -->
+                <tag>
+                  <name>implNote</name>
+                  <placement>a</placement>
+                  <head>Implementation Note:</head>
+                </tag>
+              </tags>
+            </configuration>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>

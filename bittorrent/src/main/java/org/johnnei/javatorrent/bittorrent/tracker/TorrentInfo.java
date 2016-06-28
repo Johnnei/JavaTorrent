@@ -109,7 +109,7 @@ public class TorrentInfo {
 	}
 
 	/**
-	 * The amount of times this torrent has been downloaded<br/>
+	 * The amount of times this torrent has been downloaded<br>
 	 * If the tracker returns 0 it will return N/A as the tracker apparently doesn't support it
 	 *
 	 * @return the count of times downloaded or N/A if not reported

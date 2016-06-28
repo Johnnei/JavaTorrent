@@ -7,8 +7,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Bitfield {
 
 	/**
-	 * The lock which prevents thread-unsafety when the bitfieldBytes gets resized.<br/>
-	 * Read lock: Read/Write data into the {@link #bitfieldBytes} (both are allowed as missing one bit is not critical)<br/>
+	 * The lock which prevents thread-unsafety when the bitfieldBytes gets resized.<br>
+	 * Read lock: Read/Write data into the {@link #bitfieldBytes} (both are allowed as missing one bit is not critical)<br>
 	 * Write lock: Resizing the datastructure
 	 */
 	private ReadWriteLock resizeLock;
@@ -65,7 +65,7 @@ public class Bitfield {
 	}
 
 	/**
-	 * Notify that we have the given piece<br/>
+	 * Notify that we have the given piece<br>
 	 * This will update the bitfieldBytes to bitwise OR the bit to 1
 	 *
 	 * @param pieceIndex The piece to add
@@ -75,7 +75,7 @@ public class Bitfield {
 	}
 
 	/**
-	 * Notify that we have the given piece<br/>
+	 * Notify that we have the given piece<br>
 	 * This will update the bitfieldBytes to bitwise OR the bit to 1
 	 *
 	 * @param pieceIndex The piece to add

@@ -34,8 +34,6 @@ public class UdpSocketUtils {
 	 *
 	 * @param socket
 	 * @param address
-	 * @param port
-	 * @param data
 	 * @throws IOException
 	 */
 	public void write(DatagramSocket socket, InetSocketAddress address, OutStream outStream) throws IOException {
