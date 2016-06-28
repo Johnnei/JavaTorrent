@@ -17,6 +17,7 @@ import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +44,7 @@ public class ConnectUtpSocketIT {
 		return new TorrentClient.Builder()
 				// Disable incoming TCP connections, only expect UTP
 				.acceptIncomingConnections(false)
+				.setPeerDistributor(UncappedDistributor::new)
 				.registerModule(utpModule)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
 						.registerDefaultConnectionType(UtpSocket.class, utpModule.createSocketFactory(), Optional.empty())
