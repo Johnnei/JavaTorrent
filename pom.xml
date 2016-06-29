@@ -107,24 +107,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>${plugin.org.apache.maven.plugins.maven-jar-plugin}</version>
-          <executions>
-            <execution>
-              <goals>
-                <goal>test-jar</goal>
-              </goals>
-            </execution>
-          </executions>
-          <configuration>
-            <excludes>
-              <!-- Exclude test resources which are cached for performance reasons -->
-              <exclude>/torrent-output/**</exclude>
-            </excludes>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.org.apache.maven.plugins.maven-failsafe-plugin}</version>
           <executions>
