@@ -1,5 +1,7 @@
 .classpath
 .project
+**/.settings/**
+*.iml
 
 *.class
 
@@ -7,3 +9,7 @@
 *.jar
 *.war
 *.ear
+/bin/
+
+# Maven #
+**/target/**

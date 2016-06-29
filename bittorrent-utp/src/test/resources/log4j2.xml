@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger - %msg%n" />
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Console" />
+    </Root>
+    <Logger name="org.johnnei.javatorrent" level="info" />
+    <Logger name="org.johnnei.javatorrent.torrent.Torrent" level="debug" />
+    <Logger name="org.johnnei.javatorrent.torrent.DownloadTorrentIT" level="debug" />
+    <Logger name="org.johnnei.javatorrent.internal.utp" level="debug" />
+    <Logger name="org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl" level="debug" />
+    <Logger name="org.johnnei.javatorrent.utp" level="debug" />
+    <Logger name="org.johnnei.javatorrent.network.AbstractPeerConnectionAcceptor" level="debug" />
+    <Logger name="org.johnnei.javatorrent.tracker.PeerConnector" level="debug" />
+  </Loggers>
+</Configuration>
