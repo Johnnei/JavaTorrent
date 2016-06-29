@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.johnnei</groupId>
     <artifactId>javatorrent</artifactId>
-    <version>0.05.0-SNAPSHOT</version>
+    <version>0.5.0</version>
   </parent>
   <artifactId>javatorrent-bittorrent-tracker-udp</artifactId>
   <name>JavaTorrent Module: UDP Tracker (BEP #15)</name>
