@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.johnnei.javatorrent.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

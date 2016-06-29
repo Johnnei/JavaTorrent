@@ -18,7 +18,7 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.phases.PhaseSeed;

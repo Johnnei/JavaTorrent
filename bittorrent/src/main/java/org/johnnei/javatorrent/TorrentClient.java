@@ -115,7 +115,7 @@ public class TorrentClient {
 	}
 
 	private byte[] createPeerId() {
-		char[] version = Version.BUILD.split(" ")[1].replace(".", "").toCharArray();
+		char[] version = String.format("%s%2s%s", Version.VERSION_MAJOR, Version.VERSION_MINOR, Version.VERSION_PATCH).replace(" ", "0").toCharArray();
 		byte[] newPeerId = new byte[20];
 		newPeerId[0] = '-';
 		newPeerId[1] = 'J';
@@ -262,6 +262,7 @@ public class TorrentClient {
 	 * @param <T> The module type.
 	 * @return The module instance or {@link Optional#empty()} if not found.
 	 */
+	@SuppressWarnings("unchecked")
 	public <T extends IModule> Optional<T> getModule(Class<T> type) {
 		return (Optional<T>) modules.stream().filter(m -> m.getClass().equals(type)).findAny();
 	}

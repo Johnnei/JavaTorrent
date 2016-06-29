@@ -98,7 +98,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		// Assert that the peer id is in format: -JTdddd-xxxxxxxxxxxx
 		// The first 8 bytes are always readable ASCII characters.
 		String clientIdentifier = new String(peerId, 0, 8);
-		assertTrue("Incorrect client identifier in peer ID", Pattern.matches("-JT\\d{4}-", clientIdentifier));
+		assertTrue("Incorrect client identifier in peer ID: " + clientIdentifier, Pattern.matches("-JT\\d{4}-", clientIdentifier));
 		TestUtils.assertPresent("Missing module", torrentClient.getModule(moduleMock.getClass()));
 		assertTrue("Missing module", torrentClient.getModules().contains(moduleMock));
 	}

@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.network.socket;
+package org.johnnei.javatorrent.internal.network.socket;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 
 /**
- * A socket facade to get multiple socket protocols work on the some functions<br/>
+ * A socket facade to get multiple socket protocols work on the some functions<br>
  * @author Johnnei
  *
  */
@@ -57,8 +57,7 @@ public interface ISocket extends AutoCloseable {
 	public boolean isOutputShutdown();
 
 	/**
-	 * Forces the socket to send all data<br/>
-	 * Only supported in {@link UtpSocket}
+	 * Forces the socket to send all data<br>
 	 */
 	public void flush() throws IOException;
 

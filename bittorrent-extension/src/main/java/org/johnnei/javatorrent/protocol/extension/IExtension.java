@@ -31,7 +31,7 @@ public interface IExtension {
 	void processHandshakeMetadata(Peer peer, BencodedMap dictionary, BencodedMap mEntry);
 
 	/**
-	 * The name of this extension. The advised format for new extensions is: &ltclient-token&gt_&ltname&gt
+	 * The name of this extension. The advised format for new extensions is: &lt;client-token&gt;_&lt;name&gt;
 	 * @return The extension name
 	 */
 	String getExtensionName();

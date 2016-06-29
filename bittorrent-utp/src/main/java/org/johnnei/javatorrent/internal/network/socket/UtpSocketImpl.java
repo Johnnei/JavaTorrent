@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 import static java.lang.Math.max;
 
 /**
- * Internal implementation of the {@link org.johnnei.javatorrent.network.socket.UtpSocket}
+ * Internal implementation of the {@link org.johnnei.javatorrent.internal.network.socket.UtpSocket}
  */
 public class UtpSocketImpl {
 
@@ -217,7 +217,7 @@ public class UtpSocketImpl {
 	 */
 	public void onReceivedData() {
 		if (connectionState == ConnectionState.CONNECTING && ackHandler.isInitialised()) {
-			LOGGER.info("Data packet has been received after SYN ack, connection is ok.");
+			LOGGER.debug("Data packet has been received after SYN ack, connection is ok.");
 			setConnectionState(ConnectionState.CONNECTED);
 		}
 	}
@@ -295,7 +295,7 @@ public class UtpSocketImpl {
 		}
 
 		if (ackedPacket.getType() == UtpProtocol.ST_SYN) {
-			LOGGER.info("Received ACK on SYN, connection is ok.");
+			LOGGER.debug("Received ACK on SYN, connection is ok.");
 			setConnectionState(ConnectionState.CONNECTED);
 		}
 

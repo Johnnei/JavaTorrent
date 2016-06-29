@@ -19,7 +19,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.internal.network.ByteOutputStream;
-import org.johnnei.javatorrent.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

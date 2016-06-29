@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.ut_metadata.protocol.messages;
+package org.johnnei.javatorrent.ut.metadata.protocol.messages;
 
 import org.junit.Rule;
 import org.junit.Test;

@@ -12,7 +12,7 @@ import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
-import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
+import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

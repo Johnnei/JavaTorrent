@@ -1,9 +1,9 @@
-package org.johnnei.javatorrent.ut_metadata.protocol.messages;
+package org.johnnei.javatorrent.ut.metadata.protocol.messages;
 
 import java.util.Optional;
 
 import org.johnnei.javatorrent.disk.DiskJobReadBlock;
-import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
+import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;

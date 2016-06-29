@@ -6,7 +6,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.socket.UtpSocket;
+import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
 
 import org.junit.Rule;
 import org.junit.Test;

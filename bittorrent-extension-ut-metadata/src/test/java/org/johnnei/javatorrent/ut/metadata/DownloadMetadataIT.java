@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.ut_metadata;
+package org.johnnei.javatorrent.ut.metadata;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -16,7 +16,7 @@ import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseMetadata;
 import org.johnnei.javatorrent.phases.PhasePreMetadata;
@@ -45,7 +45,7 @@ public class DownloadMetadataIT {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DownloadMetadataIT.class);
 
-	private static final String SINGLE_FILE_TORRENT = "../phases/gimp-2.8.16-setup-1.exe.torrent";
+	private static final String SINGLE_FILE_TORRENT = "../../phases/gimp-2.8.16-setup-1.exe.torrent";
 
 	private static final byte[] TORRENT_FILE_HASH = new byte[] {
 			(byte) 0xc8,        0x36, (byte) 0x9f,        0x0b, (byte) 0xa4, (byte) 0xbf,       0x6c,

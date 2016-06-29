@@ -6,7 +6,6 @@ import java.util.concurrent.Executors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
-import org.johnnei.javatorrent.network.socket.UtpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
@@ -27,7 +26,7 @@ public class DownloadTorrentWithUtpIT extends DownloadTorrentIT {
 				.acceptIncomingConnections(false)
 				.registerModule(utpModule)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(UtpSocket.class, utpModule.createSocketFactory(), Optional.empty())
+						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), Optional.empty())
 						.build())
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))

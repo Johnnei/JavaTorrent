@@ -1,8 +1,7 @@
-package org.johnnei.javatorrent.network.socket;
+package org.johnnei.javatorrent.internal.network.socket;
 
 import java.net.InetSocketAddress;
 
-import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpOutputStream;

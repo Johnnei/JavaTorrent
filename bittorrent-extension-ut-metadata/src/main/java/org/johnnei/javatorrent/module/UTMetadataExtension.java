@@ -13,11 +13,11 @@ import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.ut_metadata.protocol.UTMetadata;
-import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageData;
-import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageReject;
-import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageRequest;
-import org.johnnei.javatorrent.ut_metadata.protocol.messages.MessageUnknown;
+import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
+import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageData;
+import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageReject;
+import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageRequest;
+import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageUnknown;
 import org.johnnei.javatorrent.utils.Argument;
 
 /**
