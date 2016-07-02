@@ -404,7 +404,9 @@ public class Torrent {
 	 * @return The list of connected peers.
 	 */
 	public List<Peer> getPeers() {
-		return new ArrayList<>(peers);
+		synchronized (this) {
+			return new ArrayList<>(peers);
+		}
 	}
 
 	/**
