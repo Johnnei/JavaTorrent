@@ -116,7 +116,37 @@ public class Piece {
 	 * @return hashMatched ? true : false
 	 */
 	public boolean checkHash() throws IOException {
-		byte[] pieceData = loadPiece(0, getSize());
+		final int pieceSize = getSize();
+
+		// Test if the piece is completely available on disk.
+		int remainingBytes = pieceSize;
+		int alreadyReadOffset = 0;
+		while (remainingBytes > 0) {
+			FileInfo file = files.getFileForBytes(index, alreadyReadOffset / files.getBlockSize(), alreadyReadOffset % files.getBlockSize());
+
+			long pieceIndexOffset = index * files.getPieceSize();
+			long totalOffset = pieceIndexOffset + alreadyReadOffset;
+
+			// Calculate the offset within the file
+			long offsetInFile = totalOffset - file.getFirstByteOffset();
+			long fileSize;
+			synchronized (file.fileLock) {
+				fileSize = file.getFileAccess().length();
+			}
+
+			// Subtract the available bytes.
+			long availableBytes = fileSize - offsetInFile;
+			if (availableBytes <= 0) {
+				// Not enough bytes are available to read this entire piece.
+				return false;
+			}
+
+			remainingBytes -= availableBytes;
+			alreadyReadOffset += availableBytes;
+		}
+
+		// Verify the hash.
+		byte[] pieceData = loadPiece(0, pieceSize);
 		return Arrays.equals(expectedHash, SHA1.hash(pieceData));
 	}
 

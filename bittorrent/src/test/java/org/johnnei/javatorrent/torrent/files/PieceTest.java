@@ -2,17 +2,31 @@ package org.johnnei.javatorrent.torrent.files;
 
 import java.util.Optional;
 
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
+import org.johnnei.javatorrent.torrent.FileInfo;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 import static org.johnnei.javatorrent.test.TestUtils.assertEqualityMethods;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link Piece}
  */
 public class PieceTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
+
+	@Rule
+	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Test
 	public void testStatusCounts() {
@@ -97,40 +111,87 @@ public class PieceTest {
 		assertEqualityMethods(pieceOne, pieceTwo, pieceThree);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSetStatusIAEUnderflow() {
+		thrown.expect(IllegalArgumentException.class);
+
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 		piece.setBlockStatus(-1, BlockStatus.Needed);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSetStatusIAEOverflow() {
+		thrown.expect(IllegalArgumentException.class);
+
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 		piece.setBlockStatus(11, BlockStatus.Verified);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testGetStatusIAEUnderflow() {
+		thrown.expect(IllegalArgumentException.class);
+
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 		piece.getBlockStatus(-1);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testGetStatusIAEOverflow() {
+		thrown.expect(IllegalArgumentException.class);
+
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 		piece.getBlockStatus(11);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testGetSizeIAEUnderflow() {
+		thrown.expect(IllegalArgumentException.class);
+
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 		piece.getBlockSize(-1);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testGetSizeIAEOverflow() {
+		thrown.expect(IllegalArgumentException.class);
+
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 		piece.getBlockSize(11);
+	}
+
+	@Test
+	public void testCheckHashOnIncompleteFile() throws Exception {
+		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
+		when(fileSetMock.getBlockSize()).thenReturn(5);
+		when(fileSetMock.getPieceSize()).thenReturn(20L);
+
+		FileInfo fileInfo = new FileInfo(20, 0, temporaryFolder.newFile(), 1);
+		when(fileSetMock.getFileForBytes(0, 0, 0)).thenReturn(fileInfo);
+
+		Piece cut = new Piece(fileSetMock, new byte[20], 0, 50, 5);
+
+		assertFalse("Hash should not be matching, but also not throw an exception.", cut.checkHash());
+	}
+
+	@Test
+	public void testCheckHashOnIncompleteFileSpanningMultipleFiles() throws Exception {
+		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
+		when(fileSetMock.getBlockSize()).thenReturn(5);
+		when(fileSetMock.getPieceSize()).thenReturn(20L);
+
+		FileInfo fileInfoOne = new FileInfo(10, 0, temporaryFolder.newFile(), 1);
+
+		// Ensure that the first file passes the length requirement so the test could fail on the second file.
+		fileInfoOne.getFileAccess().seek(0);
+		fileInfoOne.getFileAccess().setLength(10);
+
+		FileInfo fileInfoTwo = new FileInfo(10, 10, temporaryFolder.newFile(), 1);
+		when(fileSetMock.getFileForBytes(0, 0, 0)).thenReturn(fileInfoOne);
+		when(fileSetMock.getFileForBytes(0, 2, 0)).thenReturn(fileInfoTwo);
+
+		Piece cut = new Piece(fileSetMock, new byte[20], 0, 50, 5);
+
+		assertFalse("Hash should not be matching, but also not throw an exception.", cut.checkHash());
 	}
 
 }
