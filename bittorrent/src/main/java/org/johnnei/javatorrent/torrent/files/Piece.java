@@ -14,6 +14,9 @@ import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.StringUtils;
 
+/**
+ * Represents a piece within a {@link AbstractFileSet}.
+ */
 public class Piece {
 
 	private static final String ERR_BLOCK_IS_NOT_WITHIN_PIECE = "Block %d is not within the %d blocks of %s";
@@ -37,15 +40,24 @@ public class Piece {
 
 	private byte[] expectedHash;
 
+	/**
+	 * Creates a new piece.
+	 * @param files The {@link AbstractFileSet} which owns this piece.
+	 * @param hash The hash of the data of this piece.
+	 * @param index The piece number within the {@link AbstractFileSet}
+	 * @param pieceSize The amount of bytes this piece has.
+	 * @param blockSize The size of the blocks.
+	 */
 	public Piece(AbstractFileSet files, byte[] hash, int index, int pieceSize, int blockSize) {
 		this.index = index;
 		this.files = files;
 		this.expectedHash = hash;
 		blocks = new ArrayList<>(MathUtils.ceilDivision(pieceSize, blockSize));
 		int blockIndex = 0;
-		while (pieceSize > 0) {
-			Block block = new Block(blockIndex, Math.min(blockSize, pieceSize));
-			pieceSize -= block.getSize();
+		int remainingPieceSize = pieceSize;
+		while (remainingPieceSize > 0) {
+			Block block = new Block(blockIndex, Math.min(blockSize, remainingPieceSize));
+			remainingPieceSize -= block.getSize();
 			blocks.add(block);
 			++blockIndex;
 		}
@@ -275,6 +287,10 @@ public class Piece {
 		return blocks.stream().mapToInt(Block::getSize).sum();
 	}
 
+	/**
+	 * @param status The status which much be equal.
+	 * @return The amount of blocks in this piece with the given status.
+	 */
 	public int countBlocksWithStatus(BlockStatus status) {
 		return (int) blocks.stream().filter(block -> block.getStatus() == status).count();
 	}
