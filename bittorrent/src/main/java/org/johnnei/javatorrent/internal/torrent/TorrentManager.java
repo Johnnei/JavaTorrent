@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.network.TcpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.torrent.Torrent;
 
@@ -25,13 +26,16 @@ public class TorrentManager {
 
 	private TorrentClient torrentClient;
 
+	private TrackerManager trackerManager;
+
 	private List<TorrentPair> activeTorrents;
 
 	private LoopingRunnable connectorRunnable;
 
 	private LoopingRunnable peerIoRunnable;
 
-	public TorrentManager() {
+	public TorrentManager(TrackerManager trackerManager) {
+		this.trackerManager = trackerManager;
 		activeTorrents = new ArrayList<>();
 	}
 
@@ -79,7 +83,7 @@ public class TorrentManager {
 	 */
 	public void addTorrent(Torrent torrent) {
 		synchronized (torrentListLock) {
-			activeTorrents.add(new TorrentPair(this, torrentClient, torrent));
+			activeTorrents.add(new TorrentPair(this, trackerManager, torrentClient, torrent));
 		}
 	}
 
@@ -142,9 +146,9 @@ public class TorrentManager {
 
 		private final TorrentProcessor torrentProcessor;
 
-		TorrentPair(TorrentManager torrentManager, TorrentClient torrentClient, Torrent torrent) {
+		TorrentPair(TorrentManager torrentManager, TrackerManager trackerManager, TorrentClient torrentClient, Torrent torrent) {
 			this.torrent = torrent;
-			torrentProcessor = new TorrentProcessor(torrentManager, torrentClient, torrent);
+			torrentProcessor = new TorrentProcessor(torrentManager, trackerManager, torrentClient, torrent);
 		}
 
 		public Torrent getTorrent() {

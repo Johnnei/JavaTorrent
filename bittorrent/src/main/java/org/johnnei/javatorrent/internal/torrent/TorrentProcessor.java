@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.torrent.Torrent;
 
@@ -24,14 +25,17 @@ class TorrentProcessor {
 
 	private final TorrentClient torrentClient;
 
+	private final TrackerManager trackerManager;
+
 	private final Torrent torrent;
 
 	private IDownloadPhase downloadPhase;
 
 	private Collection<ScheduledFuture<?>> scheduledTasks;
 
-	public TorrentProcessor(TorrentManager torrentManager, TorrentClient torrentClient, Torrent torrent) {
+	public TorrentProcessor(TorrentManager torrentManager, TrackerManager trackerManager, TorrentClient torrentClient, Torrent torrent) {
 		this.torrentManager = torrentManager;
+		this.trackerManager = trackerManager;
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 		scheduledTasks = new ArrayList<>(3);
@@ -42,6 +46,11 @@ class TorrentProcessor {
 		scheduledTasks.add(torrentClient.getExecutorService().scheduleAtFixedRate(this::updateTorrentState, 0, 250, TimeUnit.MILLISECONDS));
 		scheduledTasks.add(torrentClient.getExecutorService().scheduleAtFixedRate(this::updateChokingStates, 1, 10, TimeUnit.SECONDS));
 		scheduledTasks.add(torrentClient.getExecutorService().scheduleAtFixedRate(this::removeDisconnectedPeers, 30, 60, TimeUnit.SECONDS));
+		scheduledTasks.add(torrentClient.getExecutorService().scheduleAtFixedRate(this::updateTrackerStates, 10, 30, TimeUnit.SECONDS));
+	}
+
+	public void updateTrackerStates() {
+		trackerManager.announce(torrent);
 	}
 
 	public void removeDisconnectedPeers() {

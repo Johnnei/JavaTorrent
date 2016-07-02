@@ -62,7 +62,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		moduleMock.onBuild(notNull());
 		expect(phaseRegulatorMock.createInitialPhase(notNull(), notNull())).andReturn(phaseMock);
 		phaseMock.onPhaseEnter();
-		expect(executorServiceMock.scheduleAtFixedRate(notNull(), anyLong(), anyLong(), notNull())).andReturn(null).times(3);
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), anyLong(), anyLong(), notNull())).andReturn(null).times(4);
 
 		replayAll();
 		TorrentClient torrentClient = builder
