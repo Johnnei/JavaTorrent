@@ -739,9 +739,10 @@ public class TorrentTest extends EasyMockSupport {
 	@Test
 	public void testIsDownloadingMetadata() {
 		MetadataFileSet metadataFileSetMock = createMock(MetadataFileSet.class);
+		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
 		expect(metadataFileSetMock.isDone()).andReturn(false);
-		expect(metadataFileSetMock.isDone()).andReturn(true);
+		expect(metadataFileSetMock.isDone()).andStubReturn(true);
 
 		replayAll();
 
@@ -755,6 +756,10 @@ public class TorrentTest extends EasyMockSupport {
 		cut.setMetadata(metadataFileSetMock);
 
 		assertTrue("Metadata should have returned that it is not done yet", cut.isDownloadingMetadata());
+		assertTrue("Metadata should have returned that it is done, but the torrent fileset has not been set yet.", cut.isDownloadingMetadata());
+
+		cut.setFileSet(fileSetMock);
+
 		assertFalse("Metadata should have returned that it is done", cut.isDownloadingMetadata());
 
 		verifyAll();

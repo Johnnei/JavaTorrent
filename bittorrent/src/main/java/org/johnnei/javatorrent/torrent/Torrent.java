@@ -201,7 +201,11 @@ public class Torrent {
 			return true;
 		}
 
-		return !metadata.isDone();
+		if (!metadata.isDone()) {
+			return true;
+		}
+
+		return files == null;
 	}
 
 	/**
