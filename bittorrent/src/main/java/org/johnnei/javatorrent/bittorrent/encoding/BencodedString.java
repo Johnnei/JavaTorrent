@@ -8,6 +8,8 @@ import java.util.Arrays;
  */
 public class BencodedString extends AbstractBencodedValue {
 
+	private static final Charset UTF8 = Charset.forName("UTF-8");
+
 	private byte[] value;
 
 	/**
@@ -15,7 +17,7 @@ public class BencodedString extends AbstractBencodedValue {
 	 * @param value The string to bencode.
 	 */
 	public BencodedString(String value) {
-		this.value = value.getBytes(Charset.forName("UTF-8"));
+		this.value = value.getBytes(UTF8);
 	}
 
 	/**
@@ -28,7 +30,7 @@ public class BencodedString extends AbstractBencodedValue {
 
 	@Override
 	public String asString() {
-		return new String(value);
+		return new String(value, UTF8);
 	}
 
 	@Override
@@ -43,6 +45,6 @@ public class BencodedString extends AbstractBencodedValue {
 
 	@Override
 	public String toString() {
-		return String.format("BencodedString[value=%s]", value);
+		return String.format("BencodedString[value=%s]", asString());
 	}
 }
