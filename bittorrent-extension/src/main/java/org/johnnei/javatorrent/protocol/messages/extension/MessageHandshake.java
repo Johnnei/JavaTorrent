@@ -1,6 +1,6 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -70,7 +70,7 @@ public class MessageHandshake implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		try {
-			BencodedMap handshakeMap = (BencodedMap) bencoding.decode(new StringReader(bencodedHandshake));
+			BencodedMap handshakeMap = (BencodedMap) bencoding.decode(new InStream(bencodedHandshake.getBytes(Charset.forName("UTF-8"))));
 			BencodedMap messageMap = (BencodedMap) handshakeMap.get("m").orElse(new BencodedMap());
 			extensions.stream()
 				.filter(extension -> messageMap.get(extension.getExtensionName()).isPresent())

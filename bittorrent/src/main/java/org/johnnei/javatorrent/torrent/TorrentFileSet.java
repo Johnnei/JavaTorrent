@@ -3,7 +3,6 @@ package org.johnnei.javatorrent.torrent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
 import org.johnnei.javatorrent.bittorrent.encoding.IBencodedValue;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
+import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
@@ -70,7 +70,9 @@ public class TorrentFileSet extends AbstractFileSet {
 
 	private void parseTorrentFileData(File torrentFile) {
 		try (ByteInputStream in = new ByteInputStream(new FileInputStream(torrentFile))) {
-			BencodedMap metadataInfo = (BencodedMap) bencoding.decode(new StringReader(in.readString(in.available())));
+			byte[] buffer = new byte[in.available()];
+			in.readFully(buffer);
+			BencodedMap metadataInfo = (BencodedMap) bencoding.decode(new InStream(buffer));
 
 			if (!isInfoDirectory(metadataInfo.asMap())) {
 				metadataInfo = (BencodedMap) metadataInfo.get("info").orElseThrow(() -> new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY));
@@ -137,17 +139,14 @@ public class TorrentFileSet extends AbstractFileSet {
 			fileInfos.add(new FileInfo(fileSize, remainingSize, getFile(filename), (int) MathUtils.ceilDivision(fileSize, pieceSize)));
 			remainingSize += fileSize;
 		}
-		String pieceHashes = dictionary.get("pieces").get().asString();
-		int pieceAmount = pieceHashes.length() / 20;
+		byte[] hashBytes = dictionary.get("pieces").get().asBytes();
+		int pieceAmount = hashBytes.length / 20;
 		pieces = new ArrayList<>(pieceAmount);
 		for (int index = 0; index < pieceAmount; index++) {
 			int hashOffset = index * 20;
 			int size = (int) Math.min(pieceSize, remainingSize);
 			byte[] sha1Hash = new byte[20];
-			char[] hashBytes = pieceHashes.substring(hashOffset, hashOffset + 20).toCharArray();
-			for (int i = 0; i < sha1Hash.length; i++) {
-				sha1Hash[i] = (byte) hashBytes[i];
-			}
+			System.arraycopy(hashBytes, hashOffset, sha1Hash, 0, sha1Hash.length);
 			pieces.add(new Piece(this, sha1Hash, index, size, BLOCK_SIZE));
 			remainingSize -= size;
 		}

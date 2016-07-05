@@ -16,6 +16,12 @@ public interface IBencodedValue {
 	String asString();
 
 	/**
+	 * @return The bencoded value as a byte array.
+	 * @throws UnsupportedOperationException When the stored type is not a string.
+	 */
+	byte[] asBytes();
+
+	/**
 	 * @return The bencoded value as a long.
 	 * @throws UnsupportedOperationException When the stored type is not a long or overflows a long.
 	 */

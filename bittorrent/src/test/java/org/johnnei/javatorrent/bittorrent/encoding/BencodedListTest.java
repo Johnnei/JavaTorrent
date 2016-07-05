@@ -71,6 +71,13 @@ public class BencodedListTest {
 	}
 
 	@Test
+	public void testAsBytes() {
+		thrown.expect(UnsupportedOperationException.class);
+
+		new BencodedList().asBytes();
+	}
+
+	@Test
 	public void testAsString() {
 		thrown.expect(UnsupportedOperationException.class);
 
