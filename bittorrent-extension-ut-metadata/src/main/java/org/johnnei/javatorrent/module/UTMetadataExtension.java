@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.module;
 
 import java.io.File;
-import java.io.StringReader;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
@@ -45,7 +44,7 @@ public class UTMetadataExtension implements IExtension {
 	public IMessage getMessage(InStream inStream) {
 		int moveBackLength = inStream.available();
 
-		BencodedMap dictionary = (BencodedMap) bencoding.decode(new StringReader(inStream.readString(inStream.available())));
+		BencodedMap dictionary = (BencodedMap) bencoding.decode(inStream);
 		int id = (int) dictionary.get("msg_type").orElseThrow(() -> new IllegalArgumentException("Missing msg_type in ut_metadata message.")).asLong();
 		IMessage message;
 		switch (id) {

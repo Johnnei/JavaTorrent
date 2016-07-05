@@ -1,8 +1,9 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.math.BigInteger;
+
+import org.johnnei.javatorrent.network.InStream;
 
 /**
  * A decoder for Bencoding.
@@ -15,143 +16,136 @@ public class Bencoding {
 
 	/**
 	 * Decodes the given string reader into the bencoded data structure.
-	 * @param reader The reader containing the string input. The implementation <b>must</b> support {@link Reader#markSupported()}
+	 * @param inStream The stream containing the string input.
 	 * @return The bencoded data structure.
 	 */
-	public IBencodedValue decode(Reader reader) {
+	public IBencodedValue decode(InStream inStream) {
 		try {
 			charactersRead = 0;
-			return decodeNextValue(reader);
+			return decodeNextValue(inStream);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to decode bencoded values.", e);
 		}
 	}
 
-	/**
-	 * @return The amount of characters read from the reader in the last invocation of {@link #decode(Reader)}.
-	 */
-	public int getCharactersRead() {
-		return charactersRead;
-	}
-
-	private IBencodedValue decodeNextValue(Reader reader) throws IOException {
-		char token = peekCharacter(reader);
+	private IBencodedValue decodeNextValue(InStream inStream) throws IOException {
+		char token = peekCharacter(inStream);
 
 		IBencodedValue value;
 		if ('i' == token) {
-			value = decodeInteger(reader);
+			value = decodeInteger(inStream);
 		} else if ('l' == token) {
-			value = decodeList(reader);
+			value = decodeList(inStream);
 		} else if ('d' == token) {
-			value = decodeMap(reader);
+			value = decodeMap(inStream);
 		} else {
-			value = decodeString(reader);
+			value = decodeString(inStream);
 		}
 
 		return value;
 	}
 
-	private BencodedList decodeList(Reader reader) throws IOException {
-		consumeToken('l', reader);
+	private BencodedList decodeList(InStream inStream) throws IOException {
+		consumeToken('l', inStream);
 
 		BencodedList list = new BencodedList();
 
-		char token = peekCharacter(reader);
+		char token = peekCharacter(inStream);
 		while ('e' != token) {
-			list.add(decodeNextValue(reader));
+			list.add(decodeNextValue(inStream));
 
-			token = peekCharacter(reader);
+			token = peekCharacter(inStream);
 		}
 
-		consumeToken('e', reader);
+		consumeToken('e', inStream);
 
 		return list;
 	}
 
-	private BencodedString decodeString(Reader reader) throws IOException {
+	private BencodedString decodeString(InStream inStream) throws IOException {
 		StringBuilder length = new StringBuilder();
-		char token = peekCharacter(reader);
+		char token = peekCharacter(inStream);
 		while (':' != token) {
-			length.append(readCharacter(reader));
+			length.append(readCharacter(inStream));
 
-			token = peekCharacter(reader);
+			token = peekCharacter(inStream);
 		}
 
-		consumeToken(':', reader);
+		consumeToken(':', inStream);
 
-		char[] characters = new char[Integer.parseInt(length.toString())];
-		int totalRead = 0;
+		int stringLength = Integer.parseInt(length.toString());
 
-		do {
-			int read = reader.read(characters, totalRead, characters.length - totalRead);
+		if (inStream.available() < stringLength) {
+			throw new IOException(String.format("Failed to decode Bencoded string. Need %d bytes but only got %d.", stringLength, inStream.available()));
+		}
 
-			if (read <= 0) {
-				throw new IOException("Failed to read string");
-			}
+		byte[] stringBytes = inStream.readFully(stringLength);
+		charactersRead += stringLength;
 
-			charactersRead += read;
-			totalRead += read;
-		} while (totalRead != characters.length);
-
-		return new BencodedString(new String(characters));
+		return new BencodedString(stringBytes);
 	}
 
-	private BencodedMap decodeMap(Reader reader) throws IOException {
+	private BencodedMap decodeMap(InStream inStream) throws IOException {
 		BencodedMap map = new BencodedMap();
 
-		consumeToken('d', reader);
+		consumeToken('d', inStream);
 
-		char nextToken = peekCharacter(reader);
+		char nextToken = peekCharacter(inStream);
 		while ('e' != nextToken) {
-			BencodedString key = decodeString(reader);
-			IBencodedValue value = decodeNextValue(reader);
-			map.put(key.asString(), value);
+			BencodedString key = decodeString(inStream);
+			try {
+				IBencodedValue value = decodeNextValue(inStream);
+				map.put(key.asString(), value);
+			} catch (Exception e) {
+				throw new IOException(String.format("Failed to read dictionary value associated with key: %s", key), e);
+			}
 
-			nextToken = peekCharacter(reader);
+			nextToken = peekCharacter(inStream);
 		}
 
-		consumeToken('e', reader);
+		consumeToken('e', inStream);
 
 		return map;
 	}
 
-	private BencodedInteger decodeInteger(Reader reader) throws IOException {
-		consumeToken('i', reader);
+	private BencodedInteger decodeInteger(InStream inStream) throws IOException {
+		consumeToken('i', inStream);
 
 		StringBuilder integer = new StringBuilder();
 
-		char nextToken = peekCharacter(reader);
+		char nextToken = peekCharacter(inStream);
 		while ('e' != nextToken) {
-			integer.append(readCharacter(reader));
+			integer.append(readCharacter(inStream));
 
-			nextToken = peekCharacter(reader);
+			nextToken = peekCharacter(inStream);
 		}
 
-		consumeToken('e', reader);
+		consumeToken('e', inStream);
 
 		return new BencodedInteger(new BigInteger(integer.toString()));
 	}
 
-	private char readCharacter(Reader reader) throws IOException {
-		int character = reader.read();
-		if (character == -1) {
+	private char readCharacter(InStream inStream) throws IOException {
+		if (inStream.available() == 0) {
 			throw new IOException("End of Stream reached");
 		}
+
+		int character = Byte.toUnsignedInt(inStream.readByte());
 
 		charactersRead++;
 
 		return (char) character;
 	}
 
-	private char peekCharacter(Reader reader) throws IOException {
-		reader.mark(1);
-		char result = (char) reader.read();
-		reader.reset();
+	private char peekCharacter(InStream inStream) throws IOException {
+		inStream.mark();
+		char result = (char) Byte.toUnsignedInt(inStream.readByte());
+		inStream.resetToMark();
 		return result;
 	}
 
-	private void consumeToken(char token, Reader reader) throws IOException {
-		char readToken = readCharacter(reader);
+	private void consumeToken(char token, InStream inStream) throws IOException {
+		char readToken = readCharacter(inStream);
 		if (token != readToken) {
 			throw new IOException(String.format("Incorrect token consumed, expected '%s' but read '%s'", token, readToken));
 		}

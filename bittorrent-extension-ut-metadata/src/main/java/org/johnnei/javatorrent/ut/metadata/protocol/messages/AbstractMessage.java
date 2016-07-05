@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.ut.metadata.protocol.messages;
 
-import java.io.StringReader;
-
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
@@ -47,12 +45,7 @@ public abstract class AbstractMessage implements IMessage {
 
 	@Override
 	public void read(InStream inStream) {
-		inStream.mark();
-		StringReader reader = new StringReader(inStream.readString(inStream.available()));
-		inStream.resetToMark();
-
-		dictionary = (BencodedMap) bencoding.decode(reader);
-		inStream.skipBytes(bencoding.getCharactersRead());
+		dictionary = (BencodedMap) bencoding.decode(inStream);
 	}
 
 }
