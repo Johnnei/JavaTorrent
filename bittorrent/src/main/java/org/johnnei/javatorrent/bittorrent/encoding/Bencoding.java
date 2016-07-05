@@ -139,6 +139,11 @@ public class Bencoding {
 
 	private char peekCharacter(InStream inStream) throws IOException {
 		inStream.mark();
+
+		if (inStream.available() == 0) {
+			throw new IOException("End of Stream reached");
+		}
+
 		char result = (char) Byte.toUnsignedInt(inStream.readByte());
 		inStream.resetToMark();
 		return result;
