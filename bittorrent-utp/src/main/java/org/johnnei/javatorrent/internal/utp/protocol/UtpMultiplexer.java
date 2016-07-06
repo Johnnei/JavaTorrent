@@ -56,6 +56,8 @@ public class UtpMultiplexer implements Runnable {
 
 	private int receiveBufferSize;
 
+	Thread connectionAcceptorThread;
+
 	/**
 	 * Creates a new multiplexer based on the given <code>torrentClient</code>
 	 * @param torrentClient The torrent client containing the desired configuration.
@@ -80,9 +82,9 @@ public class UtpMultiplexer implements Runnable {
 			throw new ModuleBuildException("Failed to bind to socket for uTP connections.", e);
 		}
 
-		Thread thread = new Thread(connectionAcceptorRunnable, "uTP Connection Acceptor");
-		thread.setDaemon(true);
-		thread.start();
+		connectionAcceptorThread = new Thread(connectionAcceptorRunnable, "uTP Connection Acceptor");
+		connectionAcceptorThread.setDaemon(true);
+		connectionAcceptorThread.start();
 	}
 
 	/**
@@ -191,5 +193,6 @@ public class UtpMultiplexer implements Runnable {
 	public void shutdown() {
 		multiplexerSocket.close();
 		connectionAcceptorRunnable.stop();
+		connectionAcceptorThread.interrupt();
 	}
 }

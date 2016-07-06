@@ -71,7 +71,7 @@ public class DownloadTorrentIT {
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Rule
-	public Timeout timeout = new Timeout(20, TimeUnit.MINUTES);
+	public Timeout timeout = new Timeout(5, TimeUnit.MINUTES);
 
 	private void assertPreconditions(File torrentFile, File resultFile) throws Exception {
 		if (!resultFile.exists()) {
