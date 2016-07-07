@@ -159,6 +159,7 @@ public class TorrentClient {
 		ioManagerRunner.stop();
 		executorService.shutdown();
 		peerConnector.stop();
+		modules.stream().forEach(IModule::onShutdown);
 	}
 
 	public int createUniqueTransactionId() {

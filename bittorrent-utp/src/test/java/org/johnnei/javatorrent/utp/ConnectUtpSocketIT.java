@@ -19,6 +19,7 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -40,6 +41,10 @@ public class ConnectUtpSocketIT {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConnectUtpSocketIT.class);
 
+	private TorrentClient localClient;
+
+	private TorrentClient remoteClient;
+
 	private TorrentClient createTorrentClient(UtpModule utpModule, int port) throws Exception {
 		return new TorrentClient.Builder()
 				// Disable incoming TCP connections, only expect UTP
@@ -59,15 +64,26 @@ public class ConnectUtpSocketIT {
 				).build();
 	}
 
+	@After
+	public void tearDown() {
+		if (localClient != null) {
+			localClient.shutdown();
+		}
+
+		if (remoteClient != null) {
+			remoteClient.shutdown();
+		}
+	}
+
 	@Test
 	public void testConnectThenDisconnect() throws Exception {
 		LOGGER.info("Preparing test environment.");
 
 		UtpModule localUtpModule = new UtpModule();
-		createTorrentClient(localUtpModule, DummyEntity.findAvailableUdpPort());
+		localClient = createTorrentClient(localUtpModule, DummyEntity.findAvailableUdpPort());
 
 		UtpModule remoteUtpModule = new UtpModule();
-		TorrentClient remoteClient = createTorrentClient(remoteUtpModule, DummyEntity.findAvailableUdpPort());
+		remoteClient = createTorrentClient(remoteUtpModule, DummyEntity.findAvailableUdpPort());
 
 		ISocket localSocket = localUtpModule.createSocketFactory().get();
 
@@ -126,8 +142,13 @@ public class ConnectUtpSocketIT {
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> remoteSocketImpl.getConnectionState() == ConnectionState.CLOSED);
 
-		assertEquals("Local socket registration should have been cleaned up", 0, localSockets.size());
-		assertEquals("Remote socket registration should have been cleaned up", 0, remoteSockets.size());
+		await("Local socket registration clean up")
+				.atMost(5, TimeUnit.SECONDS)
+				.until(() -> localSockets.size() == 0);
+
+		await("Remote socket registration clean up")
+				.atMost(5, TimeUnit.SECONDS)
+				.until(() -> remoteSockets.size() == 0);
 	}
 
 }

@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.anyLong;
+import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.same;
@@ -213,6 +214,14 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributorMock = createMock(IPeerDistributor.class);
+		IModule moduleMock = createMock(IModule.class);
+		moduleMock.configureTorrentClient(anyObject());
+		moduleMock.onBuild(anyObject());
+		moduleMock.onShutdown();
+
+		expect(moduleMock.getDependsOn()).andReturn(Collections.emptyList());
+		expect(moduleMock.getRelatedBep()).andReturn(3);
+
 		peerConnectorMock.start();
 		peerConnectorMock.stop();
 
@@ -227,6 +236,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)
+				.registerModule(moduleMock)
 				.build();
 
 		TorrentManager torrentManager = Whitebox.getInternalState(cut, TorrentManager.class);

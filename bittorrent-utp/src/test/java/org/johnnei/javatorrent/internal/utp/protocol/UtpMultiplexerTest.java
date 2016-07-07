@@ -203,6 +203,7 @@ public class UtpMultiplexerTest {
 		@Override
 		void startMultiplexer(int port) throws ModuleBuildException {
 			// Don't bind to a socket.
+			connectionAcceptorThread = new Thread();
 		}
 	}
 
