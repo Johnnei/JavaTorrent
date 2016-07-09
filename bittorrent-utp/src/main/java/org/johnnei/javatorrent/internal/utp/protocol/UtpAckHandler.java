@@ -121,6 +121,7 @@ public class UtpAckHandler {
 		Optional<UtpPacket> ackedPacket = Optional.empty();
 		lock.readLock().lock();
 		try {
+			// Find the packet which was ack'ed.
 			ackedPacket = packetsInFlight.stream()
 					.filter(packet -> packet.getSequenceNumber() == receivedPacket.getAcknowledgeNumber())
 					.findAny();
@@ -130,6 +131,8 @@ public class UtpAckHandler {
 
 		lock.writeLock().lock();
 		try {
+			// Remove all packets which are in flight which have a sequence number _before_ the acked packet.
+			// We'll 'lose out' on the timestamp measurements if we'd still receive the separate ACK packets but this will clear out the window correctly.
 			packetsInFlight.removeIf(p -> p.getSequenceNumber() == receivedPacket.getAcknowledgeNumber());
 		} finally {
 			lock.writeLock().unlock();
@@ -144,7 +147,9 @@ public class UtpAckHandler {
 		Acknowledgement acknowledgement = acknowledgements.putIfAbsent(new Acknowledgement(packet.getAcknowledgeNumber()));
 		acknowledgement.incrementCount();
 
-		if (acknowledgement.getCount() != 3) {
+		// Every 3 times we receive a duplicate we'll resend the packet.
+		// In case of high packet loss the resend might drop so we allow multiple resends.
+		if (acknowledgement.getCount() % 3 != 0) {
 			return;
 		}
 

@@ -51,7 +51,7 @@ public class UtpWindow {
 		double windowFactor = MathUtils.clamp(-1, 1, socket.getBytesInFlight() / (double) maxWindow);
 		int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
 
-		maxWindow += scaledGain;
+		maxWindow = Math.max(0, maxWindow + scaledGain);
 		LOGGER.trace("Base Delay: {}us, Packet Delay: {}us, Delay: {}us, Off Target: {}us, Delay Factor: {}, Window Factor: {}.",
 				slidingBaseDelay.getMinimum(),
 				packet.getTimestampDifferenceMicroseconds(),
@@ -72,8 +72,8 @@ public class UtpWindow {
 	 * Event to be called when a timeout occurs on {@link #socket}.
 	 */
 	public void onTimeout() {
-		// TODO Make this neater, according to the spec this should SET to 150 as it will allow one more packet to be sent.
-		// This implementation won't do that though. So maybe I think of maxWindow incorrectly?
-		maxWindow += 150;
+		if (maxWindow < 150) {
+			maxWindow = 150;
+		}
 	}
 }
