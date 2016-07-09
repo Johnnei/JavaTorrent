@@ -144,11 +144,11 @@ public class ConnectUtpSocketIT {
 
 		await("Local socket registration clean up")
 				.atMost(5, TimeUnit.SECONDS)
-				.until(() -> localSockets.size() == 0);
+				.until(() -> !localSockets.containsKey(localSocketImpl.getReceivingConnectionId()));
 
 		await("Remote socket registration clean up")
 				.atMost(5, TimeUnit.SECONDS)
-				.until(() -> remoteSockets.size() == 0);
+				.until(() -> !remoteSockets.containsKey(remoteSocketImpl.getReceivingConnectionId()));
 	}
 
 }
