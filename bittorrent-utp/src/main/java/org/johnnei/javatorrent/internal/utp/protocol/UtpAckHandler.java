@@ -167,6 +167,7 @@ public class UtpAckHandler {
 		}
 
 		if (!lostPacketOptional.isPresent()) {
+			LOGGER.debug("Packet seq={} appears to be lost, but we've seen an ACK for it so it can't be resend.", Short.toUnsignedInt(nextSequenceNumber));
 			return;
 		}
 

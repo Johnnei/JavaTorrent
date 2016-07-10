@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -98,6 +99,10 @@ public class UtpSocketImpl {
 	private short sequenceNumber;
 
 	private int measuredDelay;
+
+	private AtomicInteger statePackets = new AtomicInteger(0);
+
+	private AtomicInteger dataPackets = new AtomicInteger(0);
 
 	/**
 	 * Creates a new socket which is considered the initiating endpoint
@@ -232,6 +237,12 @@ public class UtpSocketImpl {
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
 		LOGGER.trace("Sent {} to {} ({} / {} bytes)", packet, socketAddress, ackHandler, getSendWindowSize());
+
+		if (packet.getType() == UtpProtocol.ST_STATE) {
+			statePackets.incrementAndGet();
+		} else if (packet.getType() == UtpProtocol.ST_DATA) {
+			dataPackets.incrementAndGet();
+		}
 	}
 
 	public UtpInputStream getInputStream() throws IOException {
@@ -360,7 +371,13 @@ public class UtpSocketImpl {
 			return;
 		}
 
-		LOGGER.debug("Socket has encountered a timeout after {}ms.", timeout.getDuration().toMillis());
+		int statePacketCount = statePackets.getAndSet(0);
+		int dataPacketCount = dataPackets.getAndSet(0);
+
+		LOGGER.debug("Socket has encountered a timeout after {}ms. Send Packets: {} Data, {} State.",
+				timeout.getDuration().toMillis(),
+				dataPacketCount,
+				statePacketCount);
 		packetSize = 150;
 		window.onTimeout();
 
