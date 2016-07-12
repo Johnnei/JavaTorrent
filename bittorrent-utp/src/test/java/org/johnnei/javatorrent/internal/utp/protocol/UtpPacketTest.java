@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
-import java.util.List;
-
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
@@ -225,15 +223,13 @@ public class UtpPacketTest {
 		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
 
 		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
-		List<UtpPacket> results = cut.repackage(socketMock);
+		byte[] unsentBytes = cut.repackage(socketMock);
 
-		assertEquals("Packet should have been split in half", 2, results.size());
-		assertTrue("First item in packet should be the same packet instance as the one on which repackage was called", cut == results.get(0));
+		assertEquals("Packet should have been split in half, second half is larger.", 3, unsentBytes.length);
 
-		DataPayload payloadOne = (DataPayload) Whitebox.getInternalState(results.get(0), IPayload.class);
-		DataPayload payloadTwo = (DataPayload) Whitebox.getInternalState(results.get(1), IPayload.class);
+		DataPayload payloadOne = (DataPayload) Whitebox.getInternalState(cut, IPayload.class);
 		assertArrayEquals("First packet should have first half of bytes to preserve data integrity", sectionOne, payloadOne.getData());
-		assertArrayEquals("Second packet should have second half of bytes to preserve data integrity", sectionTwo, payloadTwo.getData());
+		assertArrayEquals("Second packet should have second half of bytes to preserve data integrity", sectionTwo, unsentBytes);
 	}
 
 	@Test

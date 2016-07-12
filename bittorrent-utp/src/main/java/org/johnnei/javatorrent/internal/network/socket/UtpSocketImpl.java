@@ -27,6 +27,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpOutputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
@@ -201,9 +202,11 @@ public class UtpSocketImpl {
 
 			if (packet.getPacketSize() > window.getSize()) {
 				// Packet exceed the maximum window, this will never get send. Repackage it.
-				for (UtpPacket repackagedPacket : packet.repackage(this)) {
-					send(repackagedPacket);
-				}
+				LOGGER.debug("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
+				byte[] unsentBytes = packet.repackage(this);
+				// Keep data integrity order.
+				send(packet);
+				send(new DataPayload(unsentBytes));
 
 				// This packet is send now.
 				return;

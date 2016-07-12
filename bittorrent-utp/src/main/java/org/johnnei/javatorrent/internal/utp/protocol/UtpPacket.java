@@ -1,8 +1,6 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
@@ -168,9 +166,9 @@ public class UtpPacket {
 	/**
 	 * Modifies this packet to become half the size of the original size.
 	 * @param socket The socket on which this packet is being send.
-	 * @return The two packets, one being this one and the new packet with the other half of the data.
+	 * @return The bytes which are no longer being sent by this packet.
 	 */
-	public List<UtpPacket> repackage(UtpSocketImpl socket) {
+	public byte[] repackage(UtpSocketImpl socket) {
 		if (type != UtpProtocol.ST_DATA) {
 			throw new IllegalStateException("Only ST_DATA packets can be repackaged into smaller sections.");
 		}
@@ -182,7 +180,7 @@ public class UtpPacket {
 		System.arraycopy(dataPayload.getData(), lowerHalf.length, upperHalf, 0, upperHalf.length);
 
 		this.payload = new DataPayload(lowerHalf);
-		return Arrays.asList(this, new UtpPacket(socket, new DataPayload(upperHalf)));
+		return upperHalf;
 	}
 
 	/**
