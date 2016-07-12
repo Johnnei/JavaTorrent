@@ -4,7 +4,7 @@
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger - %msg%n" />
     </Console>
-    <File name="PersistentLog" filename="${build.directory}/${project.artifactId}.log">
+    <File name="PersistentLog" filename="${build.directory}/${project.artifactId}.log" append="false">
       <PatternLayout pattern="%d{HH:mm:ss} %-5level %logger - %msg%n" />
     </File>
   </Appenders>

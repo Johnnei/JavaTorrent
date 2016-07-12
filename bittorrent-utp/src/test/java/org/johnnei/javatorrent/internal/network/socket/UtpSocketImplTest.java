@@ -20,6 +20,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpAckHandler;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.test.DummyEntity;
 
@@ -27,6 +28,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
@@ -41,11 +43,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,6 +62,9 @@ public class UtpSocketImplTest {
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
+
+	@Rule
+	public Timeout timeout = Timeout.seconds(5);
 
 	private UtpMultiplexer multiplexerMock;
 
@@ -467,6 +474,23 @@ public class UtpSocketImplTest {
 		cut.onReceivedData();
 
 		assertEquals("Socket state must not have transitioned.", ConnectionState.CONNECTING, cut.getConnectionState());
+	}
+
+	@Test
+	public void testRepackagePacket() throws Exception {
+		injectMultiplexerMock();
+
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		when(ackHandlerMock.countBytesInFlight()).thenReturn(0);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+
+		cut.setConnectionState(ConnectionState.CONNECTED);
+
+		DataPayload dataPayload = new DataPayload(new byte[200]);
+		cut.send(dataPayload);
+
+		// Two packets should have been send.
+		verify(multiplexerMock, times(2)).send(anyObject());
 	}
 
 	private void hasWaiters(ReentrantLock lock, Condition wakeUpCondition) {

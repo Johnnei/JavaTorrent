@@ -182,8 +182,10 @@ public class UtpSocketImpl {
 	 * @throws IOException When an IO error occurs.
 	 */
 	public void send(IPayload payload) throws IOException {
-		UtpPacket packet = new UtpPacket(this, payload);
+		send(new UtpPacket(this, payload));
+	}
 
+	private void send(UtpPacket packet) throws IOException {
 		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
 		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
 			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
@@ -195,6 +197,16 @@ public class UtpSocketImpl {
 				throw new IOException("Interruption on writing packet", e);
 			} finally {
 				notifyLock.unlock();
+			}
+
+			if (packet.getPacketSize() > window.getSize()) {
+				// Packet exceed the maximum window, this will never get send. Repackage it.
+				for (UtpPacket repackagedPacket : packet.repackage(this)) {
+					send(repackagedPacket);
+				}
+
+				// This packet is send now.
+				return;
 			}
 		}
 

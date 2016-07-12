@@ -1,9 +1,12 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.network.InStream;
@@ -13,6 +16,8 @@ import org.johnnei.javatorrent.network.OutStream;
  * The header section of an UTP packet.
  */
 public class UtpPacket {
+
+	private static final int PACKET_OVERHEAD_IN_BYTES = 20;
 
 	private PrecisionTimer timer = new PrecisionTimer();
 
@@ -161,6 +166,26 @@ public class UtpPacket {
 	}
 
 	/**
+	 * Modifies this packet to become half the size of the original size.
+	 * @param socket The socket on which this packet is being send.
+	 * @return The two packets, one being this one and the new packet with the other half of the data.
+	 */
+	public List<UtpPacket> repackage(UtpSocketImpl socket) {
+		if (type != UtpProtocol.ST_DATA) {
+			throw new IllegalStateException("Only ST_DATA packets can be repackaged into smaller sections.");
+		}
+
+		DataPayload dataPayload = (DataPayload) payload;
+		byte[] lowerHalf = new byte[dataPayload.getData().length / 2];
+		byte[] upperHalf = new byte[dataPayload.getData().length - lowerHalf.length];
+		System.arraycopy(dataPayload.getData(), 0, lowerHalf, 0, lowerHalf.length);
+		System.arraycopy(dataPayload.getData(), lowerHalf.length, upperHalf, 0, upperHalf.length);
+
+		this.payload = new DataPayload(lowerHalf);
+		return Arrays.asList(this, new UtpPacket(socket, new DataPayload(upperHalf)));
+	}
+
+	/**
 	 * Updates the time at which this packet was sent and increments the amount of times it is send.
 	 */
 	public void updateSentTime() {
@@ -236,7 +261,7 @@ public class UtpPacket {
 	 * @return The size of the packet including the payload size.
 	 */
 	public int getPacketSize() {
-		return 20 + payload.getSize();
+		return PACKET_OVERHEAD_IN_BYTES + payload.getSize();
 	}
 
 	/**

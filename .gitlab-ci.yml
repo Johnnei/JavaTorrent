@@ -23,10 +23,6 @@ integration-tests:
     stage: test
     script: "mvn verify -B --fail-at-end"
     allow_failure: true
-    artifacts:
-      expire_in: 1 week
-      paths:
-      - target/*.log
 
 # Run a sonar analysis.
 sonar:
