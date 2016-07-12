@@ -200,7 +200,7 @@ public class UtpSocketImpl {
 				notifyLock.unlock();
 			}
 
-			if (packet.getPacketSize() > window.getSize()) {
+			if (packet.getPacketSize() > Math.max(150, window.getSize())) {
 				// Packet exceed the maximum window, this will never get send. Repackage it.
 				LOGGER.debug("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
 				byte[] unsentBytes = packet.repackage(this);
