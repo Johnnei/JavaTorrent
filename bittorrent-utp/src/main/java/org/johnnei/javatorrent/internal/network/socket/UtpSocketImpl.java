@@ -189,7 +189,11 @@ public class UtpSocketImpl {
 	private void send(UtpPacket packet) throws IOException {
 		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
 		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
-			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
+			LOGGER.trace("Waiting to send packet (seq={}) of {} bytes. Window Status: {} / {} bytes",
+					Short.toUnsignedInt(packet.getSequenceNumber()),
+					packet.getPacketSize(),
+					getBytesInFlight(),
+					getSendWindowSize());
 			notifyLock.lock();
 			try {
 				onPacketAcknowledged.await(1, TimeUnit.SECONDS);
@@ -202,7 +206,7 @@ public class UtpSocketImpl {
 
 			if (packet.getPacketSize() > Math.max(150, window.getSize())) {
 				// Packet exceed the maximum window, this will never get send. Repackage it.
-				LOGGER.debug("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
+				LOGGER.trace("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
 				byte[] unsentBytes = packet.repackage(this);
 				// Keep data integrity order.
 				send(packet);

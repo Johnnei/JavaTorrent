@@ -42,7 +42,7 @@ public class UtpAckHandler {
 	/**
 	 * Packets which we've sent but aren't ACK'ed yet.
 	 */
-	private Collection<UtpPacket> packetsInFlight;
+	private final Collection<UtpPacket> packetsInFlight;
 
 	/**
 	 * If we've received the first packet.
@@ -133,7 +133,7 @@ public class UtpAckHandler {
 		try {
 			// Remove all packets which are in flight which have a sequence number _before_ the acked packet.
 			// We'll 'lose out' on the timestamp measurements if we'd still receive the separate ACK packets but this will clear out the window correctly.
-			packetsInFlight.removeIf(p -> p.getSequenceNumber() == receivedPacket.getAcknowledgeNumber());
+			packetsInFlight.removeIf(p -> p.getSequenceNumber() <= receivedPacket.getAcknowledgeNumber());
 		} finally {
 			lock.writeLock().unlock();
 		}
@@ -158,16 +158,17 @@ public class UtpAckHandler {
 		lock.readLock().lock();
 		Optional<UtpPacket> lostPacketOptional = Optional.empty();
 		try {
-			lostPacketOptional = packetsInFlight.stream().filter(p -> {
-				short s = p.getSequenceNumber();
-				return s == nextSequenceNumber;
-			}).findAny();
+			lostPacketOptional = packetsInFlight.stream()
+					.filter(p -> p.getSequenceNumber() == nextSequenceNumber)
+					.findAny();
 		} finally {
 			lock.readLock().unlock();
 		}
 
 		if (!lostPacketOptional.isPresent()) {
-			LOGGER.debug("Packet seq={} appears to be lost, but we've seen an ACK for it so it can't be resend.", Short.toUnsignedInt(nextSequenceNumber));
+			if (socket.getSequenceNumber() > nextSequenceNumber) {
+				LOGGER.trace("Packet seq={} appears to be lost, but we've seen an ACK for it so it can't be resend.", Short.toUnsignedInt(nextSequenceNumber));
+			}
 			return;
 		}
 
@@ -250,7 +251,21 @@ public class UtpAckHandler {
 
 	@Override
 	public String toString() {
-		return String.format("UtpAckHandler[ack=%d, packetsInFlight=%d, bytes in flight=%d]", toUnsignedInt(acknowledgeNumber), packetsInFlight.size(), countBytesInFlight());
+		lock.readLock().lock();
+		try {
+			return String.format(
+					"UtpAckHandler[ack=%d, packetsInFlight=[%s], bytes in flight=%d]",
+					toUnsignedInt(acknowledgeNumber),
+					packetsInFlight.stream()
+							.map(p -> Integer.toString(Short.toUnsignedInt(p.getSequenceNumber())))
+							.reduce((a, b) -> a + ", " + b)
+							.orElse(""),
+					countBytesInFlight()
+			);
+		} finally {
+			// TODO Remove this locking for performance reasoning.
+			lock.readLock().unlock();
+		}
 	}
 
 	private final class Acknowledgement {

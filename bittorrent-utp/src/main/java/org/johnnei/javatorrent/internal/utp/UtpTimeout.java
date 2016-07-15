@@ -61,7 +61,10 @@ public class UtpTimeout {
 		Duration oldTimeout = timeout;
 		// Divide by 1000 to make the RTT measurements into millis.
 		timeout = Duration.of(min(MAX_TIMEOUT, max((rtt + rttVariance * 4) / 1000, MIN_TIMEOUT)), ChronoUnit.MILLIS);
-		LOGGER.trace("Timeout changed from {}ms to {}ms", oldTimeout.toMillis(), timeout.toMillis());
+
+		if (timeout.toMillis() != oldTimeout.toMillis()) {
+			LOGGER.trace("Timeout changed from {}ms to {}ms", oldTimeout.toMillis(), timeout.toMillis());
+		}
 	}
 
 	/**

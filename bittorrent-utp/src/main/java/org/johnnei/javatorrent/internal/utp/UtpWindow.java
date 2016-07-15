@@ -59,9 +59,11 @@ public class UtpWindow {
 				offTarget,
 				delayFactor,
 				windowFactor);
-		LOGGER.trace("Updated window size based on ACK. Window changed by {}, Now: {}",
-				scaledGain,
-				maxWindow);
+		if (scaledGain != 0) {
+			LOGGER.trace("Updated window size based on ACK. Window changed by {}, Now: {}",
+					scaledGain,
+					maxWindow);
+		}
 	}
 
 	public int getSize() {
