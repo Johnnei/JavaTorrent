@@ -6,6 +6,7 @@
 
 ## Improvements
 - [JBT-32](https://jira.johnnei.org/browse/JBT-32): Prevent reads on Piece#checkHash when the hash can't possibly be correct.
+- [JBT-38](https://jira.johnnei.org/browse/JBT-38): uTP is now better capable of dealing with packet loss.
 
 ## Fixes
 - [JBT-40](https://jira.johnnei.org/browse/JBT-40): The ITracker interface was not correctly added to the torrent lifecycle causes no peers to be fetched.
