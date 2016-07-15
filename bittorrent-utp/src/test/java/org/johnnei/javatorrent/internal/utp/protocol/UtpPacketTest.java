@@ -2,12 +2,15 @@ package org.johnnei.javatorrent.internal.utp.protocol;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,6 +31,9 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class UtpPacketTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Mock
 	private PrecisionTimer precisionTimerMock;
@@ -201,4 +207,42 @@ public class UtpPacketTest {
 		assertTrue("Incorrect toString start", cut.toString().startsWith("UtpPacket["));
 	}
 
+	@Test
+	public void testRepackage() {
+		byte[] sectionOne = new byte[] { 1, 2 };
+		byte[] sectionTwo = new byte[] { 3, 4, 5 };
+		byte[] totalBytes = new byte[sectionOne.length + sectionTwo.length];
+
+		System.arraycopy(sectionOne, 0, totalBytes, 0, sectionOne.length);
+		System.arraycopy(sectionTwo, 0, totalBytes, sectionOne.length, sectionTwo.length);
+
+		DataPayload payloadMock = mock(DataPayload.class);
+		when(payloadMock.getType()).thenReturn((byte) UtpProtocol.ST_DATA);
+		when(payloadMock.getData()).thenReturn(totalBytes);
+
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+
+		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
+		byte[] unsentBytes = cut.repackage(socketMock);
+
+		assertEquals("Packet should have been split in half, second half is larger.", 3, unsentBytes.length);
+
+		DataPayload payloadOne = (DataPayload) Whitebox.getInternalState(cut, IPayload.class);
+		assertArrayEquals("First packet should have first half of bytes to preserve data integrity", sectionOne, payloadOne.getData());
+		assertArrayEquals("Second packet should have second half of bytes to preserve data integrity", sectionTwo, unsentBytes);
+	}
+
+	@Test
+	public void testRepackageIllegalPacketType() {
+		thrown.expect(IllegalStateException.class);
+		thrown.expectMessage("ST_DATA");
+
+		DataPayload payloadMock = mock(DataPayload.class);
+		UtpSocketImpl socketMock = mock(UtpSocketImpl.class);
+
+		when(payloadMock.getType()).thenReturn((byte) UtpProtocol.ST_STATE);
+
+		UtpPacket cut = new UtpPacket(socketMock, payloadMock);
+		cut.repackage(socketMock);
+	}
 }

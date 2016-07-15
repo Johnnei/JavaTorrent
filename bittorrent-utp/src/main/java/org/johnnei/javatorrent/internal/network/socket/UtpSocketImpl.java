@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,6 +27,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpOutputStream;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
@@ -98,6 +100,10 @@ public class UtpSocketImpl {
 	private short sequenceNumber;
 
 	private int measuredDelay;
+
+	private AtomicInteger statePackets = new AtomicInteger(0);
+
+	private AtomicInteger dataPackets = new AtomicInteger(0);
 
 	/**
 	 * Creates a new socket which is considered the initiating endpoint
@@ -177,11 +183,17 @@ public class UtpSocketImpl {
 	 * @throws IOException When an IO error occurs.
 	 */
 	public void send(IPayload payload) throws IOException {
-		UtpPacket packet = new UtpPacket(this, payload);
+		send(new UtpPacket(this, payload));
+	}
 
+	private void send(UtpPacket packet) throws IOException {
 		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
 		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
-			LOGGER.trace("Waiting to send packet of {} bytes. Window Status: {} / {} bytes", packet.getPacketSize(), getBytesInFlight(), getSendWindowSize());
+			LOGGER.trace("Waiting to send packet (seq={}) of {} bytes. Window Status: {} / {} bytes",
+					Short.toUnsignedInt(packet.getSequenceNumber()),
+					packet.getPacketSize(),
+					getBytesInFlight(),
+					getSendWindowSize());
 			notifyLock.lock();
 			try {
 				onPacketAcknowledged.await(1, TimeUnit.SECONDS);
@@ -190,6 +202,18 @@ public class UtpSocketImpl {
 				throw new IOException("Interruption on writing packet", e);
 			} finally {
 				notifyLock.unlock();
+			}
+
+			if (packet.getPacketSize() > Math.max(150, window.getSize())) {
+				// Packet exceed the maximum window, this will never get send. Repackage it.
+				LOGGER.trace("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
+				byte[] unsentBytes = packet.repackage(this);
+				// Keep data integrity order.
+				send(packet);
+				send(new DataPayload(unsentBytes));
+
+				// This packet is send now.
+				return;
 			}
 		}
 
@@ -232,6 +256,12 @@ public class UtpSocketImpl {
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
 		LOGGER.trace("Sent {} to {} ({} / {} bytes)", packet, socketAddress, ackHandler, getSendWindowSize());
+
+		if (packet.getType() == UtpProtocol.ST_STATE) {
+			statePackets.incrementAndGet();
+		} else if (packet.getType() == UtpProtocol.ST_DATA) {
+			dataPackets.incrementAndGet();
+		}
 	}
 
 	public UtpInputStream getInputStream() throws IOException {
@@ -360,7 +390,13 @@ public class UtpSocketImpl {
 			return;
 		}
 
-		LOGGER.debug("Socket has encountered a timeout after {}ms.", timeout.getDuration().toMillis());
+		int statePacketCount = statePackets.getAndSet(0);
+		int dataPacketCount = dataPackets.getAndSet(0);
+
+		LOGGER.debug("Socket has encountered a timeout after {}ms. Send Packets: {} Data, {} State.",
+				timeout.getDuration().toMillis(),
+				dataPacketCount,
+				statePacketCount);
 		packetSize = 150;
 		window.onTimeout();
 
