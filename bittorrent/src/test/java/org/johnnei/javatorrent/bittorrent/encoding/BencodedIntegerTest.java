@@ -71,6 +71,13 @@ public class BencodedIntegerTest {
 	}
 
 	@Test
+	public void testAsBytes() {
+		thrown.expect(UnsupportedOperationException.class);
+
+		new BencodedInteger(42L).asBytes();
+	}
+
+	@Test
 	public void testAsString() {
 		thrown.expect(UnsupportedOperationException.class);
 

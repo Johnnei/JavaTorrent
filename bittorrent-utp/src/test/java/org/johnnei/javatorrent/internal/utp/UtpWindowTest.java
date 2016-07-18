@@ -3,10 +3,13 @@ package org.johnnei.javatorrent.internal.utp;
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,7 +49,15 @@ public class UtpWindowTest {
 	public void testOnTimeout() throws Exception {
 		cut.onTimeout();
 
-		assertEquals("Window size should have increased by 150", 300, cut.getSize());
+		assertThat("Window size will be set to 150 is it dropped below that.", cut.getSize(), Matchers.greaterThanOrEqualTo(150));
 	}
 
+	@Test
+	public void testOnTimeoutWindowTooSmall() {
+		Whitebox.setInternalState(cut, "maxWindow", 50);
+		assertEquals("Failed to modify internal state.", 50, cut.getSize());
+
+		cut.onTimeout();
+		assertEquals("Timeout failed to set the window to 150 to allow sending of packets again.", 150, cut.getSize());
+	}
 }

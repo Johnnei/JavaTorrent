@@ -79,6 +79,13 @@ public class BencodedMapTest {
 	}
 
 	@Test
+	public void testAsBytes() throws Exception {
+		thrown.expect(UnsupportedOperationException.class);
+
+		new BencodedMap().asBytes();
+	}
+
+	@Test
 	public void testAsString() throws Exception {
 		thrown.expect(UnsupportedOperationException.class);
 

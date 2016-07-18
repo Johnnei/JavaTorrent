@@ -30,10 +30,10 @@ public class FullPieceSelect implements IPieceSelector {
 	/**
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
-	private int comparePieces(Piece a, Piece b) {
+	private int comparePieces(CachedPiece a, CachedPiece b) {
 		if (a.isStarted() == b.isStarted()) {
 			// When they are either both started or not, the availability indicates the priority.
-			return countAvailability(a) - countAvailability(b);
+			return a.getAvailability() - b.getAvailability();
 		}
 
 		if (a.isStarted() && !b.isStarted()) {
@@ -48,8 +48,39 @@ public class FullPieceSelect implements IPieceSelector {
 		return torrent.getFileSet().getNeededPieces()
 				.filter(piece -> piece.hasBlockWithStatus(BlockStatus.Needed))
 				.filter(piece -> peer.hasPiece(piece.getIndex()))
+				// Create a cache of the information used in the comparator to create a consistent sorting state.
+				.map(piece -> new CachedPiece(piece, countAvailability(piece)))
 				.sorted(this::comparePieces)
+				// Retrieve the actual piece from the cache.
+				.map(CachedPiece::getPiece)
 				.findFirst();
+	}
+
+	private class CachedPiece {
+
+		private final Piece piece;
+
+		private final boolean isStarted;
+
+		private final int availability;
+
+		CachedPiece(Piece piece, int availability) {
+			this.piece = piece;
+			this.availability = availability;
+			isStarted = piece.isStarted();
+		}
+
+		Piece getPiece() {
+			return piece;
+		}
+
+		boolean isStarted() {
+			return isStarted;
+		}
+
+		int getAvailability() {
+			return availability;
+		}
 	}
 
 }

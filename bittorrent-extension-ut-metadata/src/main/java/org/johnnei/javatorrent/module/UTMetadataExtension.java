@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.module;
 
 import java.io.File;
-import java.io.StringReader;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
@@ -43,9 +42,10 @@ public class UTMetadataExtension implements IExtension {
 
 	@Override
 	public IMessage getMessage(InStream inStream) {
-		int moveBackLength = inStream.available();
+		inStream.mark();
 
-		BencodedMap dictionary = (BencodedMap) bencoding.decode(new StringReader(inStream.readString(inStream.available())));
+		// Decode on a copy so we can have two mark states.
+		BencodedMap dictionary = (BencodedMap) bencoding.decode(new InStream(inStream.readFully(inStream.available())));
 		int id = (int) dictionary.get("msg_type").orElseThrow(() -> new IllegalArgumentException("Missing msg_type in ut_metadata message.")).asLong();
 		IMessage message;
 		switch (id) {
@@ -66,7 +66,7 @@ public class UTMetadataExtension implements IExtension {
 			break;
 		}
 
-		inStream.moveBack(moveBackLength);
+		inStream.resetToMark();
 		return message;
 
 	}

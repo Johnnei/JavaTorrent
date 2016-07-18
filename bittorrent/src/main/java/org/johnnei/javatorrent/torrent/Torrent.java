@@ -201,7 +201,11 @@ public class Torrent {
 			return true;
 		}
 
-		return !metadata.isDone();
+		if (!metadata.isDone()) {
+			return true;
+		}
+
+		return files == null;
 	}
 
 	/**
@@ -400,7 +404,9 @@ public class Torrent {
 	 * @return The list of connected peers.
 	 */
 	public List<Peer> getPeers() {
-		return new ArrayList<>(peers);
+		synchronized (this) {
+			return new ArrayList<>(peers);
+		}
 	}
 
 	/**

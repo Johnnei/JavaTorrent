@@ -4,7 +4,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link BencodedString}
@@ -19,6 +21,14 @@ public class BencodedStringTest {
 		BencodedString cut = new BencodedString("Hello World!");
 
 		assertEquals("asString produced different result.", "Hello World!", cut.asString());
+	}
+
+	@Test
+	public void testAsBytes() throws Exception {
+		byte[] input = new byte[] { 'H', 'e', 'l', 'l', 'e', '!' };
+		BencodedString cut = new BencodedString(input);
+
+		assertArrayEquals("asBytes produced different result.", input, cut.asBytes());
 	}
 
 	@Test
@@ -57,4 +67,17 @@ public class BencodedStringTest {
 		assertEquals("Incorrect serialized form", "12:Hello World!", cut.serialize());
 	}
 
+	@Test
+	public void testSerializeWithNonAsciiCharacters() throws Exception {
+		BencodedString cut = new BencodedString("μTorrent 3.4.7");
+
+		assertEquals("Incorrect serialized form", "15:μTorrent 3.4.7", cut.serialize());
+	}
+
+	@Test
+	public void testToString() throws Exception {
+		BencodedString cut = new BencodedString("test");
+
+		assertTrue("Incorrect toString() start", cut.toString().startsWith("BencodedString["));
+	}
 }

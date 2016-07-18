@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
@@ -39,6 +40,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
 		PhaseRegulator regulatorMock = createMock(PhaseRegulator.class);
 		ScheduledFuture futureMock = createMock(ScheduledFuture.class);
+		TrackerManager trackerManager = createMock(TrackerManager.class);
 
 		expect(torrentClientMock.getExecutorService()).andReturn(executorServiceMock).atLeastOnce();
 		expect(torrentClientMock.getPhaseRegulator()).andReturn(regulatorMock).atLeastOnce();
@@ -49,6 +51,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(0L), eq(250L), eq(TimeUnit.MILLISECONDS))).andReturn(futureMock).times(2);
 		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(1L), eq(10L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
 		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(30L), eq(60L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(10L), eq(30L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
 
 		replayAll();
 
@@ -63,7 +66,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 				.setTorrentClient(torrentClientMock)
 				.build();
 
-		TorrentManager cut = new TorrentManager();
+		TorrentManager cut = new TorrentManager(trackerManager);
 		cut.start(torrentClientMock);
 
 		assertNotPresent("Torrent should not have been found yet", cut.getTorrent(torrent.getHashArray()));
@@ -93,6 +96,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
 		PhaseRegulator regulatorMock = createMock(PhaseRegulator.class);
 		ScheduledFuture futureMock = createMock(ScheduledFuture.class);
+		TrackerManager trackerManager = createMock(TrackerManager.class);
 
 		expect(torrentClientMock.getExecutorService()).andReturn(executorServiceMock).atLeastOnce();
 		expect(torrentClientMock.getPhaseRegulator()).andReturn(regulatorMock).atLeastOnce();
@@ -100,11 +104,12 @@ public class TorrentManagerTest extends EasyMockSupport {
 		phaseMock.onPhaseEnter();
 		expectLastCall().times(2);
 
-		expect(futureMock.cancel(eq(false))).andReturn(true).times(3);
+		expect(futureMock.cancel(eq(false))).andReturn(true).times(4);
 
 		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(0L), eq(250L), eq(TimeUnit.MILLISECONDS))).andReturn(futureMock).times(2);
 		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(1L), eq(10L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
 		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(30L), eq(60L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
+		expect(executorServiceMock.scheduleAtFixedRate(notNull(), eq(10L), eq(30L), eq(TimeUnit.SECONDS))).andReturn(futureMock).times(2);
 
 		replayAll();
 
@@ -119,7 +124,7 @@ public class TorrentManagerTest extends EasyMockSupport {
 				.setTorrentClient(torrentClientMock)
 				.build();
 
-		TorrentManager cut = new TorrentManager();
+		TorrentManager cut = new TorrentManager(trackerManager);
 		cut.start(torrentClientMock);
 
 		cut.addTorrent(torrent);
@@ -135,9 +140,10 @@ public class TorrentManagerTest extends EasyMockSupport {
 	@Test
 	public void testStartStopWithoutPeerConnector() throws Exception {
 		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		TrackerManager trackerManager = createMock(TrackerManager.class);
 		replayAll();
 
-		TorrentManager cut = new TorrentManager();
+		TorrentManager cut = new TorrentManager(trackerManager);
 
 		cut.start(torrentClientMock);
 
@@ -153,10 +159,11 @@ public class TorrentManagerTest extends EasyMockSupport {
 	@Test
 	public void testStartStopWithPeerConnector() throws Exception {
 		TorrentClient torrentClientMock = createMock(TorrentClient.class);
+		TrackerManager trackerManager = createMock(TrackerManager.class);
 		expect(torrentClientMock.getDownloadPort()).andReturn(DummyEntity.findAvailableTcpPort());
-		replayAll();;
+		replayAll();
 
-		TorrentManager cut = new TorrentManager();
+		TorrentManager cut = new TorrentManager(trackerManager);
 
 
 		cut.start(torrentClientMock);

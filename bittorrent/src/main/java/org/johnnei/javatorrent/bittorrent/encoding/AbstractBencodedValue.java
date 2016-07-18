@@ -15,6 +15,11 @@ public abstract class AbstractBencodedValue implements IBencodedValue {
 	}
 
 	@Override
+	public byte[] asBytes() {
+		throw new UnsupportedOperationException("Bencoded value cannot be converted to string");
+	}
+
+	@Override
 	public Map<String, IBencodedValue> asMap() {
 		throw new UnsupportedOperationException("Bencoded value cannot be converted to map");
 	}

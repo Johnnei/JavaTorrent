@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
+import org.johnnei.javatorrent.internal.tracker.udp.UdpSocketUtils;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.module.ModuleBuildException;
@@ -49,6 +50,7 @@ public class UdpTrackerModule implements IModule {
 		try {
 			socket = new UdpTrackerSocket.Builder()
 					.setTorrentClient(torrentClient)
+					.setSocketUtils(new UdpSocketUtils())
 					.setSocketPort(trackerPort)
 					.build();
 			Thread thread = new Thread(socket, "UdpTracker Worker Thread");

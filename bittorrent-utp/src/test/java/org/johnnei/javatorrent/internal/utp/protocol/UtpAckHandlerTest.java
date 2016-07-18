@@ -151,7 +151,8 @@ public class UtpAckHandlerTest {
 
 		cut.onReceivedPacket(ackTwo);
 
-		assertEquals("After first ack the second packet should no longer be in flight.", 5, cut.countBytesInFlight());
+		assertEquals("After first ack the second packet should also be no longer be in flight, the ACK packet might have been lost.",
+				0, cut.countBytesInFlight());
 		assertEquals("After first ack the return ACK number must be 5 (Packet 6 is not acked yet).", 5, cut.getAcknowledgeNumber());
 		// Even though a packet got ack'ed we don't know about packet 6 yet, so we MUST NOT send out a 7 (which also confirms 6).
 		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));

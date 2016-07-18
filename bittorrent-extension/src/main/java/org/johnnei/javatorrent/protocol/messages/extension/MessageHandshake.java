@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.protocol.messages.extension;
 
-import java.io.StringReader;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,7 +28,7 @@ public class MessageHandshake implements IMessage {
 
 	private Bencoding bencoding = new Bencoding();
 
-	private String bencodedHandshake;
+	private byte[] bencodedHandshake;
 
 	/**
 	 * The extensions we know, so we only need to check for these in the handshake dictionary.
@@ -36,6 +37,7 @@ public class MessageHandshake implements IMessage {
 
 	public MessageHandshake(Collection<IExtension> extensions) {
 		this.extensions = extensions;
+		bencodedHandshake = new byte[0];
 	}
 
 	public MessageHandshake(Peer peer, Map<Integer, IExtension> extensionMap) {
@@ -54,23 +56,23 @@ public class MessageHandshake implements IMessage {
 			extension.addHandshakeMetadata(peer, extensionHandshake);
 		}
 
-		bencodedHandshake = extensionHandshake.serialize();
+		bencodedHandshake = extensionHandshake.serialize().getBytes(Charset.forName("UTF-8"));
 	}
 
 	@Override
 	public void write(OutStream outStream) {
-		outStream.writeString(bencodedHandshake);
+		outStream.write(bencodedHandshake);
 	}
 
 	@Override
 	public void read(InStream inStream) {
-		bencodedHandshake = inStream.readString(inStream.available());
+		bencodedHandshake = inStream.readFully(inStream.available());
 	}
 
 	@Override
 	public void process(Peer peer) {
 		try {
-			BencodedMap handshakeMap = (BencodedMap) bencoding.decode(new StringReader(bencodedHandshake));
+			BencodedMap handshakeMap = (BencodedMap) bencoding.decode(new InStream(bencodedHandshake));
 			BencodedMap messageMap = (BencodedMap) handshakeMap.get("m").orElse(new BencodedMap());
 			extensions.stream()
 				.filter(extension -> messageMap.get(extension.getExtensionName()).isPresent())
@@ -90,14 +92,14 @@ public class MessageHandshake implements IMessage {
 			handshakeMap.get("reqq").ifPresent(reqq -> peer.setAbsoluteRequestLimit((int) reqq.asLong()));
 			handshakeMap.get("v").ifPresent(v -> peer.setClientName(v.asString()));
 		} catch (Exception e) {
-			LOGGER.error("Extension handshake error", e);
+			LOGGER.error("Extension handshake error. Bencoded handshake: " + Arrays.toString(bencodedHandshake), e);
 			peer.getBitTorrentSocket().close();
 		}
 	}
 
 	@Override
 	public int getLength() {
-		return bencodedHandshake.length();
+		return bencodedHandshake.length;
 	}
 
 	@Override
@@ -107,7 +109,7 @@ public class MessageHandshake implements IMessage {
 
 	@Override
 	public String toString() {
-		return String.format("MessageHandshake[bencoded=%s]", bencodedHandshake);
+		return String.format("MessageHandshake[bencoded=%s]", new String(bencodedHandshake, Charset.forName("UTF-8")));
 	}
 
 }
