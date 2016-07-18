@@ -1,5 +1,6 @@
 # Unreleased
 
+# 0.5.1
 ## Added
 - [JBT-43](https://jira.johnnei.org/browse/JBT-43): `IBencodedValue#asBytes` allows for efficient transport of string representing raw bytes
  (ex. the hashes in the .torrent file)
