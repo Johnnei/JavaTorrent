@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.johnnei</groupId>
     <artifactId>javatorrent</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
+    <version>0.5.1</version>
   </parent>
   <artifactId>javatorrent-bittorrent-extension</artifactId>
   <name>JavaTorrent Module: Extension Protocol (BEP #10)</name>

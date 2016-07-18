@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.johnnei</groupId>
     <artifactId>javatorrent</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
+    <version>0.5.1</version>
   </parent>
   <artifactId>javatorrent-bittorrent-utp</artifactId>
   <name>JavaTorrent Module: uTP Support (BEP #29)</name>
