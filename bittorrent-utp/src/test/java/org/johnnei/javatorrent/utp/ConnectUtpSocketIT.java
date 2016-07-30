@@ -2,7 +2,6 @@ package org.johnnei.javatorrent.utp;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +58,7 @@ public class ConnectUtpSocketIT {
 				.setPeerConnector(PeerConnector::new)
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
-						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.empty())
+						.registerInitialPhase(PhaseData.class, PhaseData::new)
 						.build()
 				).build();
 	}

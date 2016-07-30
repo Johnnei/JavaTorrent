@@ -5,18 +5,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseMetadata;
 import org.johnnei.javatorrent.phases.PhasePreMetadata;
@@ -77,9 +76,9 @@ public class DownloadMetadataIT {
 		TorrentClient clientWithLink = prepareTorrentClient(downloadFolderOne)
 				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
-						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, Optional.of(PhaseMetadata.class))
-						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, Optional.of(PhaseDataCountDown.class))
-						.registerPhase(PhaseDataCountDown.class, (client, torrent) -> new PhaseDataCountDown(latch, client, torrent), Optional.empty())
+						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, PhaseMetadata.class)
+						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, PhaseDataCountDown.class)
+						.registerPhase(PhaseDataCountDown.class, (client, torrent) -> new PhaseDataCountDown(latch, client, torrent))
 						.build())
 				.build();
 
@@ -87,7 +86,7 @@ public class DownloadMetadataIT {
 		TorrentClient clientWithTorrent = prepareTorrentClient(downloadFolderTwo)
 				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
-						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.empty())
+						.registerInitialPhase(PhaseData.class, PhaseData::new)
 						.build())
 				.build();
 
