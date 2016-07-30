@@ -21,9 +21,9 @@ public class ConnectionDegradationTest {
 	@Test
 	public void testDegradeConnection() {
 		ConnectionDegradation cut = new ConnectionDegradation.Builder()
-				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, Optional.empty())
-				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, Optional.of(SocketTypeTwo.class))
-				.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new, Optional.empty())
+				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new)
+				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, SocketTypeTwo.class)
+				.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new)
 				.build();
 
 		ISocket preferredSocket = cut.createPreferredSocket();
@@ -41,8 +41,8 @@ public class ConnectionDegradationTest {
 	@Test(expected = IllegalStateException.class)
 	public void testBadConfiguration() {
 		new ConnectionDegradation.Builder()
-				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, Optional.of(SocketTypeTwo.class))
-				.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new, Optional.of(SocketTypeThree.class))
+				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, SocketTypeTwo.class)
+				.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new, SocketTypeThree.class)
 				.build();
 	}
 

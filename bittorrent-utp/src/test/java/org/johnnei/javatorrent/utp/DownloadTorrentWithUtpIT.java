@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.utp;
 
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
@@ -26,7 +25,7 @@ public class DownloadTorrentWithUtpIT extends DownloadTorrentIT {
 				.acceptIncomingConnections(false)
 				.registerModule(utpModule)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), Optional.empty())
+						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
 						.build())
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))
@@ -34,9 +33,8 @@ public class DownloadTorrentWithUtpIT extends DownloadTorrentIT {
 				.setPeerDistributor(UncappedDistributor::new)
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
-						.registerInitialPhase(PhaseData.class, PhaseData::new, Optional.of(PhaseSeedCountdown.class))
-						.registerPhase(PhaseSeedCountdown.class, ((torrentClient, torrent) -> new PhaseSeedCountdown(latch, torrentClient, torrent)),
-								Optional.empty())
+						.registerInitialPhase(PhaseData.class, PhaseData::new, PhaseSeedCountdown.class)
+						.registerPhase(PhaseSeedCountdown.class, ((torrentClient, torrent) -> new PhaseSeedCountdown(latch, torrentClient, torrent)))
 						.build()
 				).build();
 	}

@@ -29,7 +29,7 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 
 		replayAll();
 		PhaseRegulator regulator = new PhaseRegulator.Builder()
-				.registerInitialPhase(IDownloadPhase.class, (client, torrent) -> downloadPhaseMock, Optional.empty())
+				.registerInitialPhase(IDownloadPhase.class, (client, torrent) -> downloadPhaseMock)
 				.build();
 
 		IDownloadPhase downloadPhase = regulator.createInitialPhase(torrentClientMock, torrentMock);
@@ -48,8 +48,8 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 
 		replayAll();
 		PhaseRegulator regulator = new PhaseRegulator.Builder()
-				.registerInitialPhase(IDownloadPhase.class, (client, torrent) -> downloadPhaseMock, Optional.empty())
-				.registerInitialPhase(SecondPhase.class, (client, torrent) -> secondPhaseMock, Optional.empty())
+				.registerInitialPhase(IDownloadPhase.class, (client, torrent) -> downloadPhaseMock)
+				.registerInitialPhase(SecondPhase.class, (client, torrent) -> secondPhaseMock)
 				.build();
 
 		IDownloadPhase downloadPhase = regulator.createInitialPhase(torrentClientMock, torrentMock);
@@ -68,8 +68,8 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 
 		replayAll();
 		PhaseRegulator regulator = new PhaseRegulator.Builder()
-				.registerInitialPhase(FirstPhase.class, (client, torrent) -> firstPhase, Optional.of(SecondPhase.class))
-				.registerPhase(SecondPhase.class, (client, torrent) -> secondPhase, Optional.empty())
+				.registerInitialPhase(FirstPhase.class, (client, torrent) -> firstPhase, SecondPhase.class)
+				.registerPhase(SecondPhase.class, (client, torrent) -> secondPhase)
 				.build();
 
 		Optional<IDownloadPhase> downloadPhase = regulator.createNextPhase(firstPhase, torrentClientMock, torrentMock);
@@ -88,8 +88,8 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 
 		replayAll();
 		PhaseRegulator regulator = new PhaseRegulator.Builder()
-				.registerInitialPhase(IDownloadPhase.class, (client, torrent) -> firstPhase, Optional.of(SecondPhase.class))
-				.registerPhase(SecondPhase.class, (client, torrent) -> secondPhase, Optional.empty())
+				.registerInitialPhase(IDownloadPhase.class, (client, torrent) -> firstPhase, SecondPhase.class)
+				.registerPhase(SecondPhase.class, (client, torrent) -> secondPhase)
 				.build();
 
 		verifyAll();
@@ -102,8 +102,8 @@ public class PhaseRegulatorTest extends EasyMockSupport {
 		FirstPhase firstPhase = new FirstPhase();
 
 		new PhaseRegulator.Builder()
-				.registerInitialPhase(FirstPhase.class, (client, torrent) -> firstPhase, Optional.empty())
-				.registerPhase(FirstPhase.class, (client, torrent) -> firstPhase, Optional.empty());
+				.registerInitialPhase(FirstPhase.class, (client, torrent) -> firstPhase)
+				.registerPhase(FirstPhase.class, (client, torrent) -> firstPhase);
 	}
 
 	@Test(expected = IllegalStateException.class)
