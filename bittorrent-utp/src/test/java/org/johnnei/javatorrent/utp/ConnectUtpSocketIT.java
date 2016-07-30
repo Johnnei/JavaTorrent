@@ -52,7 +52,7 @@ public class ConnectUtpSocketIT {
 				.setPeerDistributor(UncappedDistributor::new)
 				.registerModule(utpModule)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), Optional.empty())
+						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
 						.build())
 				.setDownloadPort(port)
 				.setExecutorService(Executors.newScheduledThreadPool(2))

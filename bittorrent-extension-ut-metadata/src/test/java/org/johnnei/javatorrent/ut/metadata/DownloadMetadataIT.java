@@ -138,7 +138,7 @@ public class DownloadMetadataIT {
 		return new TorrentClient.Builder()
 				.acceptIncomingConnections(true)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(TcpSocket.class, TcpSocket::new, Optional.empty())
+						.registerDefaultConnectionType(TcpSocket.class, TcpSocket::new)
 						.build())
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))

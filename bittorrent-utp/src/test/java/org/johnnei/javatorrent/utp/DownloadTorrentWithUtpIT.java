@@ -26,7 +26,7 @@ public class DownloadTorrentWithUtpIT extends DownloadTorrentIT {
 				.acceptIncomingConnections(false)
 				.registerModule(utpModule)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), Optional.empty())
+						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
 						.build())
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))
