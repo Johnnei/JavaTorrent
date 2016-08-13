@@ -30,9 +30,7 @@ public class BencodedString extends AbstractBencodedValue {
 
 	@Override
 	public String asString() {
-		String result = new String(value, UTF8);
-		assert result.getBytes(UTF8).length == value.length : "Failed to serialise string object.";
-		return result;
+		return new String(value, UTF8);
 	}
 
 	@Override

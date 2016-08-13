@@ -275,30 +275,6 @@ public class HttpTrackerIT {
 		verify(torrentClientMock, never()).getPeerConnector();
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void testScrape() {
-		TorrentClient torrentClientMock = mock(TorrentClient.class);
-
-		HttpTracker cut = new HttpTracker.Builder()
-				.setTorrentClient(torrentClientMock)
-				.setUrl("http://tracker.localhost:8989/announce")
-				.build();
-
-		cut.scrape();
-	}
-
-	@Test
-	public void testGetName() {
-		TorrentClient torrentClientMock = mock(TorrentClient.class);
-
-		HttpTracker cut = new HttpTracker.Builder()
-				.setTorrentClient(torrentClientMock)
-				.setUrl("http://tracker.localhost:8989/announce")
-				.build();
-
-		assertEquals("tracker.localhost", cut.getName());
-	}
-
 	@Test
 	public void testComplianceArchLinuxTracker() throws Exception {
 		String trackerUrl = "http://tracker.archlinux.org:6969/announce";

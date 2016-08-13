@@ -58,7 +58,7 @@ public class Bencoding {
 				token = peekCharacter(inStream);
 			}
 		} catch (Exception e) {
-			throw new IOException("Failed to read entry for list: " + list.asList().toString());
+			throw new IOException("Failed to read entry for list: " + list.asList().toString(), e);
 		}
 
 		consumeToken('e', inStream);
