@@ -1,5 +1,8 @@
 # Unreleased
 
+## Added
+- [JBT-19](https://jira.johnnei.org/browse/JBT-19): Support for HTTP(s) trackers with the `HttpTrackerModule`.
+
 ## Improvements
 - [JBT-39](https://jira.johnnei.org/browse/JBT-39): `Optional<T>` types have been removed as arguments and overloads have been added to compensate.
 
