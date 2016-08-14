@@ -27,9 +27,19 @@
   <scm>
     <connection>scm:git:git@github.com:Johnnei/JavaTorrent.git</connection>
     <developerConnection>scm:git:git@github.com:Johnnei/JavaTorrent.git</developerConnection>
-    <url>git@github.com:Johnnei/JavaTorrent.git</url>
+    <url>https://github.com/Johnnei/JavaTorrent</url>
     <tag>HEAD</tag>
   </scm>
+
+  <ciManagement>
+    <system>GitLab CI</system>
+    <url>https://git.johnnei.org/Johnnei/JavaTorrent/pipelines</url>
+  </ciManagement>
+
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://jira.johnnei.org/projects/JBT/issues/</url>
+  </issueManagement>
 
   <modules>
     <module>bittorrent</module>
