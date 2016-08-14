@@ -19,7 +19,16 @@ Java Torrent is a BitTorrent Protocol implementation in Java which aims to provi
 | 15  | UDP Trackers        | 3           | javatorrent-bittorrent-tracker-udp           |
 | 29  | uTP support         | 3           | javatorrent-bittorrent-utp                   |
 
-Currently HTTP trackers are not supported by the core implementation. This will be added in release 0.6.0.
+## Roadmap
+These are the things you can expect in the future of JavaTorrent (the order is not definitive):
+- Refactoring of the Tracker model to reduce code duplication for protocol support.
+- Add support for HTTP Tracker compact peer lists (BEP 23)
+- Add support for uTP Selective ACKs extensions (Optional of BEP 29)
+- Add opt-in analytics to the Extension Protocol to allow for analysis of commonly used extensions
+- Add scraping usage to decide whether an announce to the tracker will be made
+- Add support for HTTP Tracker scrape requests (Not official standard but based on convention)
+- \[Research\] Allow the client to tunnel it's traffic through a VPN
+- Add DHT support (BEP 5)
 
 ## Version System
 The version system will follow Semantic Versioning. The version reported in the BitTorrent protocol may be different from the maven version due to the standard
