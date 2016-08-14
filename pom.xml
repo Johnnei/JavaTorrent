@@ -73,15 +73,14 @@
     <!-- Define dependency versions -->
     <dependency.com.jayway.awaitility.awaitility>1.7.0</dependency.com.jayway.awaitility.awaitility>
     <dependency.com.github.tomakehurst.wiremock>2.1.10</dependency.com.github.tomakehurst.wiremock>
+    <dependency.com.squareup.okhttp3.okhttp>3.4.1</dependency.com.squareup.okhttp3.okhttp>
     <dependency.commons-codec>1.10</dependency.commons-codec>
     <dependency.junit.junit>4.12</dependency.junit.junit>
-    <dependency.org.apache.logging.log4j.log4j-api>2.5</dependency.org.apache.logging.log4j.log4j-api>
-    <dependency.org.apache.logging.log4j.log4j-core>2.5</dependency.org.apache.logging.log4j.log4j-core>
-    <dependency.org.apache.logging.log4j.log4j-slf4j-impl>2.5</dependency.org.apache.logging.log4j.log4j-slf4j-impl>
+    <dependency.org.apache.logging.log4j.log4j.version>2.6.2</dependency.org.apache.logging.log4j.log4j.version>
     <dependency.org.easymock.easymock>3.4</dependency.org.easymock.easymock>
     <dependency.org.mockito.mockito-core.version>1.10.19</dependency.org.mockito.mockito-core.version>
-    <dependency.org.powermock.powermock-reflect.version>1.6.4</dependency.org.powermock.powermock-reflect.version>
-    <dependency.org.slf4j.slf4j-api>1.7.13</dependency.org.slf4j.slf4j-api>
+    <dependency.org.powermock.powermock-reflect.version>1.6.5</dependency.org.powermock.powermock-reflect.version>
+    <dependency.org.slf4j.slf4j-api>1.7.21</dependency.org.slf4j.slf4j-api>
   </properties>
   <distributionManagement>
     <snapshotRepository>
@@ -263,27 +262,7 @@
       </dependency>
       <dependency>
         <groupId>org.johnnei</groupId>
-        <artifactId>javatorrent-bittorrent-utp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.johnnei</groupId>
         <artifactId>javatorrent-bittorrent-extension</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.johnnei</groupId>
-        <artifactId>javatorrent-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.johnnei</groupId>
-        <artifactId>javatorrent-bittorrent-tracker-udp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.johnnei</groupId>
-        <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -301,17 +280,17 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>${dependency.org.apache.logging.log4j.log4j-api}</version>
+        <version>${dependency.org.apache.logging.log4j.log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-slf4j-impl</artifactId>
-        <version>${dependency.org.apache.logging.log4j.log4j-slf4j-impl}</version>
+        <version>${dependency.org.apache.logging.log4j.log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>${dependency.org.apache.logging.log4j.log4j-core}</version>
+        <version>${dependency.org.apache.logging.log4j.log4j.version}</version>
       </dependency>
 
       <!-- Test Dependencies -->
@@ -341,7 +320,7 @@
       <dependency>
         <groupId>com.squareup.okhttp3</groupId>
         <artifactId>okhttp</artifactId>
-        <version>3.2.0</version>
+        <version>${dependency.com.squareup.okhttp3.okhttp}</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
