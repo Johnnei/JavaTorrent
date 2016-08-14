@@ -28,9 +28,9 @@ public class MagnetLinkTest extends EasyMockSupport {
 	@Test
 	public void testMinimalBase32Link() {
 		String[] links = new String[] {
-				"magnet:?xt=urn:btih:p0r9u2t4ntmdgvth7cq3eu1e5hs21epo",
-				"magnet:?xt=urn:btih:P0R9U2T4NTMDGVTH7CQ3EU1E5HS21EPO",
-				"magnet:?xt=urn:btih:P0r9U2t4NTmdGvTh7Cq3EU1e5HS21EPO",
+				"magnet:?xt=urn:btih:za3j6c5ex5wnq75rhm2do6bofr4cbozy",
+				"magnet:?xt=urn:btih:ZA3J6C5EX5WNQ75RHM2DO6BOFR4CBOZY",
+				"magnet:?xt=urn:btih:za3J6C5EX5wNq75RhM2DO6Bofr4CBoZY"
 		};
 
 		TorrentClient torrentClientMock = createNiceMock(TorrentClient.class);

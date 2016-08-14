@@ -10,16 +10,19 @@ import java.util.regex.Pattern;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
 
+import org.apache.commons.codec.binary.Base32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MagnetLink {
 
+	private static final Base32 base32 = new Base32(32);
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(MagnetLink.class);
 
 	private static final PatternToExtractor[] SUPPORTED_BASES = {
 			new PatternToExtractor(Pattern.compile("urn:btih:([a-fA-F0-9]{40})"), MagnetLink::convertBase16Hash),
-			new PatternToExtractor(Pattern.compile("urn:btih:([a-zA-Z0-9]{32})"), MagnetLink::convertBase32Hash)
+			new PatternToExtractor(Pattern.compile("urn:btih:([a-zA-Z0-9]{32})"), base32::decode)
 	};
 
 	/**
@@ -84,7 +87,7 @@ public class MagnetLink {
 					torrentBuilder.setName(hashString);
 				}
 
-				torrentBuilder.setHash(base.getExtractFunction().apply(hashString));
+				torrentBuilder.setHash(base.getExtractFunction().apply(hashString.toUpperCase()));
 				return;
 			}
 		}
@@ -128,29 +131,6 @@ public class MagnetLink {
 	 */
 	private static String spaceFix(String s) {
 		return s.replaceAll("\\+", " ");
-	}
-
-	private static byte[] convertBase32Hash(String hashSection) {
-		// Each character encodes 5 bits of data, the nearest common-factor is 40 taking up 8 characters per section.
-		final int charactersPerSection = 8;
-		final int bytesPerSection = 5;
-
-		byte[] hash = new byte[20];
-		int index = 0;
-
-		for (int j = 0; j < hashSection.length() / charactersPerSection; j++) {
-			long value = Long.parseUnsignedLong(hashSection.substring(j * charactersPerSection, (j * charactersPerSection) + charactersPerSection), 32);
-			for (int i = 0; i < bytesPerSection; i++) {
-				// We need to bytes from high-end first to maintain to the correct order.
-				final int amountOfBitsToShiftDown = (bytesPerSection - 1 - i) * 8;
-				// Shift the required 8 bits down to the end and then take those as the next byte
-				// Use the shift which ignore the 'sign' of the value as we always need to retain the exact value.
-				byte shiftedDown = (byte) (value >>> amountOfBitsToShiftDown);
-				hash[index] = (byte) (shiftedDown & 0xFF);
-				index++;
-			}
-		}
-		return hash;
 	}
 
 	/**
