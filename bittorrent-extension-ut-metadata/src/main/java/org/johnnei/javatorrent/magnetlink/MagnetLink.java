@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.magnetlink;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,8 +17,10 @@ public class MagnetLink {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MagnetLink.class);
 
-	private static final Pattern BTIH_BASE16_PATTERN = Pattern.compile("urn:btih:([a-zA-Z0-9]{40})");
-	private static final Pattern BTIH_BASE32_PATTERN = Pattern.compile("urn:btih:([a-zA-Z0-9]{32})");
+	private static final PatternToExtractor[] SUPPORTED_BASES = {
+			new PatternToExtractor(Pattern.compile("urn:btih:([a-fA-F0-9]{40})"), MagnetLink::convertBase16Hash),
+			new PatternToExtractor(Pattern.compile("urn:btih:([a-zA-Z0-9]{32})"), MagnetLink::convertBase32Hash)
+	};
 
 	/**
 	 * The resulting torrent from this Magnet link
@@ -71,34 +74,25 @@ public class MagnetLink {
 	}
 
 	private void extractHash(String value) {
-		Matcher matcher = BTIH_BASE16_PATTERN.matcher(value);
-		if (matcher.find()) {
-			String hashString = matcher.group(1);
+		for (PatternToExtractor base : SUPPORTED_BASES) {
+			Matcher matcher = base.getBasePattern().matcher(value);
 
-			if (!hasName) {
-				torrentBuilder.setName(hashString);
+			if (matcher.find()) {
+				String hashString = matcher.group(1);
+
+				if (!hasName) {
+					torrentBuilder.setName(hashString);
+				}
+
+				torrentBuilder.setHash(base.getExtractFunction().apply(hashString));
+				return;
 			}
-
-			torrentBuilder.setHash(extractBase16Hash(hashString));
-			return;
-		}
-
-		matcher = BTIH_BASE32_PATTERN.matcher(value);
-		if (matcher.find()) {
-			String hashString = matcher.group(1);
-
-			if (!hasName) {
-				torrentBuilder.setName(hashString);
-			}
-
-			torrentBuilder.setHash(convertBase32Hash(hashString));
-			return;
 		}
 
 		throw new IllegalArgumentException("Failed to parse XT entry of magnet link.");
 	}
 
-	private byte[] extractBase16Hash(String hashSection) {
+	private static byte[] convertBase16Hash(String hashSection) {
 		byte[] hash = new byte[20];
 		for (int j = 0; j < hashSection.length() / 2; j++) {
 			hash[j] = (byte) Integer.parseInt(hashSection.substring(j * 2, j * 2 + 2), 16);
@@ -136,22 +130,22 @@ public class MagnetLink {
 		return s.replaceAll("\\+", " ");
 	}
 
-	private byte[] convertBase32Hash(String hashSection) {
+	private static byte[] convertBase32Hash(String hashSection) {
+		// Each character encodes 5 bits of data, the nearest common-factor is 40 taking up 8 characters per section.
 		final int charactersPerSection = 8;
 		final int bytesPerSection = 5;
 
 		byte[] hash = new byte[20];
 		int index = 0;
-		// Each character encodes 5 bits of data, the nearest common-factor is 40 taking up 8 characters per section.
 
 		for (int j = 0; j < hashSection.length() / charactersPerSection; j++) {
 			long value = Long.parseUnsignedLong(hashSection.substring(j * charactersPerSection, (j * charactersPerSection) + charactersPerSection), 32);
 			for (int i = 0; i < bytesPerSection; i++) {
 				// We need to bytes from high-end first to maintain to the correct order.
-
+				final int amountOfBitsToShiftDown = (bytesPerSection - 1 - i) * 8;
 				// Shift the required 8 bits down to the end and then take those as the next byte
-				final int shiftDownAmount = (bytesPerSection - 1 - i) * 8;
-				byte shiftedDown = (byte) (value >>> shiftDownAmount);
+				// Use the shift which ignore the 'sign' of the value as we always need to retain the exact value.
+				byte shiftedDown = (byte) (value >>> amountOfBitsToShiftDown);
 				hash[index] = (byte) (shiftedDown & 0xFF);
 				index++;
 			}
@@ -194,4 +188,23 @@ public class MagnetLink {
 		return torrentBuilder.canDownload();
 	}
 
+	private static final class PatternToExtractor {
+
+		private final Pattern basePattern;
+
+		private final Function<String, byte[]> extractFunction;
+
+		PatternToExtractor(Pattern basePattern, Function<String, byte[]> extractFunction) {
+			this.basePattern = basePattern;
+			this.extractFunction = extractFunction;
+		}
+
+		Pattern getBasePattern() {
+			return basePattern;
+		}
+
+		Function<String, byte[]> getExtractFunction() {
+			return extractFunction;
+		}
+	}
 }
