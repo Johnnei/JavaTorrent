@@ -85,7 +85,13 @@ public class MagnetLink {
 
 		matcher = BTIH_BASE32_PATTERN.matcher(value);
 		if (matcher.find()) {
-			torrentBuilder.setHash(convertBase32Hash(matcher.group(1)));
+			String hashString = matcher.group(1);
+
+			if (!hasName) {
+				torrentBuilder.setName(hashString);
+			}
+
+			torrentBuilder.setHash(convertBase32Hash(hashString));
 			return;
 		}
 
@@ -131,7 +137,26 @@ public class MagnetLink {
 	}
 
 	private byte[] convertBase32Hash(String hashSection) {
-		throw new IllegalArgumentException("Base 32 hashes are not yet supported.");
+		final int charactersPerSection = 8;
+		final int bytesPerSection = 5;
+
+		byte[] hash = new byte[20];
+		int index = 0;
+		// Each character encodes 5 bits of data, the nearest common-factor is 40 taking up 8 characters per section.
+
+		for (int j = 0; j < hashSection.length() / charactersPerSection; j++) {
+			long value = Long.parseUnsignedLong(hashSection.substring(j * charactersPerSection, (j * charactersPerSection) + charactersPerSection), 32);
+			for (int i = 0; i < bytesPerSection; i++) {
+				// We need to bytes from high-end first to maintain to the correct order.
+
+				// Shift the required 8 bits down to the end and then take those as the next byte
+				final int shiftDownAmount = (bytesPerSection - 1 - i) * 8;
+				byte shiftedDown = (byte) (value >>> shiftDownAmount);
+				hash[index] = (byte) (shiftedDown & 0xFF);
+				index++;
+			}
+		}
+		return hash;
 	}
 
 	/**

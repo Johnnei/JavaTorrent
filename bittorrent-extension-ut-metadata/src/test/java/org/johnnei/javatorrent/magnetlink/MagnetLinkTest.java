@@ -4,7 +4,6 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.easymock.EasyMockSupport;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,12 +26,11 @@ public class MagnetLinkTest extends EasyMockSupport {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
-	@Ignore("Base 32 Magnet Links are not implemented yet")
 	public void testMinimalBase32Link() {
 		String[] links = new String[] {
 				"magnet:?xt=urn:btih:p0r9u2t4ntmdgvth7cq3eu1e5hs21epo",
 				"magnet:?xt=urn:btih:P0R9U2T4NTMDGVTH7CQ3EU1E5HS21EPO",
-				"magnet:?xt=urn:btih:P0r9U2t4NTmdGgTh7Cq3EU1e5HS21EPO",
+				"magnet:?xt=urn:btih:P0r9U2t4NTmdGvTh7Cq3EU1e5HS21EPO",
 		};
 
 		TorrentClient torrentClientMock = createNiceMock(TorrentClient.class);
