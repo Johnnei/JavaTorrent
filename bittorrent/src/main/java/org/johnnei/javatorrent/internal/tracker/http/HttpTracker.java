@@ -134,6 +134,8 @@ public class HttpTracker implements ITracker {
 
 			result.get("interval").ifPresent(interval -> announceInterval = interval.asLong());
 			result.get("peers").ifPresent(peers -> processPeers(torrent, peers));
+			// TODO Figure out how to find this information on HTTP trackers.
+			torrentMap.get(torrent).setInfo(0, 0);
 
 			status = STATE_IDLE;
 		} catch (IOException e) {

@@ -15,6 +15,7 @@ import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +27,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -226,6 +228,59 @@ public class HttpTrackerIT {
 		assertEquals("Incorrect interval", 15_000, cut.getAnnounceInterval());
 		assertEquals("Status should have returned to idle", "Idle", cut.getStatus());
 		verify(torrentClientMock, never()).getPeerConnector();
+	}
+
+	@Test
+	public void testAnnounceBlockDuplicateAnnounce() throws Exception {
+		BencodedMap announceResult = new BencodedMap();
+		announceResult.put("interval", new BencodedInteger(15_000));
+
+		announceResult.put("peers", new BencodedList());
+		OutStream outStream = new OutStream();
+		outStream.writeString(announceResult.serialize());
+
+		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
+
+		stubFor(get(urlPathEqualTo("/announce"))
+				// Can't match the exact requests as jetty parses the incorrect UTF-8.
+				.withQueryParam("info_hash", matching(".*"))
+				.withQueryParam("peer_id", matching(".*"))
+				.withQueryParam("port", equalTo("27960"))
+				.withQueryParam("uploaded", equalTo("0"))
+				.withQueryParam("downloaded", equalTo("0"))
+				.withQueryParam("left", equalTo("0"))
+				.withQueryParam("compact", equalTo("0"))
+				.willReturn(aResponse().withBody(outStream.toByteArray()))
+		);
+
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		when(torrentClientMock.getPeerId()).thenReturn(peerId);
+		when(torrentClientMock.getDownloadPort()).thenReturn(27960);
+		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
+
+		Torrent torrentMock = mock(Torrent.class);
+		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+
+		HttpTracker cut = new HttpTracker.Builder()
+				.setTorrentClient(torrentClientMock)
+				.setUrl(url)
+				.build();
+
+		cut.addTorrent(torrentMock);
+
+		assertTrue("Add of torrent failed", cut.hasTorrent(torrentMock));
+
+		cut.getInfo(torrentMock).get().setEvent(TrackerEvent.EVENT_NONE);
+		cut.announce(torrentMock);
+
+		assertEquals("Incorrect interval", 15_000, cut.getAnnounceInterval());
+		assertEquals("Status should have returned to idle", "Idle", cut.getStatus());
+		verify(torrentClientMock, never()).getPeerConnector();
+
+		// This request should be denied because the interval hasn't expired yet.
+		cut.announce(torrentMock);
+
+		WireMock.verify(1, getRequestedFor(urlPathEqualTo("/announce")));
 	}
 
 	@Test
