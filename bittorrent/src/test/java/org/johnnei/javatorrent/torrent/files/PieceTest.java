@@ -103,6 +103,13 @@ public class PieceTest {
 	}
 
 	@Test
+	public void testGetFileSet() {
+		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
+		Piece piece = new Piece(fileSetMock, new byte[20], 0, 50, 5);
+		assertEquals("Incorrect fileset has been returned", fileSetMock, piece.getFileSet());
+	}
+
+	@Test
 	public void testToStringAndEqualsAndHashcode() {
 		Piece pieceOne = new Piece(null, new byte[20], 0, 50, 5);
 		Piece pieceTwo = new Piece(null, new byte[20], 0, 50, 5);
