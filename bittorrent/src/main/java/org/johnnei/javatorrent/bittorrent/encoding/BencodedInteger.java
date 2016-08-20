@@ -1,7 +1,10 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Objects;
+
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 /**
  * A bencoded integer.
@@ -11,6 +14,8 @@ public class BencodedInteger extends AbstractBencodedValue {
 	private static final BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
 	private static final BigInteger MIN_LONG_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
+
+	private static final byte[] ENTRY_START_BYTES = "i".getBytes(BitTorrent.DEFAULT_ENCODING);
 
 	private BigInteger bigInteger;
 
@@ -45,8 +50,16 @@ public class BencodedInteger extends AbstractBencodedValue {
 	}
 
 	@Override
-	public String serialize() {
-		return String.format("i%se", bigInteger.toString());
+	public byte[] serialize() {
+		byte[] integerBytes = bigInteger.toString().getBytes(BitTorrent.DEFAULT_ENCODING);
+
+		ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[ENTRY_START_BYTES.length + integerBytes.length + ENTRY_END_BYTES.length]);
+
+		byteBuffer.put(ENTRY_START_BYTES);
+		byteBuffer.put(integerBytes);
+		byteBuffer.put(ENTRY_END_BYTES);
+
+		return byteBuffer.array();
 	}
 
 	@Override

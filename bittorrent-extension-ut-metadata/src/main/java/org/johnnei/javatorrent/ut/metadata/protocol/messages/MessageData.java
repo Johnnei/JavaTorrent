@@ -59,7 +59,7 @@ public class MessageData extends AbstractMessage {
 
 	@Override
 	public int getLength() {
-		return data.length + bencodedData.length();
+		return data.length + bencodedData.length;
 	}
 
 	@Override

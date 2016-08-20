@@ -1,12 +1,17 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 /**
  * A bencoded string.
  */
 public class BencodedString extends AbstractBencodedValue {
+
+	private static final byte[] SEPARATOR_BYTES = ":".getBytes(BitTorrent.DEFAULT_ENCODING);
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 
@@ -39,8 +44,15 @@ public class BencodedString extends AbstractBencodedValue {
 	}
 
 	@Override
-	public String serialize() {
-		return String.format("%d:%s", value.length, asString());
+	public byte[] serialize() {
+		byte[] lengthBytes = Integer.toString(value.length).getBytes(BitTorrent.DEFAULT_ENCODING);
+
+		ByteBuffer buffer = ByteBuffer.wrap(new byte[lengthBytes.length + SEPARATOR_BYTES.length + value.length]);
+		buffer.put(lengthBytes);
+		buffer.put(SEPARATOR_BYTES);
+		buffer.put(value);
+
+		return buffer.array();
 	}
 
 	@Override

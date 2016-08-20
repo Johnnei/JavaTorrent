@@ -1,13 +1,18 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
 /**
  * A bencoded list.
  */
 public class BencodedList extends AbstractBencodedValue {
+
+	private static final byte[] ENTRY_START_BYTES = "l".getBytes(BitTorrent.DEFAULT_ENCODING);
 
 	private List<IBencodedValue> bencodedValues;
 
@@ -48,12 +53,24 @@ public class BencodedList extends AbstractBencodedValue {
 	}
 
 	@Override
-	public String serialize() {
-		StringBuilder bencoded = new StringBuilder("l");
+	public byte[] serialize() {
+		byte[][] serializedValues = new byte[bencodedValues.size()][];
+		int serializedValuesByteCount = 0;
+
+		int index = 0;
 		for (IBencodedValue bencodedValue : bencodedValues) {
-			bencoded.append(bencodedValue.serialize());
+			serializedValues[index] = bencodedValue.serialize();
+			serializedValuesByteCount += serializedValues[index].length;
+			index++;
 		}
-		bencoded.append("e");
-		return bencoded.toString();
+
+		ByteBuffer buffer = ByteBuffer.wrap(new byte[ENTRY_START_BYTES.length + ENTRY_END_BYTES.length + serializedValuesByteCount]);
+		buffer.put(ENTRY_START_BYTES);
+		for (byte[] serializedEntry : serializedValues) {
+			buffer.put(serializedEntry);
+		}
+		buffer.put(ENTRY_END_BYTES);
+
+		return buffer.array();
 	}
 }

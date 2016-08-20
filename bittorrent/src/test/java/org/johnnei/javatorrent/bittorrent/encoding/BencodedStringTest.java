@@ -1,5 +1,9 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
+import java.nio.ByteBuffer;
+
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -64,14 +68,34 @@ public class BencodedStringTest {
 	public void testSerialize() throws Exception {
 		BencodedString cut = new BencodedString("Hello World!");
 
-		assertEquals("Incorrect serialized form", "12:Hello World!", cut.serialize());
+		assertEquals("Incorrect serialized form", "12:Hello World!", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	@Test
 	public void testSerializeWithNonAsciiCharacters() throws Exception {
 		BencodedString cut = new BencodedString("μTorrent 3.4.7");
 
-		assertEquals("Incorrect serialized form", "15:μTorrent 3.4.7", cut.serialize());
+		assertEquals("Incorrect serialized form", "15:μTorrent 3.4.7", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
+	}
+
+	@Test
+	public void testSerializeWithInvalidUTF8Sequences() throws Exception {
+		byte[] invalidSequence = new byte[] {
+				(byte) 0x2d, (byte) 0x4a, (byte) 0x54, (byte) 0x30, (byte) 0x30,
+				(byte) 0x31, (byte) 0x31, (byte) 0x2d, (byte) 0xd3, (byte) 0x7f,
+				(byte) 0xd6, (byte) 0xb0, (byte) 0xc5, (byte) 0x46, (byte) 0x03,
+				(byte) 0x7d, (byte) 0x2e, (byte) 0x0c, (byte) 0xc7, (byte) 0xb9
+		};
+
+		byte[] prefixBytes = "20:".getBytes(BitTorrent.DEFAULT_ENCODING);
+		byte[] expectedSerializedForm = ByteBuffer.wrap(new byte[prefixBytes.length + invalidSequence.length])
+				.put(prefixBytes)
+				.put(invalidSequence)
+				.array();
+
+		BencodedString cut = new BencodedString(invalidSequence);
+
+		assertArrayEquals("Invalid UTF-8 sequence are allowed to occur within BencodedStrings", expectedSerializedForm, cut.serialize());
 	}
 
 	@Test

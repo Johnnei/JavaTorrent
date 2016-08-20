@@ -10,6 +10,10 @@
 ## Fixes
 - [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`
 
+## Changes
+- [JBT-50](https://jira.johnnei.org/browse/JBT-50): `IBencodedValue#serialise()` now returns `byte[]` instead of `String` to correctly be capable of handling
+Strings which represent byte arrays containing data which is not valid UTF-8.
+
 # 0.5.1
 ## Added
 - [JBT-43](https://jira.johnnei.org/browse/JBT-43): `IBencodedValue#asBytes` allows for efficient transport of string representing raw bytes
