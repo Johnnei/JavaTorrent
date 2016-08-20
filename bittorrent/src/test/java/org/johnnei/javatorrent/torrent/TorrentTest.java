@@ -295,6 +295,7 @@ public class TorrentTest extends EasyMockSupport {
 		expect(pieceMock.checkHash()).andReturn(true);
 		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
 		expect(pieceMock.getBlockCount()).andReturn(2);
+		expect(pieceMock.getFileSet()).andReturn(fileSetMock).atLeastOnce();
 
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		Peer peerMock = createMock(Peer.class);
@@ -406,8 +407,8 @@ public class TorrentTest extends EasyMockSupport {
 		expect(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).andReturn(2);
 		expect(pieceMock.getBlockCount()).andReturn(2);
 		expect(pieceMock.checkHash()).andReturn(true);
+		expect(pieceMock.getFileSet()).andReturn(metadataMock).atLeastOnce();
 		metadataMock.setHavingPiece(eq(0));
-		expect(metadataMock.isDone()).andReturn(false);
 
 		replayAll();
 

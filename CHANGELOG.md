@@ -7,6 +7,9 @@
 ## Improvements
 - [JBT-39](https://jira.johnnei.org/browse/JBT-39): `Optional<T>` types have been removed as arguments and overloads have been added to compensate.
 
+## Fixes
+- [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`
+
 # 0.5.1
 ## Added
 - [JBT-43](https://jira.johnnei.org/browse/JBT-43): `IBencodedValue#asBytes` allows for efficient transport of string representing raw bytes

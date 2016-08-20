@@ -247,14 +247,12 @@ public class Torrent {
 			return;
 		}
 
-		// TODO Generalize this code to use fileset of the given piece.
-		if (isDownloadingMetadata()) {
-			metadata.setHavingPiece(piece.getIndex());
-		} else {
-			files.setHavingPiece(piece.getIndex());
+		piece.getFileSet().setHavingPiece(piece.getIndex());
+		if (piece.getFileSet().equals(files)) {
 			broadcastMessage(new MessageHave(piece.getIndex()));
 			downloadedBytes += piece.getSize();
 		}
+
 		LOGGER.debug("Completed piece {}", piece.getIndex());
 	}
 
