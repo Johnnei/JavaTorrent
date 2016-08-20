@@ -56,7 +56,7 @@ public class MessageHandshake implements IMessage {
 			extension.addHandshakeMetadata(peer, extensionHandshake);
 		}
 
-		bencodedHandshake = extensionHandshake.serialize().getBytes(Charset.forName("UTF-8"));
+		bencodedHandshake = extensionHandshake.serialize();
 	}
 
 	@Override

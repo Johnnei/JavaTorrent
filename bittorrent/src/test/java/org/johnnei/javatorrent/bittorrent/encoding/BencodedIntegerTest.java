@@ -2,6 +2,8 @@ package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.math.BigInteger;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -24,7 +26,7 @@ public class BencodedIntegerTest {
 
 		assertEquals("asBigInteger returned a different value", BigInteger.valueOf(35), integer.asBigInteger());
 		assertEquals("asLong returned a different value", 35L, integer.asLong());
-		assertEquals("Serialized form is incorrect", "i35e", integer.serialize());
+		assertEquals("Serialized form is incorrect", "i35e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	@Test
@@ -33,7 +35,7 @@ public class BencodedIntegerTest {
 
 		assertEquals("asBigInteger returned a different value", BigInteger.valueOf(35), integer.asBigInteger());
 		assertEquals("asLong returned a different value", 35L, integer.asLong());
-		assertEquals("Serialized form is incorrect", "i35e", integer.serialize());
+		assertEquals("Serialized form is incorrect", "i35e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	@Test
@@ -41,7 +43,7 @@ public class BencodedIntegerTest {
 		BencodedInteger integer = new BencodedInteger(new BigInteger("12345678987654321012"));
 
 		assertEquals("asBigInteger returned a different value", new BigInteger("12345678987654321012"), integer.asBigInteger());
-		assertEquals("Serialized form is incorrect", "i12345678987654321012e", integer.serialize());
+		assertEquals("Serialized form is incorrect", "i12345678987654321012e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	@Test
@@ -49,7 +51,7 @@ public class BencodedIntegerTest {
 		BencodedInteger integer = new BencodedInteger(new BigInteger("-12345678987654321012"));
 
 		assertEquals("asBigInteger returned a different value", new BigInteger("-12345678987654321012"), integer.asBigInteger());
-		assertEquals("Serialized form is incorrect", "i-12345678987654321012e", integer.serialize());
+		assertEquals("Serialized form is incorrect", "i-12345678987654321012e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	@Test

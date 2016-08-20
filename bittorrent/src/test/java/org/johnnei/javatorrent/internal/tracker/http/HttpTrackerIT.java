@@ -87,7 +87,7 @@ public class HttpTrackerIT {
 
 		announceResult.put("peers", peerList);
 		OutStream outStream = new OutStream();
-		outStream.writeString(announceResult.serialize());
+		outStream.write(announceResult.serialize());
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
@@ -139,7 +139,7 @@ public class HttpTrackerIT {
 
 		announceResult.put("peers", new BencodedList());
 		OutStream outStream = new OutStream();
-		outStream.writeString(announceResult.serialize());
+		outStream.write(announceResult.serialize());
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
@@ -188,7 +188,7 @@ public class HttpTrackerIT {
 
 		announceResult.put("peers", new BencodedList());
 		OutStream outStream = new OutStream();
-		outStream.writeString(announceResult.serialize());
+		outStream.write(announceResult.serialize());
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
@@ -237,7 +237,7 @@ public class HttpTrackerIT {
 
 		announceResult.put("peers", new BencodedList());
 		OutStream outStream = new OutStream();
-		outStream.writeString(announceResult.serialize());
+		outStream.write(announceResult.serialize());
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
@@ -289,7 +289,7 @@ public class HttpTrackerIT {
 		announceResult.put("failure reason", new BencodedString("Test failure path."));
 
 		OutStream outStream = new OutStream();
-		outStream.writeString(announceResult.serialize());
+		outStream.write(announceResult.serialize());
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 

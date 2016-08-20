@@ -40,7 +40,7 @@ public class MessageReject extends AbstractMessage {
 
 	@Override
 	public int getLength() {
-		return bencodedData.length();
+		return bencodedData.length;
 	}
 
 	@Override

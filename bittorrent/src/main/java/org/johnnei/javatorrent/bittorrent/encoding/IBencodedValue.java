@@ -48,5 +48,5 @@ public interface IBencodedValue {
 	/**
 	 * @return The value represented in bencoded format.
 	 */
-	String serialize();
+	byte[] serialize();
 }

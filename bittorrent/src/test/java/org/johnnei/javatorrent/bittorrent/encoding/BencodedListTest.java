@@ -2,6 +2,8 @@ package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.util.List;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -40,15 +42,15 @@ public class BencodedListTest {
 		IBencodedValue valueMockOne = mock(IBencodedValue.class);
 		IBencodedValue valueMockTwo = mock(IBencodedValue.class);
 
-		when(valueMockOne.serialize()).thenReturn("4:spam");
-		when(valueMockTwo.serialize()).thenReturn("4:eggs");
+		when(valueMockOne.serialize()).thenReturn("4:spam".getBytes(BitTorrent.DEFAULT_ENCODING));
+		when(valueMockTwo.serialize()).thenReturn("4:eggs".getBytes(BitTorrent.DEFAULT_ENCODING));
 
 		BencodedList cut = new BencodedList();
 
 		cut.add(valueMockOne);
 		cut.add(valueMockTwo);
 
-		assertEquals("Incorrect serialized form", "l4:spam4:eggse", cut.serialize());
+		assertEquals("Incorrect serialized form", "l4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	@Test
@@ -56,8 +58,8 @@ public class BencodedListTest {
 		IBencodedValue valueMockOne = mock(IBencodedValue.class);
 		IBencodedValue valueMockTwo = mock(IBencodedValue.class);
 
-		when(valueMockOne.serialize()).thenReturn("4:spam");
-		when(valueMockTwo.serialize()).thenReturn("4:eggs");
+		when(valueMockOne.serialize()).thenReturn("4:spam".getBytes(BitTorrent.DEFAULT_ENCODING));
+		when(valueMockTwo.serialize()).thenReturn("4:eggs".getBytes(BitTorrent.DEFAULT_ENCODING));
 
 		BencodedList cut = new BencodedList();
 

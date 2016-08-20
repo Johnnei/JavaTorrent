@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.bittorrent.encoding;
 import java.util.Map;
 import java.util.Optional;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -140,13 +142,13 @@ public class BencodedMapTest {
 		IBencodedValue valueMock = mock(IBencodedValue.class);
 		IBencodedValue valueMockTwo = mock(IBencodedValue.class);
 
-		when(valueMock.serialize()).thenReturn("3:moo");
-		when(valueMockTwo.serialize()).thenReturn("4:eggs");
+		when(valueMock.serialize()).thenReturn("3:moo".getBytes(BitTorrent.DEFAULT_ENCODING));
+		when(valueMockTwo.serialize()).thenReturn("4:eggs".getBytes(BitTorrent.DEFAULT_ENCODING));
 
 		cut.put("cow", valueMock);
 		cut.put("spam", valueMockTwo);
 
-		assertEquals("Incorrect serialized form", "d3:cow3:moo4:spam4:eggse", cut.serialize());
+		assertEquals("Incorrect serialized form", "d3:cow3:moo4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	/**
@@ -159,13 +161,13 @@ public class BencodedMapTest {
 		IBencodedValue valueMock = mock(IBencodedValue.class);
 		IBencodedValue valueMockTwo = mock(IBencodedValue.class);
 
-		when(valueMock.serialize()).thenReturn("4:eggs");
-		when(valueMockTwo.serialize()).thenReturn("3:moo");
+		when(valueMock.serialize()).thenReturn("4:eggs".getBytes(BitTorrent.DEFAULT_ENCODING));
+		when(valueMockTwo.serialize()).thenReturn("3:moo".getBytes(BitTorrent.DEFAULT_ENCODING));
 
 		cut.put("cow", valueMock);
 		cut.put("Cow", valueMockTwo);
 
-		assertEquals("Incorrect serialized form", "d3:Cow3:moo3:cow4:eggse", cut.serialize());
+		assertEquals("Incorrect serialized form", "d3:Cow3:moo3:cow4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 	/**
@@ -178,13 +180,13 @@ public class BencodedMapTest {
 		IBencodedValue valueMock = mock(IBencodedValue.class);
 		IBencodedValue valueMockTwo = mock(IBencodedValue.class);
 
-		when(valueMock.serialize()).thenReturn("3:moo");
-		when(valueMockTwo.serialize()).thenReturn("4:eggs");
+		when(valueMock.serialize()).thenReturn("3:moo".getBytes(BitTorrent.DEFAULT_ENCODING));
+		when(valueMockTwo.serialize()).thenReturn("4:eggs".getBytes(BitTorrent.DEFAULT_ENCODING));
 
 		cut.put("spam", valueMockTwo);
 		cut.put("cow", valueMock);
 
-		assertEquals("Incorrect serialized form", "d3:cow3:moo4:spam4:eggse", cut.serialize());
+		assertEquals("Incorrect serialized form", "d3:cow3:moo4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
 	}
 
 }
