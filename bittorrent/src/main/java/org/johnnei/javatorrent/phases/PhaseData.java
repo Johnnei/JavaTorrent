@@ -56,7 +56,7 @@ public class PhaseData implements IDownloadPhase {
 				}
 
 				final Block block = blockOptional.get();
-				peer.addBlockRequest(piece.getIndex(), torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
+				peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
 			}
 		}
 	}

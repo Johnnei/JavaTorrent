@@ -178,20 +178,20 @@ public class Peer {
 	 * Adds a download or upload job to the peer. In case of a download request this will also send out a
 	 * {@link MessageBlock} for the given block.
 	 *
-	 * @param pieceIndex The index of the requested piece.
+	 * @param piece The requested piece.
 	 * @param byteOffset The offset in bytes within the piece.
 	 * @param blockLength The amount of bytes requested.
 	 * @param type The direction of the request.
 	 */
-	public void addBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
-		Job job = createJob(pieceIndex, byteOffset, blockLength, type);
+	public void addBlockRequest(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
+		Job job = createJob(piece, byteOffset, blockLength, type);
 		getClientByDirection(type).addJob(job);
 
 		if (type != PeerDirection.Download) {
 			return;
 		}
 
-		socket.enqueueMessage(new MessageRequest(pieceIndex, byteOffset, blockLength));
+		socket.enqueueMessage(new MessageRequest(piece.getIndex(), byteOffset, blockLength));
 	}
 
 	/**
@@ -204,7 +204,7 @@ public class Peer {
 	 * @param type The direction of the request.
 	 */
 	public void cancelBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
-		Job job = createJob(pieceIndex, byteOffset, blockLength, type);
+		Job job = createJob(torrent.getFileSet().getPiece(pieceIndex), byteOffset, blockLength, type);
 		getClientByDirection(type).removeJob(job);
 
 		if (type != PeerDirection.Download) {
@@ -220,15 +220,17 @@ public class Peer {
 	 * @param byteOffset The offset in bytes within the piece.
 	 */
 	public void onReceivedBlock(int pieceIndex, int byteOffset) {
-		int blockLength = torrent.getFileSet().getPiece(pieceIndex).getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
-		getClientByDirection(PeerDirection.Download).removeJob(createJob(pieceIndex, byteOffset, blockLength, PeerDirection.Download));
+		Piece piece = torrent.getFileSet().getPiece(pieceIndex);
+
+		int blockLength = piece.getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
+		getClientByDirection(PeerDirection.Download).removeJob(createJob(piece, byteOffset, blockLength, PeerDirection.Download));
 	}
 
-	private Job createJob(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
+	private Job createJob(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
 		if (type == PeerDirection.Download) {
-			return new Job(pieceIndex, byteOffset / torrent.getFileSet().getBlockSize(), blockLength);
+			return new Job(piece, byteOffset / torrent.getFileSet().getBlockSize(), blockLength);
 		} else {
-			return new Job(pieceIndex, byteOffset, blockLength);
+			return new Job(piece, byteOffset, blockLength);
 		}
 	}
 
@@ -297,7 +299,7 @@ public class Peer {
 	public void discardAllBlockRequests() {
 		synchronized (this) {
 			for (Job job : myClient.getJobs()) {
-				torrent.getFileSet().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
+				job.getPiece().setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
 			}
 			myClient.clearJobs();
 		}
@@ -524,8 +526,7 @@ public class Peer {
 
 		addToPendingMessages(1);
 
-		Piece piece = torrent.getFileSet().getPiece(request.getPieceIndex());
-		torrent.addDiskJob(new DiskJobReadBlock(piece, request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
+		torrent.addDiskJob(new DiskJobReadBlock(request.getPiece(), request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
 	}
 
 	private void onReadBlockComplete(DiskJobReadBlock readJob) {

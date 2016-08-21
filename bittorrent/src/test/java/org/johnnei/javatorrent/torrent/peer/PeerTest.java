@@ -243,16 +243,18 @@ public class PeerTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		Piece pieceMock = createMock(Piece.class);
 
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBlockSize()).andStubReturn(15);
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
 		socketMock.enqueueMessage(isA(MessageRequest.class));
+		expect(pieceMock.getIndex()).andReturn(0);
 
 		replayAll();
 
 		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.addBlockRequest(0, 15, 15, PeerDirection.Download);
+		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
 
 		verifyAll();
 
@@ -264,6 +266,7 @@ public class PeerTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		Piece pieceMock = createMock(Piece.class);
 
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBlockSize()).andStubReturn(15);
@@ -272,7 +275,7 @@ public class PeerTest extends EasyMockSupport {
 		replayAll();
 
 		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.addBlockRequest(0, 15, 15, PeerDirection.Upload);
+		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Upload);
 
 		verifyAll();
 
@@ -284,6 +287,7 @@ public class PeerTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		Piece pieceMock = createMock(Piece.class);
 
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBlockSize()).andStubReturn(15);
@@ -291,12 +295,14 @@ public class PeerTest extends EasyMockSupport {
 		socketMock.enqueueMessage(isA(MessageRequest.class));
 		socketMock.enqueueMessage(isA(MessageRequest.class));
 		socketMock.enqueueMessage(isA(MessageCancel.class));
+		expect(fileSetMock.getPiece(0)).andReturn(pieceMock);
+		expect(pieceMock.getIndex()).andReturn(0).atLeastOnce();
 
 		replayAll();
 
 		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.addBlockRequest(0, 15, 15, PeerDirection.Download);
-		peer.addBlockRequest(0, 30, 15, PeerDirection.Download);
+		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
+		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Download);
 		assertEquals("Working queue should have two items", 2, peer.getWorkQueueSize(PeerDirection.Download));
 
 		peer.cancelBlockRequest(0, 15, 15, PeerDirection.Download);
@@ -311,16 +317,18 @@ public class PeerTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		Piece pieceMock = createMock(Piece.class);
 
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBlockSize()).andStubReturn(15);
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
+		expect(fileSetMock.getPiece(0)).andReturn(pieceMock);
 
 		replayAll();
 
 		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.addBlockRequest(0, 15, 15, PeerDirection.Upload);
-		peer.addBlockRequest(0, 30, 15, PeerDirection.Upload);
+		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Upload);
+		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Upload);
 		assertEquals("Working queue should have two items", 2, peer.getWorkQueueSize(PeerDirection.Upload));
 
 		peer.cancelBlockRequest(0, 15, 15, PeerDirection.Upload);
@@ -342,6 +350,7 @@ public class PeerTest extends EasyMockSupport {
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
 		expect(fileSetMock.getPiece(eq(0))).andReturn(pieceMock);
 		expect(pieceMock.getBlockSize(eq(1))).andReturn(15);
+		expect(pieceMock.getIndex()).andReturn(0).atLeastOnce();
 
 		socketMock.enqueueMessage(isA(MessageRequest.class));
 		socketMock.enqueueMessage(isA(MessageRequest.class));
@@ -349,8 +358,8 @@ public class PeerTest extends EasyMockSupport {
 		replayAll();
 
 		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.addBlockRequest(0, 15, 15, PeerDirection.Download);
-		peer.addBlockRequest(0, 30, 15, PeerDirection.Download);
+		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
+		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Download);
 		assertEquals("Working queue should have two items", 2, peer.getWorkQueueSize(PeerDirection.Download));
 
 		peer.onReceivedBlock(0, 15);
@@ -393,7 +402,6 @@ public class PeerTest extends EasyMockSupport {
 
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
-		expect(fileSetMock.getPiece(eq(0))).andReturn(pieceMock);
 		torrentMock.addDiskJob(capture(diskJobCapture));
 
 		replayAll();
@@ -405,7 +413,7 @@ public class PeerTest extends EasyMockSupport {
 				.setExtensionBytes(DummyEntity.createRandomBytes(8))
 				.build();
 
-		cut.addBlockRequest(0, 0, 15, PeerDirection.Upload);
+		cut.addBlockRequest(pieceMock, 0, 15, PeerDirection.Upload);
 		cut.queueNextPieceForSending();
 		cut.queueNextPieceForSending();
 
@@ -424,7 +432,6 @@ public class PeerTest extends EasyMockSupport {
 		torrentMock.addUploadedBytes(15);
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
-		expect(fileSetMock.getPiece(eq(0))).andReturn(pieceMock);
 		torrentMock.addDiskJob(capture(diskJobCapture));
 		expect(pieceMock.getIndex()).andStubReturn(0);
 		expect(pieceMock.loadPiece(eq(0), eq(15))).andReturn(new byte[15]);
@@ -438,7 +445,7 @@ public class PeerTest extends EasyMockSupport {
 				.setExtensionBytes(DummyEntity.createRandomBytes(8))
 				.build();
 
-		cut.addBlockRequest(0, 0, 15, PeerDirection.Upload);
+		cut.addBlockRequest(pieceMock, 0, 15, PeerDirection.Upload);
 		cut.queueNextPieceForSending();
 
 		diskJobCapture.getValue().process();
@@ -456,7 +463,7 @@ public class PeerTest extends EasyMockSupport {
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
 		expect(fileSetMock.getBlockSize()).andStubReturn(15);
-		expect(fileSetMock.getPiece(eq(0))).andReturn(pieceMock).atLeastOnce();
+		expect(pieceMock.getIndex()).andReturn(0).atLeastOnce();
 		pieceMock.setBlockStatus(eq(0), eq(BlockStatus.Needed));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Needed));
 
@@ -472,8 +479,8 @@ public class PeerTest extends EasyMockSupport {
 				.setExtensionBytes(DummyEntity.createRandomBytes(8))
 				.build();
 
-		cut.addBlockRequest(0, 0, 15, PeerDirection.Download);
-		cut.addBlockRequest(0, 15, 15, PeerDirection.Download);
+		cut.addBlockRequest(pieceMock, 0, 15, PeerDirection.Download);
+		cut.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
 
 		assertEquals("Working queue should have two items", 2, cut.getWorkQueueSize(PeerDirection.Download));
 
@@ -549,11 +556,13 @@ public class PeerTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		Piece pieceMock = createMock(Piece.class);
 
 		expect(torrentMock.getFileSet()).andStubReturn(fileSetMock);
 		expect(fileSetMock.getBitfieldBytes()).andStubReturn(new byte[1]);
 		expect(fileSetMock.getBlockSize()).andStubReturn(15);
 		socketMock.enqueueMessage(isA(MessageRequest.class));
+		expect(pieceMock.getIndex()).andReturn(0);
 
 		replayAll();
 
@@ -566,7 +575,7 @@ public class PeerTest extends EasyMockSupport {
 
 		assertEquals("Initial free work time incorrect", 1, cut.getFreeWorkTime());
 
-		cut.addBlockRequest(0, 0, 15, PeerDirection.Download);
+		cut.addBlockRequest(pieceMock, 0, 15, PeerDirection.Download);
 
 		assertEquals("Work time should have been affected by the download job.", 0, cut.getFreeWorkTime());
 

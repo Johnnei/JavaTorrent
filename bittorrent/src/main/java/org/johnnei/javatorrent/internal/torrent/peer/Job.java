@@ -2,6 +2,8 @@ package org.johnnei.javatorrent.internal.torrent.peer;
 
 import java.util.Objects;
 
+import org.johnnei.javatorrent.torrent.files.Piece;
+
 /**
  * A handler to manage the peer their work queue
  *
@@ -10,10 +12,8 @@ import java.util.Objects;
  */
 public class Job {
 
-	/**
-	 * The piece index
-	 */
-	private int pieceIndex;
+	private Piece piece;
+
 	/**
 	 * The block index
 	 */
@@ -24,18 +24,14 @@ public class Job {
 	 */
 	private int length;
 
-	public Job(int pieceIndex, int block) {
-		this.pieceIndex = pieceIndex;
-		this.block = block;
-	}
-
-	public Job(int index, int blockIndex, int length) {
-		this(index, blockIndex);
+	public Job(Piece piece, int blockIndex, int length) {
+		this.piece = Objects.requireNonNull(piece);
+		this.block = blockIndex;
 		this.length = length;
 	}
 
-	public int getPieceIndex() {
-		return pieceIndex;
+	public Piece getPiece() {
+		return piece;
 	}
 
 	public int getBlockIndex() {
@@ -48,7 +44,7 @@ public class Job {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(pieceIndex, block, length);
+		return Objects.hash(piece, block, length);
 	}
 
 	@Override
@@ -63,7 +59,7 @@ public class Job {
 			return false;
 		}
 		Job other = (Job) obj;
-		if (pieceIndex != other.pieceIndex) {
+		if (!Objects.equals(piece, other.piece)) {
 			return false;
 		}
 		if (block != other.block) {
@@ -79,7 +75,7 @@ public class Job {
 
 	@Override
 	public String toString() {
-		return String.format("Job[piece=%d, block=%d, length=%d]", pieceIndex, block, length);
+		return String.format("Job[piece=%s, block=%d, length=%d]", piece, block, length);
 	}
 
 }
