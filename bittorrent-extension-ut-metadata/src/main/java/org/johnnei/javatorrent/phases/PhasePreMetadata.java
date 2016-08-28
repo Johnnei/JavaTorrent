@@ -24,6 +24,10 @@ public class PhasePreMetadata extends AMetadataPhase {
 
 	@Override
 	public boolean isDone() {
+		if (foundMatchingFile) {
+			return true;
+		}
+
 		Optional<MetadataInformation> info = torrent.getPeers().stream()
 				.map(p -> p.getModuleInfo(MetadataInformation.class))
 				.filter(Optional::isPresent)
@@ -44,6 +48,14 @@ public class PhasePreMetadata extends AMetadataPhase {
 	}
 
 	@Override
+	public void onPhaseEnter() {
+		super.onPhaseEnter();
+		if (foundMatchingFile) {
+			fileSize = (int) metadataFile.length();
+		}
+	}
+
+	@Override
 	public void onPhaseExit() {
 		if (metadataFile.length() != fileSize) {
 			try (RandomAccessFile fileAccess = new RandomAccessFile(metadataFile, "rw")){
@@ -53,8 +65,7 @@ public class PhasePreMetadata extends AMetadataPhase {
 			}
 		}
 
-		MetadataFileSet metadata = new MetadataFileSet(torrent, metadataFile);
-		torrent.setMetadata(metadata);
+		torrent.getMetadata().setFileSet(new MetadataFileSet(torrent, metadataFile));
 	}
 
 }

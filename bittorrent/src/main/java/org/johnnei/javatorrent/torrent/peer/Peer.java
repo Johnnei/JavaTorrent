@@ -8,11 +8,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.disk.DiskJobReadBlock;
@@ -191,7 +189,7 @@ public class Peer {
 			return;
 		}
 
-		socket.enqueueMessage(new MessageRequest(piece.getIndex(), byteOffset, blockLength));
+		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(piece, byteOffset, blockLength));
 	}
 
 	/**
@@ -204,14 +202,20 @@ public class Peer {
 	 * @param type The direction of the request.
 	 */
 	public void cancelBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
-		Job job = createJob(torrent.getFileSet().getPiece(pieceIndex), byteOffset, blockLength, type);
+		Piece piece = torrent.getFileSet().getPiece(pieceIndex);
+
+		if (!piece.getFileSet().getRequestFactory().supportsCancellation()) {
+			throw new IllegalArgumentException(String.format("The file set of %s doesn't support cancelling piece requests.", piece));
+		}
+
+		Job job = createJob(piece, byteOffset, blockLength, type);
 		getClientByDirection(type).removeJob(job);
 
 		if (type != PeerDirection.Download) {
 			return;
 		}
 
-		socket.enqueueMessage(new MessageCancel(pieceIndex, byteOffset, blockLength));
+		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createCancelRequestFor(piece, byteOffset, blockLength));
 	}
 
 	/**
@@ -228,7 +232,7 @@ public class Peer {
 
 	private Job createJob(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
 		if (type == PeerDirection.Download) {
-			return new Job(piece, byteOffset / torrent.getFileSet().getBlockSize(), blockLength);
+			return new Job(piece, byteOffset / piece.getFileSet().getBlockSize(), blockLength);
 		} else {
 			return new Job(piece, byteOffset, blockLength);
 		}

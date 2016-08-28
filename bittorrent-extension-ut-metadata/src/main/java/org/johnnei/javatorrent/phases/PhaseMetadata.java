@@ -1,6 +1,10 @@
 package org.johnnei.javatorrent.phases;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -9,8 +13,9 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
-import org.johnnei.javatorrent.torrent.MetadataFileSet;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.MetadataSelect;
 import org.johnnei.javatorrent.torrent.files.Block;
@@ -37,7 +42,7 @@ public class PhaseMetadata extends AMetadataPhase {
 			return true;
 		}
 
-		Optional<MetadataFileSet> metadataFileSet = torrent.getMetadata();
+		Optional<AbstractFileSet> metadataFileSet = torrent.getMetadata().getFileSet();
 		if (!metadataFileSet.isPresent()) {
 			return false;
 		}
@@ -76,7 +81,21 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
-		torrent.setFileSet(new TorrentFileSet(metadataFile, new File(downloadFolderRoot, torrent.getDisplayName())));
+		if (!torrent.isDownloadingMetadata()) {
+			return;
+		}
+
+		try (DataInputStream inputStream = new DataInputStream(new FileInputStream(metadataFile))) {
+			byte[] buffer = new byte[(int) metadataFile.length()];
+			inputStream.readFully(buffer);
+			torrent.getMetadata().initializeMetadata(buffer);
+		} catch (FileNotFoundException e) {
+			throw new IllegalStateException("Metadata file has been removed after completion.", e);
+		} catch (IOException e) {
+			throw new TorrentException("Failed to read metadata", e);
+		}
+
+		torrent.setFileSet(new TorrentFileSet(torrent.getMetadata(), new File(downloadFolderRoot, torrent.getDisplayName())));
 		LOGGER.info("Metadata download completed");
 	}
 

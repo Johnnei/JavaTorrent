@@ -9,6 +9,7 @@ import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -106,14 +107,16 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 	@Test
 	public void testAddHandshakeMetadata() throws IOException {
 		Torrent torrent = createNiceMock(Torrent.class);
+		Metadata metadataMock = createMock(Metadata.class);
 		Peer peerMock = createNiceMock(Peer.class);
 		BencodedMap bencodedMapMock = createMock(BencodedMap.class);
-		MetadataFileSet metadataMock = createNiceMock(MetadataFileSet.class);
+		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrent);
 		expect(torrent.isDownloadingMetadata()).andReturn(false);
-		expect(torrent.getMetadata()).andReturn(Optional.of(metadataMock));
-		expect(metadataMock.getTotalFileSize()).andReturn(512L);
+		expect(torrent.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
+		expect(metadataFileSetMock.getTotalFileSize()).andReturn(512L);
 		bencodedMapMock.put("metadata_size", new BencodedInteger(512));
 
 		replayAll();
@@ -180,7 +183,10 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 	@Test
 	public void testGetTorrentFile() throws IOException {
 		Torrent torrentMock = createMock(Torrent.class);
-		expect(torrentMock.getHash()).andReturn("c8369f0ba4bf6cd87fb13b3437782e2c7820bb38");
+		Metadata metadataMock =createMock(Metadata.class);
+
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getHashString()).andReturn("c8369f0ba4bf6cd87fb13b3437782e2c7820bb38");
 		replayAll();
 
 		File tempFolder = temporaryFolder.newFolder();

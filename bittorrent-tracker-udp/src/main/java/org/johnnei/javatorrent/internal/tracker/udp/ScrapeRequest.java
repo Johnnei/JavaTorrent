@@ -31,7 +31,7 @@ public class ScrapeRequest implements IUdpTrackerPayload {
 	@Override
 	public void writeRequest(OutStream outStream) {
 		torrents.stream()
-				.map(Torrent::getHashArray)
+				.map(torrent -> torrent.getMetadata().getHash())
 				.forEach(outStream::write);
 	}
 

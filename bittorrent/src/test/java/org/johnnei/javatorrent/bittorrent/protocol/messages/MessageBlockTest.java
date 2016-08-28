@@ -4,8 +4,8 @@ import java.time.Duration;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.easymock.EasyMockRunner;
@@ -46,7 +46,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		}, Duration.ofMillis(200));
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		TorrentFileSet fileSetMock = createMock(TorrentFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
@@ -92,7 +92,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		});
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		TorrentFileSet fileSetMock = createMock(TorrentFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
@@ -121,7 +121,7 @@ public class MessageBlockTest extends EasyMockSupport {
 		});
 		Peer peerMock = createMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
+		TorrentFileSet fileSetMock = createMock(TorrentFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(torrentMock.getFileSet()).andReturn(fileSetMock);

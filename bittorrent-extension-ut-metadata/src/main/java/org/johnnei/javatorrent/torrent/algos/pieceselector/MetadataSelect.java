@@ -2,9 +2,8 @@ package org.johnnei.javatorrent.torrent.algos.pieceselector;
 
 import java.util.Optional;
 
-import org.johnnei.javatorrent.torrent.MetadataFileSet;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -19,7 +18,7 @@ public class MetadataSelect implements IPieceSelector {
 
 	@Override
 	public Optional<Piece> getPieceForPeer(Peer p) {
-		Optional<MetadataFileSet> metadataFileSet = torrent.getMetadata();
+		Optional<AbstractFileSet> metadataFileSet = torrent.getMetadata().getFileSet();
 
 		if (!metadataFileSet.isPresent()) {
 			return Optional.empty();

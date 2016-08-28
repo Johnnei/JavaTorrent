@@ -85,7 +85,7 @@ public class HttpTracker implements ITracker {
 				.host(trackerUrl.getHost())
 				.port(trackerUrl.getPort())
 				.addPathSegments(trackerUrl.getPath())
-				.addEncodedQueryParameter("info_hash", hexEncode(torrent.getHashArray()))
+				.addEncodedQueryParameter("info_hash", hexEncode(torrent.getMetadata().getHash()))
 				.addEncodedQueryParameter("peer_id", hexEncode(torrentClient.getPeerId()))
 				.addQueryParameter("port", Integer.toUnsignedString(torrentClient.getDownloadPort()))
 				// TODO Add support for IP field

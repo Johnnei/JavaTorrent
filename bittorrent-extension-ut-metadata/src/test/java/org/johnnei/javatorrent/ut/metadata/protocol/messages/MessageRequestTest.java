@@ -11,6 +11,7 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.Piece;
@@ -38,7 +39,7 @@ public class MessageRequestTest extends EasyMockSupport {
 	private Peer peerMock;
 	private Torrent torrentMock;
 	private Piece pieceMock;
-	private MetadataFileSet metadataMock;
+	private MetadataFileSet metadataFileSetMock;
 	private InStream inStream;
 
 	@Test
@@ -64,11 +65,13 @@ public class MessageRequestTest extends EasyMockSupport {
 		peerMock = createNiceMock(Peer.class);
 		torrentMock = createNiceMock(Torrent.class);
 		pieceMock = createNiceMock(Piece.class);
-		metadataMock = createNiceMock(MetadataFileSet.class);
+		Metadata metadataMock = createMock(Metadata.class);
+		metadataFileSetMock = createNiceMock(MetadataFileSet.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getMetadata()).andReturn(Optional.of(metadataMock));
-		expect(metadataMock.getPiece(0)).andReturn(pieceMock);
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
+		expect(metadataFileSetMock.getPiece(0)).andReturn(pieceMock);
 	}
 
 	@Test

@@ -10,6 +10,7 @@ import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.easymock.EasyMockSupport;
@@ -55,31 +56,39 @@ public class TorrentManagerTest extends EasyMockSupport {
 
 		replayAll();
 
+		Metadata metadata = new Metadata.Builder()
+				.setHash(DummyEntity.createUniqueTorrentHash())
+				.build();
+
+		Metadata metadataTwo = new Metadata.Builder()
+				.setHash(DummyEntity.createUniqueTorrentHash(metadata.getHash()))
+				.build();
+
 		Torrent torrent = new Torrent.Builder()
 				.setName("Test")
-				.setHash(DummyEntity.createUniqueTorrentHash())
+				.setMetadata(metadata)
 				.setTorrentClient(torrentClientMock)
 				.build();
 		Torrent torrentTwo = new Torrent.Builder()
 				.setName("Test Two")
-				.setHash(DummyEntity.createUniqueTorrentHash(torrent.getHashArray()))
+				.setMetadata(metadataTwo)
 				.setTorrentClient(torrentClientMock)
 				.build();
 
 		TorrentManager cut = new TorrentManager(trackerManager);
 		cut.start(torrentClientMock);
 
-		assertNotPresent("Torrent should not have been found yet", cut.getTorrent(torrent.getHashArray()));
+		assertNotPresent("Torrent should not have been found yet", cut.getTorrent(torrent.getMetadata().getHash()));
 
 		cut.addTorrent(torrent);
 
-		assertPresent("Torrent should have been present", cut.getTorrent(torrent.getHashArray()));
+		assertPresent("Torrent should have been present", cut.getTorrent(torrent.getMetadata().getHash()));
 		assertTrue("Collection should have contained torrent", cut.getTorrents().contains(torrent));
 
 		cut.addTorrent(torrentTwo);
 
-		assertEquals("Torrent should have been equal", torrent, cut.getTorrent(torrent.getHashArray()).get());
-		assertEquals("Torrent two should have been equal", torrentTwo, cut.getTorrent(torrentTwo.getHashArray()).get());
+		assertEquals("Torrent should have been equal", torrent, cut.getTorrent(torrent.getMetadata().getHash()).get());
+		assertEquals("Torrent two should have been equal", torrentTwo, cut.getTorrent(torrentTwo.getMetadata().getHash()).get());
 		assertTrue("Collection should have contained torrent", cut.getTorrents().contains(torrent));
 		assertTrue("Collection should have contained torrent two", cut.getTorrents().contains(torrentTwo));
 
@@ -113,14 +122,22 @@ public class TorrentManagerTest extends EasyMockSupport {
 
 		replayAll();
 
+		Metadata metadata = new Metadata.Builder()
+				.setHash(DummyEntity.createUniqueTorrentHash())
+				.build();
+
+		Metadata metadataTwo = new Metadata.Builder()
+				.setHash(DummyEntity.createUniqueTorrentHash(metadata.getHash()))
+				.build();
+
 		Torrent torrent = new Torrent.Builder()
 				.setName("Test")
-				.setHash(DummyEntity.createUniqueTorrentHash())
+				.setMetadata(metadata)
 				.setTorrentClient(torrentClientMock)
 				.build();
 		Torrent torrentTwo = new Torrent.Builder()
 				.setName("Test Two")
-				.setHash(DummyEntity.createUniqueTorrentHash(torrent.getHashArray()))
+				.setMetadata(metadataTwo)
 				.setTorrentClient(torrentClientMock)
 				.build();
 

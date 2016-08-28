@@ -9,7 +9,7 @@ import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.protocol.extension.IExtension;
-import org.johnnei.javatorrent.torrent.MetadataFileSet;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
@@ -82,9 +82,13 @@ public class UTMetadataExtension implements IExtension {
 			return;
 		}
 
-		Optional<MetadataFileSet> metadataFile = peer.getTorrent().getMetadata();
-		int metadataSize = (int) metadataFile.get().getTotalFileSize();
-		bencoder.put("metadata_size", new BencodedInteger(metadataSize));
+		Optional<AbstractFileSet> metadataFile = peer.getTorrent().getMetadata().getFileSet();
+		// TODO(Johnnei): Ensure that the MetadataRequests work when the metadata phases aren't configured.
+		// There is a window (and a valid path when the phases aren't configured) where ut_metadata is not able to supply the metadata size.
+		metadataFile.ifPresent(fileSet -> {
+			int metadataSize = (int) fileSet.getTotalFileSize();
+			bencoder.put("metadata_size", new BencodedInteger(metadataSize));
+		});
 	}
 
 	@Override
@@ -102,7 +106,7 @@ public class UTMetadataExtension implements IExtension {
 	 * @return The metadata file location for the given torrent.
 	 */
 	public File getTorrentFile(Torrent torrent) {
-		return new File(torrentFileFolder, String.format("%s.torrent", torrent.getHash().toLowerCase()));
+		return new File(torrentFileFolder, String.format("%s.torrent", torrent.getMetadata().getHashString().toLowerCase()));
 	}
 
 	/**

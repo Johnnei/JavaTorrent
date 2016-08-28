@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.phases;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -65,6 +66,11 @@ public class PhaseData implements IDownloadPhase {
 	public void onPhaseEnter() {
 		torrent.checkProgress();
 		torrent.setPieceSelector(new FullPieceSelect(torrent));
+		File downloadFolder = torrent.getFileSet().getDownloadFolder();
+
+		if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
+			throw new IllegalStateException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
+		}
 	}
 
 	@Override

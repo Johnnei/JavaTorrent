@@ -4,19 +4,18 @@ import java.io.File;
 
 import org.johnnei.javatorrent.test.DummyEntity;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests {@link MetadataFileSet}
  */
 public class MetadataFileSetTest {
 
-	private static final String SINGLE_FILE_TORRENT = "gimp-2.8.16-setup-1.exe.torrent";
+	private static final String SINGLE_FILE_TORRENT = "/org/johnnei/javatorrent/phases/gimp-2.8.16-setup-1.exe.torrent";
 
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -53,8 +52,8 @@ public class MetadataFileSetTest {
 		File torrentFile = new File(TorrentFileSetTest.class.getResource(SINGLE_FILE_TORRENT).toURI());
 		MetadataFileSet cut = new MetadataFileSet(DummyEntity.createUniqueTorrent(), torrentFile);
 
-		assertEquals("Piece size should be equal to the file size", torrentFile.length(), cut.getPieceSize());
-		assertEquals("Total size should be equal to the file size", torrentFile.length(), cut.getTotalFileSize());
+		Assert.assertEquals("Piece size should be equal to the file size", torrentFile.length(), cut.getPieceSize());
+		Assert.assertEquals("Total size should be equal to the file size", torrentFile.length(), cut.getTotalFileSize());
 	}
 
 	@Test

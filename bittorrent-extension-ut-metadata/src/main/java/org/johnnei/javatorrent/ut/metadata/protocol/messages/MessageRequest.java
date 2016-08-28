@@ -41,7 +41,7 @@ public class MessageRequest extends AbstractMessage {
 			MessageExtension extendedMessage = new MessageExtension(peerExtensions.get().getExtensionId(UTMetadata.NAME), mr);
 			peer.getBitTorrentSocket().enqueueMessage(extendedMessage);
 		} else {
-			Piece piece = peer.getTorrent().getMetadata().get().getPiece(0);
+			Piece piece = peer.getTorrent().getMetadata().getFileSet().get().getPiece(0);
 
 			peer.getTorrent().addDiskJob(new DiskJobReadBlock(
 					piece,

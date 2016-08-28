@@ -50,7 +50,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 			assertEquals("No tracker listed, list should be empty", 0, magnetLink.getTrackerUrls().size());
 
 			Torrent torrent = magnetLink.getTorrent();
-			assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+			assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		}
 
 		verifyAll();
@@ -81,7 +81,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 			assertEquals("No tracker listed, list should be empty", 0, magnetLink.getTrackerUrls().size());
 
 			Torrent torrent = magnetLink.getTorrent();
-			assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+			assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		}
 
 		verifyAll();
@@ -106,7 +106,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 		assertTrue("Tracker udp://localhost:80 is missing", magnetLink.getTrackerUrls().contains("udp://localhost:80"));
 
 		Torrent torrent = magnetLink.getTorrent();
-		assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+		assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		assertEquals("Incorrect name", "GIMP 2.8.16-setup-1.exe", torrent.getDisplayName());
 	}
 
@@ -129,7 +129,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 		assertTrue("Tracker udp://localhost:80 is missing", magnetLink.getTrackerUrls().contains("udp://localhost:80"));
 
 		Torrent torrent = magnetLink.getTorrent();
-		assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+		assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		assertEquals("Incorrect name", "GIMP 2.8.16-setup-1.exe", torrent.getDisplayName());
 	}
 
@@ -168,7 +168,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 		assertEquals("No tracker listed, list should be empty", 0, magnetLink.getTrackerUrls().size());
 
 		Torrent torrent = magnetLink.getTorrent();
-		assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+		assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		assertEquals("Incorrect name", "GIMP 2.8.16+setup-1#GA.exe", torrent.getDisplayName());
 	}
 

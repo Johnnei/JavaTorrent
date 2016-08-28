@@ -60,7 +60,7 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 			byte[] data = new byte[(int)fileAccess.length()];
 			fileAccess.seek(0);
 			fileAccess.read(data, 0, data.length);
-			if(Arrays.equals(SHA1.hash(data), torrent.getHashArray())) {
+			if(Arrays.equals(SHA1.hash(data), torrent.getMetadata().getHash())) {
 				foundMatchingFile = true;
 				LOGGER.info("Found pre-downloaded Torrent file");
 			}

@@ -1,5 +1,22 @@
 package org.johnnei.javatorrent.internal.tracker.udp;
 
+import java.time.Clock;
+import java.util.Collections;
+import java.util.Optional;
+
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.tracker.UdpTracker;
+
+import org.easymock.EasyMockRunner;
+import org.easymock.EasyMockSupport;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import static java.util.Arrays.asList;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
@@ -7,36 +24,19 @@ import static org.johnnei.javatorrent.test.TestUtils.copySection;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.time.Clock;
-import java.util.Collections;
-import java.util.Optional;
-
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-
-import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.test.DummyEntity;
-import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
-import org.johnnei.javatorrent.tracker.UdpTracker;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 @RunWith(EasyMockRunner.class)
 public class ScrapeRequestTest extends EasyMockSupport {
 
 	@Test
 	public void testWriteRequest() {
 		Torrent torrentOne = DummyEntity.createUniqueTorrent();
-		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
-		Torrent torrentThree = DummyEntity.createUniqueTorrent();
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrentOne);
+		Torrent torrentThree = DummyEntity.createUniqueTorrent(torrentOne, torrentTwo);
 
 		byte[] expectedOutput = new byte[60];
-		copySection(torrentOne.getHashArray(), expectedOutput, 0);
-		copySection(torrentTwo.getHashArray(), expectedOutput, 20);
-		copySection(torrentThree.getHashArray(), expectedOutput, 40);
+		copySection(torrentOne.getMetadata().getHash(), expectedOutput, 0);
+		copySection(torrentTwo.getMetadata().getHash(), expectedOutput, 20);
+		copySection(torrentThree.getMetadata().getHash(), expectedOutput, 40);
 
 		ScrapeRequest request = new ScrapeRequest(asList(torrentOne, torrentTwo, torrentThree));
 		OutStream outStream = new OutStream();

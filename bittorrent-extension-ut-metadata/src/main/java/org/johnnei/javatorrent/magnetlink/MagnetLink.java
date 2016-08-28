@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.apache.commons.codec.binary.Base32;
@@ -87,7 +88,7 @@ public class MagnetLink {
 					torrentBuilder.setName(hashString);
 				}
 
-				torrentBuilder.setHash(base.getExtractFunction().apply(hashString.toUpperCase()));
+				torrentBuilder.setMetadata(new Metadata.Builder().setHash(base.getExtractFunction().apply(hashString.toUpperCase())).build());
 				return;
 			}
 		}
