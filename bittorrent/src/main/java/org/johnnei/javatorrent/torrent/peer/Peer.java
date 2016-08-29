@@ -196,14 +196,12 @@ public class Peer {
 	 * Removes the download or upload job from the peer. In case of a download request this will also send out a
 	 * {@link org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel} for the given block.
 	 *
-	 * @param pieceIndex The index of the requested piece.
+	 * @param piece The piece to cancel.
 	 * @param byteOffset The offset in bytes within the piece.
 	 * @param blockLength The amount of bytes requested.
 	 * @param type The direction of the request.
 	 */
-	public void cancelBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
-		Piece piece = torrent.getFileSet().getPiece(pieceIndex);
-
+	public void cancelBlockRequest(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
 		if (!piece.getFileSet().getRequestFactory().supportsCancellation()) {
 			throw new IllegalArgumentException(String.format("The file set of %s doesn't support cancelling piece requests.", piece));
 		}
@@ -219,13 +217,11 @@ public class Peer {
 	}
 
 	/**
-	 * Indicates that we've successfully received the requested block from the peer.
-	 * @param pieceIndex The index of the requested piece.
+	 * Indicates that we've received the requested block from the peer.
+	 * @param piece The requested piece.
 	 * @param byteOffset The offset in bytes within the piece.
 	 */
-	public void onReceivedBlock(int pieceIndex, int byteOffset) {
-		Piece piece = torrent.getFileSet().getPiece(pieceIndex);
-
+	public void onReceivedBlock(Piece piece, int byteOffset) {
 		int blockLength = piece.getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
 		getClientByDirection(PeerDirection.Download).removeJob(createJob(piece, byteOffset, blockLength, PeerDirection.Download));
 	}

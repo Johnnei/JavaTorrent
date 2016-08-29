@@ -13,17 +13,18 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockSupport;
 import org.junit.Test;
 
-import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link MessageReject}
  */
-public class MessageRejectTest extends EasyMockSupport {
+public class MessageRejectTest {
 
 	@Test
 	public void testWrite() {
@@ -43,50 +44,44 @@ public class MessageRejectTest extends EasyMockSupport {
 	public void testReadAndProcess() {
 		InStream inStream = new InStream("d8:msg_typei2e5:piecei5ee".getBytes(Charset.forName("UTF-8")));
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createNiceMock(Torrent.class);
-		Metadata metadataMock = createMock(Metadata.class);
-		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
-		Piece pieceMock = createNiceMock(Piece.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		Metadata metadataMock = mock(Metadata.class);
+		MetadataFileSet metadataFileSetMock = mock(MetadataFileSet.class);
+		Piece pieceMock = mock(Piece.class);
 
-		expect(peerMock.getTorrent()).andReturn(torrentMock);
-		expect(torrentMock.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
-		expect(metadataFileSetMock.getPiece(0)).andReturn(pieceMock);
-		pieceMock.setBlockStatus(5, BlockStatus.Needed);
-		peerMock.onReceivedBlock(0, 5);
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getFileSet()).thenReturn(Optional.of(metadataFileSetMock));
+		when(metadataFileSetMock.getPiece(0)).thenReturn(pieceMock);
 
 		MessageReject cut = new MessageReject();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(pieceMock).setBlockStatus(5, BlockStatus.Needed);
+		verify(peerMock).onReceivedBlock(pieceMock, 5);
 	}
 
 	@Test
 	public void testReadAndProcessNoMetadata() {
 		InStream inStream = new InStream("d8:msg_typei2e5:piecei5ee".getBytes(Charset.forName("UTF-8")));
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createNiceMock(Torrent.class);
-		BitTorrentSocket socketMock = createNiceMock(BitTorrentSocket.class);
-		Metadata metadataMock = createMock(Metadata.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
+		Metadata metadataMock = mock(Metadata.class);
 
-		expect(peerMock.getTorrent()).andReturn(torrentMock);
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		expect(torrentMock.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getFileSet()).andReturn(Optional.empty());
-		socketMock.close();
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getFileSet()).thenReturn(Optional.empty());
 
 		MessageReject cut = new MessageReject();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(socketMock).close();
 	}
 
 	@Test

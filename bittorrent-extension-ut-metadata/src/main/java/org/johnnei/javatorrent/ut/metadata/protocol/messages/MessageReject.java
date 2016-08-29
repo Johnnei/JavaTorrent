@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
 
@@ -34,8 +35,9 @@ public class MessageReject extends AbstractMessage {
 			return;
 		}
 
-		optionalMetadata.get().getPiece(0).setBlockStatus(blockIndex, BlockStatus.Needed);
-		peer.onReceivedBlock(0, blockIndex);
+		Piece piece = optionalMetadata.get().getPiece(0);
+		piece.setBlockStatus(blockIndex, BlockStatus.Needed);
+		peer.onReceivedBlock(piece, blockIndex);
 	}
 
 	@Override

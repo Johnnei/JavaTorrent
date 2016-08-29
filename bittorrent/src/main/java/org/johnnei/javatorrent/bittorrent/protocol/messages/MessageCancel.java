@@ -19,7 +19,7 @@ public class MessageCancel extends AbstractBlockMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.cancelBlockRequest(index, offset, length, PeerDirection.Upload);
+		peer.cancelBlockRequest(peer.getTorrent().getFileSet().getPiece(index), offset, length, PeerDirection.Upload);
 	}
 
 	@Override

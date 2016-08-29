@@ -282,7 +282,7 @@ public class PeerTest {
 		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Download);
 		assertEquals("Working queue should have two items", 2, peer.getWorkQueueSize(PeerDirection.Download));
 
-		peer.cancelBlockRequest(0, 15, 15, PeerDirection.Download);
+		peer.cancelBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
 
 		assertEquals("Working queue should have one item anymore", 1, peer.getWorkQueueSize(PeerDirection.Download));
 		verify(socketMock, times(3)).enqueueMessage(any());
@@ -309,7 +309,7 @@ public class PeerTest {
 		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Upload);
 		assertEquals("Working queue should have two items", 2, peer.getWorkQueueSize(PeerDirection.Upload));
 
-		peer.cancelBlockRequest(0, 15, 15, PeerDirection.Upload);
+		peer.cancelBlockRequest(pieceMock, 15, 15, PeerDirection.Upload);
 
 		assertEquals("Working queue should have one item anymore", 1, peer.getWorkQueueSize(PeerDirection.Upload));
 	}
@@ -336,7 +336,7 @@ public class PeerTest {
 		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Download);
 		assertEquals("Working queue should have two items", 2, peer.getWorkQueueSize(PeerDirection.Download));
 
-		peer.onReceivedBlock(0, 15);
+		peer.onReceivedBlock(pieceMock, 15);
 
 		assertEquals("Working queue should have one item anymore", 1, peer.getWorkQueueSize(PeerDirection.Download));
 		verify(requestFactoryMock).createRequestFor(peer, pieceMock, 15, 15);
