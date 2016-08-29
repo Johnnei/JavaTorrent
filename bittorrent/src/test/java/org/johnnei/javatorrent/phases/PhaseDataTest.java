@@ -197,7 +197,7 @@ public class PhaseDataTest {
 		cut.process();
 
 		verify(bitTorrentSocketMock).enqueueMessage(any());
-		verify(requestFactoryMock).createRequestFor(piece, 0, 4);
+		verify(requestFactoryMock).createRequestFor(peer, piece, 0, 4);
 	}
 
 	@Test
@@ -229,7 +229,7 @@ public class PhaseDataTest {
 		cut.process();
 
 		verify(bitTorrentSocketMock, times(2)).enqueueMessage(any());
-		verify(requestFactoryMock).createRequestFor(piece,0 , 4);
+		verify(requestFactoryMock).createRequestFor(peer, piece, 0, 4);
 	}
 
 	@Test

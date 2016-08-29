@@ -339,8 +339,8 @@ public class PeerTest {
 		peer.onReceivedBlock(0, 15);
 
 		assertEquals("Working queue should have one item anymore", 1, peer.getWorkQueueSize(PeerDirection.Download));
-		verify(requestFactoryMock).createRequestFor(pieceMock, 15, 15);
-		verify(requestFactoryMock).createRequestFor(pieceMock, 30, 15);
+		verify(requestFactoryMock).createRequestFor(peer, pieceMock, 15, 15);
+		verify(requestFactoryMock).createRequestFor(peer, pieceMock, 30, 15);
 		verify(socketMock, times(2)).enqueueMessage(any());
 	}
 
@@ -534,7 +534,7 @@ public class PeerTest {
 
 		assertEquals("Work time should have been affected by the download job.", 0, cut.getFreeWorkTime());
 		verify(socketMock).enqueueMessage(any());
-		verify(requestMock).createRequestFor(pieceMock, 0, 15);
+		verify(requestMock).createRequestFor(cut, pieceMock, 0, 15);
 
 		cut.setRequestLimit(5);
 

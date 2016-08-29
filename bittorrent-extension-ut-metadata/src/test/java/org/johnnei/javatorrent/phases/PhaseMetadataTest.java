@@ -7,10 +7,8 @@ import java.util.Optional;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
-import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
-import org.johnnei.javatorrent.protocol.messages.extension.MessageExtension;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -21,6 +19,7 @@ import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
 
 import org.easymock.Capture;
@@ -116,7 +115,6 @@ public class PhaseMetadataTest extends EasyMockSupport {
 		Piece pieceMockOne = createNiceMock(Piece.class);
 		Piece pieceMockTwo = createNiceMock(Piece.class);
 		Block blockMock = createNiceMock(Block.class);
-		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
 
 		Peer peerWithoutExtensions = createMock("peerWithoutExtensions", Peer.class);
 		Peer peerWithoutUtMetadata = createMock("peerWithoutUtMetadata", Peer.class);
@@ -143,7 +141,6 @@ public class PhaseMetadataTest extends EasyMockSupport {
 
 		expect(extensionWithoutUtMetadata.hasExtension(UTMetadata.NAME)).andReturn(false);
 		expect(extensionWithUtMetadata.hasExtension(UTMetadata.NAME)).andStubReturn(true);
-		expect(extensionWithUtMetadata.getExtensionId(UTMetadata.NAME)).andReturn(1);
 
 		expect(pieceSelectorMock.getPieceForPeer(eq(peerWithEmptyPiece))).andReturn(Optional.empty());
 		expect(pieceSelectorMock.getPieceForPeer(eq(peerWithThreeBlocks))).andReturn(Optional.of(pieceMockOne));
@@ -161,8 +158,7 @@ public class PhaseMetadataTest extends EasyMockSupport {
 		expect(pieceMockOne.getRequestBlock()).andReturn(Optional.of(blockMock));
 		expect(pieceMockTwo.getRequestBlock()).andReturn(Optional.empty());
 
-		expect(peerWithThreeBlocks.getBitTorrentSocket()).andReturn(socketMock);
-		socketMock.enqueueMessage(isA(MessageExtension.class));
+		peerWithThreeBlocks.addBlockRequest(pieceMockOne, 0, 0, PeerDirection.Download);
 
 		replayAll();
 

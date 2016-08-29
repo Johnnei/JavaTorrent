@@ -189,7 +189,7 @@ public class Peer {
 			return;
 		}
 
-		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(piece, byteOffset, blockLength));
+		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(this, piece, byteOffset, blockLength));
 	}
 
 	/**

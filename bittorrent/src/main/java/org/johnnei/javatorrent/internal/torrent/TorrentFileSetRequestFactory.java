@@ -5,6 +5,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 
 /**
  * Implementation of {@link IFileSetRequestFactory} for {@link org.johnnei.javatorrent.torrent.TorrentFileSet}
@@ -12,7 +13,7 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 public class TorrentFileSetRequestFactory implements IFileSetRequestFactory {
 
 	@Override
-	public IMessage createRequestFor(Piece piece, int byteOffset, int length) {
+	public IMessage createRequestFor(Peer peer, Piece piece, int byteOffset, int length) {
 		return new MessageRequest(piece.getIndex(), byteOffset, length);
 	}
 
