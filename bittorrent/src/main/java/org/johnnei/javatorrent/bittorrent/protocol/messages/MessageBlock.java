@@ -5,6 +5,7 @@ import java.time.Duration;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 public class MessageBlock implements IMessage {
@@ -42,13 +43,15 @@ public class MessageBlock implements IMessage {
 
 	@Override
 	public void process(Peer peer) {
-		peer.onReceivedBlock(index, offset);
+		TorrentFileSet torrentFileSet = peer.getTorrent().getFileSet();
+
+		peer.onReceivedBlock(torrentFileSet.getPiece(index), offset);
 		if (data.length <= 0) {
 			peer.addStrike(1);
 			return;
 		}
 
-		peer.getTorrent().onReceivedBlock(peer.getTorrent().getFileSet(), index, offset, data);
+		peer.getTorrent().onReceivedBlock(torrentFileSet, index, offset, data);
 
 		peer.addStrike(-1);
 		if (readDuration.minusSeconds(1).isNegative()) { // Set by extreme speed

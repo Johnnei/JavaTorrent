@@ -1,33 +1,29 @@
 package org.johnnei.javatorrent.torrent;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 
-import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.utils.StringUtils;
+import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.fileset.FileEntry;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.powermock.reflect.Whitebox;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link TorrentFileSet}
  */
 public class TorrentFileSetTest {
-
-	private static final String SINGLE_FILE_TORRENT = "gimp-2.8.16-setup-1.exe.torrent";
-
-	private static final String MULTI_FILE_TORRENT = "my.sql.apache.2.2.php.notepad.torrent";
 
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -35,81 +31,45 @@ public class TorrentFileSetTest {
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
-	private TorrentFileSet getMultiFileTorrent() throws Exception {
-		File file = new File(TorrentFileSetTest.class.getResource(MULTI_FILE_TORRENT).toURI());
-		return new TorrentFileSet(file, temporaryFolder.newFolder());
+	private TorrentFileSet getSingleFileTorrent() throws IOException {
+		Metadata metadataMock = mock(Metadata.class);
+
+		when(metadataMock.getPieceSize()).thenReturn(32_768L);
+		when(metadataMock.getFileEntries()).thenReturn(Collections.singletonList(new FileEntry("file1.txt", 49_152, 0)));
+		when(metadataMock.getPieceHashes()).thenReturn(Arrays.asList(
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20)
+		));
+
+		return new TorrentFileSet(metadataMock, temporaryFolder.newFolder());
 	}
 
-	private TorrentFileSet getSingleFileTorrent() throws Exception {
-		File file = new File(TorrentFileSetTest.class.getResource(SINGLE_FILE_TORRENT).toURI());
-		return new TorrentFileSet(file, temporaryFolder.newFolder());
-	}
+	private TorrentFileSet getMultiFileTorrent() throws IOException {
+		Metadata metadataMock = mock(Metadata.class);
 
-	@Test
-	public void testSingleFileTorrentFile() throws Exception {
-		TorrentFileSet cut = getSingleFileTorrent();
+		when(metadataMock.getPieceSize()).thenReturn(4_194_304L);
+		when(metadataMock.getFileEntries()).thenReturn(Arrays.asList(
+				new FileEntry("file1.txt", 7_680, 0),
+				new FileEntry("file2.txt", 2_093_312, 7_680),
+				new FileEntry("file3.txt", 2_093_312, 2_100_992)
+		));
+		when(metadataMock.getPieceHashes()).thenReturn(Arrays.asList(
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20),
+				DummyEntity.createRandomBytes(20)
+		));
 
-		assertEquals("Should have had a single file info", 1, cut.getFiles().size());
-		assertEquals("Piece size has not been correctly copied from the metadata", 262144, cut.getPieceSize());
-
-		FileInfo fileInfo = cut.getFiles().get(0);
-		assertEquals("Filename should have been gimp-2.8.16-setup-1.exe", "gimp-2.8.16-setup-1.exe", fileInfo.getFileName());
-		assertEquals("Filesize should have been 743440384", 96823808L, fileInfo.getSize());
-		assertEquals("Piece count should have been 1418", 370, fileInfo.getPieceCount());
-		assertEquals("First byte offset should have been 0", 0L, fileInfo.getFirstByteOffset());
-
-		try (BufferedReader inputStream = new BufferedReader(new InputStreamReader(new FileInputStream(
-				new File(TorrentFileSetTest.class.getResource(SINGLE_FILE_TORRENT + ".hashes").toURI()))))) {
-			for (Piece piece : cut.pieces) {
-				String pieceHash = inputStream.readLine();
-				byte[] pieceHashBytes = Whitebox.getInternalState(piece, "expectedHash");
-				assertEquals(
-						String.format("Piece %d hash should have matched the one in the .hashes file", piece.getIndex()),
-						pieceHash,
-						StringUtils.byteArrayToString(pieceHashBytes));
-			}
-		}
-
-		assertEquals("Incorrect amount of bytes to cover all pieces", 47, cut.getBitfieldBytes().length);
-		assertEquals("Incorrect amount of blocks in first piece", 16, cut.getPiece(0).getBlockCount());
-		assertEquals("Incorrect amount of blocks in last piece", 6, cut.getPiece(cut.getPieceCount() - 1).getBlockCount());
-	}
-
-	@Test
-	public void testMultiFileTorrentFile() throws Exception {
-		TorrentFileSet cut = getMultiFileTorrent();
-
-		assertEquals("Should have had a single file info", 6, cut.getFiles().size());
-
-		final String[] fileNames = {
-				"apache_2.2.9-win32-x86-openssl-0.9.8h-r2.msi", "HowToInstallGuide.txt", "httpd.conf",
-				"mysql-essential-5.0.51b-win32.msi", "npp.5.6.8.Installer.exe", "php-5.3.2-src.zip"
-		};
-		final long[] fileSizes = { 5414400, 547, 18124, 23816192, 3336170, 19823435 };
-		final int[] pieceCounts = { 83, 1, 1, 365, 52, 304 };
-		final long[] firstByteOffsets = { 0, 5414400, 5414947, 5433071, 29249263, 32585433 };
-
-		for (int i = 0; i < cut.getFiles().size(); i++) {
-			FileInfo fileInfo = cut.getFiles().get(i);
-			assertEquals(String.format("Incorrect filename for entry %d", i), fileNames[i], fileInfo.getFileName());
-			assertEquals(String.format("Incorrect file size for entry %d", i), fileSizes[i], fileInfo.getSize());
-			assertEquals(String.format("Incorrect piece count for entry %d", i), pieceCounts[i], fileInfo.getPieceCount());
-			assertEquals(String.format("Incorrect first byte offset for entry %d", i), firstByteOffsets[i], fileInfo.getFirstByteOffset());
-		}
-
-		try (BufferedReader inputStream = new BufferedReader(new InputStreamReader(new FileInputStream(
-				new File(TorrentFileSetTest.class.getResource(MULTI_FILE_TORRENT + ".hashes").toURI()))))) {
-			for (Piece piece : cut.pieces) {
-				String pieceHash = inputStream.readLine();
-				byte[] pieceHashBytes = Whitebox.getInternalState(piece, "expectedHash");
-				assertEquals(
-						String.format("Piece %d hash should have matched the one in the .hashes file", piece.getIndex()),
-						pieceHash,
-						StringUtils.byteArrayToString(pieceHashBytes));
-			}
-		}
-
-		assertEquals("Incorrect amount of bytes to cover all pieces", 100, cut.getBitfieldBytes().length);
+		return new TorrentFileSet(metadataMock, temporaryFolder.newFolder());
 	}
 
 	@Test
@@ -120,8 +80,8 @@ public class TorrentFileSetTest {
 				cut.getBlockSize());
 
 		assertEquals("Incorrect file info got returned for the first byte", cut.getFiles().get(0), cut.getFileForBytes(0, 0, 0));
-		assertEquals("Incorrect info got returned for the last byte in the first file", cut.getFiles().get(0), cut.getFileForBytes(82, 2, 7679));
-		assertEquals("Incorrect file info got returned for the first byte in the second file", cut.getFiles().get(1), cut.getFileForBytes(82, 2, 7680));
+		assertEquals("Incorrect info got returned for the last byte in the first file", cut.getFiles().get(0), cut.getFileForBytes(0, 0, 7679));
+		assertEquals("Incorrect file info got returned for the first byte in the second file", cut.getFiles().get(1), cut.getFileForBytes(0, 0, 7680));
 	}
 
 	@Test
@@ -161,7 +121,7 @@ public class TorrentFileSetTest {
 		thrown.expect(IllegalArgumentException.class);
 		thrown.expectMessage("Block");
 		TorrentFileSet cut = getSingleFileTorrent();
-		cut.getFileForBytes(0, Integer.MAX_VALUE, 0);
+		cut.getFileForBytes(0, cut.getPieceCount(), 0);
 	}
 
 	@Test
@@ -169,35 +129,27 @@ public class TorrentFileSetTest {
 		thrown.expect(IllegalArgumentException.class);
 		thrown.expectMessage("Byte");
 		TorrentFileSet cut = getSingleFileTorrent();
-		cut.getFileForBytes(0, 0, Integer.MAX_VALUE);
-	}
-
-	@Test
-	public void testConstructorNonExistingTorrent() {
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("Torrent file");
-		new TorrentFileSet(new File("dfagsdfasjghfh.torrent"), new File("fdafsd"));
+		cut.getFileForBytes(0, 0, (int) (cut.getPieceSize()));
 	}
 
 	@Test
 	public void testConstructorNullTorrent() {
 		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("Torrent file");
+		thrown.expectMessage("Torrent metadata");
 		new TorrentFileSet(null, null);
 	}
 	@Test
 	public void testConstructorNullDownloadFolder() throws Exception {
-		File file = new File(TorrentFileSetTest.class.getResource(MULTI_FILE_TORRENT).toURI());
 		thrown.expect(IllegalArgumentException.class);
 		thrown.expectMessage("Download folder");
-		new TorrentFileSet(file, null);
+		new TorrentFileSet(new Metadata.Builder().setHash(DummyEntity.createUniqueTorrentHash()).build(), null);
 	}
 
 	@Test
 	public void testSetHavingPiece() throws Exception {
 		TorrentFileSet cut = getSingleFileTorrent();
 
-		byte[] expectedBitfield = new byte[47];
+		byte[] expectedBitfield = new byte[1];
 
 		assertFalse("Piece is completed before interaction.", cut.hasPiece(1));
 		assertArrayEquals("Bitfield is dirty before interaction.", expectedBitfield, cut.getBitfieldBytes());
@@ -254,14 +206,14 @@ public class TorrentFileSetTest {
 	public void testGetTotalFileSize() throws Exception {
 		TorrentFileSet cut = getMultiFileTorrent();
 
-		assertEquals("Incorrect total size", 52408868, cut.getTotalFileSize());
+		assertEquals("Incorrect total size", 4194304, cut.getTotalFileSize());
 	}
 
 	@Test
 	public void testCountRemainingBytes() throws Exception {
 		TorrentFileSet cut = getSingleFileTorrent();
 
-		assertEquals("All bytes should have been remaining", 96823808, cut.countRemainingBytes());
+		assertEquals("All bytes should have been remaining", 49_152, cut.countRemainingBytes());
 	}
 
 	@Test

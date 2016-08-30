@@ -2,24 +2,25 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import static org.easymock.EasyMock.eq;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link MessageRequest}
  */
-@RunWith(EasyMockRunner.class)
-public class MessageCancelTest extends EasyMockSupport {
+public class MessageCancelTest {
 
 	@Test
 	public void testWrite() {
@@ -44,17 +45,20 @@ public class MessageCancelTest extends EasyMockSupport {
 				0, 0, 0, 3
 		});
 
-		Peer peerMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
+		Piece pieceMock = mock(Piece.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet torrentFileSet = mock(TorrentFileSet.class);
 
-		peerMock.cancelBlockRequest(eq(1), eq(2), eq(3), eq(PeerDirection.Upload));
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.getFileSet()).thenReturn(torrentFileSet);
+		when(torrentFileSet.getPiece(1)).thenReturn(pieceMock);
 
 		MessageCancel cut = new MessageCancel();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).cancelBlockRequest(pieceMock, 2, 3, PeerDirection.Upload);
 	}
 
 }

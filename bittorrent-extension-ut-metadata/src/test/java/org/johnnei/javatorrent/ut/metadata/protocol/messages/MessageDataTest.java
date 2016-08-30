@@ -7,6 +7,7 @@ import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.test.TestUtils;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -60,14 +61,16 @@ public class MessageDataTest extends EasyMockSupport {
 
 		Peer peerMock = createNiceMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
-		MetadataFileSet metadataMock = createNiceMock(MetadataFileSet.class);
+		Metadata metadataMock = createMock(Metadata.class);
+		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
 
-		expect(metadataMock.getBlockSize()).andReturn(16384);
+		expect(metadataFileSetMock.getBlockSize()).andReturn(16384);
 		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(torrentMock.getMetadata()).andReturn(Optional.of(metadataMock));
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 
-		torrentMock.onReceivedBlock(eq(metadataMock), eq(0), eq(42 * 16384), aryEq(dataBytes));
+		torrentMock.onReceivedBlock(eq(metadataFileSetMock), eq(0), eq(42 * 16384), aryEq(dataBytes));
 
 		replayAll();
 
@@ -112,11 +115,13 @@ public class MessageDataTest extends EasyMockSupport {
 		Peer peerMock = createNiceMock(Peer.class);
 		Torrent torrentMock = createMock(Torrent.class);
 		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
+		Metadata metadataMock = createMock(Metadata.class);
 
 		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
 		expect(peerMock.getBitTorrentSocket()).andStubReturn(socketMock);
 		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(torrentMock.getMetadata()).andReturn(Optional.empty());
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.empty());
 		socketMock.close();
 
 		replayAll();

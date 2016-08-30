@@ -12,6 +12,7 @@ import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.ExecutorServiceMock;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 
@@ -113,7 +114,9 @@ public class HttpTrackerIT {
 		when(torrentClientMock.getPeerConnector()).thenReturn(peerConnectorMock);
 
 		Torrent torrentMock = mock(Torrent.class);
-		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+		Metadata metadataMock = mock(Metadata.class);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
 
 		HttpTracker cut = new HttpTracker.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -162,7 +165,9 @@ public class HttpTrackerIT {
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
-		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+		Metadata metadataMock = mock(Metadata.class);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
 
 		HttpTracker cut = new HttpTracker.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -211,7 +216,9 @@ public class HttpTrackerIT {
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
-		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+		Metadata metadataMock = mock(Metadata.class);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
 
 		HttpTracker cut = new HttpTracker.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -259,7 +266,9 @@ public class HttpTrackerIT {
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
-		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+		Metadata metadataMock = mock(Metadata.class);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
 
 		HttpTracker cut = new HttpTracker.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -312,7 +321,9 @@ public class HttpTrackerIT {
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
-		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+		Metadata metadataMock = mock(Metadata.class);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
 
 		HttpTracker cut = new HttpTracker.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -344,7 +355,9 @@ public class HttpTrackerIT {
 		when(torrentClientMock.getExecutorService()).thenReturn(executorServiceMock);
 
 		Torrent torrentMock = mock(Torrent.class);
-		when(torrentMock.getHashArray()).thenReturn(torrentHash);
+		Metadata metadataMock = mock(Metadata.class);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
 
 		HttpTracker tracker = new HttpTracker.Builder()
 				.setTorrentClient(torrentClientMock)

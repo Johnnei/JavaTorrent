@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.internal.bittorrent.protocol.messages.AbstractBlockMessage;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
@@ -24,8 +25,9 @@ public class MessageRequest extends AbstractBlockMessage {
 
 	@Override
 	public void process(Peer peer) {
-		if (peer.getTorrent().getFileSet().hasPiece(index)) {
-			peer.addBlockRequest(index, offset, length, PeerDirection.Upload);
+		AbstractFileSet fileSet = peer.getTorrent().getFileSet();
+		if (fileSet.hasPiece(index)) {
+			peer.addBlockRequest(fileSet.getPiece(index), offset, length, PeerDirection.Upload);
 		} else {
 			LOGGER.error("Requested piece {} which I don't have", index);
 			peer.getBitTorrentSocket().close();

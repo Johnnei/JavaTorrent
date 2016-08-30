@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.phases;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -7,6 +8,7 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
@@ -56,7 +58,7 @@ public class PhaseData implements IDownloadPhase {
 				}
 
 				final Block block = blockOptional.get();
-				peer.addBlockRequest(piece.getIndex(), torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
+				peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
 			}
 		}
 	}
@@ -65,6 +67,11 @@ public class PhaseData implements IDownloadPhase {
 	public void onPhaseEnter() {
 		torrent.checkProgress();
 		torrent.setPieceSelector(new FullPieceSelect(torrent));
+		File downloadFolder = torrent.getFileSet().getDownloadFolder();
+
+		if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
+			throw new TorrentException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
+		}
 	}
 
 	@Override

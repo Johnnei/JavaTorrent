@@ -123,8 +123,8 @@ public class PeerConnector implements Runnable, IPeerConnector {
 		BitTorrentSocket peerSocket = createUnconnectedSocket();
 		try {
 			peerSocket.connect(torrentClient.getConnectionDegradation(), peerInfo.getAddress());
-			peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), peerInfo.getTorrent().getHashArray());
-			BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getHashArray());
+			peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), peerInfo.getTorrent().getMetadata().getHash());
+			BitTorrentHandshake handshake = checkHandshake(peerSocket, peerInfo.getTorrent().getMetadata().getHash());
 			Peer peer = new Peer.Builder()
 					.setSocket(peerSocket)
 					.setTorrent(peerInfo.getTorrent())

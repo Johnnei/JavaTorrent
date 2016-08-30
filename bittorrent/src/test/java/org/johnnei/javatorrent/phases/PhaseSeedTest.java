@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
-import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.junit.Before;
@@ -39,7 +39,7 @@ public class PhaseSeedTest {
 		Peer peerMockOne = mock(Peer.class);
 		Peer peerMockTwo = mock(Peer.class);
 
-		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
+		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
 		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 
 		when(torrentMock.getPeers()).thenReturn(Arrays.asList(peerMockOne, peerMockTwo));

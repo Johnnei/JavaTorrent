@@ -4,9 +4,9 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
-import org.johnnei.javatorrent.torrent.MetadataFileSet;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public class MessageData extends AbstractMessage {
 			return;
 		}
 
-		Optional<MetadataFileSet> metadataFileSet = peer.getTorrent().getMetadata();
+		Optional<AbstractFileSet> metadataFileSet = peer.getTorrent().getMetadata().getFileSet();
 		if (!metadataFileSet.isPresent()) {
 			LOGGER.warn("Peer {} send ut_metadata block to us but we don't know the size of the metadata yet.", peer);
 			peer.getBitTorrentSocket().close();

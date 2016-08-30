@@ -4,57 +4,26 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ScheduledExecutorService;
 
-import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.phases.IDownloadPhase;
-import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
+import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.tracker.IPeerConnector;
 
-import org.easymock.EasyMockSupport;
-
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
-
+@Deprecated
 public class StubEntity {
 
-	public static TorrentClient stubTorrentClient(EasyMockSupport context) {
-		IPeerConnector peerConnectorMock = context.createMock(IPeerConnector.class);
-		TorrentClient torrentClientMock = context.createMock(TorrentClient.class);
-		PhaseRegulator phaseRegulatorMock = context.createMock(PhaseRegulator.class);
-		IDownloadPhase downloadPhaseMock = context.createMock(IDownloadPhase.class);
-		ScheduledExecutorService service = new ExecutorServiceMock();
-
-		// Setup getters
-		expect(torrentClientMock.getPeerConnector()).andStubReturn(peerConnectorMock);
-		expect(torrentClientMock.getExecutorService()).andStubReturn(service);
-		expect(torrentClientMock.getPhaseRegulator()).andStubReturn(phaseRegulatorMock);
-		expect(phaseRegulatorMock.createInitialPhase(eq(torrentClientMock), notNull())).andStubReturn(downloadPhaseMock);
-
-		return torrentClientMock;
-	}
-
-	/**
-	 * Creates a file stub which reports having no files
-	 * @param pieceCount the amount of pieces reported
-	 * @return
-	 */
-	public static AbstractFileSet stubAFiles(int pieceCount) {
-		return new AFilesStub(pieceCount);
-	}
-
+	@Deprecated
 	public static AbstractFileSet stubAFiles(int pieceCount, FileInfo fileInfo) {
 		return new AFilesStub(pieceCount, fileInfo);
 	}
 
+	@Deprecated
 	public static AbstractFileSet stubAFiles(int pieceCount, FileInfo fileInfo, int blockSize) {
 		return new AFilesStub(pieceCount, fileInfo, blockSize);
 	}
 
+	@Deprecated
 	private static final class AFilesStub extends AbstractFileSet {
 
 		private int blockSize;
@@ -76,6 +45,11 @@ public class StubEntity {
 			for (int i = 0; i < pieceCount; i++) {
 				pieces.add(new Piece(this, new byte[] {}, i, 1, 1));
 			}
+		}
+
+		@Override
+		public IFileSetRequestFactory getRequestFactory() {
+			return null;
 		}
 
 		@Override

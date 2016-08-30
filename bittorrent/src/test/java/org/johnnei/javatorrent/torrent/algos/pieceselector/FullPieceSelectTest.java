@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -34,7 +34,7 @@ public class FullPieceSelectTest {
 		pieceOne.setBlockStatus(1, BlockStatus.Requested);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = mock(Peer.class);
@@ -57,7 +57,7 @@ public class FullPieceSelectTest {
 			pieces.add(new Piece(null, new byte[20], i, 10, 5));
 		}
 
-		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		when(filesMock.getNeededPieces()).thenReturn(pieces.stream());
 
 		Peer peerMock = mock(Peer.class);
@@ -86,7 +86,7 @@ public class FullPieceSelectTest {
 		pieceOne.setBlockStatus(1, BlockStatus.Requested);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = mock(Peer.class);
@@ -108,7 +108,7 @@ public class FullPieceSelectTest {
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 		pieceTwo.setBlockStatus(1, BlockStatus.Requested);
 
-		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = mock(Peer.class);
@@ -129,7 +129,7 @@ public class FullPieceSelectTest {
 		Piece pieceOne = new Piece(null, new byte[20], 0, 10, 5);
 		Piece pieceTwo = new Piece(null, new byte[20], 1, 10, 5);
 
-		AbstractFileSet filesMock = mock(AbstractFileSet.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		when(filesMock.getNeededPieces()).thenReturn(Arrays.asList(pieceOne, pieceTwo).stream());
 
 		Peer peerMock = mock(Peer.class);

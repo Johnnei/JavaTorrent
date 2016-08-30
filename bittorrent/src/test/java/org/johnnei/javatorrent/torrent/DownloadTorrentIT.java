@@ -92,10 +92,7 @@ public class DownloadTorrentIT {
 		assertArrayEquals("The torrent file used to setup the test has a mismatching hash.", TORRENT_FILE_HASH, SHA1.hash(bytes));
 	}
 
-	private void setUpFile(File sourceFile, File folder, int startingByte, int length) throws Exception {
-		File outputFile = new File(folder, "gimp-2.8.16-setup-1.exe");
-		assertTrue("Failed to create download directoty", outputFile.mkdir());
-
+	private void setUpFile(File sourceFile, File outputFile, int startingByte, int length) throws Exception {
 		outputFile = new File(outputFile, EXECUTABLE_NAME);
 		assertTrue("Failed to create temporary copy of result file", outputFile.createNewFile());
 
@@ -134,7 +131,9 @@ public class DownloadTorrentIT {
 		return new Torrent.Builder()
 				.setTorrentClient(client)
 				.setName(name)
-				.buildFromMetata(torrentFile, downloadFolder);
+				.setDownloadFolder(downloadFolder)
+				.setMetadata(new Metadata.Builder().readFromFile(torrentFile).build())
+				.build();
 	}
 
 	private void downloadTestFile(File resultFile) throws Exception {

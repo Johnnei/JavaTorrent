@@ -10,6 +10,8 @@ import org.johnnei.javatorrent.module.MetadataInformation;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.Metadata;
+import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
@@ -23,7 +25,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
+import static org.easymock.EasyMock.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -39,15 +41,18 @@ public class PhasePreMetadataTest extends EasyMockSupport {
 
 	private File metadataFile;
 	private Torrent torrentMock;
+	private Metadata metadataMock;
 	private TorrentClient torrentClientMock;
 
 	private void setUpTorrentClient() throws Exception {
 		metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
 		torrentMock = createMock(Torrent.class);
+		metadataMock = createMock(Metadata.class);
 		ExtensionModule extensionModuleMock = createMock(ExtensionModule.class);
 		UTMetadataExtension metadataExtensionMock = createMock(UTMetadataExtension.class);
 		torrentClientMock = createMock(TorrentClient.class);
 
+		expect(torrentMock.getMetadata()).andReturn(metadataMock).anyTimes();
 		expect(torrentClientMock.getModule(eq(ExtensionModule.class))).andReturn(Optional.of(extensionModuleMock));
 		expect(extensionModuleMock.getExtensionByName(eq("ut_metadata"))).andReturn(Optional.of(metadataExtensionMock));
 		expect(metadataExtensionMock.getTorrentFile(eq(torrentMock))).andAnswer(() -> metadataFile);
@@ -110,7 +115,7 @@ public class PhasePreMetadataTest extends EasyMockSupport {
 	public void testOnPhaseEnter() throws Exception {
 		setUpTorrentClient();
 
-		expect(torrentMock.getHashArray()).andStubReturn(new byte[] {
+		expect(metadataMock.getHash()).andStubReturn(new byte[] {
 				(byte) 0xc8, 0x36, (byte) 0x9f, 0x0b, (byte) 0xa4, (byte) 0xbf, 0x6c, (byte) 0xd8,        0x7f, (byte) 0xb1,
 				       0x3b, 0x34,        0x37, 0x78,        0x2e,        0x2c, 0x78,        0x20, (byte) 0xbb,        0x38 });
 
@@ -143,7 +148,7 @@ public class PhasePreMetadataTest extends EasyMockSupport {
 	public void testOnPhaseEnterMismatchedHash() throws Exception {
 		setUpTorrentClient();
 
-		expect(torrentMock.getHashArray()).andStubReturn(new byte[0]);
+		expect(metadataMock.getHash()).andStubReturn(new byte[0]);
 
 		replayAll();
 
@@ -169,9 +174,9 @@ public class PhasePreMetadataTest extends EasyMockSupport {
 		expect(torrentMock.getPeers()).andStubReturn(Collections.singletonList(peerMock));
 		expect(peerMock.getModuleInfo(eq(MetadataInformation.class))).andReturn(Optional.of(info));
 
-		expect(torrentMock.getHashArray()).andStubReturn(hash);
-		expect(torrentMock.getHash()).andStubReturn(StringUtils.byteArrayToString(hash));
-		torrentMock.setMetadata(notNull());
+		expect(metadataMock.getHash()).andStubReturn(hash);
+		expect(metadataMock.getHashString()).andStubReturn(StringUtils.byteArrayToString(hash));
+		metadataMock.setFileSet(isA(MetadataFileSet.class));
 
 		replayAll();
 
