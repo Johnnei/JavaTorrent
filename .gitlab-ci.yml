@@ -13,14 +13,16 @@ quicktests:
     stage: test
     script: "mvn -B test --fail-at-end"
     artifacts:
+      expire_in: 1 week
       paths:
       - "**/target/jacoco.exec"
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
-    script: "mvn -B verify --fail-at-end"
+    script: "mvn -B verify --fail-at-end -Dtest=excludeUnitTests -DfailIfNoTests=false"
     artifacts:
+      expire_in: 1 week
       paths:
       - "**/target/jacoco-it.exec"
 
