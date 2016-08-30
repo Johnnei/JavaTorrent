@@ -71,6 +71,7 @@ public class PhaseMetadata extends AMetadataPhase {
 
 	@Override
 	public void onPhaseExit() {
+		LOGGER.info("Metadata download completed");
 		if (!torrent.isDownloadingMetadata()) {
 			return;
 		}
@@ -80,13 +81,12 @@ public class PhaseMetadata extends AMetadataPhase {
 			inputStream.readFully(buffer);
 			torrent.getMetadata().initializeMetadata(buffer);
 		} catch (FileNotFoundException e) {
-			throw new IllegalStateException("Metadata file has been removed after completion.", e);
+			throw new TorrentException("Metadata file has been removed after completion.", e);
 		} catch (IOException e) {
 			throw new TorrentException("Failed to read metadata", e);
 		}
 
 		torrent.setFileSet(new TorrentFileSet(torrent.getMetadata(), new File(downloadFolderRoot, torrent.getDisplayName())));
-		LOGGER.info("Metadata download completed");
 	}
 
 	private Collection<Peer> getRelevantPeers(Collection<Peer> peers) {

@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.phases;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +17,7 @@ import org.johnnei.javatorrent.internal.torrent.TorrentFileSetRequestFactory;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
@@ -25,6 +27,7 @@ import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.powermock.reflect.Whitebox;
 
@@ -41,6 +44,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PhaseDataTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -117,11 +123,54 @@ public class PhaseDataTest {
 		when(torrentMock.getFileSet()).thenReturn(torrentFileSetMock);
 		when(torrentFileSetMock.getDownloadFolder()).thenReturn(temporaryFolder.newFolder());
 
-		torrentMock.checkProgress();
-		torrentMock.setPieceSelector(isA(FullPieceSelect.class));
+		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
+		cut.onPhaseEnter();
+
+		verify(torrentMock).checkProgress();
+		verify(torrentMock).setPieceSelector(isA(FullPieceSelect.class));
+	}
+
+	@Test
+	public void testOnPhaseEnterCreateFolder() throws IOException {
+		File file = new File(temporaryFolder.getRoot(), "myFolder");
+
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet torrentFileSetMock = mock(TorrentFileSet.class);
+
+		when(torrentMock.getFileSet()).thenReturn(torrentFileSetMock);
+		when(torrentFileSetMock.getDownloadFolder()).thenReturn(file);
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
+
+		verify(torrentMock).checkProgress();
+		verify(torrentMock).setPieceSelector(isA(FullPieceSelect.class));
+		assertTrue("Download folder should have been created.", file.exists());
+	}
+
+	@Test
+	public void testOnPhaseEnterCreateFolderFailure() throws IOException {
+		thrown.expect(TorrentException.class);
+		thrown.expectMessage("download folder");
+
+		File fileMock = mock(File.class);
+
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet torrentFileSetMock = mock(TorrentFileSet.class);
+
+		when(torrentMock.getFileSet()).thenReturn(torrentFileSetMock);
+		when(torrentFileSetMock.getDownloadFolder()).thenReturn(fileMock);
+
+		when(fileMock.exists()).thenReturn(false);
+		when(fileMock.mkdirs()).thenReturn(false);
+
+		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
+		cut.onPhaseEnter();
+
+		verify(torrentMock).checkProgress();
+		verify(torrentMock).setPieceSelector(isA(FullPieceSelect.class));
 	}
 
 	@Test

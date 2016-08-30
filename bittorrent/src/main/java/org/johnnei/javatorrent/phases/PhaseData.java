@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
@@ -69,7 +70,7 @@ public class PhaseData implements IDownloadPhase {
 		File downloadFolder = torrent.getFileSet().getDownloadFolder();
 
 		if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
-			throw new IllegalStateException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
+			throw new TorrentException(String.format("Failed to create download folder: %s", downloadFolder.getAbsolutePath()));
 		}
 	}
 

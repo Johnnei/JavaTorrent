@@ -62,8 +62,6 @@ public class TorrentFileSet extends AbstractFileSet {
 			remainingSize -= pieceSize;
 		}
 
-		assert remainingSize == 0 : "Filesize and piece counts doesn't match up";
-
 		bitfield = new Bitfield(getBitfieldSize());
 	}
 

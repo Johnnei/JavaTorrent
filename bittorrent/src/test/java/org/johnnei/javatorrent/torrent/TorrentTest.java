@@ -647,4 +647,16 @@ public class TorrentTest {
 
 		assertFalse("Metadata should have returned that it is done", cut.isDownloadingMetadata());
 	}
+
+	@Test
+	public void testBuildWithoutName() {
+		Metadata metadataMock = mock(Metadata.class);
+		when(metadataMock.getName()).thenReturn("magnet(ab)");
+
+		Torrent cut = new Torrent.Builder()
+				.setMetadata(metadataMock)
+				.build();
+
+		assertEquals("As no name has been supplied the metadata name should be used", "magnet(ab)", cut.getDisplayName());
+	}
 }

@@ -16,9 +16,11 @@ import org.johnnei.javatorrent.internal.torrent.TorrentFileSetRequestFactory;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestUtils;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
+import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
 import org.junit.Rule;
@@ -801,5 +803,22 @@ public class PeerTest {
 		cut.setClientName(clientName);
 
 		assertEquals("Client name should have equalled the value set", clientName, cut.getClientName());
+	}
+
+	@Test
+	public void testCancelBlockRequestNonCancellable() {
+		thrown.expect(IllegalArgumentException.class);
+		thrown.expectMessage("cancel");
+
+		Piece pieceMock = mock(Piece.class);
+		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
+		IFileSetRequestFactory requestFactoryMock = mock(IFileSetRequestFactory.class);
+
+		when(pieceMock.getFileSet()).thenReturn(fileSetMock);
+		when(fileSetMock.getRequestFactory()).thenReturn(requestFactoryMock);
+		when(requestFactoryMock.supportsCancellation()).thenReturn(false);
+
+		Peer cut = DummyEntity.createPeer();
+		cut.cancelBlockRequest(pieceMock, 0, 50, PeerDirection.Download);
 	}
 }
