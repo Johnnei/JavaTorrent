@@ -14,7 +14,7 @@ quicktests:
     script: "mvn -B test --fail-at-end"
     artifacts:
       paths:
-      - **/target/jacoco.exec
+      - "**/target/jacoco.exec"
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
@@ -22,7 +22,7 @@ integration-tests:
     script: "mvn -B verify --fail-at-end"
     artifacts:
       paths:
-      - **/target/jacoco-it.exec
+      - "**/target/jacoco-it.exec"
 
 # Run a sonar analysis.
 sonar:
