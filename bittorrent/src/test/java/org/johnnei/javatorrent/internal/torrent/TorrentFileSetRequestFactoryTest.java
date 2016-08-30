@@ -30,10 +30,11 @@ public class TorrentFileSetRequestFactoryTest {
 
 	@Test
 	public void testCreateCancelRequestFor() throws Exception {
+		Peer peerMock = mock(Peer.class);
 		Piece pieceMock = mock(Piece.class);
 
 		TorrentFileSetRequestFactory cut = new TorrentFileSetRequestFactory();
-		IMessage result = cut.createCancelRequestFor(pieceMock, 42, 7);
+		IMessage result = cut.createCancelRequestFor(peerMock, pieceMock, 42, 7);
 		assertThat("Incorrect message type", result, instanceOf(MessageCancel.class));
 	}
 

@@ -24,7 +24,7 @@ public class MetadataFileSetRequestFactory implements IFileSetRequestFactory {
 	}
 
 	@Override
-	public IMessage createCancelRequestFor(Piece piece, int byteOffset, int length) {
+	public IMessage createCancelRequestFor(Peer peer, Piece piece, int byteOffset, int length) {
 		throw new UnsupportedOperationException("Metadata requests cannot be cancelled.");
 	}
 

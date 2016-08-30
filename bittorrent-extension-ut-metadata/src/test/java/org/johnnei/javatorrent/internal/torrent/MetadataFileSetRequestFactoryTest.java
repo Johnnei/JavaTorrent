@@ -57,7 +57,7 @@ public class MetadataFileSetRequestFactoryTest {
 		thrown.expect(UnsupportedOperationException.class);
 		thrown.expectMessage("cancel");
 
-		new MetadataFileSetRequestFactory().createCancelRequestFor(null, 0, 0);
+		new MetadataFileSetRequestFactory().createCancelRequestFor(null, null, 0, 0);
 	}
 
 	@Test

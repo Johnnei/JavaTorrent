@@ -18,7 +18,7 @@ public class TorrentFileSetRequestFactory implements IFileSetRequestFactory {
 	}
 
 	@Override
-	public IMessage createCancelRequestFor(Piece piece, int byteOffset, int length) {
+	public IMessage createCancelRequestFor(Peer peer, Piece piece, int byteOffset, int length) {
 		return new MessageCancel(piece.getIndex(), byteOffset, length);
 	}
 
