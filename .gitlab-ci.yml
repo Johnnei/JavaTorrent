@@ -3,27 +3,33 @@ stages:
     - test
     - qa
 
-# Cache Maven output
-cache:
-    key: "$CI_BUILD_REF_NAME"
-    untracked: true
-
 # Compile the code, must succeed before we start testing.
 build:
     stage: build
-    script: "mvn clean compile -B"
+    script: "mvn -B clean compile"
 
 # Run the quick test suite (Unit tests mostly)
 quicktests:
     stage: test
-    script: "mvn test -B --fail-at-end"
+    script: "mvn -B test --fail-at-end"
+    artifacts:
+      expire_in: 1 week
+      paths:
+      - "**/target/jacoco.exec"
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
-    script: "mvn verify -B --fail-at-end"
+    script: "mvn -B verify --fail-at-end -Dtest=excludeUnitTests -DfailIfNoTests=false"
+    artifacts:
+      expire_in: 1 week
+      paths:
+      - "**/target/jacoco-it.exec"
 
 # Run a sonar analysis.
 sonar:
     stage: qa
-    script: "mvn compile test-compile sonar:sonar -B -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.branch=$CI_BUILD_REF_NAME"
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.branch=$CI_BUILD_REF_NAME"
+    dependencies:
+      - quicktests
+      - integration-tests
