@@ -159,21 +159,6 @@
         </plugin>
       </plugins>
     </pluginManagement>
-
-    <plugins>
-      <!-- Releases -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>${plugin.org.apache.maven.plugins.maven-release-plugin}</version>
-        <configuration>
-          <autoVersionSubmodules>true</autoVersionSubmodules>
-          <useReleaseProfile>false</useReleaseProfile>
-          <releaseProfiles>release</releaseProfiles>
-          <goals>deploy</goals>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 
   <profiles>
@@ -239,6 +224,13 @@
                 <goals>
                   <goal>sign</goal>
                 </goals>
+                <configuration>
+                  <!-- Avoid graphical pinentry -->
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
               </execution>
             </executions>
           </plugin>
