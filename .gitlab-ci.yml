@@ -39,6 +39,10 @@ deploy to maven central:
     stage: deploy
     script: "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
     environment: MavenCentral
+    artifacts:
+      paths:
+      - "**/target/*.jar"
+      - "**/target/*.jar.asc"
     when: manual
     only:
       - tags
