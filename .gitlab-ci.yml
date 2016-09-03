@@ -37,7 +37,10 @@ sonar:
 
 deploy to maven central:
     stage: deploy
-    script: "mvn -B -Prelease clean deploy -Dpgp.passphrase=$PGP_PASS"
+    before_script:
+      - "unset GPG_TTY"
+      - "echo KILLAGENT | gpg-connect-agent && gpg-agent --daemon -vv"
+    script: "mvn -B -Prelease clean deploy -DskipTests -Dpgp.passphrase=$PGP_PASS"
     environment: MavenCentral
     when: manual
     only:
