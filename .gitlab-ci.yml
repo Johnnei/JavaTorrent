@@ -37,7 +37,7 @@ sonar:
 
 deploy to maven central:
     stage: deploy
-    script: "mvn -B -Prelease clean deploy"
+    script: "mvn -B -Prelease clean deploy -Dgpg.passphrase=$GPG_PASS"
     environment: MavenCentral
     when: manual
     only:
