@@ -2,6 +2,7 @@ stages:
     - build
     - test
     - qa
+    - deploy
 
 # Compile the code, must succeed before we start testing.
 build:
@@ -33,3 +34,11 @@ sonar:
     dependencies:
       - quicktests
       - integration-tests
+
+deploy to maven central:
+    stage: deploy
+    script: "mvn -B -Prelease clean deploy"
+    environment: MavenCentral
+    when: manual
+    only:
+      - tags
