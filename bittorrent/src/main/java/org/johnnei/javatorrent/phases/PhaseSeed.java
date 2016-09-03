@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.phases;
 
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 import org.johnnei.javatorrent.TorrentClient;
@@ -28,7 +27,7 @@ public class PhaseSeed implements IDownloadPhase {
 	 * @param torrentClient The client on which this phase operates.
 	 * @param torrent The torrent for which this phase applies.
 	 *
-	 * @see org.johnnei.javatorrent.phases.PhaseRegulator.Builder#registerPhase(Class, BiFunction, Optional)
+	 * @see org.johnnei.javatorrent.phases.PhaseRegulator.Builder#registerPhase(Class, BiFunction, Class)
 	 */
 	public PhaseSeed(TorrentClient torrentClient, Torrent torrent) {
 		this.torrent = torrent;
