@@ -27,9 +27,16 @@ These are the things you can expect in the future of JavaTorrent (the order is n
 - Add opt-in analytics to the Extension Protocol to allow for analysis of commonly used extensions
 - Add scraping usage to decide whether an announce to the tracker will be made
 - Add support for HTTP Tracker scrape requests (Not official standard but based on convention)
-- \[Research\] Allow the client to tunnel it's traffic through a VPN
 - Add DHT support (BEP 5)
 
 ## Version System
-The version system will follow Semantic Versioning. The version reported in the BitTorrent protocol may be different from the maven version due to the standard
-of only using 4 characters for the version section in the PeerID. The version reported in extension dictionary (BEP 10) will match the actual version.
+The version system will follow [Semantic Versioning](http://semver.org/). The version reported in the BitTorrent protocol may be different from the maven
+version due to the standard of only using 4 characters for the version section in the PeerID. The version reported in extension dictionary (BEP 10) will match
+the actual version.
+
+The public api is defined by exclusions: Classes are part of the public API unless they are within `org.johnnei.javatorrent.internal.**`
+
+Deprecation will be handled in several phases and versions:
+1. `@Deprecated` will be added to the offended class/method in version x (let's start at 1.4.0) and a replacement (if it will be replaced) will be introduced.
+2. In version y (2.0.0) the functionality will still be maintained. This will prevent last minute deprecations causing trouble.
+3. In version z (3.0.0) the deprecated class/method will be dropped.
