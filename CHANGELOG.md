@@ -9,6 +9,8 @@
 - [JBT-39](https://jira.johnnei.org/browse/JBT-39): `Optional<T>` types have been removed as arguments and overloads have been added to compensate.
 - [JBT-10](https://jira.johnnei.org/browse/JBT-10): The internal `Job` system now relies on the `AbstractFileSet` of the given `Piece`. This makes the system
 more re-usable for other systems.
+- [JBT-46](https://jira.johnnei.org/browse/JBT-46): uTP socket no longer wait indefinitely to send packets. It now waits at most 10 seconds before it will fail
+with a `SocketTimeoutException`
 
 ## Fixes
 - [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`

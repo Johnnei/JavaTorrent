@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
@@ -28,7 +29,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
@@ -63,8 +63,8 @@ public class UtpSocketImplTest {
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
-	@Rule
-	public Timeout timeout = Timeout.seconds(5);
+//	@Rule
+//	public Timeout timeout = Timeout.seconds(15);
 
 	private UtpMultiplexer multiplexerMock;
 
@@ -409,13 +409,31 @@ public class UtpSocketImplTest {
 	}
 
 	@Test
+	public void testSendTimeout() throws Exception {
+		thrown.expect(SocketTimeoutException.class);
+		thrown.expectMessage("Failed to send packet in a reasonable time frame.");
+
+		injectBlockSendMock();
+
+		// Adjust the time in order that the remaining wait time should be 100ms instead of the full 10 seconds.
+		Whitebox.setInternalState(cut, Clock.class, Clock.offset(Clock.systemDefaultZone(), Duration.ZERO.minusSeconds(9).minusMillis(900)));
+
+		IPayload payloadMock = mock(IPayload.class);
+		when(payloadMock.getSize()).thenReturn(130);
+
+		cut.send(payloadMock);
+	}
+
+	@Test
 	public void testSendOnInterrupt() throws Exception {
 		thrown.expect(IOException.class);
 		thrown.expectCause(isA(InterruptedException.class));
 		thrown.expectMessage("Interruption");
 
+		injectBlockSendMock();
+
 		IPayload payloadMock = mock(IPayload.class);
-		when(payloadMock.getSize()).thenReturn(4000);
+		when(payloadMock.getSize()).thenReturn(130);
 
 		ReentrantLock lock = Whitebox.getInternalState(cut, "notifyLock");
 		Condition wakeUpCondition = Whitebox.getInternalState(cut, "onPacketAcknowledged");
@@ -435,6 +453,17 @@ public class UtpSocketImplTest {
 			clearInterruptionState();
 			throw e;
 		}
+	}
+
+	/**
+	 * Injects a mock into the {@link #cut} that will prevent any {@link UtpSocketImpl#send(IPayload)} from being actually send.
+	 */
+	private void injectBlockSendMock() {
+		UtpAckHandler ackHandlerMock = mock(UtpAckHandler.class);
+		Whitebox.setInternalState(cut, UtpAckHandler.class, ackHandlerMock);
+
+		// Always return a value which blocks the sending of packets.
+		when(ackHandlerMock.countBytesInFlight()).thenReturn(Integer.MAX_VALUE);
 	}
 
 	@Test
