@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.sql.Date;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -187,6 +187,8 @@ public class UtpSocketImpl {
 	}
 
 	private void send(UtpPacket packet) throws IOException {
+		Instant sendTimeoutTime = clock.instant().plusSeconds(10);
+
 		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
 		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
 			LOGGER.trace("Waiting to send packet (seq={}) of {} bytes. Window Status: {} / {} bytes",
@@ -194,30 +196,39 @@ public class UtpSocketImpl {
 					packet.getPacketSize(),
 					getBytesInFlight(),
 					getSendWindowSize());
+
+			if (mustRepackagePayload(packet)) {
+				repackageAndSendPayload(packet);
+				return;
+			}
+
 			notifyLock.lock();
 			try {
-				onPacketAcknowledged.await(1, TimeUnit.SECONDS);
+				if (!onPacketAcknowledged.awaitUntil(java.util.Date.from(sendTimeoutTime))) {
+					throw new SocketTimeoutException("Failed to send packet in a reasonable time frame.");
+				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw new IOException("Interruption on writing packet", e);
 			} finally {
 				notifyLock.unlock();
 			}
-
-			if (packet.getPacketSize() > Math.max(150, window.getSize())) {
-				// Packet exceed the maximum window, this will never get send. Repackage it.
-				LOGGER.trace("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
-				byte[] unsentBytes = packet.repackage(this);
-				// Keep data integrity order.
-				send(packet);
-				send(new DataPayload(unsentBytes));
-
-				// This packet is send now.
-				return;
-			}
 		}
 
 		sendUnbounded(packet);
+	}
+
+	private boolean mustRepackagePayload(UtpPacket packet) {
+		// Packet exceed the maximum window, this will never get send. Repackage it.
+		return packet.getPacketSize() > Math.max(150, window.getSize());
+	}
+
+	private void repackageAndSendPayload(UtpPacket packet) throws IOException {
+		LOGGER.trace("Repacking {} it exceeds the maximum window size of {}", packet, window.getSize());
+		byte[] unsentBytes = packet.repackage(this);
+		// Keep data integrity order.
+		send(packet);
+		send(new DataPayload(unsentBytes));
 	}
 
 	/**
