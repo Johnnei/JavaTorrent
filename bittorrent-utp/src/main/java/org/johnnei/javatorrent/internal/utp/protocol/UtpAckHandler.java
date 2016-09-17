@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.RecentLinkedList;
@@ -108,7 +110,7 @@ public class UtpAckHandler {
 	 * @param receivedPacket The packet we received.
 	 * @return The packet which has been acked.
 	 */
-	public Optional<UtpPacket> onReceivedPacket(UtpPacket receivedPacket) throws IOException {
+	public List<UtpPacket> onReceivedPacket(UtpPacket receivedPacket) throws IOException {
 		if (firstPacket.compareAndSet(true, false)) {
 			LOGGER.trace("Initialised base acknowledgeNumber to be {}", Short.toUnsignedInt(receivedPacket.getSequenceNumber()));
 			// If the atomic set passed then we are receiving the first packet, assign the ack number here as a base point.
@@ -118,13 +120,17 @@ public class UtpAckHandler {
 			updateAcknowledgeNumber(receivedPacket);
 		}
 
-		Optional<UtpPacket> ackedPacket = Optional.empty();
+		List<UtpPacket> ackedPacket;
 		lock.readLock().lock();
 		try {
 			// Find the packet which was ack'ed.
 			ackedPacket = packetsInFlight.stream()
-					.filter(packet -> packet.getSequenceNumber() == receivedPacket.getAcknowledgeNumber())
-					.findAny();
+					.filter(packet -> {
+						int seq = packet.getSequenceNumber();
+						int ack = receivedPacket.getAcknowledgeNumber();
+						return seq <= ack;
+					})
+					.collect(Collectors.toList());
 		} finally {
 			lock.readLock().unlock();
 		}

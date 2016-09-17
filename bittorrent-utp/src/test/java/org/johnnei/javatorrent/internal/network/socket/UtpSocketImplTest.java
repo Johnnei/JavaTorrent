@@ -7,7 +7,7 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -236,7 +236,7 @@ public class UtpSocketImplTest {
 		// Inject a socket address to allow sending of packets the multiplexer mock.
 		injectMultiplexerMock();
 
-		when(handlerMock.onReceivedPacket(eq(statePacket))).thenReturn(Optional.of(packetMock));
+		when(handlerMock.onReceivedPacket(eq(statePacket))).thenReturn(Collections.singletonList(packetMock));
 
 		// Inject the packet to be ack'ed.
 		Whitebox.setInternalState(cut, UtpAckHandler.class, handlerMock);
