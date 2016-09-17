@@ -11,6 +11,8 @@
 more re-usable for other systems.
 - [JBT-46](https://jira.johnnei.org/browse/JBT-46): uTP socket no longer wait indefinitely to send packets. It now waits at most 10 seconds before it will fail
 with a `SocketTimeoutException`
+- [JBT-47](https://jira.johnnei.org/browse/JBT-47): uTP socket now updates its state for implicitly ACK'ed packets. This will increase the rate at which the
+socket ramps up the window.
 
 ## Fixes
 - [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`

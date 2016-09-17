@@ -9,7 +9,6 @@ import java.sql.Date;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -317,8 +316,7 @@ public class UtpSocketImpl {
 
 		clientWindowSize = packet.getWindowSize();
 
-		Optional<UtpPacket> ackedPacket = ackHandler.onReceivedPacket(packet);
-		ackedPacket.ifPresent(p -> {
+		ackHandler.onReceivedPacket(packet).forEach(p -> {
 			onPacketAcknowledged(receiveTime, packet, p);
 			measuredDelay = Math.abs(receiveTime - packet.getTimestampMicroseconds());
 		});

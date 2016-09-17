@@ -1,13 +1,17 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Matchers.same;
@@ -129,6 +133,7 @@ public class UtpAckHandlerTest {
 		// Packet to initialize the ACK numbers.
 		UtpPacket initPacket = mock(UtpPacket.class);
 		when(initPacket.getSequenceNumber()).thenReturn((short) 5);
+		when(initPacket.getAcknowledgeNumber()).thenReturn((short) 0);
 
 		UtpPacket ackOne = mock(UtpPacket.class);
 		UtpPacket ackTwo = mock(UtpPacket.class);
@@ -144,16 +149,18 @@ public class UtpAckHandlerTest {
 
 		assertEquals("Bytes in flight before acks is incorrect", 12, cut.countBytesInFlight());
 
-		cut.onReceivedPacket(initPacket);
+		List<UtpPacket> ackedPackets = cut.onReceivedPacket(initPacket);
 		assertEquals("After init packet the return ACK number must be 5.", 5, cut.getAcknowledgeNumber());
+		assertThat("No packets were acked by the init packet", ackedPackets, empty());
 		// Initial packet must not cause a ST_STATE as it will be received during the SYN-phase.
 		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
 
-		cut.onReceivedPacket(ackTwo);
+		ackedPackets = cut.onReceivedPacket(ackTwo);
 
 		assertEquals("After first ack the second packet should also be no longer be in flight, the ACK packet might have been lost.",
 				0, cut.countBytesInFlight());
 		assertEquals("After first ack the return ACK number must be 5 (Packet 6 is not acked yet).", 5, cut.getAcknowledgeNumber());
+		assertThat("All packets should have been returned as ACK'ed.", ackedPackets, Matchers.contains(packetOne, packetTwo));
 		// Even though a packet got ack'ed we don't know about packet 6 yet, so we MUST NOT send out a 7 (which also confirms 6).
 		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
 
