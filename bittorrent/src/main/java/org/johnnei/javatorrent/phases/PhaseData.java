@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
@@ -13,7 +14,6 @@ import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.files.Block;
-import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
@@ -44,22 +44,22 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void process() {
-		for (Peer peer : getRelevantPeers(torrent.getPeers())) {
-			Optional<Piece> pieceOptional = torrent.getPieceSelector().getPieceForPeer(peer);
-			if (!pieceOptional.isPresent()) {
-				continue;
+		getRelevantPeers(torrent.getPeers()).forEach(peer -> {
+			while (peer.getFreeWorkTime() > 0) {
+				torrent.getPieceSelector().getPieceForPeer(peer).ifPresent(piece -> requestBlocksOfPiece(peer, piece));
+			}
+		});
+	}
+
+	private void requestBlocksOfPiece(Peer peer, Piece piece) {
+		while (peer.getFreeWorkTime() > 0) {
+			Optional<Block> blockOptional = piece.getRequestBlock();
+			if (!blockOptional.isPresent()) {
+				break;
 			}
 
-			Piece piece = pieceOptional.get();
-			while (piece.hasBlockWithStatus(BlockStatus.Needed) && peer.getFreeWorkTime() > 0) {
-				Optional<Block> blockOptional = piece.getRequestBlock();
-				if (!blockOptional.isPresent()) {
-					break;
-				}
-
-				final Block block = blockOptional.get();
-				peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
-			}
+			final Block block = blockOptional.get();
+			peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
 		}
 	}
 
@@ -80,12 +80,12 @@ public class PhaseData implements IDownloadPhase {
 		LOGGER.info("Download of {} completed", torrent);
 	}
 
-	Collection<Peer> getRelevantPeers(Collection<Peer> peers) {
+	Stream<Peer> getRelevantPeers(Collection<Peer> peers) {
 		Collection<Piece> neededPiece = torrent.getFileSet().getNeededPieces().collect(Collectors.toList());
 
 		return peers.stream()
-				.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())))
-				.collect(Collectors.toList());
+				.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())));
+//				.collect(Collectors.toList());
 	}
 
 	@Override

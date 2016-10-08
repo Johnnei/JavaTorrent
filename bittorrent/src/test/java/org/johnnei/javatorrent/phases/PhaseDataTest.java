@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.TorrentClient;
@@ -83,7 +84,7 @@ public class PhaseDataTest {
 		when(torrentFileSetMock.getNeededPieces()).thenReturn(Stream.of(pieceMock, pieceMockTwo));
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrent);
-		Collection<Peer> relevantPeers = cut.getRelevantPeers(peerList);
+		Collection<Peer> relevantPeers = cut.getRelevantPeers(peerList).collect(Collectors.toList());
 
 		assertEquals("Incorrect amount of peers", 3, relevantPeers.size());
 		assertTrue("Relevant peer is missing", relevantPeers.contains(peerTwo));
