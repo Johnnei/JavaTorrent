@@ -42,6 +42,7 @@ public class PeerIoRunnable implements Runnable {
 		} catch (IOException e) {
 			LOGGER.error(String.format("IO Error for peer: %s", peer), e);
 			peer.getBitTorrentSocket().close();
+			peer.getTorrent().removePeer(peer);
 		}
 	}
 
