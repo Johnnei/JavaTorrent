@@ -64,4 +64,9 @@ public class DiskJobReadBlock implements IDiskJob {
 	public int getOffset() {
 		return offset;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("DiskJobReadBlock[piece=%d, offset=%d, length=%d]", piece.getIndex(), offset, length);
+	}
 }

@@ -81,7 +81,7 @@ public abstract class AbstractFileSet {
 	}
 
 	private void validateGetFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
-		Argument.requireWithinBounds(pieceIndex, 0, pieces.size(), String.format("Piece %d is not within the file set.", pieceIndex));
+		Argument.requireWithinBounds(pieceIndex, 0, pieces.size(), () -> String.format("Piece %d is not within the file set.", pieceIndex));
 		Argument.requirePositive(blockIndex, "Block index cannot be negative.");
 		Argument.requirePositive(byteOffset, "Byte offset cannot be negative.");
 

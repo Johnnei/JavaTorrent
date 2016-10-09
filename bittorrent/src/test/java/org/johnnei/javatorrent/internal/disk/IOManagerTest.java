@@ -1,13 +1,18 @@
 package org.johnnei.javatorrent.internal.disk;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.disk.IDiskJob;
 
 import org.easymock.EasyMockSupport;
 import org.easymock.IMocksControl;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
+import static com.jayway.awaitility.Awaitility.await;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 
@@ -17,13 +22,68 @@ import static org.easymock.EasyMock.expectLastCall;
 public class IOManagerTest extends EasyMockSupport {
 
 	@Test
-	public void testMethodCallCompletes() {
+	public void testAwaitTask() throws Exception {
 		/*
 		 * There's nothing in the manager so this call must return without invoking anything so can't cause exceptions.
 		 */
 		IOManager cut = new IOManager();
 
-		cut.run();
+		IDiskJob diskJobMock = createMock(IDiskJob.class);
+		diskJobMock.process();
+
+		ReentrantLock cutLock = Whitebox.getInternalState(cut, "lock");
+		Condition cutCondition = Whitebox.getInternalState(cut, "newTaskEvent");
+
+		replayAll();
+
+		Thread thread = new Thread(cut);
+		thread.start();
+
+		await().atMost(1, TimeUnit.SECONDS).until(() -> {
+			cutLock.lock();
+			try {
+				cutLock.hasWaiters(cutCondition);
+			} finally {
+				cutLock.unlock();
+			}
+		});
+
+		cut.addTask(diskJobMock);
+		thread.join(5000);
+
+		verifyAll();
+	}
+
+	@Test
+	public void testAwaitTaskInterrupt() throws Exception {
+		/*
+		 * There's nothing in the manager so this call must return without invoking anything so can't cause exceptions.
+		 */
+		IOManager cut = new IOManager();
+
+		IDiskJob diskJobMock = createMock(IDiskJob.class);
+		diskJobMock.process();
+
+		ReentrantLock cutLock = Whitebox.getInternalState(cut, "lock");
+		Condition cutCondition = Whitebox.getInternalState(cut, "newTaskEvent");
+
+		replayAll();
+
+		Thread thread = new Thread(cut);
+		thread.start();
+
+		await().atMost(1, TimeUnit.SECONDS).until(() -> {
+			cutLock.lock();
+			try {
+				cutLock.hasWaiters(cutCondition);
+			} finally {
+				cutLock.unlock();
+			}
+		});
+
+		thread.interrupt();
+
+		await().until(() -> !thread.isAlive());
 	}
 
 	@Test

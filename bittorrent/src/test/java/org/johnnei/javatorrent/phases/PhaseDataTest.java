@@ -200,7 +200,9 @@ public class PhaseDataTest {
 
 		Piece pieceMock = mock(Piece.class);
 
+		// Report that you have a needed block
 		when(pieceMock.hasBlockWithStatus(eq(BlockStatus.Needed))).thenReturn(true);
+		// But when we ask for it, it's no longer there.
 		when(pieceMock.getRequestBlock()).thenReturn(Optional.empty());
 		when(pieceMock.getIndex()).thenReturn(0);
 
@@ -211,11 +213,14 @@ public class PhaseDataTest {
 		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peer));
 		when(torrentMock.getPieceSelector()).thenReturn(pieceSelectorMock);
 		when(torrentMock.getFileSet()).thenReturn(fileSetMock);
-		when(pieceSelectorMock.getPieceForPeer(same(peer))).thenReturn(Optional.of(pieceMock));
+		// Second call returns empty so the test doesn't get stuck in a loop.
+		when(pieceSelectorMock.getPieceForPeer(same(peer))).thenReturn(Optional.of(pieceMock)).thenReturn(Optional.empty());
 		when(fileSetMock.getNeededPieces()).thenReturn(Collections.singletonList(pieceMock).stream());
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 		cut.process();
+
+		verify(pieceSelectorMock, times(2)).getPieceForPeer(same(peer));
 	}
 
 	@Test

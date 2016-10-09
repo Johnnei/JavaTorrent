@@ -84,7 +84,7 @@ public class TorrentClient {
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
 		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
 		executorService = Objects.requireNonNull(builder.executorService, "Executor service is required to process torrent tasks.");
-		requestLimiter = Objects.requireNonNull(builder.requestLimiter, "Request Limited is required to improve transfer rates.");
+		requestLimiter = Objects.requireNonNull(builder.requestLimiter, "Request Limiter is required to improve transfer rates.");
 
 		peerConnector = Objects.requireNonNull(builder.peerConnector, "Peer connector required to allow external connections").apply(this);
 		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
@@ -106,8 +106,8 @@ public class TorrentClient {
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
 		ioManager = new IOManager();
-		ioManagerRunner = new LoopingRunnable(ioManager);
-		Thread ioManagerThread = new Thread(ioManagerRunner, "Disk Manager");
+		ioManagerRunner = new LoopingRunnable(ioManager, true);
+		Thread ioManagerThread = new Thread(ioManagerRunner, String.format("Disk Manager - %s", ioManager.toString()));
 		ioManagerThread.setDaemon(true);
 		ioManagerThread.start();
 

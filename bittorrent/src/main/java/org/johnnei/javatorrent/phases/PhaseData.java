@@ -46,7 +46,13 @@ public class PhaseData implements IDownloadPhase {
 	public void process() {
 		getRelevantPeers(torrent.getPeers()).forEach(peer -> {
 			while (peer.getFreeWorkTime() > 0) {
-				torrent.getPieceSelector().getPieceForPeer(peer).ifPresent(piece -> requestBlocksOfPiece(peer, piece));
+				Optional<Piece> piece = torrent.getPieceSelector().getPieceForPeer(peer);
+				if (piece.isPresent()) {
+					requestBlocksOfPiece(peer, piece.get());
+				} else {
+					// Stop processing for this peer when no more pieces are available.
+					break;
+				}
 			}
 		});
 	}

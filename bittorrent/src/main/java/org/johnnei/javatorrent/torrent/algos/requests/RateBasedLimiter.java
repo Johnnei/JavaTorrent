@@ -28,7 +28,8 @@ public class RateBasedLimiter implements IRequestLimiter {
 			rateInfo.addEntry(clock, duration);
 			rateInfo.getAvarage(clock).ifPresent(avg -> {
 				int blocksPerSecond = (int) (Duration.ofSeconds(1).toNanos() / Math.max(1, avg.toNanos()));
-				int diff = blocksPerSecond - peer.getRequestLimit();
+				// Request blocks for the next three seconds.
+				int diff = (3 * blocksPerSecond) - peer.getRequestLimit();
 				if (diff < 0) {
 					diff = Math.max(diff, MAX_DECREASE);
 				} else {

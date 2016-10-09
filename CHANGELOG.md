@@ -13,6 +13,7 @@ more re-usable for other systems.
 with a `SocketTimeoutException`
 - [JBT-47](https://jira.johnnei.org/browse/JBT-47): uTP socket now updates its state for implicitly ACK'ed packets. This will increase the rate at which the
 socket ramps up the window.
+- [JBT-33](https://jira.johnnei.org/browse/JBT-33): Doubled Torrent download throughput (According to integration test).
 
 ## Fixes
 - [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`
@@ -23,6 +24,8 @@ Strings which represent byte arrays containing data which is not valid UTF-8.
 - [JBT-10](https://jira.johnnei.org/browse/JBT-10): `Peer#addBlockRequest` now accepts a `Piece` instead of the index of the piece.
 - [JBT-10](https://jira.johnnei.org/browse/JBT-10): `Torrent#getMetadata` now returns a dedicated non-null Metadata object with an optional `AbstractFileSet` in
  case downloading the metadata is supported.
+- [JBT-33](https://jira.johnnei.org/browse/JBT-33): `TorrentClient` now requires `IRequestLimiter` to control how many requests a peer may have. The
+`RateBasedLimiter` is the old behaviour (but slightly improved to reach higher throughput).
 
 # 0.5.1
 ## Added
