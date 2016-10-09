@@ -27,6 +27,7 @@ import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 import org.johnnei.javatorrent.utils.StringUtils;
@@ -156,6 +157,7 @@ public class DownloadMetadataIT {
 						.build())
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))
+				.setRequestLimiter(new RateBasedLimiter())
 				.setPeerConnector(PeerConnector::new)
 				.registerModule(new ExtensionModule.Builder()
 						.registerExtension(new UTMetadataExtension(torrentFileFolder, downloadFolder))
