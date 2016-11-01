@@ -2,11 +2,11 @@ package org.johnnei.javatorrent.internal.utp.protocol.payload;
 
 import java.io.IOException;
 
+import org.junit.Test;
+
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +66,7 @@ public class SynPayloadTest {
 		SynPayload cut = new SynPayload();
 		cut.process(packetMock, socketMock);
 
-		verify(socketMock).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock).send(isA(UtpPacket.class));
 	}
 
 	@Test

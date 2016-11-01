@@ -15,6 +15,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.UtpTimeout;
@@ -33,9 +37,6 @@ import org.johnnei.javatorrent.internal.utp.protocol.payload.ResetPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.SynPayload;
 import org.johnnei.javatorrent.network.OutStream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.lang.Math.max;
 
@@ -98,6 +99,8 @@ public class UtpSocketImpl {
 
 	private short sequenceNumber;
 
+	private short lastSendSequenceNumber;
+
 	private int measuredDelay;
 
 	private AtomicInteger statePackets = new AtomicInteger(0);
@@ -114,7 +117,7 @@ public class UtpSocketImpl {
 		this.utpMultiplexer = utpMultiplexer;
 		connectionIdReceive = (short) new Random().nextInt();
 		connectionIdSend = (short) (connectionIdReceive + 1);
-		sequenceNumberCounter = 1;
+		lastSendSequenceNumber = sequenceNumberCounter = 1;
 	}
 
 	/**
@@ -131,6 +134,7 @@ public class UtpSocketImpl {
 		connectionIdReceive = (short) (connectionId + 1);
 		connectionIdSend = connectionId;
 		sequenceNumberCounter = (short) new Random().nextInt();
+		lastSendSequenceNumber = sequenceNumberCounter;
 	}
 
 	private void initDefaults() {
@@ -185,36 +189,61 @@ public class UtpSocketImpl {
 		send(new UtpPacket(this, payload));
 	}
 
-	private void send(UtpPacket packet) throws IOException {
-		Instant sendTimeoutTime = clock.instant().plusSeconds(10);
+	public void resend(UtpPacket packet) throws IOException {
+		// TODO Assert that packet is in flight.
+		sendUnbounded(packet);
+	}
 
-		// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
-		while (connectionState != ConnectionState.CLOSED && getAvailableWindowSize() < packet.getPacketSize()) {
-			LOGGER.trace("Waiting to send packet (seq={}) of {} bytes. Window Status: {} / {} bytes",
-					Short.toUnsignedInt(packet.getSequenceNumber()),
-					packet.getPacketSize(),
-					getBytesInFlight(),
-					getSendWindowSize());
+	public void send(UtpPacket packet) throws IOException {
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(connectionIdReceive)))) {
+			Instant sendTimeoutTime = clock.instant().plusSeconds(10);
 
-			if (mustRepackagePayload(packet)) {
-				repackageAndSendPayload(packet);
-				return;
-			}
+			// Wait for enough space to write the packet, ST_STATE packets are allowed to by-pass this.
+			while (!canSendPacket(packet)) {
+				LOGGER.trace("Waiting to send packet (seq={}) of {} bytes. Window Status: {} / {} bytes",
+						Short.toUnsignedInt(packet.getSequenceNumber()),
+						packet.getPacketSize(),
+						getBytesInFlight(),
+						getSendWindowSize());
 
-			notifyLock.lock();
-			try {
-				if (!onPacketAcknowledged.awaitUntil(java.util.Date.from(sendTimeoutTime))) {
-					throw new SocketTimeoutException("Failed to send packet in a reasonable time frame.");
+				if (mustRepackagePayload(packet)) {
+					repackageAndSendPayload(packet);
+					return;
 				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new IOException("Interruption on writing packet", e);
-			} finally {
-				notifyLock.unlock();
+
+				Instant oneSecondFromNow = clock.instant().plusSeconds(1);
+
+				notifyLock.lock();
+				try {
+					Instant now = clock.instant();
+					if (!onPacketAcknowledged.awaitUntil(Date.from(oneSecondFromNow)) && now.isAfter(sendTimeoutTime)) {
+						throw new SocketTimeoutException(String.format(
+								"Failed to send packet (seq=%s) in a reasonable time frame.",
+								Short.toUnsignedInt(packet.getSequenceNumber())));
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new IOException("Interruption on writing packet", e);
+				} finally {
+					notifyLock.unlock();
+				}
 			}
+
+			sendUnbounded(packet);
+		}
+	}
+
+	private boolean canSendPacket(UtpPacket packet) {
+		if (connectionState == ConnectionState.CLOSED) {
+			return false;
 		}
 
-		sendUnbounded(packet);
+		if (packet.getType() == UtpProtocol.ST_DATA) {
+			return packet.getPacketSize() < getAvailableWindowSize();
+		} else {
+			// Block all packets when the window size is 0 in order to trigger a timeout.
+			return getWindowSize() != 0;
+		}
 	}
 
 	private boolean mustRepackagePayload(UtpPacket packet) {
@@ -236,7 +265,7 @@ public class UtpSocketImpl {
 	 * @param packet The packet
 	 * @see #send(IPayload)
 	 */
-	public void sendUnbounded(UtpPacket packet) throws IOException {
+	private void sendUnbounded(UtpPacket packet) throws IOException {
 		if (connectionState == ConnectionState.CLOSED) {
 			throw new IOException("Socket is closed or reset during write.");
 		}
@@ -265,7 +294,7 @@ public class UtpSocketImpl {
 		lastInteraction = clock.instant();
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
-		LOGGER.trace("Sent {} to {} ({} / {} bytes)", packet, socketAddress, ackHandler, getSendWindowSize());
+		LOGGER.trace("Sent {} to {} ({} / {} bytes).", packet, socketAddress, ackHandler, getSendWindowSize());
 
 		if (packet.getType() == UtpProtocol.ST_STATE) {
 			statePackets.incrementAndGet();
@@ -309,21 +338,23 @@ public class UtpSocketImpl {
 	 * @throws IOException When the payload cannot be processed.
 	 */
 	public void process(UtpPacket packet) throws IOException {
-		// Record the time as early as possible to reduce the noise in the uTP packets.
-		int receiveTime = timer.getCurrentMicros();
-		lastInteraction = clock.instant();
-		LOGGER.trace("Received {} from {}", packet, socketAddress);
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(connectionIdReceive)))) {
+			// Record the time as early as possible to reduce the noise in the uTP packets.
+			int receiveTime = timer.getCurrentMicros();
+			lastInteraction = clock.instant();
+			LOGGER.trace("Received {} from {}", packet, socketAddress);
 
-		clientWindowSize = packet.getWindowSize();
+			clientWindowSize = packet.getWindowSize();
 
-		ackHandler.onReceivedPacket(packet).forEach(p -> {
-			onPacketAcknowledged(receiveTime, packet, p);
-			measuredDelay = Math.abs(receiveTime - packet.getTimestampMicroseconds());
-		});
-		packet.processPayload(this);
+			ackHandler.onReceivedPacket(packet).forEach(p -> {
+				onPacketAcknowledged(receiveTime, packet, p);
+				measuredDelay = Math.abs(receiveTime - packet.getTimestampMicroseconds());
+			});
+			packet.processPayload(this);
 
-		// Notify any waiting threads of the processed packet.
-		Sync.signalAll(notifyLock, onPacketAcknowledged);
+			// Notify any waiting threads of the processed packet.
+			Sync.signalAll(notifyLock, onPacketAcknowledged);
+		}
 	}
 
 	private void onPacketAcknowledged(int receiveTime, UtpPacket packet, UtpPacket ackedPacket) {
@@ -342,8 +373,11 @@ public class UtpSocketImpl {
 	}
 
 	private void updatePacketSize() {
+		int oldPacketSize = packetSize;
 		packetSize = max(150, window.getSize() / 10);
-		LOGGER.trace("Packet Size scaled based on new window size: {} bytes", packetSize);
+		if (oldPacketSize != packetSize) {
+			LOGGER.trace("Packet Size scaled based on new window size: {} bytes", packetSize);
+		}
 	}
 
 	/**
@@ -509,7 +543,7 @@ public class UtpSocketImpl {
 	}
 
 	public short getSequenceNumber() {
-		return sequenceNumber;
+		return lastSendSequenceNumber;
 	}
 
 	@Override

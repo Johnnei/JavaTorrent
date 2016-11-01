@@ -13,6 +13,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
@@ -25,16 +35,6 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -208,11 +208,13 @@ public class DownloadTorrentIT {
 			latch.await(INTERVAL_IN_SECONDS, TimeUnit.SECONDS);
 			torrentOne.pollRates();
 			torrentTwo.pollRates();
-			LOGGER.debug("[CLIENT ONE] Download: {}KiB/s, Upload: {}KiB/s [CLIENT TWO] Download: {}KiB/s, Upload: {}KiB/s",
+			LOGGER.debug("[CLIENT ONE] D: {}KiB/s, U: {}KiB/s, R: {}, [CLIENT TWO] D: {}KiB/s, U: {}KiB/s, R: {}",
 					torrentOne.getDownloadRate() / 1024 / INTERVAL_IN_SECONDS,
 					torrentOne.getUploadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentOne.getFileSet().getNeededPieces().count(),
 					torrentTwo.getDownloadRate() / 1024 / INTERVAL_IN_SECONDS,
-					torrentTwo.getUploadRate() / 1024 / INTERVAL_IN_SECONDS);
+					torrentTwo.getUploadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentTwo.getFileSet().getNeededPieces().count());
 
 		} while (latch.getCount() > 0);
 
