@@ -24,7 +24,7 @@ public class DownloadTorrentWithUtpIT extends DownloadTorrentIT {
 	public DownloadTorrentWithUtpIT() {
 		// The uTP implementation doesn't actually benefit from the speed gains in JBT-33.
 		// Increase this timeout to ensure this test can still pass.
-		timeout = new Timeout(5, TimeUnit.MINUTES);
+		timeout = new Timeout(10, TimeUnit.MINUTES);
 	}
 
 	protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
