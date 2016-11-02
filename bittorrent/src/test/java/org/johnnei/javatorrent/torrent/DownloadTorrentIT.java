@@ -142,7 +142,7 @@ public class DownloadTorrentIT {
 		LOGGER.info("Downloading test files...");
 		OkHttpClient client = new OkHttpClient();
 		Request request = new Request.Builder()
-				.url("http://download.gimp.org/pub/gimp/v2.8/windows/gimp-2.8.16-setup-1.exe")
+				.url("https://minecraftsao.johnnei.org/javatorrent/gimp-2.8.16-setup-1.exe")
 				.build();
 		Response response = client.newCall(request).execute();
 
