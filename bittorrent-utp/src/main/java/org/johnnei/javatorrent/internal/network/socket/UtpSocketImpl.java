@@ -215,11 +215,13 @@ public class UtpSocketImpl {
 
 				notifyLock.lock();
 				try {
-					Instant now = clock.instant();
-					if (!onPacketAcknowledged.awaitUntil(Date.from(oneSecondFromNow)) && now.isAfter(sendTimeoutTime)) {
-						throw new SocketTimeoutException(String.format(
-								"Failed to send packet (seq=%s) in a reasonable time frame.",
-								Short.toUnsignedInt(packet.getSequenceNumber())));
+					if (!onPacketAcknowledged.awaitUntil(Date.from(oneSecondFromNow))) {
+						Instant now = clock.instant();
+						if (now.isAfter(sendTimeoutTime)) {
+							throw new SocketTimeoutException(String.format(
+									"Failed to send packet (seq=%s) in a reasonable time frame.",
+									Short.toUnsignedInt(packet.getSequenceNumber())));
+						}
 					}
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
@@ -235,14 +237,15 @@ public class UtpSocketImpl {
 
 	private boolean canSendPacket(UtpPacket packet) {
 		if (connectionState == ConnectionState.CLOSED) {
-			return false;
+			// Allow sending as the doSend call will throw on closed sockets.
+			return true;
 		}
 
 		if (packet.getType() == UtpProtocol.ST_DATA) {
 			return packet.getPacketSize() < getAvailableWindowSize();
 		} else {
 			// Block all packets when the window size is 0 in order to trigger a timeout.
-			return getWindowSize() != 0;
+			return getSendWindowSize() != 0;
 		}
 	}
 
