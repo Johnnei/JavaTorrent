@@ -2,6 +2,14 @@ package org.johnnei.javatorrent.internal.tracker.http;
 
 import java.net.InetSocketAddress;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedList;
@@ -15,14 +23,6 @@ import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.PeerConnector;
-
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
@@ -50,10 +50,10 @@ public class HttpTrackerIT {
 	public WireMockRule wireMockRule = new WireMockRule(0);
 
 	private final byte[] torrentHash = new byte[] {
-			(byte) 0xFA,        0x6E,        0x2A, (byte) 0xBD,        0x65,
-			       0x2A,        0x1D, (byte) 0xC0,        0x05,        0x12,
-			(byte) 0x96,        0x0B, (byte) 0xED, (byte) 0xB3, (byte) 0xCE,
-			       0x6B, (byte) 0xDB,        0x49,        0x2D, (byte) 0xD5
+			(byte) 0x94,        0x7A, (byte) 0xB0,        0x12, (byte) 0xBD,
+			       0x1B, (byte) 0xF1,        0x1F,        0x4F,        0x1D,
+			       0x29, (byte) 0xF8, (byte) 0xFA,        0x1E, (byte) 0xAB,
+			       0x73, (byte) 0xA8, (byte) 0x5F, (byte) 0xE7, (byte) 0x93
 	};
 
 	private final byte[] peerId = new byte [] {
