@@ -305,15 +305,15 @@ public class UtpAckHandlerTest {
 		assertEquals("Bytes in flight must have increased after second register", 7, cut.countBytesInFlight());
 
 		// Packet must not have been resend yet
-		verify(socketMock, never()).send(same(packetTwo));
+		verify(socketMock, never()).resend(same(packetTwo));
 
 		cut.onReceivedPacket(ackOne);
 		// Packet must not have been resend yet
-		verify(socketMock, never()).send(same(packetTwo));
+		verify(socketMock, never()).resend(same(packetTwo));
 
 		// This ack should cause the resend.
 		cut.onReceivedPacket(ackOne);
-		verify(socketMock, times(1)).send(same(packetTwo));
+		verify(socketMock, times(1)).resend(same(packetTwo));
 
 		assertEquals("Bytes in flight must not change by resending a lost packet.", 7, cut.countBytesInFlight());
 	}
