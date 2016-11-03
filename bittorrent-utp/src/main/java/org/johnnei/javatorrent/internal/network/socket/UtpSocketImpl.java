@@ -345,7 +345,10 @@ public class UtpSocketImpl {
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(connectionIdReceive)))) {
 			// Record the time as early as possible to reduce the noise in the uTP packets.
 			int receiveTime = timer.getCurrentMicros();
-			lastInteraction = clock.instant();
+			if (getSendWindowSize() != 0 || packet.getType() == UtpProtocol.ST_DATA) {
+				// When the window is 0 we don't update this in order to trigger the timeout.
+				lastInteraction = clock.instant();
+			}
 			LOGGER.trace("Received {} from {}", packet, socketAddress);
 
 			clientWindowSize = packet.getWindowSize();
@@ -440,10 +443,12 @@ public class UtpSocketImpl {
 		int statePacketCount = statePackets.getAndSet(0);
 		int dataPacketCount = dataPackets.getAndSet(0);
 
-		LOGGER.debug("Socket has encountered a timeout after {}ms. Send Packets: {} Data, {} State.",
-				timeout.getDuration().toMillis(),
-				dataPacketCount,
-				statePacketCount);
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(connectionIdReceive)))) {
+			LOGGER.debug("Socket has encountered a timeout after {}ms. Send Packets: {} Data, {} State.",
+					timeout.getDuration().toMillis(),
+					dataPacketCount,
+					statePacketCount);
+		}
 		packetSize = 150;
 		window.onTimeout();
 
