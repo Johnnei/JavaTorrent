@@ -25,6 +25,7 @@ integration-tests:
     artifacts:
       expire_in: 1 week
       paths:
+      - "**/target/*.log"
       - "**/target/jacoco-it.exec"
 
 # Run a sonar analysis.
