@@ -298,6 +298,7 @@ public class UtpSocketImpl {
 
 		utpMultiplexer.send(new DatagramPacket(buffer, buffer.length, socketAddress));
 		LOGGER.trace("Sent {} to {} ({} / {} bytes).", packet, socketAddress, ackHandler, getSendWindowSize());
+		lastSendSequenceNumber = packet.getSequenceNumber();
 
 		if (packet.getType() == UtpProtocol.ST_STATE) {
 			statePackets.incrementAndGet();
