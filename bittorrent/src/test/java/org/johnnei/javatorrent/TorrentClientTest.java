@@ -16,6 +16,7 @@ import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.TestUtils;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
 import org.johnnei.javatorrent.tracker.IPeerDistributor;
 
@@ -52,6 +53,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		Torrent torrentMock = createMock(Torrent.class);
 		IDownloadPhase phaseMock = createMock(IDownloadPhase.class);
 		IPeerDistributor peerDistributorMock = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiterMock = createMock(IRequestLimiter.class);
 		peerConnectorMock.start();
 
 		TorrentClient.Builder builder = new TorrentClient.Builder();
@@ -71,6 +73,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setPeerDistributor(tc -> peerDistributorMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiterMock)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.registerTrackerProtocol("udp", (url, client) -> trackerMock)
 				.registerMessage(15, () -> messageMock)
@@ -124,6 +127,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributor = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiterMock = createMock(IRequestLimiter.class);
 		peerConnectorMock.start();
 
 		replayAll();
@@ -132,6 +136,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiterMock)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributor)
 				.registerTrackerProtocol("udp", (url, client) -> null)
@@ -153,6 +158,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributorMock = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiter = createMock(IRequestLimiter.class);
 		peerConnectorMock.start();
 
 		replayAll();
@@ -161,6 +167,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiter)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null);
@@ -188,6 +195,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributorMock = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiter = createMock(IRequestLimiter.class);
 		peerConnectorMock.start();
 
 		replayAll();
@@ -196,6 +204,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiter)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)
@@ -214,6 +223,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributorMock = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiterMock = createMock(IRequestLimiter.class);
 		IModule moduleMock = createMock(IModule.class);
 		moduleMock.configureTorrentClient(anyObject());
 		moduleMock.onBuild(anyObject());
@@ -233,6 +243,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiterMock)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)
@@ -258,6 +269,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributor = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiterMock = createMock(IRequestLimiter.class);
 		IOManager ioManagerMock = createMock(IOManager.class);
 		IDiskJob diskJobMock = createMock(IDiskJob.class);
 		peerConnectorMock.start();
@@ -270,6 +282,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiterMock)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributor)
 				.registerTrackerProtocol("udp", (url, client) -> null)
@@ -289,6 +302,7 @@ public class TorrentClientTest extends EasyMockSupport {
 		ScheduledExecutorService executorServiceMock = createMock(ScheduledExecutorService.class);
 		IPeerConnector peerConnectorMock = createMock(IPeerConnector.class);
 		IPeerDistributor peerDistributorMock = createMock(IPeerDistributor.class);
+		IRequestLimiter requestLimiterMock = createMock(IRequestLimiter.class);
 		peerConnectorMock.start();
 
 		replayAll();
@@ -297,6 +311,7 @@ public class TorrentClientTest extends EasyMockSupport {
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
 				.setExecutorService(executorServiceMock)
+				.setRequestLimiter(requestLimiterMock)
 				.setPeerConnector((t) -> peerConnectorMock)
 				.setPeerDistributor(tc -> peerDistributorMock)
 				.registerTrackerProtocol("udp", (url, client) -> null)

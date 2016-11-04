@@ -3,12 +3,12 @@ package org.johnnei.javatorrent.internal.utp;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utils.MathUtils;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpPacket;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.lang.Integer.toUnsignedLong;
 
@@ -27,7 +27,7 @@ public class UtpWindow {
 
 	private SlidingTimedValue<Integer> slidingBaseDelay;
 
-	private int maxWindow;
+	private volatile int maxWindow;
 
 	/**
 	 * Creates a new window manager.
@@ -44,11 +44,15 @@ public class UtpWindow {
 	 * @param packet The packet which affects the window size.
 	 */
 	public void update(UtpPacket packet) {
+		if (packet.getTimesSent() > 1) {
+			return;
+		}
+
 		slidingBaseDelay.addValue(packet.getTimestampDifferenceMicroseconds());
 		long ourDelay = toUnsignedLong(packet.getTimestampDifferenceMicroseconds()) - toUnsignedLong(slidingBaseDelay.getMinimum());
 		long offTarget = CONGESTION_CONTROL_TARGET - ourDelay;
 		double delayFactor = MathUtils.clamp(-1, 1, offTarget / (double) CONGESTION_CONTROL_TARGET);
-		double windowFactor = MathUtils.clamp(-1, 1, socket.getBytesInFlight() / (double) maxWindow);
+		double windowFactor = MathUtils.clamp(-1, 1, (packet.getPacketSize() + socket.getBytesInFlight()) / (double) maxWindow);
 		int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
 
 		maxWindow = Math.max(0, maxWindow + scaledGain);
@@ -77,5 +81,15 @@ public class UtpWindow {
 		if (maxWindow < 150) {
 			maxWindow = 150;
 		}
+	}
+
+	/**
+	 * Adds the given amount to the window. This is only used a fix on a clogged packet in flight fix and should be removed.
+	 * @param size the amount of bytes to the window
+	 * @deprecated
+	 */
+	@Deprecated
+	public void addToWindow(int size) {
+		maxWindow += size;
 	}
 }

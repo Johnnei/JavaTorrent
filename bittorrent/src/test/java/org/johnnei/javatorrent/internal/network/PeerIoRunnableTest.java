@@ -76,6 +76,9 @@ public class PeerIoRunnableTest extends EasyMockSupport {
 		socketFour.sendMessage();
 		expectLastCall().andThrow(new IOException("IOException stub"));
 		socketFour.close();
+		// Remove peer four so we won't interact with it anymore.
+		expect(peerFour.getTorrent()).andReturn(torrent);
+		torrent.removePeer(peerFour);
 
 		expect(torrent.getPeers()).andReturn(Arrays.asList(peerOne, peerTwo, peerThree, peerFour));
 

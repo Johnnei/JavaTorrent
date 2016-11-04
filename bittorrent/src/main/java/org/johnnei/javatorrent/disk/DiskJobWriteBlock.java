@@ -59,4 +59,8 @@ public class DiskJobWriteBlock implements IDiskJob {
 		return DiskJobPriority.RECEIVED_DATA.getPriority();
 	}
 
+	@Override
+	public String toString() {
+		return String.format("DiskJobWriteBlock[piece=%d, block=%d]", piece.getIndex(), blockIndex);
+	}
 }

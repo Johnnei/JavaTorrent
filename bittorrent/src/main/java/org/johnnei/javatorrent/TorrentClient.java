@@ -27,6 +27,7 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
 import org.johnnei.javatorrent.tracker.IPeerDistributor;
 import org.johnnei.javatorrent.utils.Argument;
@@ -57,6 +58,8 @@ public class TorrentClient {
 
 	private IPeerDistributor peerDistributor;
 
+	private IRequestLimiter requestLimiter;
+
 	private ScheduledExecutorService executorService;
 
 	private IOManager ioManager;
@@ -81,6 +84,7 @@ public class TorrentClient {
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
 		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
 		executorService = Objects.requireNonNull(builder.executorService, "Executor service is required to process torrent tasks.");
+		requestLimiter = Objects.requireNonNull(builder.requestLimiter, "Request Limiter is required to improve transfer rates.");
 
 		peerConnector = Objects.requireNonNull(builder.peerConnector, "Peer connector required to allow external connections").apply(this);
 		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
@@ -102,8 +106,8 @@ public class TorrentClient {
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
 		ioManager = new IOManager();
-		ioManagerRunner = new LoopingRunnable(ioManager);
-		Thread ioManagerThread = new Thread(ioManagerRunner, "Disk Manager");
+		ioManagerRunner = new LoopingRunnable(ioManager, true);
+		Thread ioManagerThread = new Thread(ioManagerRunner, String.format("Disk Manager - %s", ioManager.toString()));
 		ioManagerThread.setDaemon(true);
 		ioManagerThread.start();
 
@@ -299,6 +303,13 @@ public class TorrentClient {
 		return torrentManager.getTorrents().size();
 	}
 
+	/**
+	 * @return The configured limiter.
+	 */
+	public IRequestLimiter getRequestLimiter() {
+		return requestLimiter;
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -316,6 +327,8 @@ public class TorrentClient {
 		private Function<TorrentClient, IPeerDistributor> peerDistributor;
 
 		private ScheduledExecutorService executorService;
+
+		private IRequestLimiter requestLimiter;
 
 		private boolean acceptIncomingConnections;
 
@@ -394,6 +407,11 @@ public class TorrentClient {
 
 		public Builder setExecutorService(ScheduledExecutorService executorService) {
 			this.executorService = executorService;
+			return this;
+		}
+
+		public Builder setRequestLimiter(IRequestLimiter requestLimiter) {
+			this.requestLimiter = requestLimiter;
 			return this;
 		}
 

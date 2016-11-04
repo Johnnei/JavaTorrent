@@ -8,18 +8,18 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.UtpPeerConnectionAcceptor;
+import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
 import org.johnnei.javatorrent.internal.utp.UtpSocketRegistration;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.UtpPayloadFactory;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class is capable of multiplexing all {@link UtpSocket} instances on a single {@link DatagramSocket} and forwarding the packets to the sockets.
@@ -135,7 +135,7 @@ public class UtpMultiplexer implements Runnable {
 	 * @param datagramPacket The packet to send.
 	 * @throws IOException When the sending fails.
 	 */
-	public void send(DatagramPacket datagramPacket) throws IOException {
+	public synchronized void send(DatagramPacket datagramPacket) throws IOException {
 		multiplexerSocket.send(datagramPacket);
 	}
 

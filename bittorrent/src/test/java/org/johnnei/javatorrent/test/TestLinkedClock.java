@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Queue;
 
 import org.slf4j.Logger;
@@ -18,6 +20,10 @@ public class TestLinkedClock extends Clock {
 	private Queue<Clock> clocks;
 
 	private Clock clock;
+
+	public TestLinkedClock(Clock... clocks) {
+		this(new LinkedList<>(Arrays.asList(clocks)));
+	}
 
 	public TestLinkedClock(Queue<Clock> clocks) {
 		this.clocks = clocks;

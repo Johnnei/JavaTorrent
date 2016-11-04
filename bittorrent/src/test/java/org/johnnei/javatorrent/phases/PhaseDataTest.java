@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.TorrentClient;
@@ -83,7 +84,7 @@ public class PhaseDataTest {
 		when(torrentFileSetMock.getNeededPieces()).thenReturn(Stream.of(pieceMock, pieceMockTwo));
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrent);
-		Collection<Peer> relevantPeers = cut.getRelevantPeers(peerList);
+		Collection<Peer> relevantPeers = cut.getRelevantPeers(peerList).collect(Collectors.toList());
 
 		assertEquals("Incorrect amount of peers", 3, relevantPeers.size());
 		assertTrue("Relevant peer is missing", relevantPeers.contains(peerTwo));
@@ -199,7 +200,9 @@ public class PhaseDataTest {
 
 		Piece pieceMock = mock(Piece.class);
 
+		// Report that you have a needed block
 		when(pieceMock.hasBlockWithStatus(eq(BlockStatus.Needed))).thenReturn(true);
+		// But when we ask for it, it's no longer there.
 		when(pieceMock.getRequestBlock()).thenReturn(Optional.empty());
 		when(pieceMock.getIndex()).thenReturn(0);
 
@@ -210,11 +213,14 @@ public class PhaseDataTest {
 		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peer));
 		when(torrentMock.getPieceSelector()).thenReturn(pieceSelectorMock);
 		when(torrentMock.getFileSet()).thenReturn(fileSetMock);
-		when(pieceSelectorMock.getPieceForPeer(same(peer))).thenReturn(Optional.of(pieceMock));
+		// Second call returns empty so the test doesn't get stuck in a loop.
+		when(pieceSelectorMock.getPieceForPeer(same(peer))).thenReturn(Optional.of(pieceMock)).thenReturn(Optional.empty());
 		when(fileSetMock.getNeededPieces()).thenReturn(Collections.singletonList(pieceMock).stream());
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 		cut.process();
+
+		verify(pieceSelectorMock, times(2)).getPieceForPeer(same(peer));
 	}
 
 	@Test

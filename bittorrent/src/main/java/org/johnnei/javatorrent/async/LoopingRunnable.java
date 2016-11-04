@@ -14,10 +14,17 @@ public class LoopingRunnable implements Runnable {
 
 	private final Runnable runnable;
 
-	private boolean keepRunning;
+	private final boolean isEventBased;
+
+	private volatile boolean keepRunning;
 
 	public LoopingRunnable(Runnable runnable) {
+		this(runnable, false);
+	}
+
+	public LoopingRunnable(Runnable runnable, boolean isEventBased) {
 		this.runnable = Argument.requireNonNull(runnable, "Runnable not cannot be null");
+		this.isEventBased = isEventBased;
 		keepRunning = true;
 	}
 
@@ -33,12 +40,18 @@ public class LoopingRunnable implements Runnable {
 		while (keepRunning) {
 			runnable.run();
 
-			try {
-				Thread.sleep(5);
-			} catch (InterruptedException e) {
-				LOGGER.trace("Ignoring interrupted exception for endless looping task.", e);
-				Thread.currentThread().interrupt();
+			if (!isEventBased) {
+				throttleThread();
 			}
+		}
+	}
+
+	private void throttleThread() {
+		try {
+			Thread.sleep(5);
+		} catch (InterruptedException e) {
+			LOGGER.trace("Ignoring interrupted exception for endless looping task.", e);
+			Thread.currentThread().interrupt();
 		}
 	}
 

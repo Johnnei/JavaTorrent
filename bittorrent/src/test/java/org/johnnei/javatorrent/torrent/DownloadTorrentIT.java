@@ -13,18 +13,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
-import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
-import org.johnnei.javatorrent.network.ConnectionDegradation;
-import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.phases.PhaseData;
-import org.johnnei.javatorrent.phases.PhaseRegulator;
-import org.johnnei.javatorrent.phases.PhaseSeed;
-import org.johnnei.javatorrent.test.DummyEntity;
-import org.johnnei.javatorrent.tracker.PeerConnector;
-import org.johnnei.javatorrent.tracker.UncappedDistributor;
-
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -34,6 +22,19 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
+import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
+import org.johnnei.javatorrent.network.ConnectionDegradation;
+import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.phases.PhaseData;
+import org.johnnei.javatorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.phases.PhaseSeed;
+import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
+import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -70,7 +71,7 @@ public class DownloadTorrentIT {
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Rule
-	public Timeout timeout = new Timeout(5, TimeUnit.MINUTES);
+	public Timeout timeout = new Timeout(2, TimeUnit.MINUTES);
 
 	private void assertPreconditions(File torrentFile, File resultFile) throws Exception {
 		if (!resultFile.exists()) {
@@ -118,6 +119,7 @@ public class DownloadTorrentIT {
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))
 				.setPeerConnector(PeerConnector::new)
+				.setRequestLimiter(new RateBasedLimiter())
 				.setPeerDistributor(UncappedDistributor::new)
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
@@ -140,7 +142,7 @@ public class DownloadTorrentIT {
 		LOGGER.info("Downloading test files...");
 		OkHttpClient client = new OkHttpClient();
 		Request request = new Request.Builder()
-				.url("http://download.gimp.org/pub/gimp/v2.8/windows/gimp-2.8.16-setup-1.exe")
+				.url("https://minecraftsao.johnnei.org/javatorrent/gimp-2.8.16-setup-1.exe")
 				.build();
 		Response response = client.newCall(request).execute();
 
@@ -206,11 +208,13 @@ public class DownloadTorrentIT {
 			latch.await(INTERVAL_IN_SECONDS, TimeUnit.SECONDS);
 			torrentOne.pollRates();
 			torrentTwo.pollRates();
-			LOGGER.debug("[CLIENT ONE] Download: {}KiB/s, Upload: {}KiB/s [CLIENT TWO] Download: {}KiB/s, Upload: {}KiB/s",
+			LOGGER.debug("[CLIENT ONE] D: {}KiB/s, U: {}KiB/s, R: {}, [CLIENT TWO] D: {}KiB/s, U: {}KiB/s, R: {}",
 					torrentOne.getDownloadRate() / 1024 / INTERVAL_IN_SECONDS,
 					torrentOne.getUploadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentOne.getFileSet().getNeededPieces().count(),
 					torrentTwo.getDownloadRate() / 1024 / INTERVAL_IN_SECONDS,
-					torrentTwo.getUploadRate() / 1024 / INTERVAL_IN_SECONDS);
+					torrentTwo.getUploadRate() / 1024 / INTERVAL_IN_SECONDS,
+					torrentTwo.getFileSet().getNeededPieces().count());
 
 		} while (latch.getCount() > 0);
 

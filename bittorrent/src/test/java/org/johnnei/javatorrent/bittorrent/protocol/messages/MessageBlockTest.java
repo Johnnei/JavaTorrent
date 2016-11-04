@@ -1,11 +1,10 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
-
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
+import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -27,6 +26,7 @@ public class MessageBlockTest {
 	private Torrent torrentMock = mock(Torrent.class);
 	private TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
 	private Piece pieceMock = mock(Piece.class);
+	private IRequestLimiter requestLimiterMock = mock(IRequestLimiter.class);
 
 	@Test
 	public void testStaticMethods() {
@@ -42,28 +42,9 @@ public class MessageBlockTest {
 	private void prepareTest() {
 		when(peerMock.getTorrent()).thenReturn(torrentMock);
 		when(torrentMock.getFileSet()).thenReturn(fileSetMock);
+		when(torrentMock.getRequestLimiter()).thenReturn(requestLimiterMock);
 		when(pieceMock.getIndex()).thenReturn(5);
 		when(fileSetMock.getPiece(5)).thenReturn(pieceMock);
-	}
-
-	@Test
-	public void testProcessQuickReceive() {
-		InStream inStream = new InStream(new byte[] {
-				0x00, 0x00, 0x00, 0x05,
-				0x00, 0x00, 0x38, 0x00,
-				0x00
-		}, Duration.ofMillis(200));
-
-		prepareTest();
-
-		MessageBlock cut = new MessageBlock();
-		cut.read(inStream);
-		cut.process(peerMock);
-
-		verify(torrentMock).onReceivedBlock(fileSetMock, 5, 0x3800, new byte[] { 0x00 });
-		verify(peerMock).onReceivedBlock(pieceMock, 0x3800);
-		verify(peerMock).addStrike(-1);
-		verify(peerMock).setRequestLimit(5);
 	}
 
 	@Test
@@ -96,7 +77,7 @@ public class MessageBlockTest {
 		verify(torrentMock).onReceivedBlock(fileSetMock, 5, 0x3800, new byte[] { 0x00 });
 		verify(peerMock).onReceivedBlock(pieceMock, 0x3800);
 		verify(peerMock).addStrike(-1);
-		verify(peerMock).setRequestLimit(6);
+		verify(requestLimiterMock).onReceivedBlock(peerMock, cut);
 	}
 
 	@Test

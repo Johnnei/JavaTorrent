@@ -15,6 +15,7 @@ import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
@@ -50,6 +51,7 @@ public class ConnectUtpSocketIT {
 				.acceptIncomingConnections(false)
 				.setPeerDistributor(UncappedDistributor::new)
 				.registerModule(utpModule)
+				.setRequestLimiter(new RateBasedLimiter())
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
 						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
 						.build())

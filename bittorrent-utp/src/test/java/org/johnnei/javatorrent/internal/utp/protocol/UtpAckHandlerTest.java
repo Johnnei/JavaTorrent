@@ -3,11 +3,11 @@ package org.johnnei.javatorrent.internal.utp.protocol;
 import java.io.IOException;
 import java.util.List;
 
-import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
-import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
-
 import org.hamcrest.Matchers;
 import org.junit.Test;
+
+import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
@@ -153,7 +153,7 @@ public class UtpAckHandlerTest {
 		assertEquals("After init packet the return ACK number must be 5.", 5, cut.getAcknowledgeNumber());
 		assertThat("No packets were acked by the init packet", ackedPackets, empty());
 		// Initial packet must not cause a ST_STATE as it will be received during the SYN-phase.
-		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock, never()).send(isA(UtpPacket.class));
 
 		ackedPackets = cut.onReceivedPacket(ackTwo);
 
@@ -162,13 +162,13 @@ public class UtpAckHandlerTest {
 		assertEquals("After first ack the return ACK number must be 5 (Packet 6 is not acked yet).", 5, cut.getAcknowledgeNumber());
 		assertThat("All packets should have been returned as ACK'ed.", ackedPackets, Matchers.contains(packetOne, packetTwo));
 		// Even though a packet got ack'ed we don't know about packet 6 yet, so we MUST NOT send out a 7 (which also confirms 6).
-		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock, never()).send(isA(UtpPacket.class));
 
 		cut.onReceivedPacket(ackOne);
 
 		assertEquals("Bytes in flight after acks is incorrect", 0, cut.countBytesInFlight());
 		assertEquals("After second ack the return ACK number must be 7.", 7, cut.getAcknowledgeNumber());
-		verify(socketMock, times(2)).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock, times(2)).send(isA(UtpPacket.class));
 	}
 
 	@Test
@@ -206,14 +206,14 @@ public class UtpAckHandlerTest {
 		cut.onReceivedPacket(initPacket);
 		assertEquals("After init packet the return ACK number must be 5.", 5, cut.getAcknowledgeNumber());
 		// Initial packet must not cause a ST_STATE as it will be received during the SYN-phase.
-		verify(socketMock, never()).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock, never()).send(isA(UtpPacket.class));
 
 		cut.onReceivedPacket(ackOne);
 
 		assertEquals("Bytes in flight after first ack is incorrect", 7, cut.countBytesInFlight());
 		assertEquals("After first ack the return ACK number is incorrect.", 6, cut.getAcknowledgeNumber());
 
-		verify(socketMock, times(1)).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock, times(1)).send(isA(UtpPacket.class));
 
 
 		cut.onReceivedPacket(ackTwo);
@@ -222,7 +222,7 @@ public class UtpAckHandlerTest {
 		assertEquals("After second ack the return ACK number is incorrect.", 6, cut.getAcknowledgeNumber());
 
 		// Don't send out another ST_STATE to confirm that we received seq_nr 7 as it is not the data packet.
-		verify(socketMock, times(1)).sendUnbounded(isA(UtpPacket.class));
+		verify(socketMock, times(1)).send(isA(UtpPacket.class));
 	}
 
 	@Test
@@ -257,12 +257,12 @@ public class UtpAckHandlerTest {
 		assertEquals("After first ack the second packet should no longer be in flight.", 0, cut.countBytesInFlight());
 
 		// Packet must not have been resend yet
-		verify(socketMock, never()).sendUnbounded(any());
+		verify(socketMock, never()).send(any(UtpPacket.class));
 
 		for (int i = 0; i < 2; i++) {
 			cut.onReceivedPacket(ackOne);
 			// Packet must not have been resend as there is no missing packet.
-			verify(socketMock, never()).sendUnbounded(any());
+			verify(socketMock, never()).send(any(UtpPacket.class));
 		}
 	}
 
@@ -305,15 +305,15 @@ public class UtpAckHandlerTest {
 		assertEquals("Bytes in flight must have increased after second register", 7, cut.countBytesInFlight());
 
 		// Packet must not have been resend yet
-		verify(socketMock, never()).sendUnbounded(same(packetTwo));
+		verify(socketMock, never()).resend(same(packetTwo));
 
 		cut.onReceivedPacket(ackOne);
 		// Packet must not have been resend yet
-		verify(socketMock, never()).sendUnbounded(same(packetTwo));
+		verify(socketMock, never()).resend(same(packetTwo));
 
 		// This ack should cause the resend.
 		cut.onReceivedPacket(ackOne);
-		verify(socketMock, times(1)).sendUnbounded(same(packetTwo));
+		verify(socketMock, times(1)).resend(same(packetTwo));
 
 		assertEquals("Bytes in flight must not change by resending a lost packet.", 7, cut.countBytesInFlight());
 	}

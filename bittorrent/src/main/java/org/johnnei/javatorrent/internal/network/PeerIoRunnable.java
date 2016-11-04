@@ -25,12 +25,6 @@ public class PeerIoRunnable implements Runnable {
 	@Override
 	public void run() {
 		manager.getTorrents().forEach(this::processTorrent);
-		try {
-			Thread.sleep(5);
-		} catch (InterruptedException e) {
-			LOGGER.warn("Peer IO got interrupted", e);
-			Thread.currentThread().interrupt();
-		}
 	}
 
 	private void processTorrent(final Torrent torrent) {
@@ -48,6 +42,7 @@ public class PeerIoRunnable implements Runnable {
 		} catch (IOException e) {
 			LOGGER.error(String.format("IO Error for peer: %s", peer), e);
 			peer.getBitTorrentSocket().close();
+			peer.getTorrent().removePeer(peer);
 		}
 	}
 

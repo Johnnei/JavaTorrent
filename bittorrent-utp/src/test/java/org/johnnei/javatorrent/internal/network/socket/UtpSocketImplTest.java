@@ -14,6 +14,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.powermock.reflect.Whitebox;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.internal.utp.UtpTimeout;
 import org.johnnei.javatorrent.internal.utp.UtpWindow;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
@@ -24,16 +34,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocol;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.payload.IPayload;
 import org.johnnei.javatorrent.test.DummyEntity;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.powermock.reflect.Whitebox;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.johnnei.javatorrent.test.TestLinkedClock;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.isA;
@@ -350,6 +351,10 @@ public class UtpSocketImplTest {
 		thrown.expect(IOException.class);
 		thrown.expectMessage("did not respond");
 
+		UtpWindow windowMock = mock(UtpWindow.class);
+		Whitebox.setInternalState(cut, UtpWindow.class, windowMock);
+		when(windowMock.getSize()).thenReturn(150);
+
 		// Get the locks to fake that we reached the timeout
 		ReentrantLock lock = Whitebox.getInternalState(cut, "notifyLock");
 		Condition wakeUpCondition = Whitebox.getInternalState(cut, "onPacketAcknowledged");
@@ -411,12 +416,15 @@ public class UtpSocketImplTest {
 	@Test
 	public void testSendTimeout() throws Exception {
 		thrown.expect(SocketTimeoutException.class);
-		thrown.expectMessage("Failed to send packet in a reasonable time frame.");
+		thrown.expectMessage("reasonable time frame.");
 
 		injectBlockSendMock();
 
 		// Adjust the time in order that the remaining wait time should be 100ms instead of the full 10 seconds.
-		Whitebox.setInternalState(cut, Clock.class, Clock.offset(Clock.systemDefaultZone(), Duration.ZERO.minusSeconds(9).minusMillis(900)));
+		TestLinkedClock clock = new TestLinkedClock(
+				Clock.offset(Clock.systemDefaultZone(), Duration.ZERO.minusSeconds(9).minusMillis(900)),
+				Clock.systemDefaultZone());
+		Whitebox.setInternalState(cut, Clock.class, clock);
 
 		IPayload payloadMock = mock(IPayload.class);
 		when(payloadMock.getSize()).thenReturn(130);

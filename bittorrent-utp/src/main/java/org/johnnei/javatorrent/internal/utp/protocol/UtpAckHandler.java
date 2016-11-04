@@ -13,12 +13,13 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
-import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
-import org.johnnei.javatorrent.internal.utils.RecentLinkedList;
-import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
+import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
+import org.johnnei.javatorrent.internal.utils.RecentLinkedList;
+import org.johnnei.javatorrent.internal.utp.protocol.payload.StatePayload;
 
 import static java.lang.Short.toUnsignedInt;
 
@@ -58,6 +59,8 @@ public class UtpAckHandler {
 	private short acknowledgeNumber;
 
 	private RecentLinkedList<Acknowledgement> acknowledgements;
+
+	private PrecisionTimer timer = new PrecisionTimer();
 
 	/**
 	 * Creates a new Utp Acknowledgement handler.
@@ -173,14 +176,14 @@ public class UtpAckHandler {
 
 		if (!lostPacketOptional.isPresent()) {
 			if (socket.getSequenceNumber() > nextSequenceNumber) {
-				LOGGER.trace("Packet seq={} appears to be lost, but we've seen an ACK for it so it can't be resend.", Short.toUnsignedInt(nextSequenceNumber));
+				LOGGER.debug("Packet seq={} appears to be lost, but we've seen an ACK for it so it can't be resend.", Short.toUnsignedInt(nextSequenceNumber));
 			}
 			return;
 		}
 
 		UtpPacket lostPacket = lostPacketOptional.get();
 		LOGGER.trace("Resending lost packet {}", lostPacket);
-		socket.sendUnbounded(lostPacket);
+		socket.resend(lostPacket);
 	}
 
 	private void updateAcknowledgeNumber(UtpPacket packet) throws IOException {
@@ -200,9 +203,13 @@ public class UtpAckHandler {
 					acknowledgeNumber = nextPacket;
 
 					UtpPacket statePacket = new UtpPacket(socket, new StatePayload());
-					LOGGER.trace("Sending ACK message for {}, caused by {}.", Short.toUnsignedInt(acknowledgeNumber), packet);
-					socket.sendUnbounded(statePacket);
-					LOGGER.trace("Sent ACK {} for {}.", statePacket, Short.toUnsignedInt(acknowledgeNumber));
+					int sentTime = timer.getCurrentMicros();
+					socket.send(statePacket);
+					int afterSend = timer.getCurrentMicros();
+					LOGGER.trace("Sent ACK message for {}, caused by {}. Took {}us",
+							Short.toUnsignedInt(acknowledgeNumber),
+							packet,
+							afterSend - sentTime);
 				} else {
 					break;
 				}

@@ -17,6 +17,7 @@ import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
+import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -418,6 +419,10 @@ public class Torrent {
 
 	public void setPieceSelector(IPieceSelector downloadRegulator) {
 		this.pieceSelector = downloadRegulator;
+	}
+
+	public IRequestLimiter getRequestLimiter() {
+		return torrentClient.getRequestLimiter();
 	}
 
 	/**
