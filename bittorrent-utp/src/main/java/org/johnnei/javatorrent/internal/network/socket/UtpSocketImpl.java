@@ -451,6 +451,7 @@ public class UtpSocketImpl {
 		}
 		packetSize = 150;
 		window.onTimeout();
+		window.addToWindow(ackHandler.countBytesInFlight());
 
 		sendUnbounded(new UtpPacket(this, new StatePayload()));
 	}

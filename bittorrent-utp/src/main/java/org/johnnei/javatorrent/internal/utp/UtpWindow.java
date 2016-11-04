@@ -82,4 +82,14 @@ public class UtpWindow {
 			maxWindow = 150;
 		}
 	}
+
+	/**
+	 * Adds the given amount to the window. This is only used a fix on a clogged packet in flight fix and should be removed.
+	 * @param size the amount of bytes to the window
+	 * @deprecated
+	 */
+	@Deprecated
+	public void addToWindow(int size) {
+		maxWindow += size;
+	}
 }
