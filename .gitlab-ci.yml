@@ -30,14 +30,14 @@ integration-tests:
 # PR Analysis
 sonarqube:
     stage: qa
-    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.analysis.mode=issues -Dsonar.gitlab.analyse.commit=$CI_BUILD_REF"
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.analysis.mode=issues -Dsonar.gitlab.analyse.commit=$CI_BUILD_REF -Dsonar.login=$SONAR_TOKEN"
     only: ["/^feature\\/.*$/"]
     dependencies: []
 
 # Run a sonar analysis.
 sonarqube.johnnei.org:
     stage: qa
-    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org"
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
     only: ["develop"]
     dependencies:
       - quicktests
