@@ -32,7 +32,7 @@ sonarqube:
     stage: qa
     script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.analysis.mode=issues -Dsonar.gitlab.analyse.commit=$CI_BUILD_REF"
     only: ["/^feature\\/.*$/"]
-    dependencies: ["quicktests"]
+    dependencies: []
 
 # Run a sonar analysis.
 sonarqube.johnnei.org:
