@@ -6,25 +6,10 @@
     <version>0.5.2-SNAPSHOT</version>
   </parent>
   <artifactId>javatorrent-bittorrent-utp</artifactId>
-  <name>JavaTorrent Module: uTP Support (BEP #29)</name>
+  <name>JavaTorrent :: Module :: uTP Protocol (BEP #29)</name>
   <build>
 
-    <testResources>
-      <testResource>
-        <directory>src/test/resources</directory>
-        <filtering>false</filtering>
-      </testResource>
-      <testResource>
-        <directory>src/test/filtered-resources</directory>
-        <filtering>true</filtering>
-      </testResource>
-    </testResources>
-
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

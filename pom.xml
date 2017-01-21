@@ -4,7 +4,7 @@
   <artifactId>javatorrent</artifactId>
   <version>0.5.2-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>JavaTorrent Parent POM</name>
+  <name>JavaTorrent</name>
   <description>BitTorrent Protocol implementation as java library</description>
   <url>https://github.com/Johnnei/JavaTorrent</url>
 
@@ -47,6 +47,7 @@
     <module>bittorrent-extension-ut-metadata</module>
     <module>bittorrent-tracker-udp</module>
     <module>bittorrent-utp</module>
+    <module>bittorrent-integration-tests</module>
   </modules>
 
   <properties>
@@ -55,8 +56,9 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Configure Sonar Settings -->
-    <sonar.jacoco.reportMissing.force.zero>true</sonar.jacoco.reportMissing.force.zero>
+    <skipTests>false</skipTests>
+    <skipUTs>${skipTests}</skipUTs>
+    <skipITs>${skipTests}</skipITs>
 
     <!-- Define plugin versions -->
     <plugin.org.apache.maven.plugins.maven-failsafe-plugin>2.19.1</plugin.org.apache.maven.plugins.maven-failsafe-plugin>
@@ -68,7 +70,8 @@
     <plugin.org.codehaus.mojo.build-helper-maven-plugin>1.10</plugin.org.codehaus.mojo.build-helper-maven-plugin>
     <plugin.org.jacoco.jacoco-maven-plugin>0.7.6.201602180812</plugin.org.jacoco.jacoco-maven-plugin>
     <plugin.org.sonarsource.scanner.maven.sonar-maven-plugin>3.0.1</plugin.org.sonarsource.scanner.maven.sonar-maven-plugin>
-    <plguin.org.sonatype.plugins.nexus-staging-maven-plugin>1.6.7</plguin.org.sonatype.plugins.nexus-staging-maven-plugin>
+    <plugin.org.sonatype.plugins.nexus-staging-maven-plugin>1.6.7</plugin.org.sonatype.plugins.nexus-staging-maven-plugin>
+    <plugin.surefire.version>2.19.1</plugin.surefire.version>
 
     <!-- Define dependency versions -->
     <dependency.com.jayway.awaitility.awaitility>1.7.0</dependency.com.jayway.awaitility.awaitility>
@@ -89,6 +92,17 @@
     </snapshotRepository>
   </distributionManagement>
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${plugin.surefire.version}</version>
+        <configuration>
+          <skipTests>${skipUTs}</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+
     <pluginManagement>
       <plugins>
         <!-- Plugin to allow templated code generation -->
@@ -115,19 +129,6 @@
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
           <version>${plugin.org.sonarsource.scanner.maven.sonar-maven-plugin}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>${plugin.org.apache.maven.plugins.maven-failsafe-plugin}</version>
-          <executions>
-            <execution>
-              <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
@@ -169,7 +170,7 @@
           <plugin>
             <groupId>org.sonatype.plugins</groupId>
             <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>${plguin.org.sonatype.plugins.nexus-staging-maven-plugin}</version>
+            <version>${plugin.org.sonatype.plugins.nexus-staging-maven-plugin}</version>
             <extensions>true</extensions>
             <configuration>
               <serverId>ossrh</serverId>
@@ -255,6 +256,16 @@
       <dependency>
         <groupId>org.johnnei</groupId>
         <artifactId>javatorrent-bittorrent-extension</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.johnnei</groupId>
+        <artifactId>javatorrent-bittorrent-utp</artifactId>
         <version>${project.version}</version>
       </dependency>
 

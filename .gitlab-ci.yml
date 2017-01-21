@@ -4,6 +4,9 @@ stages:
     - qa
     - deploy
 
+cache:
+  paths: ["/root/.m2"]
+
 # Compile the code, must succeed before we start testing.
 build:
     stage: build
@@ -21,16 +24,24 @@ quicktests:
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
-    script: "mvn -B verify --fail-at-end -Dtest=excludeUnitTests -DfailIfNoTests=false"
+    script: "mvn -B verify --fail-at-end -DskipUTs=true"
     artifacts:
       expire_in: 1 week
       paths:
       - "**/target/jacoco-it.exec"
 
-# Run a sonar analysis.
-sonar:
+# PR Analysis
+sonarqube:
     stage: qa
-    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.branch=$CI_BUILD_REF_NAME"
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.analysis.mode=issues -Dsonar.gitlab.analyse.commit=$CI_BUILD_REF -Dsonar.login=$SONAR_TOKEN"
+    only: ["/^feature\\/.*$/"]
+    dependencies: []
+
+# Run a sonar analysis.
+sonarqube.johnnei.org:
+    stage: qa
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
+    only: ["develop"]
     dependencies:
       - quicktests
       - integration-tests

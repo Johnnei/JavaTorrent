@@ -6,14 +6,10 @@
     <version>0.5.2-SNAPSHOT</version>
   </parent>
   <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
-  <name>JavaTorrent Module: ut_metadata (BEP #9)</name>
+  <name>JavaTorrent :: Module :: ut_metadata (BEP #9)</name>
   <description>ut_metadata implementation for JavaTorrent</description>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

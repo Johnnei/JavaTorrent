@@ -2,13 +2,13 @@ package org.johnnei.javatorrent.torrent;
 
 import java.io.File;
 
-import org.johnnei.javatorrent.test.DummyEntity;
-
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import org.johnnei.javatorrent.test.DummyEntity;
 
 /**
  * Tests {@link MetadataFileSet}

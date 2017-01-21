@@ -5,6 +5,15 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.jayway.awaitility.Awaitility;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+import org.powermock.reflect.Whitebox;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl;
@@ -19,17 +28,8 @@ import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static com.jayway.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.powermock.reflect.Whitebox.getInternalState;
 
 /**
  * Tests the ability to cleanly connect and disconnect on uTP sockets.
@@ -88,20 +88,20 @@ public class ConnectUtpSocketIT {
 
 		ISocket localSocket = localUtpModule.createSocketFactory().get();
 
-		UtpMultiplexer remoteMultiplexer = getInternalState(remoteUtpModule, UtpMultiplexer.class);
+		UtpMultiplexer remoteMultiplexer = Whitebox.getInternalState(remoteUtpModule, UtpMultiplexer.class);
 
 		assertNotNull("Failed to putIfAbsent UtpMultiplexer instance on remote UtpModule", remoteMultiplexer);
 
 		LOGGER.info("Connecting sockets.");
 		localSocket.connect(new InetSocketAddress("localhost", remoteClient.getDownloadPort()));
 
-		UtpSocketImpl localSocketImpl = getInternalState(localSocket, UtpSocketImpl.class);
+		UtpSocketImpl localSocketImpl = Whitebox.getInternalState(localSocket, UtpSocketImpl.class);
 		assertNotNull("Failed to putIfAbsent the UtpSocketImpl instance on local socket", localSocketImpl);
 
 		assertEquals("Connection state on local socket must have transitioned to connected.", ConnectionState.CONNECTED, localSocketImpl.getConnectionState());
 
-		Map<Short, UtpSocketRegistration> localSockets = getInternalState(getInternalState(localUtpModule, UtpMultiplexer.class), "utpSockets");
-		Map<Short, UtpSocketRegistration> remoteSockets = getInternalState(remoteMultiplexer, "utpSockets");
+		Map<Short, UtpSocketRegistration> localSockets = Whitebox.getInternalState(Whitebox.getInternalState(localUtpModule, UtpMultiplexer.class), "utpSockets");
+		Map<Short, UtpSocketRegistration> remoteSockets = Whitebox.getInternalState(remoteMultiplexer, "utpSockets");
 
 		UtpSocketRegistration remoteRegistration = remoteSockets.get(localSocketImpl.getSendingConnectionId());
 
@@ -115,7 +115,7 @@ public class ConnectUtpSocketIT {
 		localSocket.flush();
 
 		// This transition might take a few seconds due to the physical connection usage.
-		await("Remote socket failed to transition to connect.")
+		Awaitility.await("Remote socket failed to transition to connect.")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> remoteSocketImpl.getConnectionState() == ConnectionState.CONNECTED);
 
@@ -131,23 +131,23 @@ public class ConnectUtpSocketIT {
 		localSocket.close();
 
 		assertEquals("Connection state must have transitioned on local socket", ConnectionState.DISCONNECTING, localSocketImpl.getConnectionState());
-		await("Remote socket failed to transition on disconnect.")
+		Awaitility.await("Remote socket failed to transition on disconnect.")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> remoteSocketImpl.getConnectionState() == ConnectionState.DISCONNECTING);
 
 		LOGGER.info("Close has been triggered, awaiting that sockets clean themselves up.");
-		await("Local socket transition to closed")
+		Awaitility.await("Local socket transition to closed")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> localSocketImpl.getConnectionState() == ConnectionState.CLOSED);
-		await("Remote socket transition to closed")
+		Awaitility.await("Remote socket transition to closed")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> remoteSocketImpl.getConnectionState() == ConnectionState.CLOSED);
 
-		await("Local socket registration clean up")
+		Awaitility.await("Local socket registration clean up")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> !localSockets.containsKey(localSocketImpl.getReceivingConnectionId()));
 
-		await("Remote socket registration clean up")
+		Awaitility.await("Remote socket registration clean up")
 				.atMost(5, TimeUnit.SECONDS)
 				.until(() -> !remoteSockets.containsKey(remoteSocketImpl.getReceivingConnectionId()));
 	}
