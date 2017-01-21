@@ -12,6 +12,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
@@ -32,13 +39,6 @@ import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 import org.johnnei.javatorrent.utils.StringUtils;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -49,7 +49,7 @@ public class DownloadMetadataIT {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DownloadMetadataIT.class);
 
-	private static final String SINGLE_FILE_TORRENT = "../../phases/gimp-2.8.16-setup-1.exe.torrent";
+	private static final String SINGLE_FILE_TORRENT = "/torrent-files/gimp-2.8.16-setup-1.exe.torrent";
 
 	private static final byte[] TORRENT_FILE_HASH = new byte[] {
 			(byte) 0xc8,        0x36, (byte) 0x9f,        0x0b, (byte) 0xa4,

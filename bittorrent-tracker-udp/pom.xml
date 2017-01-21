@@ -6,14 +6,10 @@
     <version>0.5.2-SNAPSHOT</version>
   </parent>
   <artifactId>javatorrent-bittorrent-tracker-udp</artifactId>
-  <name>JavaTorrent Module: UDP Tracker (BEP #15)</name>
+  <name>JavaTorrent :: Module :: UDP Tracker (BEP #15)</name>
   <description>Adds support for UDP based trackers</description>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

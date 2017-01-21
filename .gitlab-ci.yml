@@ -4,6 +4,9 @@ stages:
     - qa
     - deploy
 
+cache:
+  paths: ["/root/.m2"]
+
 # Compile the code, must succeed before we start testing.
 build:
     stage: build
@@ -21,7 +24,7 @@ quicktests:
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
-    script: "mvn -B verify --fail-at-end -Dtest=excludeUnitTests -DfailIfNoTests=false"
+    script: "mvn -B verify --fail-at-end -DskipUTs=true"
     artifacts:
       expire_in: 1 week
       paths:

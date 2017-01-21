@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.tracker.http;
+package org.johnnei.javatorrent.tracker.http;
 
 import java.net.InetSocketAddress;
 
@@ -16,6 +16,7 @@ import org.johnnei.javatorrent.bittorrent.encoding.BencodedList;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedString;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.internal.tracker.http.HttpTracker;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.test.DummyEntity;
@@ -24,14 +25,6 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.absent;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.matching;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -92,17 +85,17 @@ public class HttpTrackerIT {
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
-		stubFor(get(urlPathEqualTo("/announce"))
+		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 				// Can't match the exact requests as jetty parses the incorrect UTF-8.
-				.withQueryParam("info_hash", matching(".*"))
-				.withQueryParam("peer_id", matching(".*"))
-				.withQueryParam("port", equalTo("27960"))
-				.withQueryParam("uploaded", equalTo("0"))
-				.withQueryParam("downloaded", equalTo("0"))
-				.withQueryParam("left", equalTo("0"))
-				.withQueryParam("compact", equalTo("0"))
-				.withQueryParam("event", equalTo("started"))
-				.willReturn(aResponse().withBody(outStream.toByteArray()))
+				.withQueryParam("info_hash", WireMock.matching(".*"))
+				.withQueryParam("peer_id", WireMock.matching(".*"))
+				.withQueryParam("port", WireMock.equalTo("27960"))
+				.withQueryParam("uploaded", WireMock.equalTo("0"))
+				.withQueryParam("downloaded", WireMock.equalTo("0"))
+				.withQueryParam("left", WireMock.equalTo("0"))
+				.withQueryParam("compact", WireMock.equalTo("0"))
+				.withQueryParam("event", WireMock.equalTo("started"))
+				.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
 		PeerConnector peerConnectorMock = mock(PeerConnector.class);
@@ -146,17 +139,17 @@ public class HttpTrackerIT {
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
-		stubFor(get(urlPathEqualTo("/announce"))
+		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 				// Can't match the exact requests as jetty parses the incorrect UTF-8.
-				.withQueryParam("info_hash", matching(".*"))
-				.withQueryParam("peer_id", matching(".*"))
-				.withQueryParam("port", equalTo("27960"))
-				.withQueryParam("uploaded", equalTo("0"))
-				.withQueryParam("downloaded", equalTo("0"))
-				.withQueryParam("left", equalTo("0"))
-				.withQueryParam("compact", equalTo("0"))
-				.withQueryParam("event", equalTo("completed"))
-				.willReturn(aResponse().withBody(outStream.toByteArray()))
+				.withQueryParam("info_hash", WireMock.matching(".*"))
+				.withQueryParam("peer_id", WireMock.matching(".*"))
+				.withQueryParam("port", WireMock.equalTo("27960"))
+				.withQueryParam("uploaded", WireMock.equalTo("0"))
+				.withQueryParam("downloaded", WireMock.equalTo("0"))
+				.withQueryParam("left", WireMock.equalTo("0"))
+				.withQueryParam("compact", WireMock.equalTo("0"))
+				.withQueryParam("event", WireMock.equalTo("completed"))
+				.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
@@ -197,17 +190,17 @@ public class HttpTrackerIT {
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
-		stubFor(get(urlPathEqualTo("/announce"))
+		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 				// Can't match the exact requests as jetty parses the incorrect UTF-8.
-				.withQueryParam("info_hash", matching(".*"))
-				.withQueryParam("peer_id", matching(".*"))
-				.withQueryParam("port", equalTo("27960"))
-				.withQueryParam("uploaded", equalTo("0"))
-				.withQueryParam("downloaded", equalTo("0"))
-				.withQueryParam("left", equalTo("0"))
-				.withQueryParam("compact", equalTo("0"))
-				.withQueryParam("event", absent())
-				.willReturn(aResponse().withBody(outStream.toByteArray()))
+				.withQueryParam("info_hash", WireMock.matching(".*"))
+				.withQueryParam("peer_id", WireMock.matching(".*"))
+				.withQueryParam("port", WireMock.equalTo("27960"))
+				.withQueryParam("uploaded", WireMock.equalTo("0"))
+				.withQueryParam("downloaded", WireMock.equalTo("0"))
+				.withQueryParam("left", WireMock.equalTo("0"))
+				.withQueryParam("compact", WireMock.equalTo("0"))
+				.withQueryParam("event", WireMock.absent())
+				.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
@@ -248,16 +241,16 @@ public class HttpTrackerIT {
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
-		stubFor(get(urlPathEqualTo("/announce"))
+		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 				// Can't match the exact requests as jetty parses the incorrect UTF-8.
-				.withQueryParam("info_hash", matching(".*"))
-				.withQueryParam("peer_id", matching(".*"))
-				.withQueryParam("port", equalTo("27960"))
-				.withQueryParam("uploaded", equalTo("0"))
-				.withQueryParam("downloaded", equalTo("0"))
-				.withQueryParam("left", equalTo("0"))
-				.withQueryParam("compact", equalTo("0"))
-				.willReturn(aResponse().withBody(outStream.toByteArray()))
+				.withQueryParam("info_hash", WireMock.matching(".*"))
+				.withQueryParam("peer_id", WireMock.matching(".*"))
+				.withQueryParam("port", WireMock.equalTo("27960"))
+				.withQueryParam("uploaded", WireMock.equalTo("0"))
+				.withQueryParam("downloaded", WireMock.equalTo("0"))
+				.withQueryParam("left", WireMock.equalTo("0"))
+				.withQueryParam("compact", WireMock.equalTo("0"))
+				.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
@@ -289,7 +282,7 @@ public class HttpTrackerIT {
 		// This request should be denied because the interval hasn't expired yet.
 		cut.announce(torrentMock);
 
-		WireMock.verify(1, getRequestedFor(urlPathEqualTo("/announce")));
+		WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo("/announce")));
 	}
 
 	@Test
@@ -302,17 +295,17 @@ public class HttpTrackerIT {
 
 		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
 
-		stubFor(get(urlPathEqualTo("/announce"))
+		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 				// Can't match the exact requests as jetty parses the incorrect UTF-8.
-				.withQueryParam("info_hash", matching(".*"))
-				.withQueryParam("peer_id", matching(".*"))
-				.withQueryParam("port", equalTo("27960"))
-				.withQueryParam("uploaded", equalTo("0"))
-				.withQueryParam("downloaded", equalTo("0"))
-				.withQueryParam("left", equalTo("0"))
-				.withQueryParam("compact", equalTo("0"))
-				.withQueryParam("event", equalTo("completed"))
-				.willReturn(aResponse().withBody(outStream.toByteArray()))
+				.withQueryParam("info_hash", WireMock.matching(".*"))
+				.withQueryParam("peer_id", WireMock.matching(".*"))
+				.withQueryParam("port", WireMock.equalTo("27960"))
+				.withQueryParam("uploaded", WireMock.equalTo("0"))
+				.withQueryParam("downloaded", WireMock.equalTo("0"))
+				.withQueryParam("left", WireMock.equalTo("0"))
+				.withQueryParam("compact", WireMock.equalTo("0"))
+				.withQueryParam("event", WireMock.equalTo("completed"))
+				.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
