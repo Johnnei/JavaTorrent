@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.utp;
+package org.johnnei.javatorrent.internal.utils;
 
 import java.time.Clock;
 import java.time.Instant;

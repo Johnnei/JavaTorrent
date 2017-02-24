@@ -1,10 +1,12 @@
-package org.johnnei.javatorrent.internal.utp;
+package org.johnnei.javatorrent.internal.utils;
 
 import java.time.Clock;
 import java.time.Duration;
 
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
+
+import org.johnnei.javatorrent.internal.utils.SlidingTimedValue;
 
 import static org.junit.Assert.assertEquals;
 

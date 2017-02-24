@@ -11,7 +11,6 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.network.AbstractPeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
-import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
 
 /**
  * Accepts connection which have been detected as a new connection in {@link org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer}
@@ -22,7 +21,7 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 
 	private final Condition onNewConnection = notifyLock.newCondition();
 
-	private final Queue<UtpSocket> socketQueue;
+	private final Queue<ISocket> socketQueue;
 
 	/**
 	 * Creates a new uTP acceptor
@@ -37,7 +36,7 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 	 * Adds a newly found uTP connection to the queue to be connected.
 	 * @param socket The socket to add.
 	 */
-	public void onReceivedConnection(UtpSocket socket) {
+	public void onReceivedConnection(ISocket socket) {
 		synchronized (this) {
 			socketQueue.add(socket);
 		}

@@ -3,7 +3,6 @@ package org.johnnei.javatorrent.utp;
 import java.io.IOException;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
 
 import org.junit.Test;
 
@@ -48,17 +47,8 @@ public class UtpModuleTest {
 	public void testOnBuildAndShutdown() throws Exception {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 
-		UtpModule cut = new UtpModuleStub();
+		UtpModule cut = new UtpModule();
 		cut.onBuild(torrentClientMock);
 		cut.onShutdown();
-	}
-
-	private class UtpModuleStub extends UtpModule {
-
-		@Override
-		UtpMultiplexer createMultiplexer(TorrentClient torrentclient) {
-			return mock(UtpMultiplexer.class);
-		}
-
 	}
 }

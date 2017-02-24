@@ -5,15 +5,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.powermock.reflect.Whitebox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -24,15 +24,13 @@ import static org.mockito.Mockito.mock;
  */
 public class UtpPeerConnectionAcceptorTest {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(UtpPeerConnectionAcceptorTest.class);
-
 	@Rule
 	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void testAcceptSocket() throws IOException {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		UtpSocket socketMock = mock(UtpSocket.class);
+		ISocket socketMock = mock(ISocket.class);
 
 		UtpPeerConnectionAcceptor cut = new UtpPeerConnectionAcceptor(torrentClientMock);
 
