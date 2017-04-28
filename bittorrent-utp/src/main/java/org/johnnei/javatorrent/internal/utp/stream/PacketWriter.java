@@ -1,23 +1,29 @@
 package org.johnnei.javatorrent.internal.utp.stream;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
-import org.johnnei.javatorrent.network.OutStream;
 
 public class PacketWriter {
 
-    public void write(OutStream outStream, UtpPacket packet) throws IOException {
-        int typeAndVersion = (packet.getHeader().getType() << 4) | (packet.getHeader().getVersion() & 0xF);
-        outStream.writeByte(typeAndVersion);
-        // We don't support extension yet.
-        outStream.writeByte(0);
-        outStream.writeShort(packet.getHeader().getConnectionId());
-        outStream.writeInt(packet.getHeader().getTimestamp());
-        outStream.writeInt(packet.getHeader().getTimestampDifference());
-        outStream.writeInt(packet.getHeader().getWindowSize());
-        outStream.writeShort(packet.getHeader().getSequenceNumber());
-        outStream.writeShort(packet.getHeader().getAcknowledgeNumber());
-        outStream.write(packet.getPayload().getData());
-    }
+	private static final int OVERHEAD_IN_BYTES = 20;
+
+	public ByteBuffer write(UtpPacket packet) {
+		ByteBuffer buffer = ByteBuffer.allocate(OVERHEAD_IN_BYTES + packet.getPayload().getData().length);
+
+		byte typeAndVersion = (byte) ((packet.getHeader().getType() << 4) | (packet.getHeader().getVersion() & 0xF));
+		buffer.put(typeAndVersion);
+		// We don't support extension yet.
+		buffer.put((byte) 0);
+		buffer.putShort(packet.getHeader().getConnectionId());
+		buffer.putInt(packet.getHeader().getTimestamp());
+		buffer.putInt(packet.getHeader().getTimestampDifference());
+		buffer.putInt(packet.getHeader().getWindowSize());
+		buffer.putShort(packet.getHeader().getSequenceNumber());
+		buffer.putShort(packet.getHeader().getAcknowledgeNumber());
+		buffer.put(packet.getPayload().getData());
+
+		buffer.flip();
+		return buffer;
+	}
 }

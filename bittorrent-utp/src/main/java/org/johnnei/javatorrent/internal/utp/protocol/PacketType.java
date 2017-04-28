@@ -1,5 +1,6 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
+import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import org.johnnei.javatorrent.internal.utp.protocol.packet.IPayload;
@@ -17,9 +18,9 @@ public enum PacketType {
 
     private final byte typeField;
 
-    private final Function<byte[], IPayload> payloadProducer;
+    private final Function<ByteBuffer, IPayload> payloadProducer;
 
-    PacketType(int typeField, Function<byte[], IPayload> payloadProducer) {
+    PacketType(int typeField, Function<ByteBuffer, IPayload> payloadProducer) {
         this.typeField = (byte) typeField;
         this.payloadProducer = payloadProducer;
     }
@@ -36,7 +37,7 @@ public enum PacketType {
      * @param data The read data from the stream
      * @return The newly created IPayload instance.
      */
-    public IPayload createPayload(byte[] data) {
+    public IPayload createPayload(ByteBuffer data) {
         return payloadProducer.apply(data);
     }
 

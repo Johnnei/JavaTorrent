@@ -81,6 +81,7 @@
     <dependency.junit.junit>4.12</dependency.junit.junit>
     <dependency.org.apache.logging.log4j.log4j.version>2.6.2</dependency.org.apache.logging.log4j.log4j.version>
     <dependency.org.easymock.easymock>3.4</dependency.org.easymock.easymock>
+    <dependency.org.hamcrest.hamcrest-all>1.3</dependency.org.hamcrest.hamcrest-all>
     <dependency.org.mockito.mockito-core.version>1.10.19</dependency.org.mockito.mockito-core.version>
     <dependency.org.powermock.powermock-reflect.version>1.6.5</dependency.org.powermock.powermock-reflect.version>
     <dependency.org.slf4j.slf4j-api>1.7.21</dependency.org.slf4j.slf4j-api>
@@ -309,6 +310,12 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>${dependency.org.hamcrest.hamcrest-all}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.easymock</groupId>
         <artifactId>easymock</artifactId>
         <version>${dependency.org.easymock.easymock}</version>
@@ -346,4 +353,22 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 </project>
