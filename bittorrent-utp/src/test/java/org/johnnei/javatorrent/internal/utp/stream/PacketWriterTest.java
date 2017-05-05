@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 
-import org.johnnei.javatorrent.internal.utp.protocol.packet.IPayload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
@@ -21,7 +21,7 @@ public class PacketWriterTest {
 
 		UtpPacket packet = mock(UtpPacket.class);
 		UtpHeader header = mock(UtpHeader.class);
-		IPayload payload = mock(IPayload.class);
+		Payload payload = mock(Payload.class);
 
 		when(packet.getPayload()).thenReturn(payload);
 		when(packet.getHeader()).thenReturn(header);

@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
 public class UtpSocketRegistry {
 
@@ -19,15 +21,23 @@ public class UtpSocketRegistry {
 		socketMap = new HashMap<>();
 	}
 
-	public UtpSocket getSocket(SocketAddress socketAddress, short connectionId) {
-		return socketMap.computeIfAbsent(connectionId, id -> createSocket(socketAddress, id));
+	public UtpSocket getSocket(short connectionId) {
+		UtpSocket socket = socketMap.get(connectionId);
+		if (socket == null) {
+			throw new UtpProtocolViolationException(String.format(
+				"Packet received for [%s] but no socket has been registered.",
+				Short.toUnsignedInt(connectionId)
+			));
+		}
+
+		return socket;
 	}
 
-	private UtpSocket createSocket(SocketAddress socketAddress, short connectionId) {
+	public UtpSocket createSocket(SocketAddress socketAddress, UtpPacket synPacket) {
 		try {
 			DatagramChannel channel = channelSupplier.get();
 			channel.connect(socketAddress);
-			return new UtpSocket(channel, connectionId);
+			return UtpSocket.createRemoteConnecting(channel, synPacket);
 		} catch (IOException e) {
 			throw new IllegalStateException("Failed to bind socket.", e);
 		}

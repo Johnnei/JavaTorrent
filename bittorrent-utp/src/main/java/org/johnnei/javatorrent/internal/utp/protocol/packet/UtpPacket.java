@@ -7,9 +7,9 @@ public class UtpPacket {
 
     private final UtpHeader header;
 
-    private final IPayload payload;
+    private final Payload payload;
 
-    public UtpPacket(UtpHeader header, IPayload payload) {
+    public UtpPacket(UtpHeader header, Payload payload) {
         this.header = header;
         this.payload = payload;
     }
@@ -18,7 +18,7 @@ public class UtpPacket {
         return header;
     }
 
-    public IPayload getPayload() {
+    public Payload getPayload() {
         return payload;
     }
 }

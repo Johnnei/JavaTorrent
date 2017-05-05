@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.internal.utp;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
 
 import org.junit.Before;
@@ -38,26 +37,23 @@ public class UtpSocketRegistryTest {
 
 	@Test
 	public void testGetSocketCreateWhenNotExist() throws Exception {
-		InetSocketAddress socketAddress = mock(InetSocketAddress.class);
-		UtpSocket socket = cut.getSocket(socketAddress, (short) 5);
+		UtpSocket socket = cut.getSocket((short) 5);
 
 		assertThat("A socket must be created if not existing", socket, notNullValue());
 	}
 
 	@Test
 	public void testGetSocketReuseSocket() throws Exception {
-		InetSocketAddress socketAddress = mock(InetSocketAddress.class);
-		UtpSocket socket = cut.getSocket(socketAddress, (short) 5);
-		UtpSocket socketTwo = cut.getSocket(socketAddress, (short) 5);
+		UtpSocket socket = cut.getSocket((short) 5);
+		UtpSocket socketTwo = cut.getSocket((short) 5);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, sameInstance(socket));
 	}
 
 	@Test
 	public void testGetSocketDoNotReuseSocketOnDifferentId() throws Exception {
-		InetSocketAddress socketAddress = mock(InetSocketAddress.class);
-		UtpSocket socket = cut.getSocket(socketAddress, (short) 5);
-		UtpSocket socketTwo = cut.getSocket(socketAddress, (short) 7);
+		UtpSocket socket = cut.getSocket((short) 5);
+		UtpSocket socketTwo = cut.getSocket((short) 7);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, not(sameInstance(socket)));
 	}

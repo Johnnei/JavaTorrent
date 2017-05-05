@@ -10,6 +10,7 @@ import java.nio.channels.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 
@@ -51,9 +52,14 @@ public class UtpMultiplexer implements Closeable, Runnable {
 		UtpPacket packet = packetReader.read(buffer);
 
 		// Retrieve socket
-		UtpSocket socket = socketRegistry.getSocket(socketAddress, packet.getHeader().getConnectionId());
+		UtpSocket socket;
+		if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
+			socket = socketRegistry.createSocket(socketAddress, packet);
+		} else {
+			socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());
+		}
 
-		// FIXME Dispatch buffer to socket
+		socket.onReceivedPacket(packet);
 	}
 
 	@Override
