@@ -3,7 +3,9 @@ package org.johnnei.javatorrent.internal.utp.protocol;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 
 /**
@@ -11,9 +13,9 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
  */
 public enum PacketType {
 
-	DATA(0, data -> null),
+	DATA(0, data -> new DataPayload(data)),
 	FIN(1, data -> null),
-	STATE(2, data -> null),
+	STATE(2, data -> new StatePayload()),
 	RESET(3, data -> null),
 	SYN(4, data -> new SynPayload());
 

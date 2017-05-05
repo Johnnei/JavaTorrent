@@ -12,15 +12,23 @@ import java.util.Queue;
 import java.util.Random;
 
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
+import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 
 public class UtpSocket implements ISocket, Closeable {
 
-	private final int sendConnectionId;
+	private final PacketWriter packetWriter;
 
-	private final int receiveConnectionId;
+	private final PrecisionTimer precisionTimer;
+
+	private final short sendConnectionId;
+
+	private final short receiveConnectionId;
 
 	private final DatagramChannel channel;
 
@@ -31,6 +39,8 @@ public class UtpSocket implements ISocket, Closeable {
 	private Queue<UtpPacket> resendQueue;
 
 	private final Queue<Acknowledgement> acknowledgeQueue;
+
+	private short lastSentAcknowledgeNumber;
 
 	private Queue<Payload> sendQueue;
 
@@ -50,6 +60,8 @@ public class UtpSocket implements ISocket, Closeable {
 		this.receiveConnectionId = receiveConnectionId;
 		this.sendConnectionId = sendConnectionId;
 		acknowledgeQueue = new LinkedList<>();
+		packetWriter = new PacketWriter();
+		precisionTimer = new PrecisionTimer();
 	}
 
 	@Override
@@ -61,6 +73,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 * @param packet The received packet.
 	 */
 	public void onReceivedPacket(UtpPacket packet) {
+		packetAckHandler.onReceivedPacket(packet);
 		packet.getPayload().onReceivedPayload(this);
 	}
 
@@ -86,8 +99,38 @@ public class UtpSocket implements ISocket, Closeable {
 	 * Writes the {@link UtpPacket} onto the {@link #channel} if the window allows for it.
 	 * This will consume elements from {@link #resendQueue}, {@link #sendQueue} and {@link #packetAckHandler}
 	 */
-	public void processSendQueue() {
+	public void processSendQueue() throws IOException {
+		if (!acknowledgeQueue.isEmpty()) {
+			send(new StatePayload());
+		}
 	}
+
+	private void send(Payload payload) throws IOException {
+		short ackNumber = lastSentAcknowledgeNumber;
+		if (!acknowledgeQueue.isEmpty()) {
+			ackNumber = acknowledgeQueue.poll().getSequenceNumber();
+			lastSentAcknowledgeNumber = ackNumber;
+		}
+
+		UtpHeader header = new UtpHeader.Builder()
+			.setType(payload.getType().getTypeField())
+			.setSequenceNumber(sequenceNumberCounter++)
+			.setExtension((byte) 0)
+			.setAcknowledgeNumber(ackNumber)
+			.setConnectionId(sendConnectionId)
+			.setTimestamp(precisionTimer.getCurrentMicros())
+			.setTimestampDifference(0)
+			.setWindowSize(64_000)
+			.build();
+		UtpPacket packet = new UtpPacket(header, payload);
+		ByteBuffer buffer = packetWriter.write(packet);
+		channel.write(buffer);
+
+		if (buffer.hasRemaining()) {
+			throw new IOException("Write buffer utilization exceeded.");
+		}
+	}
+
 
 	@Override
 	public InputStream getInputStream() throws IOException {
@@ -122,6 +165,11 @@ public class UtpSocket implements ISocket, Closeable {
 	@Override
 	public void flush() throws IOException {
 
+	}
+
+	public void setConnectionState(ConnectionState newState) {
+		// FIXME Check if transition is allowed.
+		connectionState = newState;
 	}
 
 	public ConnectionState getConnectionState() {

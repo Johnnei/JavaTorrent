@@ -34,10 +34,16 @@ public class UtpSocketRegistry {
 	}
 
 	public UtpSocket createSocket(SocketAddress socketAddress, UtpPacket synPacket) {
+		if (socketMap.containsKey(synPacket.getHeader().getConnectionId())) {
+			throw new UtpProtocolViolationException(String.format("Connection [%s] already registered before.", synPacket.getHeader().getConnectionId()));
+		}
+
 		try {
 			DatagramChannel channel = channelSupplier.get();
 			channel.connect(socketAddress);
-			return UtpSocket.createRemoteConnecting(channel, synPacket);
+			UtpSocket socket = UtpSocket.createRemoteConnecting(channel, synPacket);
+			socketMap.put(synPacket.getHeader().getConnectionId(), socket);
+			return socket;
 		} catch (IOException e) {
 			throw new IllegalStateException("Failed to bind socket.", e);
 		}
