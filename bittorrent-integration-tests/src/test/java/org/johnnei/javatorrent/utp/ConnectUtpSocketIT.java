@@ -53,7 +53,7 @@ public class ConnectUtpSocketIT {
 				.registerModule(utpModule)
 				.setRequestLimiter(new RateBasedLimiter())
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
+						.registerDefaultSocketSupplier(utpModule)
 						.build())
 				.setDownloadPort(port)
 				.setExecutorService(Executors.newScheduledThreadPool(2))
@@ -86,7 +86,7 @@ public class ConnectUtpSocketIT {
 		UtpModule remoteUtpModule = new UtpModule();
 		remoteClient = createTorrentClient(remoteUtpModule, DummyEntity.findAvailableUdpPort());
 
-		ISocket localSocket = localUtpModule.createSocketFactory().get();
+		ISocket localSocket = localUtpModule.createSocket();
 
 		UtpMultiplexer remoteMultiplexer = Whitebox.getInternalState(remoteUtpModule, UtpMultiplexer.class);
 

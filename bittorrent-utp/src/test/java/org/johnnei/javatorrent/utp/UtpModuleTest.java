@@ -41,7 +41,7 @@ public class UtpModuleTest {
 	@Test
 	public void testCreateSocketFactory() {
 		UtpModule cut = new UtpModule();
-		assertNotNull("Factory should never produce null objects", cut.createSocketFactory().get());
+		assertNotNull("Factory should never produce null objects", cut.createSocket());
 	}
 
 	@Test

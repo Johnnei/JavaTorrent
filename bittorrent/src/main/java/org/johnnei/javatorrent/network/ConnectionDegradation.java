@@ -20,14 +20,12 @@ public class ConnectionDegradation {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionDegradation.class);
 
-	private final Class<? extends ISocket> preferredType;
-
-	private final Map<Class<? extends ISocket>, Class<? extends ISocket>> socketDegradation;
-
-	private final Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
+	private final String preferredSocketIdentifier;
+	private final Map<String, String> socketDegradation;
+	private final Map<String, ISocketSupplier> socketSuppliers;
 
 	private ConnectionDegradation(Builder builder) {
-		preferredType = builder.preferredType;
+		preferredSocketIdentifier = builder.preferredSocketIdentifier;
 		socketDegradation = builder.socketDegradation;
 		socketSuppliers = builder.socketSuppliers;
 	}
@@ -37,7 +35,7 @@ public class ConnectionDegradation {
 	 * @return An unconnected socket
 	 */
 	public ISocket createPreferredSocket() {
-		return socketSuppliers.get(preferredType).get();
+		return socketSuppliers.get(preferredSocketIdentifier).createSocket();
 	}
 
 	/**
@@ -46,24 +44,27 @@ public class ConnectionDegradation {
 	 * @return The degraded socket or {@link Optional#empty()} when no degradation is possible
 	 */
 	public Optional<ISocket> degradeSocket(ISocket socket) {
-		if (!socketDegradation.containsKey(socket.getClass())) {
+		String socketIdentifier = socket.getClass().getSimpleName();
+		if (!socketSuppliers.containsKey(socketIdentifier)) {
 			return Optional.empty();
 		}
 
-		Class<? extends ISocket> fallbackType = socketDegradation.get(socket.getClass());
-		return Optional.of(socketSuppliers.get(fallbackType).get());
+		String fallbackSocketIdentifier = socketDegradation.get(socketIdentifier);
+		ISocketSupplier fallbackSocketSupplier = socketSuppliers.get(fallbackSocketIdentifier);
+		return Optional.of(fallbackSocketSupplier.createSocket());
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder("ConnectionDegradation[");
-		Class<? extends ISocket> type = preferredType;
-		while (type != null) {
-			stringBuilder.append(type.getSimpleName());
 
-			type = socketDegradation.get(type);
+		String socketIdentifier = preferredSocketIdentifier;
+		while (socketDegradation.containsKey(socketIdentifier)) {
+			stringBuilder.append(socketIdentifier);
 
-			if (type != null) {
+			socketIdentifier = socketDegradation.get(socketIdentifier);
+
+			if (socketIdentifier != null) {
 				stringBuilder.append(" -> ");
 			}
 		}
@@ -76,11 +77,9 @@ public class ConnectionDegradation {
 	 */
 	public static class Builder {
 
-		private Class<? extends ISocket> preferredType;
-
-		private Map<Class<? extends ISocket>, Class<? extends ISocket>> socketDegradation;
-
-		private Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
+		private String preferredSocketIdentifier;
+		private final Map<String, String> socketDegradation;
+		private final Map<String, ISocketSupplier> socketSuppliers;
 
 		/**
 		 * Creates a new builder without configured defaults.
@@ -91,95 +90,53 @@ public class ConnectionDegradation {
 		}
 
 		/**
-		 * Registers a new supported connection type. This type will be used first to connect with peers. When the connection fails there will be no further
-		 * attempts to connect. This will override any previously configured default
-		 *
-		 * socket types.
-		 * @param socketType The type of the socket.
-		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
-		 * @param <T> The type of the socket
-		 * @return The builder with updated configuration.
-		 *
-		 * @see #registerDefaultConnectionType(Class, Supplier, Class)
-		 */
-		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier) {
-			return registerDefaultConnectionType(socketType, supplier, null);
-		}
-
-		/**
 		 * Registers a new supported connection type. This type will be used first to connect with peers. The given fallback will be the used to connect when
 		 * this type fails to connect to the peer. This will override any previously configured default socket types.
-		 * @param socketType The type of the socket.
-		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
-		 * @param fallbackType The socket type to use when <code>socketType</code> connection fails.
-		 * @param <T> The type of the socket
+		 * @param supplier The socket supplier.
 		 * @return The builder with updated configuration.
 		 *
-		 * @see #registerConnectionType(Class, Supplier, Class)
+		 * @see #registerSocketSupplier(ISocketSupplier)
 		 */
-		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier, Class<? extends ISocket> fallbackType) {
-			Objects.requireNonNull(socketType, "Socket type can not be null");
-			if (preferredType != null) {
-				LOGGER.warn("Overriding existing default connection type: {}.", preferredType.getSimpleName());
-			}
-
-			preferredType = socketType;
-			registerConnectionType(socketType, supplier, fallbackType);
+		public Builder registerDefaultSocketSupplier(ISocketSupplier supplier) {
+			preferredSocketIdentifier = supplier.getSocketIdentifier();
+			registerSocketSupplier(supplier, null);
 			return this;
-		}
-
-		/**
-		 * Registers a new supported connection type. When the connection fails there will be no further attempts to connect.
-		 *
-		 * socket types.
-		 * @param socketType The type of the socket.
-		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
-		 * @param <T> The type of the socket
-		 * @return The builder with updated configuration.
-		 *
-		 * @see #registerDefaultConnectionType(Class, Supplier)
-		 */
-		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier) {
-			return registerConnectionType(socketType, supplier, null);
 		}
 
 		/**
 		 * Registers a new supported connection type. The given fallback will be the used to connect when this type fails to connect to the peer. This will
 		 * override any previously configured default socket types.
-		 * @param socketType The type of the socket.
-		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
-		 * @param fallbackType The socket type to use when <code>socketType</code> connection fails.
-		 * @param <T> The type of the socket
+		 * @param supplier The {@link ISocketSupplier} supplier of the socket.
+		 * @param fallbackSupplier The {@link ISocketSupplier} supplier of the fallback socket.
 		 * @return The builder with updated configuration.
 		 *
-		 * @see #registerDefaultConnectionType(Class, Supplier, Class)
+		 * @see #registerFallback(ISocketSupplier, ISocketSupplier)
 		 */
-		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier, Class<? extends ISocket> fallbackType) {
-			Objects.requireNonNull(socketType, "Socket type can not be null");
+		public Builder registerSocketSupplier(ISocketSupplier supplier, ISocketSupplier fallbackSupplier) {
 			Objects.requireNonNull(supplier, "Socket supplier can not be null");
 
-			socketSuppliers.put(socketType, supplier);
-			registerFallback(socketType, fallbackType);
+			socketSuppliers.put(supplier.getSocketIdentifier(), supplier);
+			registerFallback(supplier, fallbackSupplier);
 			return this;
 		}
 
-		private void registerFallback(Class<? extends ISocket> from, Class<? extends ISocket> to) {
+		private void registerFallback(ISocketSupplier from, ISocketSupplier to) {
 			if (to == null) {
 				return;
 			}
 
-			socketDegradation.put(from, to);
+			socketDegradation.put(from.getSocketIdentifier(), to.getSocketIdentifier());
 		}
 
 		/**
 		 * @return The newly created configured {@link ConnectionDegradation} instance.
 		 */
 		public ConnectionDegradation build() {
-			if (preferredType == null) {
+			if (preferredSocketIdentifier == null) {
 				throw new IllegalStateException("No preferred connection type has been configured.");
 			}
 
-			LOGGER.debug("Preferred Connection: {}", preferredType.getSimpleName());
+			LOGGER.debug("Preferred Connection: {}", preferredSocketIdentifier);
 
 			verifySocketChain();
 
@@ -191,13 +148,13 @@ public class ConnectionDegradation {
 		 */
 		private void verifySocketChain() {
 			int typesSeen = 0;
-			Class<? extends ISocket> type = preferredType;
-			while (type != null) {
-				if (!socketSuppliers.containsKey(type)) {
-					throw new IllegalStateException(String.format("Socket supplier for type %s has not been set.", type.getSimpleName()));
+			String socketIdentifier = preferredSocketIdentifier;
+			while (socketIdentifier != null) {
+				if (!socketSuppliers.containsKey(socketIdentifier)) {
+					throw new IllegalStateException(String.format("Socket supplier for type %s has not been set.", socketIdentifier));
 				}
 
-				type = socketDegradation.get(type);
+				socketIdentifier = socketDegradation.get(socketIdentifier);
 				typesSeen++;
 			}
 
