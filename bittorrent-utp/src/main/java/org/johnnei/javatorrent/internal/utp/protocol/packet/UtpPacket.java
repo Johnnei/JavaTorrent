@@ -10,6 +10,7 @@ public class UtpPacket {
     private final Payload payload;
 
     public UtpPacket(UtpHeader header, Payload payload) {
+        assert header.getType() == payload.getType().getTypeField() : "Payload type doesn't confirm to the information in header.";
         this.header = header;
         this.payload = payload;
     }

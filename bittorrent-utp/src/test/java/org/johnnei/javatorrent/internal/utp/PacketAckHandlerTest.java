@@ -78,4 +78,34 @@ public class PacketAckHandlerTest {
 		assertThat("This is the first occurrence of the packet.", acknowledgements.get(1).getTimesSent(), equalTo(1));
 	}
 
+	@Test
+	public void testOnReceivedPacketUninitializedSocket() {
+		UtpPacket packetTwo = mock(UtpPacket.class);
+		UtpHeader headerTwo = mock(UtpHeader.class);
+		when(packetTwo.getHeader()).thenReturn(headerTwo);
+		when(headerTwo.getSequenceNumber()).thenReturn((short) 2);
+
+		UtpPacket packetThree = mock(UtpPacket.class);
+		UtpHeader headerThree = mock(UtpHeader.class);
+		when(packetThree.getHeader()).thenReturn(headerThree);
+		when(headerThree.getSequenceNumber()).thenReturn((short) 3);
+
+		cut = new PacketAckHandler(socket);
+		cut.onReceivedPacket(packetTwo);
+
+		// Packet two should not be explicitly acked as it will be acked by the connection handshake system.
+		verify(socket, never()).acknowledgePacket(any(Acknowledgement.class));
+
+		cut.onReceivedPacket(packetThree);
+
+		ArgumentCaptor<Acknowledgement> acknowledgementCaptor = ArgumentCaptor.forClass(Acknowledgement.class);
+
+		// Only packet 3 should be explicitly acked.
+		verify(socket).acknowledgePacket(acknowledgementCaptor.capture());
+
+		Acknowledgement acknowledgement = acknowledgementCaptor.getValue();
+		assertThat("Ack should be sent in order of sequence.", acknowledgement.getSequenceNumber(), equalTo((short) 3));
+		assertThat("This is the first occurrence of the packet.", acknowledgement.getTimesSent(), equalTo(1));
+	}
+
 }

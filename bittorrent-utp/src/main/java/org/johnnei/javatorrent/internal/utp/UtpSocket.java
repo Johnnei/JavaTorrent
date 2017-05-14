@@ -16,6 +16,7 @@ import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
@@ -27,8 +28,6 @@ public class UtpSocket implements ISocket, Closeable {
 	private final PrecisionTimer precisionTimer;
 
 	private final short sendConnectionId;
-
-	private final short receiveConnectionId;
 
 	private final DatagramChannel channel;
 
@@ -46,19 +45,31 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private PacketAckHandler packetAckHandler;
 
+	/**
+	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
+	 * @param channel The channel to write data on.
+	 * @param receiveConnectionId The ID on which this socket will receive data.
+	 * @return The newly created socket.
+	 */
+	public static UtpSocket createInitiatingSocket(DatagramChannel channel, short receiveConnectionId) {
+		UtpSocket socket = new UtpSocket(channel, receiveConnectionId);
+		socket.sequenceNumberCounter = 1;
+		socket.packetAckHandler = new PacketAckHandler(socket);
+		return socket;
+	}
+
 	public static UtpSocket createRemoteConnecting(DatagramChannel channel, UtpPacket synPacket) {
 		short sendConnectionId = synPacket.getHeader().getConnectionId();
-		UtpSocket socket = new UtpSocket(channel, (short) (sendConnectionId + 1), sendConnectionId);
-		socket.connectionState = ConnectionState.SYN_RECEIVED;
+		UtpSocket socket = new UtpSocket(channel, sendConnectionId);
 		socket.sequenceNumberCounter = (short) new Random().nextInt();
 		socket.packetAckHandler = new PacketAckHandler(socket, (short) (synPacket.getHeader().getSequenceNumber() - 1));
 		return socket;
 	}
 
-	private UtpSocket(DatagramChannel channel, short receiveConnectionId, short sendConnectionId) {
+	private UtpSocket(DatagramChannel channel, short sendConnectionId) {
 		this.channel = channel;
-		this.receiveConnectionId = receiveConnectionId;
 		this.sendConnectionId = sendConnectionId;
+		connectionState = ConnectionState.PENDING;
 		acknowledgeQueue = new LinkedList<>();
 		packetWriter = new PacketWriter();
 		precisionTimer = new PrecisionTimer();
@@ -66,6 +77,9 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
+		channel.connect(endpoint);
+		send(new SynPayload());
+		connectionState = ConnectionState.SYN_SENT;
 	}
 
 	/**
