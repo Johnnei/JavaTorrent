@@ -20,6 +20,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
+import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
 public class UtpSocket implements ISocket, Closeable {
 
@@ -44,6 +45,8 @@ public class UtpSocket implements ISocket, Closeable {
 	private Queue<Payload> sendQueue;
 
 	private PacketAckHandler packetAckHandler;
+
+	private UtpOutputStream outputStream;
 
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
@@ -73,6 +76,7 @@ public class UtpSocket implements ISocket, Closeable {
 		acknowledgeQueue = new LinkedList<>();
 		packetWriter = new PacketWriter();
 		precisionTimer = new PrecisionTimer();
+		outputStream = new UtpOutputStream(this);
 	}
 
 	@Override
@@ -145,6 +149,14 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 	}
 
+	/**
+	 * @return The amount of bytes the payload currently holds when transmitting a packet.
+	 */
+	public int getPacketPayloadSize() {
+		// TODO Adhere packet sizing (JBT-73)
+		return 150 - PacketWriter.OVERHEAD_IN_BYTES;
+	}
+
 
 	@Override
 	public InputStream getInputStream() throws IOException {
@@ -153,7 +165,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public OutputStream getOutputStream() throws IOException {
-		return null;
+		return outputStream;
 	}
 
 	@Override
@@ -163,7 +175,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public boolean isClosed() {
-		return false;
+		return connectionState == ConnectionState.PENDING;
 	}
 
 	@Override

@@ -6,7 +6,10 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
 public class PacketWriter {
 
-	private static final int OVERHEAD_IN_BYTES = 20;
+	/**
+	 * The required amount of bytes in a packet which are used to coordinate the protocol.
+	 */
+	public static final int OVERHEAD_IN_BYTES = 20;
 
 	public ByteBuffer write(UtpPacket packet) {
 		ByteBuffer buffer = ByteBuffer.allocate(OVERHEAD_IN_BYTES + packet.getPayload().getData().length);
