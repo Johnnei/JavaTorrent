@@ -14,6 +14,7 @@ import java.util.Random;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
@@ -74,6 +75,7 @@ public class UtpSocket implements ISocket, Closeable {
 		this.sendConnectionId = sendConnectionId;
 		connectionState = ConnectionState.PENDING;
 		acknowledgeQueue = new LinkedList<>();
+		sendQueue = new LinkedList<>();
 		packetWriter = new PacketWriter();
 		precisionTimer = new PrecisionTimer();
 		outputStream = new UtpOutputStream(this);
@@ -100,6 +102,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 * @param data The buffer to be send.
 	 */
 	public void send(ByteBuffer data) {
+		sendQueue.add(new DataPayload(data));
 	}
 
 	/**
@@ -118,7 +121,9 @@ public class UtpSocket implements ISocket, Closeable {
 	 * This will consume elements from {@link #resendQueue}, {@link #sendQueue} and {@link #packetAckHandler}
 	 */
 	public void processSendQueue() throws IOException {
-		if (!acknowledgeQueue.isEmpty()) {
+		if (!sendQueue.isEmpty()) {
+			send(sendQueue.poll());
+		} else if (!acknowledgeQueue.isEmpty()) {
 			send(new StatePayload());
 		}
 	}
@@ -200,5 +205,9 @@ public class UtpSocket implements ISocket, Closeable {
 
 	public ConnectionState getConnectionState() {
 		return connectionState;
+	}
+
+	public void setAcknowledgeNumber(short acknowledgeNumber) {
+		this.lastSentAcknowledgeNumber = acknowledgeNumber;
 	}
 }

@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -27,6 +28,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,16 +41,21 @@ public class UtpSocketTest {
 
 	private Exception threadException;
 
-	@Test
-	public void testAcceptRemoteConnection() throws IOException {
-		DatagramChannel channel = mock(DatagramChannel.class);
+	private DatagramChannel channel;
+
+	@Before
+	public void setUp() throws Exception {
+		channel = mock(DatagramChannel.class);
 		when(channel.write(any(ByteBuffer.class))).thenAnswer(invocation -> {
 			ByteBuffer buffer = invocation.getArgumentAt(0, ByteBuffer.class);
 			int sent = buffer.remaining();
 			buffer.get(new byte[sent]);
 			return sent;
 		});
+	}
 
+	@Test
+	public void testAcceptRemoteConnection() throws IOException {
 		UtpPacket synPacket = new UtpPacket(
 			new UtpHeader.Builder()
 				.setAcknowledgeNumber((short) 0)
@@ -96,13 +103,6 @@ public class UtpSocketTest {
 
 	@Test
 	public void testInitiateConnection() throws Exception {
-		DatagramChannel channel = mock(DatagramChannel.class);
-		when(channel.write(any(ByteBuffer.class))).thenAnswer(invocation -> {
-			ByteBuffer buffer = invocation.getArgumentAt(0, ByteBuffer.class);
-			int sent = buffer.remaining();
-			buffer.get(new byte[sent]);
-			return sent;
-		});
 		UtpSocket socket = UtpSocket.createInitiatingSocket(channel, (short) 42);
 
 		Thread connector = new Thread(() -> {
@@ -148,6 +148,69 @@ public class UtpSocketTest {
 		if (threadException != null) {
 			throw threadException;
 		}
+	}
+
+	private UtpSocket prepareSocketAfterHandshake() throws Exception {
+		UtpSocket socket = UtpSocket.createInitiatingSocket(channel, (short) 42);
+
+		Thread connector = new Thread(() -> {
+			try {
+				socket.connect(mock(InetSocketAddress.class));
+			} catch (IOException e) {
+				threadException = e;
+			}
+		});
+
+		connector.start();
+
+		await("Socket must send out SYN packet after calling connect.").until(() -> socket.getConnectionState() == ConnectionState.SYN_SENT);
+
+		socket.processSendQueue();
+
+		// Respond to the SYN with ST to confirm the connection.
+		UtpPacket stPacket = new UtpPacket(
+			new UtpHeader.Builder()
+				.setAcknowledgeNumber((short) 1)
+				.setConnectionId((short) 42)
+				.setExtension((byte) 0)
+				.setSequenceNumber((short) 675)
+				.setType(PacketType.STATE.getTypeField())
+				.build(),
+			new StatePayload()
+		);
+
+		socket.onReceivedPacket(stPacket);
+
+		connector.join(TimeUnit.SECONDS.toMillis(5));
+
+		if (threadException != null) {
+			throw new IllegalStateException("Failed to prepare socket", threadException);
+		}
+
+		return socket;
+	}
+
+	@Test
+	public void testSend() throws Exception {
+		UtpSocket socket = prepareSocketAfterHandshake();
+
+		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+
+		socket.processSendQueue();
+
+		ArgumentCaptor<ByteBuffer> bufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+		verify(channel, times(2)).write(bufferArgumentCaptor.capture());
+		ByteBuffer buffer = bufferArgumentCaptor.getAllValues().get(1);
+
+		// Validate header
+		assertThat("Data packet should have been sent.", (byte) (buffer.get(0) >>> 4), equalTo(PacketType.DATA.getTypeField()));
+		assertThat("Packet Sequence number must increment", buffer.getShort(16), equalTo((short) 2));
+		assertThat("Acknowledge field should contain sequence number of the ST_STATE confirming the connection.", buffer.getShort(18), equalTo((short) 675));
+		// Validate payload
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(20), equalTo((byte) 1));
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(21), equalTo((byte) 2));
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(22), equalTo((byte) 3));
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(23), equalTo((byte) 4));
 	}
 
 }

@@ -59,6 +59,7 @@ public class PacketAckHandler {
 			 * So don't explicitly request this packet to be ACK'ed but rely on it being included as the ack field on the first ST_DATA being sent out.
 			 */
 			acknowledgeNumber = sequenceNumber;
+			socket.setAcknowledgeNumber(acknowledgeNumber);
 		}
 
 		while (acknowledgement != null && isNextPacketToAcknowledge(acknowledgement)) {

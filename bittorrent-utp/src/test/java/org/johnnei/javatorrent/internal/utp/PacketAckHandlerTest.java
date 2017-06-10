@@ -95,6 +95,7 @@ public class PacketAckHandlerTest {
 
 		// Packet two should not be explicitly acked as it will be acked by the connection handshake system.
 		verify(socket, never()).acknowledgePacket(any(Acknowledgement.class));
+		verify(socket).setAcknowledgeNumber((short) 2);
 
 		cut.onReceivedPacket(packetThree);
 
