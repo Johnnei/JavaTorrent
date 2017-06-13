@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.internal.utp;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -127,6 +128,8 @@ public class UtpSocketTest {
 		assertThat("Response to ST_SYN should be ST_STATE.", (byte) (buffer.get(0) >>> 4), equalTo(PacketType.SYN.getTypeField()));
 		assertThat("Packet Sequence number must be 1", buffer.getShort(16), equalTo((short) 1));
 
+		assertThat("The connect call should be blocking until either connection has been made or timeout", connector.isAlive(), is(true));
+
 		// Respond to the SYN with ST to confirm the connection.
 		UtpPacket stPacket = new UtpPacket(
 			new UtpHeader.Builder()
@@ -211,6 +214,30 @@ public class UtpSocketTest {
 		assertThat("Payload should have been append to the end of the packet header.", buffer.get(21), equalTo((byte) 2));
 		assertThat("Payload should have been append to the end of the packet header.", buffer.get(22), equalTo((byte) 3));
 		assertThat("Payload should have been append to the end of the packet header.", buffer.get(23), equalTo((byte) 4));
+	}
+
+	@Test
+	public void testReceive() throws Exception {
+		UtpSocket socket = prepareSocketAfterHandshake();
+
+		UtpPacket dataPacket = new UtpPacket(
+			new UtpHeader.Builder()
+				.setAcknowledgeNumber((short) 2)
+				.setConnectionId((short) 42)
+				.setExtension((byte) 0)
+				.setSequenceNumber((short) 676)
+				.setType(PacketType.DATA.getTypeField())
+				.build(),
+			new DataPayload(ByteBuffer.wrap(new byte[]{ 1, 2, 3, 4 }))
+		);
+
+		InputStream inputStream = socket.getInputStream();
+
+		socket.onReceivedPacket(dataPacket);
+
+		byte[] data = new byte[4];
+		assertThat(inputStream.read(data), equalTo(4));
+		assertThat(data, equalTo(new byte[] { 1, 2, 3, 4 }));
 	}
 
 }

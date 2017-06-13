@@ -7,12 +7,19 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.time.Clock;
+import java.util.Date;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
+import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
@@ -21,9 +28,16 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
+import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
 public class UtpSocket implements ISocket, Closeable {
+
+	private final Lock notifyLock = new ReentrantLock();
+
+	private final Condition onStateChange = notifyLock.newCondition();
+
+	private final Clock clock;
 
 	private final PacketWriter packetWriter;
 
@@ -49,6 +63,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private UtpOutputStream outputStream;
 
+	private UtpInputStream inputStream;
+
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
 	 * @param channel The channel to write data on.
@@ -73,6 +89,7 @@ public class UtpSocket implements ISocket, Closeable {
 	private UtpSocket(DatagramChannel channel, short sendConnectionId) {
 		this.channel = channel;
 		this.sendConnectionId = sendConnectionId;
+		clock = Clock.systemDefaultZone();
 		connectionState = ConnectionState.PENDING;
 		acknowledgeQueue = new LinkedList<>();
 		sendQueue = new LinkedList<>();
@@ -86,6 +103,21 @@ public class UtpSocket implements ISocket, Closeable {
 		channel.connect(endpoint);
 		send(new SynPayload());
 		connectionState = ConnectionState.SYN_SENT;
+
+		Date timeout = Date.from(clock.instant().plusSeconds(10));
+		notifyLock.lock();
+		try {
+			while (connectionState != ConnectionState.CONNECTED) {
+				if (!onStateChange.awaitUntil(timeout)) {
+					throw new IOException("Connection was not accepted within timeout.");
+				}
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Connecting got interrupted.", e);
+		} finally {
+			notifyLock.unlock();
+		}
 	}
 
 	/**
@@ -94,7 +126,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 */
 	public void onReceivedPacket(UtpPacket packet) {
 		packetAckHandler.onReceivedPacket(packet);
-		packet.getPayload().onReceivedPayload(this);
+		packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 	}
 
 	/**
@@ -165,7 +197,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		return null;
+		return Objects.requireNonNull(inputStream, "Connection was not established yet");
 	}
 
 	@Override
@@ -176,6 +208,10 @@ public class UtpSocket implements ISocket, Closeable {
 	@Override
 	public void close() throws IOException {
 		channel.close();
+	}
+
+	public void submitData(short sequenceNumber, byte[] data) {
+		inputStream.submitData(sequenceNumber, data);
 	}
 
 	@Override
@@ -195,12 +231,17 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public void flush() throws IOException {
-
 	}
 
 	public void setConnectionState(ConnectionState newState) {
 		// FIXME Check if transition is allowed.
 		connectionState = newState;
+
+		if (connectionState == ConnectionState.CONNECTED) {
+			inputStream = new UtpInputStream((short) (lastSentAcknowledgeNumber + 1));
+		}
+
+		Sync.signalAll(notifyLock, onStateChange);
 	}
 
 	public ConnectionState getConnectionState() {

@@ -7,7 +7,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 public class SynPayload extends DatalessPayload {
 
 	@Override
-	public void onReceivedPayload(UtpSocket socket) {
+	public void onReceivedPayload(UtpHeader header, UtpSocket socket) {
 		socket.setConnectionState(ConnectionState.SYN_RECEIVED);
 		// The sending of the ST_STATE on the ST_SYN is designed to be handled by normal ACK handling system.
 	}

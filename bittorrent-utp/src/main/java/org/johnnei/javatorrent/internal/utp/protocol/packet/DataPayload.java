@@ -16,12 +16,12 @@ public class DataPayload implements Payload {
 	}
 
 	@Override
-	public void onReceivedPayload(UtpSocket socket) {
+	public void onReceivedPayload(UtpHeader header, UtpSocket socket) {
 		if (socket.getConnectionState() == ConnectionState.SYN_RECEIVED) {
 			socket.setConnectionState(ConnectionState.CONNECTED);
 		}
 
-		// FIXME Handle processing of date.
+		socket.submitData(header.getSequenceNumber(), data);
 	}
 
 	@Override
