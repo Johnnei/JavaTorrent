@@ -199,19 +199,20 @@ public class UtpSocket implements ISocket, Closeable {
 			.build();
 		UtpPacket packet = new UtpPacket(header, payload);
 		ByteBuffer buffer = packetWriter.write(packet);
-		channel.write(buffer);
-
-		if (buffer.hasRemaining()) {
-			throw new IOException("Write buffer utilization exceeded.");
-		}
 
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
 			LOGGER.trace(
-				"Wrote [{}] packet [{}] of [{}] bytes",
+				"Writing [{}] packet [{}] of [{}] bytes",
 				PacketType.getByType(packet.getHeader().getType()),
 				Short.toUnsignedInt(packet.getHeader().getSequenceNumber()),
 				buffer.limit()
 			);
+		}
+
+		channel.write(buffer);
+
+		if (buffer.hasRemaining()) {
+			throw new IOException("Write buffer utilization exceeded.");
 		}
 	}
 

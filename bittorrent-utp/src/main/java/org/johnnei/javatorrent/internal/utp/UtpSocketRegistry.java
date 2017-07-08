@@ -10,11 +10,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
 public class UtpSocketRegistry {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocketRegistry.class);
 
 	private final Object createLock = new Object();
 
@@ -55,6 +60,7 @@ public class UtpSocketRegistry {
 				short receiveId = (short) random.nextInt();
 				if (!socketMap.containsKey(receiveId)) {
 					socket = socketSupplier.apply(receiveId);
+					LOGGER.trace("Registered initiated socket to receive on id [{}]", Short.toUnsignedInt(receiveId));
 					socketMap.put(receiveId, socket);
 				}
 			} while (socket == null);
@@ -64,7 +70,8 @@ public class UtpSocketRegistry {
 
 	public UtpSocket createSocket(SocketAddress socketAddress, UtpPacket synPacket) {
 		synchronized (createLock) {
-			if (socketMap.containsKey(synPacket.getHeader().getConnectionId())) {
+			short receiveId = (short) (synPacket.getHeader().getConnectionId() + 1);
+			if (socketMap.containsKey(receiveId)) {
 				throw new UtpProtocolViolationException(String.format("Connection [%s] already registered before.", synPacket.getHeader().getConnectionId()));
 			}
 
@@ -72,7 +79,8 @@ public class UtpSocketRegistry {
 				DatagramChannel channel = channelSupplier.get();
 				channel.connect(socketAddress);
 				UtpSocket socket = UtpSocket.createRemoteConnecting(channel, synPacket);
-				socketMap.put(synPacket.getHeader().getConnectionId(), socket);
+				LOGGER.trace("Registered received socket on to receive on id [{}] and send to [{}]", Short.toUnsignedInt(receiveId), socketAddress);
+				socketMap.put(receiveId, socket);
 				return socket;
 			} catch (IOException e) {
 				throw new IllegalStateException("Failed to bind socket.", e);

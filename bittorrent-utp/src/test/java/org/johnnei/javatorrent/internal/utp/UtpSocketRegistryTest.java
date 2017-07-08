@@ -91,7 +91,8 @@ public class UtpSocketRegistryTest {
 	@Test
 	public void testGetSocketAfterCreation() throws Exception {
 		UtpSocket socket = createSocket(5);
-		UtpSocket socketTwo = cut.getSocket((short) 5);
+		// The socket is created on the RECEIVE id, the SYN packet contains the id on which we will SEND.
+		UtpSocket socketTwo = cut.getSocket((short) 6);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, sameInstance(socket));
 		assertThat("All sockets must be returned", cut.getAllSockets(), IsCollectionWithSize.hasSize(1));

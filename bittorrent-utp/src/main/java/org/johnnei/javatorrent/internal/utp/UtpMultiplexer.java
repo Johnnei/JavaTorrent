@@ -32,6 +32,7 @@ public class UtpMultiplexer implements Closeable, Runnable {
 		channel = DatagramChannel.open();
 		channel.bind(new InetSocketAddress(port));
 		channel.configureBlocking(true);
+		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
 	}
 
 	@Override
@@ -57,6 +58,7 @@ public class UtpMultiplexer implements Closeable, Runnable {
 			LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
 			socket = socketRegistry.createSocket(socketAddress, packet);
 		} else {
+			LOGGER.trace("Received [{}} packet for [{}]", PacketType.getByType(packet.getHeader().getType()), packet.getHeader().getConnectionId());
 			socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());
 		}
 
