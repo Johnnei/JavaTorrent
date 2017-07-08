@@ -36,6 +36,8 @@ import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
+import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.SYN;
+
 public class UtpSocket implements ISocket, Closeable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocket.class);
@@ -80,7 +82,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 * @return The newly created socket.
 	 */
 	public static UtpSocket createInitiatingSocket(DatagramChannel channel, short receiveConnectionId) {
-		UtpSocket socket = new UtpSocket(channel, receiveConnectionId);
+		UtpSocket socket = new UtpSocket(channel, (short) (receiveConnectionId + 1));
 		socket.sequenceNumberCounter = 1;
 		socket.packetAckHandler = new PacketAckHandler(socket);
 		return socket;
@@ -190,7 +192,7 @@ public class UtpSocket implements ISocket, Closeable {
 			.setSequenceNumber(sequenceNumberCounter++)
 			.setExtension((byte) 0)
 			.setAcknowledgeNumber(ackNumber)
-			.setConnectionId(sendConnectionId)
+			.setConnectionId(payload.getType() == SYN ? (short) (sendConnectionId - 1) : sendConnectionId)
 			.setTimestamp(precisionTimer.getCurrentMicros())
 			.setTimestampDifference(0)
 			.setWindowSize(64_000)
