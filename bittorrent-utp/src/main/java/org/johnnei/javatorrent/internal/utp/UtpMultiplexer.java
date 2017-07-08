@@ -54,6 +54,7 @@ public class UtpMultiplexer implements Closeable, Runnable {
 		// Retrieve socket
 		UtpSocket socket;
 		if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
+			LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
 			socket = socketRegistry.createSocket(socketAddress, packet);
 		} else {
 			socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());

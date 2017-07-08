@@ -206,6 +206,7 @@ public class UtpSocketTest {
 		ByteBuffer buffer = bufferArgumentCaptor.getAllValues().get(1);
 
 		// Validate header
+		assertThat("Connection id for second packet should be 1 higher than the one used in SYN packet.", buffer.getShort(2), equalTo((short) 43));
 		assertThat("Data packet should have been sent.", (byte) (buffer.get(0) >>> 4), equalTo(PacketType.DATA.getTypeField()));
 		assertThat("Packet Sequence number must increment", buffer.getShort(16), equalTo((short) 2));
 		assertThat("Acknowledge field should contain sequence number of the ST_STATE confirming the connection.", buffer.getShort(18), equalTo((short) 675));

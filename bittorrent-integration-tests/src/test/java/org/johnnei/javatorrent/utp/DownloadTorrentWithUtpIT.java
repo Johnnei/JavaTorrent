@@ -28,7 +28,8 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 	}
 
 	protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
-		UtpModule utpModule = new UtpModule();
+		int port = DummyEntity.findAvailableUdpPort();
+		UtpModule utpModule = new UtpModule.Builder().listenOn(port).build();
 
 		return new TorrentClient.Builder()
 				// Disable incoming TCP connections, only expect UTP
@@ -38,7 +39,7 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
 						.build())
 				.setRequestLimiter(new RateBasedLimiter())
-				.setDownloadPort(DummyEntity.findAvailableTcpPort())
+				.setDownloadPort(port)
 				.setExecutorService(Executors.newScheduledThreadPool(2))
 				.setPeerConnector(PeerConnector::new)
 				.setPeerDistributor(UncappedDistributor::new)

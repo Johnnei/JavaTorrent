@@ -17,10 +17,15 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
+import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
@@ -32,6 +37,8 @@ import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
 public class UtpSocket implements ISocket, Closeable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocket.class);
 
 	private final Lock notifyLock = new ReentrantLock();
 
@@ -67,6 +74,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
+	 *
 	 * @param channel The channel to write data on.
 	 * @param receiveConnectionId The ID on which this socket will receive data.
 	 * @return The newly created socket.
@@ -122,15 +130,24 @@ public class UtpSocket implements ISocket, Closeable {
 
 	/**
 	 * Updates the socket state based on the received packet.
+	 *
 	 * @param packet The received packet.
 	 */
 	public void onReceivedPacket(UtpPacket packet) {
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
+			LOGGER.trace(
+				"Received [{}] packet [{}]",
+				PacketType.getByType(packet.getHeader().getType()),
+				Short.toUnsignedInt(packet.getHeader().getSequenceNumber())
+			);
+		}
 		packetAckHandler.onReceivedPacket(packet);
 		packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 	}
 
 	/**
 	 * Submits data to be send.
+	 *
 	 * @param data The buffer to be send.
 	 */
 	public void send(ByteBuffer data) {
@@ -139,6 +156,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	/**
 	 * Submits a packet that has been previously sent but has not arrived on the remote.
+	 *
 	 * @param packet The packet to be resend.
 	 */
 	public void resend(UtpPacket packet) {
@@ -183,6 +201,15 @@ public class UtpSocket implements ISocket, Closeable {
 
 		if (buffer.hasRemaining()) {
 			throw new IOException("Write buffer utilization exceeded.");
+		}
+
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
+			LOGGER.trace(
+				"Wrote [{}] packet [{}] of [{}] bytes",
+				PacketType.getByType(packet.getHeader().getType()),
+				Short.toUnsignedInt(packet.getHeader().getSequenceNumber()),
+				buffer.limit()
+			);
 		}
 	}
 

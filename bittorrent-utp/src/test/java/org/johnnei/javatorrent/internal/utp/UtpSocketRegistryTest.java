@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
 
+import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -93,6 +94,7 @@ public class UtpSocketRegistryTest {
 		UtpSocket socketTwo = cut.getSocket((short) 5);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, sameInstance(socket));
+		assertThat("All sockets must be returned", cut.getAllSockets(), IsCollectionWithSize.hasSize(1));
 	}
 
 	@Test
@@ -101,6 +103,7 @@ public class UtpSocketRegistryTest {
 		UtpSocket socketTwo = createSocket(7);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, not(sameInstance(socket)));
+		assertThat("All sockets must be returned", cut.getAllSockets(), IsCollectionWithSize.hasSize(2));
 	}
 
 }

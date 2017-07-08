@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.internal.utp;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -75,6 +77,12 @@ public class UtpSocketRegistry {
 			} catch (IOException e) {
 				throw new IllegalStateException("Failed to bind socket.", e);
 			}
+		}
+	}
+
+	public Collection<UtpSocket> getAllSockets() {
+		synchronized (createLock) {
+			return new ArrayList<>(socketMap.values());
 		}
 	}
 }
