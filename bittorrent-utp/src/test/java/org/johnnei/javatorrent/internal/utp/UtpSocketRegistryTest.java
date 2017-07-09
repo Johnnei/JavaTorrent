@@ -5,7 +5,6 @@ import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
 
 import org.hamcrest.collection.IsCollectionWithSize;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -13,9 +12,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.powermock.reflect.Whitebox;
 
-import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
@@ -24,9 +21,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -39,16 +34,7 @@ public class UtpSocketRegistryTest {
 	private UtpSocketRegistry cut;
 
 	@Mock
-	private CheckedSupplier<DatagramChannel, IOException> channelSupplier;
-
 	private DatagramChannel channelMock;
-
-	@Before
-	public void setUp() throws Exception {
-		Whitebox.setInternalState(cut, "channelSupplier", channelSupplier);
-		channelMock = mock(DatagramChannel.class);
-		when(channelSupplier.get()).thenReturn(channelMock);
-	}
 
 	private UtpSocket createSocket(int connectionId) throws IOException {
 		SocketAddress address = mock(SocketAddress.class);
@@ -58,9 +44,7 @@ public class UtpSocketRegistryTest {
 		when(synPacket.getHeader()).thenReturn(header);
 		when(header.getConnectionId()).thenReturn((short) connectionId);
 
-		UtpSocket socket = cut.createSocket(address, synPacket);
-		verify(channelMock).connect(same(address));
-		return socket;
+		return cut.createSocket(address, synPacket);
 	}
 
 	@Test

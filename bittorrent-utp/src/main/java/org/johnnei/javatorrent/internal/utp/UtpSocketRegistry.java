@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.internal.utp;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
@@ -13,7 +12,6 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
@@ -23,14 +21,14 @@ public class UtpSocketRegistry {
 
 	private final Object createLock = new Object();
 
-	private final CheckedSupplier<DatagramChannel, IOException> channelSupplier;
+	private final DatagramChannel channel;
 
 	private final Map<Short, UtpSocket> socketMap;
 
 	private final Random random;
 
-	public UtpSocketRegistry() {
-		channelSupplier = DatagramChannel::open;
+	public UtpSocketRegistry(DatagramChannel channel) {
+		this.channel = channel;
 		socketMap = new HashMap<>();
 		random = new Random();
 	}
@@ -75,16 +73,11 @@ public class UtpSocketRegistry {
 				throw new UtpProtocolViolationException(String.format("Connection [%s] already registered before.", synPacket.getHeader().getConnectionId()));
 			}
 
-			try {
-				DatagramChannel channel = channelSupplier.get();
-				channel.connect(socketAddress);
-				UtpSocket socket = UtpSocket.createRemoteConnecting(channel, synPacket);
-				LOGGER.trace("Registered received socket on to receive on id [{}] and send to [{}]", Short.toUnsignedInt(receiveId), socketAddress);
-				socketMap.put(receiveId, socket);
-				return socket;
-			} catch (IOException e) {
-				throw new IllegalStateException("Failed to bind socket.", e);
-			}
+			UtpSocket socket = UtpSocket.createRemoteConnecting(channel, synPacket);
+			socket.bind(socketAddress);
+			LOGGER.trace("Registered received socket on to receive on id [{}] and send to [{}]", Short.toUnsignedInt(receiveId), socketAddress);
+			socketMap.put(receiveId, socket);
+			return socket;
 		}
 	}
 

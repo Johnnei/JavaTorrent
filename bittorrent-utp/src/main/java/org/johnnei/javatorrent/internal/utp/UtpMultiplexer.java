@@ -10,6 +10,8 @@ import java.nio.channels.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
@@ -24,14 +26,24 @@ public class UtpMultiplexer implements Closeable, Runnable {
 
 	private final UtpSocketRegistry socketRegistry;
 
+	private final UtpPeerConnectionAcceptor connectionAcceptor;
+
+	private final LoopingRunnable connectionAcceptorRunnable;
+
+	private final Thread connectionAcceptorThread;
+
 	private DatagramChannel channel;
 
-	public UtpMultiplexer(PacketReader packetReader, UtpSocketRegistry socketRegistry, int port) throws IOException {
+	public UtpMultiplexer(UtpPeerConnectionAcceptor connectionAcceptor, PacketReader packetReader, int port) throws IOException {
+		this.connectionAcceptor = connectionAcceptor;
 		this.packetReader = packetReader;
-		this.socketRegistry = socketRegistry;
+		connectionAcceptorRunnable = new LoopingRunnable(connectionAcceptor);
+		connectionAcceptorThread = new Thread(connectionAcceptorRunnable, "uTP Connection Acceptor");
 		channel = DatagramChannel.open();
 		channel.bind(new InetSocketAddress(port));
 		channel.configureBlocking(true);
+		socketRegistry = new UtpSocketRegistry(channel);
+		connectionAcceptorThread.start();
 		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
 	}
 
@@ -57,16 +69,38 @@ public class UtpMultiplexer implements Closeable, Runnable {
 		if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
 			LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
 			socket = socketRegistry.createSocket(socketAddress, packet);
+			connectionAcceptor.onReceivedConnection(socket);
 		} else {
-			LOGGER.trace("Received [{}} packet for [{}]", PacketType.getByType(packet.getHeader().getType()), packet.getHeader().getConnectionId());
 			socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());
 		}
 
 		socket.onReceivedPacket(packet);
 	}
 
+	public ISocket createUnconnectedSocket() {
+		return socketRegistry.allocateSocket(connectionId -> UtpSocket.createInitiatingSocket(channel, connectionId));
+	}
+
+	public void updateSockets() {
+		try {
+			for (UtpSocket socket : socketRegistry.getAllSockets()) {
+				socket.processSendQueue();
+			}
+		} catch (Exception e) {
+			LOGGER.warn("uTP socket caused exception", e);
+		}
+	}
+
 	@Override
 	public void close() throws IOException {
 		channel.close();
+		connectionAcceptorRunnable.stop();
+		try {
+			connectionAcceptorThread.interrupt();
+			connectionAcceptorThread.join();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			LOGGER.warn("Interrupted while waiting for connection acceptor thread to shutdown.", e);
+		}
 	}
 }

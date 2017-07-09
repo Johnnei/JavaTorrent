@@ -12,7 +12,10 @@ public class DataPayload implements Payload {
 	private final byte[] data;
 
 	public DataPayload(ByteBuffer data) {
-		this.data = Objects.requireNonNull(data).array();
+		Objects.requireNonNull(data);
+
+		this.data = new byte[data.remaining()];
+		System.arraycopy(data.array(), data.arrayOffset() + data.position(), this.data, 0, this.data.length);
 	}
 
 	@Override

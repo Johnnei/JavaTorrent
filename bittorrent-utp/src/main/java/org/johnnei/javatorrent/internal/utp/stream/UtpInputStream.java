@@ -33,14 +33,33 @@ public class UtpInputStream extends InputStream {
 	}
 
 	@Override
+	public int read(byte[] b, int off, int len) {
+		int read = 0;
+		while (read < len && sequenceToBuffer.containsKey(nextSequenceNumber)) {
+			ByteBuffer buffer = sequenceToBuffer.get(nextSequenceNumber);
+			int readFromBuffer = Math.min(len - read, buffer.remaining());
+			buffer.get(b, off + read, readFromBuffer);
+			consumedFromBuffer(buffer);
+
+			read += readFromBuffer;
+		}
+
+		return read;
+	}
+
+	@Override
 	public int read() {
 		ByteBuffer buffer = sequenceToBuffer.get(nextSequenceNumber);
 		byte b = buffer.get();
+		consumedFromBuffer(buffer);
+
+		return b;
+	}
+
+	public void consumedFromBuffer(ByteBuffer buffer) {
 		if (buffer.remaining() == 0) {
 			sequenceToBuffer.remove(nextSequenceNumber);
 			nextSequenceNumber++;
 		}
-
-		return b;
 	}
 }

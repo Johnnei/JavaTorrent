@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.internal.utp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,7 +49,7 @@ public class UtpSocketTest {
 	@Before
 	public void setUp() throws Exception {
 		channel = mock(DatagramChannel.class);
-		when(channel.write(any(ByteBuffer.class))).thenAnswer(invocation -> {
+		when(channel.send(any(ByteBuffer.class), any(SocketAddress.class))).thenAnswer(invocation -> {
 			ByteBuffer buffer = invocation.getArgumentAt(0, ByteBuffer.class);
 			int sent = buffer.remaining();
 			buffer.get(new byte[sent]);
@@ -74,7 +76,7 @@ public class UtpSocketTest {
 		socket.processSendQueue();
 
 		ArgumentCaptor<ByteBuffer> bufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
-		verify(channel).write(bufferArgumentCaptor.capture());
+		verify(channel).send(bufferArgumentCaptor.capture(), any(InetSocketAddress.class));
 		ByteBuffer buffer = bufferArgumentCaptor.getValue();
 
 		assertThat("Packet would arrive at wrong socket.", buffer.getShort(2), equalTo((short) 5));
@@ -105,10 +107,11 @@ public class UtpSocketTest {
 	@Test
 	public void testInitiateConnection() throws Exception {
 		UtpSocket socket = UtpSocket.createInitiatingSocket(channel, (short) 42);
+		final InetSocketAddress socketAddress = mock(InetSocketAddress.class);
 
 		Thread connector = new Thread(() -> {
 			try {
-				socket.connect(mock(InetSocketAddress.class));
+				socket.connect(socketAddress);
 			} catch (IOException e) {
 				threadException = e;
 			}
@@ -121,7 +124,7 @@ public class UtpSocketTest {
 		socket.processSendQueue();
 
 		ArgumentCaptor<ByteBuffer> bufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
-		verify(channel).write(bufferArgumentCaptor.capture());
+		verify(channel).send(bufferArgumentCaptor.capture(), same(socketAddress));
 		ByteBuffer buffer = bufferArgumentCaptor.getValue();
 
 		assertThat("Packet would indicate wrong return path.", buffer.getShort(2), equalTo((short) 42));
@@ -202,7 +205,7 @@ public class UtpSocketTest {
 		socket.processSendQueue();
 
 		ArgumentCaptor<ByteBuffer> bufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
-		verify(channel, times(2)).write(bufferArgumentCaptor.capture());
+		verify(channel, times(2)).send(bufferArgumentCaptor.capture(), any(InetSocketAddress.class));
 		ByteBuffer buffer = bufferArgumentCaptor.getAllValues().get(1);
 
 		// Validate header

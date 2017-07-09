@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.utp;
 
 import java.io.IOException;
-import java.nio.channels.DatagramChannel;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
@@ -15,8 +14,8 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utp.UtpMultiplexer;
+import org.johnnei.javatorrent.internal.utp.UtpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.utp.UtpSocket;
-import org.johnnei.javatorrent.internal.utp.UtpSocketRegistry;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.module.ModuleBuildException;
@@ -32,8 +31,6 @@ import org.johnnei.javatorrent.utils.Argument;
 public class UtpModule implements IModule {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpModule.class);
-
-	private UtpSocketRegistry socketRegistry;
 
 	private UtpMultiplexer multiplexer;
 
@@ -71,26 +68,14 @@ public class UtpModule implements IModule {
 
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException {
-		socketRegistry = new UtpSocketRegistry();
 		try {
-			multiplexer = new UtpMultiplexer(new PacketReader(), socketRegistry, listeningPort);
+			multiplexer = new UtpMultiplexer(new UtpPeerConnectionAcceptor(torrentClient), new PacketReader(), listeningPort);
 			multiplexerRunner = new LoopingRunnable(multiplexer);
 			workerThread = new Thread(multiplexerRunner, "uTP Packet Reader");
 			workerThread.start();
-			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(this::updateSockets, 0, 100, TimeUnit.MILLISECONDS);
-
+			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(multiplexer::updateSockets, 0, 100, TimeUnit.MILLISECONDS);
 		} catch (IOException e) {
 			throw new ModuleBuildException("Failed to create uTP Multiplexer.", e);
-		}
-	}
-
-	private void updateSockets() {
-		try {
-			for (UtpSocket socket : socketRegistry.getAllSockets()) {
-				socket.processSendQueue();
-			}
-		} catch (Exception e) {
-			LOGGER.warn("uTP socket caused exception", e);
 		}
 	}
 
@@ -123,13 +108,7 @@ public class UtpModule implements IModule {
 	 * @return A supplier capable of creating new {@link UtpSocket}
 	 */
 	public Supplier<ISocket> createSocketFactory() {
-		return () -> socketRegistry.allocateSocket(connectionId -> {
-			try {
-				return UtpSocket.createInitiatingSocket(DatagramChannel.open(), connectionId);
-			} catch (IOException e) {
-				throw new IllegalStateException("Failed to open UDP channel.", e);
-			}
-		});
+		return () -> multiplexer.createUnconnectedSocket();
 	}
 
 	public static final class Builder {

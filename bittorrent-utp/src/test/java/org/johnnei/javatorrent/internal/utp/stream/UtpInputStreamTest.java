@@ -1,7 +1,5 @@
 package org.johnnei.javatorrent.internal.utp.stream;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -12,7 +10,48 @@ public class UtpInputStreamTest {
 	private UtpInputStream cut = new UtpInputStream((short) 1);
 
 	@Test
-	public void testReadReceivedInOrder() throws IOException {
+	public void testReadBuffered() {
+		cut.submitData((short) 1, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+		byte[] buffer = new byte[5];
+		assertThat(cut.read(buffer, 0, 5), equalTo(5));
+		assertThat(buffer, equalTo(new byte[] { 1, 2, 3, 4, 5 }));
+		assertThat(cut.read(buffer, 0, 5), equalTo(5));
+		assertThat(buffer, equalTo(new byte[] { 6, 7, 8, 9, 10 }));
+	}
+
+	@Test
+	public void testReadBufferedMultiplePackets() {
+		cut.submitData((short) 1, new byte[] { 1, 2, 3, 4, 5 });
+		cut.submitData((short) 2, new byte[] { 6, 7, 8, 9, 10 });
+		byte[] buffer = new byte[7];
+		assertThat(cut.read(buffer, 0, 7), equalTo(7));
+		assertThat(buffer, equalTo(new byte[] { 1, 2, 3, 4, 5, 6, 7 }));
+		assertThat(cut.read(buffer, 0, 7), equalTo(3));
+		assertThat(buffer, equalTo(new byte[] { 8, 9, 10, 4, 5, 6, 7 }));
+	}
+
+	@Test
+	public void testReadBufferedOverRead() {
+		cut.submitData((short) 1, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+		byte[] buffer = new byte[7];
+		assertThat(cut.read(buffer, 0, 7), equalTo(7));
+		assertThat(buffer, equalTo(new byte[] { 1, 2, 3, 4, 5, 6, 7 }));
+		assertThat(cut.read(buffer, 0, 7), equalTo(3));
+		assertThat(buffer, equalTo(new byte[] { 8, 9, 10, 4, 5, 6, 7 }));
+	}
+
+	@Test
+	public void testReadBufferedOffset() {
+		cut.submitData((short) 1, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+		byte[] buffer = new byte[7];
+		assertThat(cut.read(buffer, 2, 5), equalTo(5));
+		assertThat(buffer, equalTo(new byte[] { 0, 0, 1, 2, 3, 4, 5 }));
+		assertThat(cut.read(buffer, 0, 7), equalTo(5));
+		assertThat(buffer, equalTo(new byte[] { 6, 7, 8, 9, 10, 4, 5 }));
+	}
+
+	@Test
+	public void testReadReceivedInOrder() {
 		cut.submitData((short) 1, new byte[]{ 5, 6, 7, 8 });
 		cut.submitData((short) 2, new byte[]{ 1, 2, 3, 4 });
 
@@ -27,7 +66,7 @@ public class UtpInputStreamTest {
 	}
 
 	@Test
-	public void testReadReceivedOutOfOrder() throws IOException {
+	public void testReadReceivedOutOfOrder() {
 		cut.submitData((short) 2, new byte[]{ 1, 2, 3, 4 });
 		cut.submitData((short) 1, new byte[]{ 5, 6, 7, 8 });
 
@@ -42,7 +81,7 @@ public class UtpInputStreamTest {
 	}
 
 	@Test
-	public void testReadReceivedOutOfOrderBadly() throws IOException {
+	public void testReadReceivedOutOfOrderBadly() {
 		cut.submitData((short) 5, new byte[]{ 4 });
 		cut.submitData((short) 4, new byte[]{ 3 });
 		cut.submitData((short) 3, new byte[]{ 2 });

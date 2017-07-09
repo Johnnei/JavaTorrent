@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.time.Clock;
@@ -36,6 +37,7 @@ import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
+import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.STATE;
 import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.SYN;
 
 public class UtpSocket implements ISocket, Closeable {
@@ -74,6 +76,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private UtpInputStream inputStream;
 
+	private SocketAddress remoteAddress;
+
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
 	 *
@@ -108,9 +112,13 @@ public class UtpSocket implements ISocket, Closeable {
 		outputStream = new UtpOutputStream(this);
 	}
 
+	public void bind(SocketAddress remoteAddress) {
+		this.remoteAddress = remoteAddress;
+	}
+
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
-		channel.connect(endpoint);
+		bind(endpoint);
 		send(new SynPayload());
 		connectionState = ConnectionState.SYN_SENT;
 
@@ -189,10 +197,10 @@ public class UtpSocket implements ISocket, Closeable {
 
 		UtpHeader header = new UtpHeader.Builder()
 			.setType(payload.getType().getTypeField())
-			.setSequenceNumber(sequenceNumberCounter++)
+			.setSequenceNumber(getPacketSequenceNumber(payload.getType()))
 			.setExtension((byte) 0)
 			.setAcknowledgeNumber(ackNumber)
-			.setConnectionId(payload.getType() == SYN ? (short) (sendConnectionId - 1) : sendConnectionId)
+			.setConnectionId(getSendConnectionId(payload.getType()))
 			.setTimestamp(precisionTimer.getCurrentMicros())
 			.setTimestampDifference(0)
 			.setWindowSize(64_000)
@@ -202,17 +210,35 @@ public class UtpSocket implements ISocket, Closeable {
 
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
 			LOGGER.trace(
-				"Writing [{}] packet [{}] of [{}] bytes",
+				"Writing [{}] packet [{}] acking [{}] of [{}] bytes",
 				PacketType.getByType(packet.getHeader().getType()),
 				Short.toUnsignedInt(packet.getHeader().getSequenceNumber()),
+				Short.toUnsignedInt(packet.getHeader().getAcknowledgeNumber()),
 				buffer.limit()
 			);
 		}
 
-		channel.write(buffer);
+		channel.send(buffer, remoteAddress);
 
 		if (buffer.hasRemaining()) {
 			throw new IOException("Write buffer utilization exceeded.");
+		}
+	}
+
+	private short getPacketSequenceNumber(PacketType type) {
+		// The state packet acking the SYN _DOES_ increase the sequence number.
+		if (type == STATE && connectionState != ConnectionState.SYN_RECEIVED) {
+			return sequenceNumberCounter;
+		} else {
+			return sequenceNumberCounter++;
+		}
+	}
+
+	private short getSendConnectionId(PacketType type) {
+		if (type == SYN) {
+			return (short) (sendConnectionId - 1);
+		} else {
+			return sendConnectionId;
 		}
 	}
 
@@ -237,7 +263,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		channel.close();
+		// TODO Implement closing of socket (JBT-69).
 	}
 
 	public void submitData(short sequenceNumber, byte[] data) {
@@ -265,6 +291,13 @@ public class UtpSocket implements ISocket, Closeable {
 
 	public void setConnectionState(ConnectionState newState) {
 		// FIXME Check if transition is allowed.
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
+			LOGGER.trace(
+				"Transitioning state from {} to {}",
+				connectionState,
+				newState
+			);
+		}
 		connectionState = newState;
 
 		if (connectionState == ConnectionState.CONNECTED) {
@@ -280,5 +313,10 @@ public class UtpSocket implements ISocket, Closeable {
 
 	public void setAcknowledgeNumber(short acknowledgeNumber) {
 		this.lastSentAcknowledgeNumber = acknowledgeNumber;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("UtpSocket[sendConnectionId=%s, remote=%s]", Short.toUnsignedInt(sendConnectionId), remoteAddress);
 	}
 }

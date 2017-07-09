@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.network;
+package org.johnnei.javatorrent.internal.utp;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -9,15 +9,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.powermock.reflect.Whitebox;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link UtpPeerConnectionAcceptor}
@@ -30,7 +29,9 @@ public class UtpPeerConnectionAcceptorTest {
 	@Test
 	public void testAcceptSocket() throws IOException {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		ISocket socketMock = mock(ISocket.class);
+		UtpSocket socketMock = mock(UtpSocket.class);
+
+		when(socketMock.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
 
 		UtpPeerConnectionAcceptor cut = new UtpPeerConnectionAcceptor(torrentClientMock);
 
