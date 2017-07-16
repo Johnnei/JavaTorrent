@@ -56,6 +56,9 @@ public class UtpHeader {
         return connectionId;
     }
 
+    /**
+     * @return The sent time in microseconds.
+     */
     public int getTimestamp() {
         return timestamp;
     }

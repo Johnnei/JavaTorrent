@@ -34,6 +34,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
+import org.johnnei.javatorrent.internal.utp.stream.SocketTimeoutHandler;
 import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
@@ -78,6 +79,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private SocketAddress remoteAddress;
 
+	private SocketTimeoutHandler timeoutHandler;
+
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
 	 *
@@ -110,6 +113,7 @@ public class UtpSocket implements ISocket, Closeable {
 		packetWriter = new PacketWriter();
 		precisionTimer = new PrecisionTimer();
 		outputStream = new UtpOutputStream(this);
+		timeoutHandler = new SocketTimeoutHandler(precisionTimer);
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -152,6 +156,7 @@ public class UtpSocket implements ISocket, Closeable {
 			);
 		}
 		packetAckHandler.onReceivedPacket(packet);
+		// TODO When packet in flight is ack'ed update the timeout (JBT-65)
 		packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 	}
 
@@ -188,6 +193,19 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 	}
 
+	/**
+	 * Validates if the socket is in timeout state or not.
+	 */
+	public void processTimeout() {
+		if (!timeoutHandler.isTimeoutExpired()) {
+			return;
+		}
+
+		timeoutHandler.onTimeout();
+		// FIXME: Set packet size to 150 (JBT-73)
+		// FIXME: Set window to 150 (JBT-66)
+	}
+
 	private void send(Payload payload) throws IOException {
 		short ackNumber = lastSentAcknowledgeNumber;
 		if (!acknowledgeQueue.isEmpty()) {
@@ -219,6 +237,7 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 
 		channel.send(buffer, remoteAddress);
+		timeoutHandler.onSentPacket();
 
 		if (buffer.hasRemaining()) {
 			throw new IOException("Write buffer utilization exceeded.");

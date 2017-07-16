@@ -85,6 +85,7 @@ public class UtpMultiplexer implements Closeable, Runnable {
 		try {
 			for (UtpSocket socket : socketRegistry.getAllSockets()) {
 				socket.processSendQueue();
+				socket.processTimeout();
 			}
 		} catch (Exception e) {
 			LOGGER.warn("uTP socket caused exception", e);

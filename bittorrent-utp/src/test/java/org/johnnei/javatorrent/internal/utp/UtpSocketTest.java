@@ -13,8 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
@@ -36,8 +34,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class UtpSocketTest {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(UtpSocketTest.class);
 
 	@Rule
 	public Timeout timeout = Timeout.seconds(30);
