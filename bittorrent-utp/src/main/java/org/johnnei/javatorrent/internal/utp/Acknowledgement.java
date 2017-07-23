@@ -6,18 +6,18 @@ public class Acknowledgement {
 
 	private final short sequenceNumber;
 
-	private int timesSent;
+	private int timesSeen;
 
 	public Acknowledgement(short sequenceNumber) {
 		this.sequenceNumber = sequenceNumber;
 	}
 
 	public void packetSeen() {
-		timesSent++;
+		timesSeen++;
 	}
 
-	public int getTimesSent() {
-		return timesSent;
+	public int getTimesSeen() {
+		return timesSeen;
 	}
 
 	public short getSequenceNumber() {
@@ -45,6 +45,6 @@ public class Acknowledgement {
 
 	@Override
 	public String toString() {
-		return String.format("Acknowledgement{sequenceNumber=%d, timesSent=%d}", sequenceNumber, timesSent);
+		return String.format("Acknowledgement{sequenceNumber=%d, timesSeen=%d}", sequenceNumber, timesSeen);
 	}
 }

@@ -6,7 +6,7 @@ import java.util.Map;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
 /**
- * Manages the packets which are in flight and responds to acknowledgements.
+ * Handles the determining of which packets can be acked based on the received packets.
  */
 public class PacketAckHandler {
 

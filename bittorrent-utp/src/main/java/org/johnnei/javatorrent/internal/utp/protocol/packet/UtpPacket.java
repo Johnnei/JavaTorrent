@@ -9,6 +9,8 @@ public class UtpPacket {
 
 	private final Payload payload;
 
+	private int timesSent;
+
 	public UtpPacket(UtpHeader header, Payload payload) {
 		assert header.getType() == payload.getType().getTypeField() : "Payload type doesn't confirm to the information in header.";
 		this.header = header;
@@ -24,7 +26,10 @@ public class UtpPacket {
 	}
 
 	public boolean isSendOnce() {
-		// FIXME: This should be false when the packet has been resent. (JBT-65)
-		return true;
+		return timesSent == 1;
+	}
+
+	public void incrementSentCount() {
+		timesSent++;
 	}
 }

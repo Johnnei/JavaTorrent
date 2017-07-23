@@ -42,7 +42,7 @@ public class PacketAckHandlerTest {
 		ArgumentCaptor<Acknowledgement> acknowledgementCaptor = ArgumentCaptor.forClass(Acknowledgement.class);
 		verify(socket).acknowledgePacket(acknowledgementCaptor.capture());
 		assertThat("Ack should be sent of for the second packet.", acknowledgementCaptor.getValue().getSequenceNumber(), equalTo((short) 2));
-		assertThat("This is the first occurrence of the packet.", acknowledgementCaptor.getValue().getTimesSent(), equalTo(1));
+		assertThat("This is the first occurrence of the packet.", acknowledgementCaptor.getValue().getTimesSeen(), equalTo(1));
 	}
 
 	@Test
@@ -72,10 +72,10 @@ public class PacketAckHandlerTest {
 		List<Acknowledgement> acknowledgements = acknowledgementCaptor.getAllValues();
 
 		assertThat("Ack should be sent in order of sequence.", acknowledgements.get(0).getSequenceNumber(), equalTo((short) 2));
-		assertThat("This is the first occurrence of the packet.", acknowledgements.get(0).getTimesSent(), equalTo(1));
+		assertThat("This is the first occurrence of the packet.", acknowledgements.get(0).getTimesSeen(), equalTo(1));
 
 		assertThat("Ack should be sent in order of sequence.", acknowledgements.get(1).getSequenceNumber(), equalTo((short) 3));
-		assertThat("This is the first occurrence of the packet.", acknowledgements.get(1).getTimesSent(), equalTo(1));
+		assertThat("This is the first occurrence of the packet.", acknowledgements.get(1).getTimesSeen(), equalTo(1));
 	}
 
 	@Test
@@ -106,7 +106,7 @@ public class PacketAckHandlerTest {
 
 		Acknowledgement acknowledgement = acknowledgementCaptor.getValue();
 		assertThat("Ack should be sent in order of sequence.", acknowledgement.getSequenceNumber(), equalTo((short) 3));
-		assertThat("This is the first occurrence of the packet.", acknowledgement.getTimesSent(), equalTo(1));
+		assertThat("This is the first occurrence of the packet.", acknowledgement.getTimesSeen(), equalTo(1));
 	}
 
 }

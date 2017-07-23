@@ -217,6 +217,50 @@ public class UtpSocketTest {
 	}
 
 	@Test
+	public void testPacketLoss() throws Exception {
+		UtpSocket socket = prepareSocketAfterHandshake();
+
+		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+
+		socket.processSendQueue();
+
+		UtpPacket stPacket = new UtpPacket(
+			new UtpHeader.Builder()
+				.setAcknowledgeNumber((short) 1)
+				.setConnectionId((short) 42)
+				.setExtension((byte) 0)
+				.setSequenceNumber((short) 675)
+				.setType(PacketType.STATE.getTypeField())
+				.build(),
+			new StatePayload()
+		);
+
+		// Make the packet considered lost.
+		socket.onReceivedPacket(stPacket);
+		socket.onReceivedPacket(stPacket);
+		socket.onReceivedPacket(stPacket);
+
+		socket.processSendQueue();
+
+		ArgumentCaptor<ByteBuffer> bufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+		verify(channel, times(3)).send(bufferArgumentCaptor.capture(), any(InetSocketAddress.class));
+
+		// This should be packet[seq_nr=2] again
+		ByteBuffer buffer = bufferArgumentCaptor.getAllValues().get(2);
+
+		// Validate header
+		assertThat("Connection id for second packet should be 1 higher than the one used in SYN packet.", buffer.getShort(2), equalTo((short) 43));
+		assertThat("Data packet should have been sent.", (byte) (buffer.get(0) >>> 4), equalTo(PacketType.DATA.getTypeField()));
+		assertThat("Packet Sequence number must increment", buffer.getShort(16), equalTo((short) 2));
+		assertThat("Acknowledge field should contain sequence number of the ST_STATE confirming the connection.", buffer.getShort(18), equalTo((short) 675));
+		// Validate payload
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(20), equalTo((byte) 1));
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(21), equalTo((byte) 2));
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(22), equalTo((byte) 3));
+		assertThat("Payload should have been append to the end of the packet header.", buffer.get(23), equalTo((byte) 4));
+	}
+
+	@Test
 	public void testReceive() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 

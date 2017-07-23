@@ -63,13 +63,13 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private ConnectionState connectionState;
 
-	private Queue<UtpPacket> resendQueue;
+	private final Queue<UtpPacket> resendQueue;
 
 	private final Queue<Acknowledgement> acknowledgeQueue;
 
 	private short lastSentAcknowledgeNumber;
 
-	private Queue<Payload> sendQueue;
+	private final Queue<Payload> sendQueue;
 
 	private PacketAckHandler packetAckHandler;
 
@@ -80,6 +80,8 @@ public class UtpSocket implements ISocket, Closeable {
 	private SocketAddress remoteAddress;
 
 	private SocketTimeoutHandler timeoutHandler;
+
+	private PacketLossHandler packetLossHandler;
 
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
@@ -110,10 +112,12 @@ public class UtpSocket implements ISocket, Closeable {
 		connectionState = ConnectionState.PENDING;
 		acknowledgeQueue = new LinkedList<>();
 		sendQueue = new LinkedList<>();
+		resendQueue = new LinkedList<>();
 		packetWriter = new PacketWriter();
 		precisionTimer = new PrecisionTimer();
 		outputStream = new UtpOutputStream(this);
 		timeoutHandler = new SocketTimeoutHandler(precisionTimer);
+		packetLossHandler = new PacketLossHandler(this);
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -156,6 +160,7 @@ public class UtpSocket implements ISocket, Closeable {
 			);
 		}
 		packetAckHandler.onReceivedPacket(packet);
+		packetLossHandler.onReceivedPacket(packet);
 		// TODO When packet in flight is ack'ed update the timeout (JBT-65)
 		packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 	}
@@ -175,6 +180,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 * @param packet The packet to be resend.
 	 */
 	public void resend(UtpPacket packet) {
+		resendQueue.add(packet);
 	}
 
 	public void acknowledgePacket(Acknowledgement acknowledgement) {
@@ -186,7 +192,9 @@ public class UtpSocket implements ISocket, Closeable {
 	 * This will consume elements from {@link #resendQueue}, {@link #sendQueue} and {@link #packetAckHandler}
 	 */
 	public void processSendQueue() throws IOException {
-		if (!sendQueue.isEmpty()) {
+		if (!resendQueue.isEmpty()) {
+			send(resendQueue.poll());
+		} else if (!sendQueue.isEmpty()) {
 			send(sendQueue.poll());
 		} else if (!acknowledgeQueue.isEmpty()) {
 			send(new StatePayload());
@@ -207,23 +215,26 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	private void send(Payload payload) throws IOException {
+		UtpHeader header = new UtpHeader.Builder()
+			.setType(payload.getType().getTypeField())
+			.setSequenceNumber(getPacketSequenceNumber(payload.getType()))
+			.setExtension((byte) 0)
+			.setConnectionId(getSendConnectionId(payload.getType()))
+			.setWindowSize(64_000)
+			.build();
+		UtpPacket packet = new UtpPacket(header, payload);
+		send(packet);
+	}
+
+	private void send(UtpPacket packet) throws IOException {
 		short ackNumber = lastSentAcknowledgeNumber;
 		if (!acknowledgeQueue.isEmpty()) {
 			ackNumber = acknowledgeQueue.poll().getSequenceNumber();
 			lastSentAcknowledgeNumber = ackNumber;
 		}
 
-		UtpHeader header = new UtpHeader.Builder()
-			.setType(payload.getType().getTypeField())
-			.setSequenceNumber(getPacketSequenceNumber(payload.getType()))
-			.setExtension((byte) 0)
-			.setAcknowledgeNumber(ackNumber)
-			.setConnectionId(getSendConnectionId(payload.getType()))
-			.setTimestamp(precisionTimer.getCurrentMicros())
-			.setTimestampDifference(0)
-			.setWindowSize(64_000)
-			.build();
-		UtpPacket packet = new UtpPacket(header, payload);
+		packet.getHeader().renew(ackNumber, precisionTimer.getCurrentMicros(), 0);
+
 		ByteBuffer buffer = packetWriter.write(packet);
 
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
@@ -237,6 +248,7 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 
 		channel.send(buffer, remoteAddress);
+		packetLossHandler.onSentPacket(packet);
 		timeoutHandler.onSentPacket();
 
 		if (buffer.hasRemaining()) {
