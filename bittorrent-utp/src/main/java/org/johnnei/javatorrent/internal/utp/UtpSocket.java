@@ -83,6 +83,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private PacketLossHandler packetLossHandler;
 
+	private SocketWindowHandler windowHandler;
+
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
 	 *
@@ -118,6 +120,7 @@ public class UtpSocket implements ISocket, Closeable {
 		outputStream = new UtpOutputStream(this);
 		timeoutHandler = new SocketTimeoutHandler(precisionTimer);
 		packetLossHandler = new PacketLossHandler(this);
+		windowHandler = new SocketWindowHandler();
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -158,11 +161,13 @@ public class UtpSocket implements ISocket, Closeable {
 				PacketType.getByType(packet.getHeader().getType()),
 				Short.toUnsignedInt(packet.getHeader().getSequenceNumber())
 			);
+
+			packetAckHandler.onReceivedPacket(packet);
+			packetLossHandler.onReceivedPacket(packet);
+			windowHandler.onReceivedPacket(packet);
+			// TODO When packet in flight is ack'ed update the timeout (JBT-65)
+			packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 		}
-		packetAckHandler.onReceivedPacket(packet);
-		packetLossHandler.onReceivedPacket(packet);
-		// TODO When packet in flight is ack'ed update the timeout (JBT-65)
-		packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 	}
 
 	/**
@@ -194,10 +199,13 @@ public class UtpSocket implements ISocket, Closeable {
 	public void processSendQueue() throws IOException {
 		if (!resendQueue.isEmpty()) {
 			send(resendQueue.poll());
-		} else if (!sendQueue.isEmpty()) {
-			send(sendQueue.poll());
-		} else if (!acknowledgeQueue.isEmpty()) {
-			send(new StatePayload());
+		} else {
+			int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
+			if (!sendQueue.isEmpty() && sendQueue.peek().getData().length <= maxPayloadSize) {
+				send(sendQueue.poll());
+			} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
+				send(new StatePayload());
+			}
 		}
 	}
 
@@ -211,7 +219,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 		timeoutHandler.onTimeout();
 		// FIXME: Set packet size to 150 (JBT-73)
-		// FIXME: Set window to 150 (JBT-66)
+		windowHandler.onTimeout();
 	}
 
 	private void send(Payload payload) throws IOException {
@@ -220,7 +228,7 @@ public class UtpSocket implements ISocket, Closeable {
 			.setSequenceNumber(getPacketSequenceNumber(payload.getType()))
 			.setExtension((byte) 0)
 			.setConnectionId(getSendConnectionId(payload.getType()))
-			.setWindowSize(64_000)
+			.setWindowSize(windowHandler.getBytesInFlight())
 			.build();
 		UtpPacket packet = new UtpPacket(header, payload);
 		send(packet);
@@ -245,11 +253,12 @@ public class UtpSocket implements ISocket, Closeable {
 				Short.toUnsignedInt(packet.getHeader().getAcknowledgeNumber()),
 				buffer.limit()
 			);
-		}
 
-		channel.send(buffer, remoteAddress);
-		packetLossHandler.onSentPacket(packet);
-		timeoutHandler.onSentPacket();
+			channel.send(buffer, remoteAddress);
+			packetLossHandler.onSentPacket(packet);
+			timeoutHandler.onSentPacket();
+			windowHandler.onSentPacket(packet);
+		}
 
 		if (buffer.hasRemaining()) {
 			throw new IOException("Write buffer utilization exceeded.");

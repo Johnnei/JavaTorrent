@@ -12,7 +12,7 @@ public class PacketWriter {
 	public static final int OVERHEAD_IN_BYTES = 20;
 
 	public ByteBuffer write(UtpPacket packet) {
-		ByteBuffer buffer = ByteBuffer.allocate(OVERHEAD_IN_BYTES + packet.getPayload().getData().length);
+		ByteBuffer buffer = ByteBuffer.allocate(packet.getSize());
 
 		byte typeAndVersion = (byte) ((packet.getHeader().getType() << 4) | (packet.getHeader().getVersion() & 0xF));
 		buffer.put(typeAndVersion);

@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.internal.utp.protocol.packet;
 
+import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
+
 /**
  * Represents a single packet on the uTP connection.
  */
@@ -31,5 +33,9 @@ public class UtpPacket {
 
 	public void incrementSentCount() {
 		timesSent++;
+	}
+
+	public int getSize() {
+		return PacketWriter.OVERHEAD_IN_BYTES + payload.getData().length;
 	}
 }

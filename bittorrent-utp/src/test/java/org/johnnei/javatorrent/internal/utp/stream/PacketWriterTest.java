@@ -34,6 +34,7 @@ public class PacketWriterTest {
 		when(header.getWindowSize()).thenReturn(0x56785687);
 		when(header.getSequenceNumber()).thenReturn((short) 0x8756);
 		when(header.getAcknowledgeNumber()).thenReturn((short) 0x7865);
+		when(packet.getSize()).thenReturn(25);
 
 		ByteBuffer buffer = cut.write(packet);
 
