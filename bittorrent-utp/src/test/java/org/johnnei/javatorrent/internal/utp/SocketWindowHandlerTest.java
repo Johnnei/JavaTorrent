@@ -70,6 +70,12 @@ public class SocketWindowHandlerTest {
 	}
 
 	@Test
+	public void testOnPacketLoss() {
+		cut.onPacketLoss();
+		assertThat(cut.getMaxWindow(), is(75));
+	}
+
+	@Test
 	public void testIncreaseWindowSizeOnFastSocket() {
 		cut.onSentPacket(sentPacket);
 

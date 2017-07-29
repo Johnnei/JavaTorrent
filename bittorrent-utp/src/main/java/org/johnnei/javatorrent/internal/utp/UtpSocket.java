@@ -186,6 +186,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 */
 	public void resend(UtpPacket packet) {
 		resendQueue.add(packet);
+		windowHandler.onPacketLoss();
 	}
 
 	public void acknowledgePacket(Acknowledgement acknowledgement) {

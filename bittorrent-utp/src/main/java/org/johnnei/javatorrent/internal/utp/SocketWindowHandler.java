@@ -83,4 +83,8 @@ public class SocketWindowHandler {
 	public void onTimeout() {
 		maxWindow = 150;
 	}
+
+	public void onPacketLoss() {
+		maxWindow /= 2;
+	}
 }
