@@ -85,6 +85,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private SocketWindowHandler windowHandler;
 
+	private PacketSizeHandler packetSizeHandler;
+
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
 	 *
@@ -121,6 +123,7 @@ public class UtpSocket implements ISocket, Closeable {
 		timeoutHandler = new SocketTimeoutHandler(precisionTimer);
 		packetLossHandler = new PacketLossHandler(this);
 		windowHandler = new SocketWindowHandler();
+		packetSizeHandler = new PacketSizeHandler(windowHandler);
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -165,6 +168,7 @@ public class UtpSocket implements ISocket, Closeable {
 			packetAckHandler.onReceivedPacket(packet);
 			packetLossHandler.onReceivedPacket(packet);
 			windowHandler.onReceivedPacket(packet);
+			packetSizeHandler.onReceivedPacket(packet);
 			// TODO When packet in flight is ack'ed update the timeout (JBT-65)
 			packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 		}
@@ -187,6 +191,7 @@ public class UtpSocket implements ISocket, Closeable {
 	public void resend(UtpPacket packet) {
 		resendQueue.add(packet);
 		windowHandler.onPacketLoss();
+		packetSizeHandler.onPacketLoss();
 	}
 
 	public void acknowledgePacket(Acknowledgement acknowledgement) {
@@ -218,8 +223,12 @@ public class UtpSocket implements ISocket, Closeable {
 			return;
 		}
 
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
+			LOGGER.trace("Socket triggered timeout.");
+		}
+
 		timeoutHandler.onTimeout();
-		// FIXME: Set packet size to 150 (JBT-73)
+		packetSizeHandler.onTimeout();
 		windowHandler.onTimeout();
 	}
 
@@ -259,6 +268,7 @@ public class UtpSocket implements ISocket, Closeable {
 			packetLossHandler.onSentPacket(packet);
 			timeoutHandler.onSentPacket();
 			windowHandler.onSentPacket(packet);
+			packetSizeHandler.onSentPacket(packet);
 		}
 
 		if (buffer.hasRemaining()) {
@@ -287,8 +297,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 * @return The amount of bytes the payload currently holds when transmitting a packet.
 	 */
 	public int getPacketPayloadSize() {
-		// TODO Adhere packet sizing (JBT-73)
-		return 150 - PacketWriter.OVERHEAD_IN_BYTES;
+		return packetSizeHandler.getPacketSize() - PacketWriter.OVERHEAD_IN_BYTES;
 	}
 
 
