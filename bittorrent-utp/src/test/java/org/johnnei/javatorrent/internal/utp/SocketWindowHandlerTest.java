@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
@@ -24,21 +25,31 @@ public class SocketWindowHandlerTest {
 	private UtpPacket sentPacket;
 	private UtpPacket receivedPacket;
 	private UtpHeader receivedHeader;
+	private UtpHeader sentHeader;
 
 	@Before
 	public void setUp() {
 		sentPacket = mock(UtpPacket.class);
-		UtpHeader sentHeader = mock(UtpHeader.class);
+		sentHeader = mock(UtpHeader.class);
 
 		when(sentPacket.getHeader()).thenReturn(sentHeader);
 		when(sentPacket.getSize()).thenReturn(25);
 		when(sentHeader.getSequenceNumber()).thenReturn((short) 42);
+		when(sentHeader.getType()).thenReturn(PacketType.DATA.getTypeField());
 
 		receivedPacket = mock(UtpPacket.class);
 		receivedHeader = mock(UtpHeader.class);
 
 		when(receivedPacket.getHeader()).thenReturn(receivedHeader);
 		when(receivedHeader.getAcknowledgeNumber()).thenReturn((short) 42);
+	}
+
+	@Test
+	public void testCountBytesInFlightOnlyCountData() {
+		when(sentHeader.getType()).thenReturn(PacketType.STATE.getTypeField());
+		cut.onSentPacket(sentPacket);
+
+		assertThat(cut.getBytesInFlight(), is(0));
 	}
 
 	@Test

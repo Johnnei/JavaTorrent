@@ -4,11 +4,13 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.internal.utils.SlidingTimedValue;
+import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
 /**
@@ -47,20 +49,27 @@ public class SocketWindowHandler {
 
 		maxWindow = Math.max(0, maxWindow + scaledGain);
 
+		synchronized (this) {
+			packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
+		}
+
 		LOGGER.trace(
-			"our_delay: [{}] us, off_target: [{}] us, delayFactor [{}], windowFactor [{}], scaledGain [{}] bytes, maxWindow [{}] bytes",
+			"our_delay: [{}] us, off_target: [{}] us, delayFactor [{}], windowFactor [{}], scaledGain [{}] bytes, maxWindow [{}] bytes, packets in flight: {}",
 			ourDelay,
 			offTarget,
 			delayFactor,
 			windowFactor,
 			scaledGain,
-			maxWindow
+			maxWindow,
+			packetsInFlight.values().stream().map(p -> Short.toUnsignedInt(p.getHeader().getSequenceNumber())).collect(Collectors.toList())
 		);
-
-		packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
 	}
 
 	public void onSentPacket(UtpPacket packet) {
+		if (packet.getHeader().getType() != PacketType.DATA.getTypeField()) {
+			return;
+		}
+
 		synchronized (this) {
 			packetsInFlight.putIfAbsent(packet.getHeader().getSequenceNumber(), packet);
 		}

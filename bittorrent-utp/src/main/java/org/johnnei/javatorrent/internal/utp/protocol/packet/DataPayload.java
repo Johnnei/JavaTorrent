@@ -36,4 +36,9 @@ public class DataPayload implements Payload {
 	public PacketType getType() {
 		return PacketType.DATA;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("DataPayload[data=%d bytes]", data.length);
+	}
 }

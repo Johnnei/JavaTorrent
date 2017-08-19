@@ -96,7 +96,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 */
 	public static UtpSocket createInitiatingSocket(DatagramChannel channel, short receiveConnectionId) {
 		UtpSocket socket = new UtpSocket(channel, (short) (receiveConnectionId + 1));
-		socket.sequenceNumberCounter = 1;
+		socket.sequenceNumberCounter = 0;
 		socket.packetAckHandler = new PacketAckHandler(socket);
 		return socket;
 	}
@@ -224,7 +224,16 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
-			LOGGER.trace("Socket triggered timeout.");
+			LOGGER.trace(
+				"Socket triggered timeout. Window: {} bytes. Bytes in flight: {}. Payload Size: {} bytes. Resend Queue: {} packets. Send Queue: {} packets (head: {}), Ack Queue: {} packets.",
+				windowHandler.getMaxWindow(),
+				windowHandler.getBytesInFlight(),
+				getPacketPayloadSize(),
+				resendQueue.size(),
+				sendQueue.size(),
+				sendQueue.peek(),
+				acknowledgeQueue.size()
+			);
 		}
 
 		timeoutHandler.onTimeout();
@@ -281,7 +290,7 @@ public class UtpSocket implements ISocket, Closeable {
 		if (type == STATE && connectionState != ConnectionState.SYN_RECEIVED) {
 			return sequenceNumberCounter;
 		} else {
-			return sequenceNumberCounter++;
+			return ++sequenceNumberCounter;
 		}
 	}
 
