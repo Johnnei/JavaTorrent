@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
 
-import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -21,6 +20,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -79,7 +79,7 @@ public class UtpSocketRegistryTest {
 		UtpSocket socketTwo = cut.getSocket((short) 6);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, sameInstance(socket));
-		assertThat("All sockets must be returned", cut.getAllSockets(), IsCollectionWithSize.hasSize(1));
+		assertThat("All sockets must be returned", cut.getAllSockets(), hasSize(1));
 	}
 
 	@Test
@@ -88,7 +88,23 @@ public class UtpSocketRegistryTest {
 		UtpSocket socketTwo = createSocket(7);
 
 		assertThat("A socket must be reused when the same connection id is used.", socketTwo, not(sameInstance(socket)));
-		assertThat("All sockets must be returned", cut.getAllSockets(), IsCollectionWithSize.hasSize(2));
+		assertThat("All sockets must be returned", cut.getAllSockets(), hasSize(2));
+	}
+
+	@Test
+	public void testRemoveShutdownSockets() {
+		UtpSocket socket1 = mock(UtpSocket.class);
+		when(socket1.isShutdown()).thenReturn(false);
+
+		UtpSocket socket2 = mock(UtpSocket.class);
+		when(socket2.isShutdown()).thenReturn(true);
+
+		cut.allocateSocket((id) -> socket1);
+		cut.allocateSocket((id) -> socket2);
+
+		assertThat("Allocate failure", cut.getAllSockets(), hasSize(2));
+		cut.removeShutdownSockets();
+		assertThat("Socket 2 should have been removed.", cut.getAllSockets(), hasSize(1));
 	}
 
 }

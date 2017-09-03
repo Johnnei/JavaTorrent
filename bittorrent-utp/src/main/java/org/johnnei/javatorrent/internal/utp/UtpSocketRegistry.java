@@ -5,6 +5,7 @@ import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
@@ -84,6 +85,23 @@ public class UtpSocketRegistry {
 	public Collection<UtpSocket> getAllSockets() {
 		synchronized (createLock) {
 			return new ArrayList<>(socketMap.values());
+		}
+	}
+
+	/**
+	 * Removes all shutdown sockets freeing up their allocated IDs.
+	 */
+	public void removeShutdownSockets() {
+		synchronized (createLock) {
+			Iterator<Map.Entry<Short, UtpSocket>> iterator = socketMap.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry<Short, UtpSocket> socketEntry = iterator.next();
+				UtpSocket socket = socketEntry.getValue();
+				if (socket.isShutdown()) {
+					LOGGER.trace("Removed registration of socket with receive id [{}]", Short.toUnsignedInt(socketEntry.getKey()));
+					iterator.remove();
+				}
+			}
 		}
 	}
 }

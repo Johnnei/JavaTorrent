@@ -28,6 +28,7 @@ import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
@@ -35,6 +36,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 import org.johnnei.javatorrent.internal.utp.stream.SocketTimeoutHandler;
+import org.johnnei.javatorrent.internal.utp.stream.StreamState;
 import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
 
@@ -61,6 +63,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private short sequenceNumberCounter;
 
+	private Short endOfStreamSequenceNumber;
+
 	private ConnectionState connectionState;
 
 	private final Queue<UtpPacket> resendQueue;
@@ -86,6 +90,10 @@ public class UtpSocket implements ISocket, Closeable {
 	private SocketWindowHandler windowHandler;
 
 	private PacketSizeHandler packetSizeHandler;
+
+	private StreamState outputStreamState;
+
+	private StreamState inputStreamState;
 
 	/**
 	 * Creates a new {@link UtpSocket} and configures it to be the initiating side.
@@ -124,6 +132,8 @@ public class UtpSocket implements ISocket, Closeable {
 		packetLossHandler = new PacketLossHandler(this);
 		windowHandler = new SocketWindowHandler();
 		packetSizeHandler = new PacketSizeHandler(windowHandler);
+		inputStreamState = StreamState.ACTIVE;
+		outputStreamState = StreamState.ACTIVE;
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -209,6 +219,9 @@ public class UtpSocket implements ISocket, Closeable {
 			int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
 			if (!sendQueue.isEmpty() && sendQueue.peek().getData().length <= maxPayloadSize) {
 				send(sendQueue.poll());
+			} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
+				send(new FinPayload());
+				outputStreamState = StreamState.SHUTDOWN;
 			} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
 				send(new StatePayload());
 			}
@@ -309,7 +322,6 @@ public class UtpSocket implements ISocket, Closeable {
 		return packetSizeHandler.getPacketSize() - PacketWriter.OVERHEAD_IN_BYTES;
 	}
 
-
 	@Override
 	public InputStream getInputStream() throws IOException {
 		return Objects.requireNonNull(inputStream, "Connection was not established yet");
@@ -321,31 +333,50 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	@Override
-	public void close() throws IOException {
-		// TODO Implement closing of socket (JBT-69).
+	public void close() {
+		flush();
+		setConnectionState(ConnectionState.CLOSING);
+		outputStreamState = StreamState.SHUTDOWN_PENDING;
 	}
 
 	public void submitData(short sequenceNumber, byte[] data) {
 		inputStream.submitData(sequenceNumber, data);
 	}
 
+	public void shutdownInputStream(short sequenceNumber) {
+		endOfStreamSequenceNumber = sequenceNumber;
+		inputStreamState = StreamState.SHUTDOWN;
+		setConnectionState(ConnectionState.CLOSING);
+		if (outputStreamState == StreamState.ACTIVE) {
+			close();
+		}
+	}
+
 	@Override
 	public boolean isClosed() {
-		return connectionState == ConnectionState.PENDING;
+		return connectionState == ConnectionState.PENDING || connectionState == ConnectionState.CLOSED;
 	}
 
 	@Override
 	public boolean isInputShutdown() {
-		return false;
+		return inputStreamState != StreamState.ACTIVE;
 	}
 
 	@Override
 	public boolean isOutputShutdown() {
-		return false;
+		return outputStreamState != StreamState.ACTIVE;
 	}
 
 	@Override
-	public void flush() throws IOException {
+	public void flush() {
+		outputStream.flush();
+	}
+
+	public boolean isShutdown() {
+		return inputStreamState == StreamState.SHUTDOWN
+			&& inputStream.isCompleteUntil(endOfStreamSequenceNumber)
+			&& outputStreamState == StreamState.SHUTDOWN
+			&& windowHandler.getBytesInFlight() == 0;
 	}
 
 	public void setConnectionState(ConnectionState newState) {

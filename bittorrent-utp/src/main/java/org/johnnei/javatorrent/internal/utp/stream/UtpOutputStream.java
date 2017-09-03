@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import org.johnnei.javatorrent.internal.utp.UtpSocket;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 
 public class UtpOutputStream extends OutputStream {
 
@@ -20,6 +21,10 @@ public class UtpOutputStream extends OutputStream {
 
 	@Override
 	public void write(int b) {
+		if (socket.isOutputShutdown()) {
+			throw new UtpProtocolViolationException("Socket is closing/closed and can no longer package new data.");
+		}
+
 		ByteBuffer buffer = ByteBuffer.allocate(1);
 		buffer.put((byte) (b & 0xFF));
 		buffer.flip();
@@ -29,6 +34,10 @@ public class UtpOutputStream extends OutputStream {
 
 	@Override
 	public void write(byte[] b) {
+		if (socket.isOutputShutdown()) {
+			throw new UtpProtocolViolationException("Socket is closing/closed and can no longer package new data.");
+		}
+
 		bufferedData.add(ByteBuffer.wrap(b));
 		packgePayloads(false);
 	}

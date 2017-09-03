@@ -62,4 +62,21 @@ public class UtpInputStream extends InputStream {
 			nextSequenceNumber++;
 		}
 	}
+
+	public boolean isCompleteUntil(short sequenceNumber) {
+		if (nextSequenceNumber == sequenceNumber) {
+			return true;
+		}
+
+		short seq = nextSequenceNumber;
+		while (seq < sequenceNumber) {
+			if (!sequenceToBuffer.containsKey(seq)) {
+				return false;
+			}
+
+			seq++;
+		}
+
+		return true;
+	}
 }
