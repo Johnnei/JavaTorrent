@@ -64,7 +64,7 @@ public class PacketSizeHandlerTest {
 		cut.onSentPacket(sentPacket);
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getPacketSize(), is(200));
+		assertThat(cut.getPacketSize(), is(300));
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class PacketSizeHandlerTest {
 		cut.onSentPacket(sentPacket);
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getPacketSize(), is(200));
+		assertThat(cut.getPacketSize(), is(300));
 
 		cut.onSentPacket(sentPacket);
 		cut.onReceivedPacket(receivedPacket);
@@ -89,7 +89,7 @@ public class PacketSizeHandlerTest {
 		cut.onSentPacket(sentPacket);
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getPacketSize(), is(200));
+		assertThat(cut.getPacketSize(), is(300));
 
 		cut.onPacketLoss();
 		cut.onSentPacket(sentPacket);
