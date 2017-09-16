@@ -26,6 +26,9 @@ public class PacketLossHandler {
 	}
 
 	public void onReceivedPacket(UtpPacket packet) {
+		// Purge the second to last packet as we no longer need it to track packet loss of n + 1.
+		packetsInFlight.remove((short) (packet.getHeader().getAcknowledgeNumber() - 1));
+
 		PacketRegistration registration = packetsInFlight.get(packet.getHeader().getAcknowledgeNumber());
 
 		if (registration == null) {

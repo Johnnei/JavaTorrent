@@ -47,10 +47,6 @@ public class PacketSizeHandler {
 		LOGGER.trace("PacketSize update: [{}] target packets of [{}] bytes", targetPacketCount, packetSize);
 	}
 
-	private int control(int value) {
-		return Math.max(Math.min(CHANGE_CONTROL, value), -CHANGE_CONTROL);
-	}
-
 	public void onPacketLoss() {
 		targetPacketCount *= 2;
 	}
