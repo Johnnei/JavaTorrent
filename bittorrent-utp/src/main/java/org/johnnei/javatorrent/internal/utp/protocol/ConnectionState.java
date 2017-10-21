@@ -28,5 +28,9 @@ public enum ConnectionState {
 	/**
 	 * All application data has passed the line and has been confirmed. The connection is now stale.
 	 */
-	CLOSED;
+	CLOSED,
+	/**
+	 * Connection has been abruptly closed by a {@link org.johnnei.javatorrent.internal.utp.protocol.packet.ResetPayload}
+	 */
+	RESET;
 }

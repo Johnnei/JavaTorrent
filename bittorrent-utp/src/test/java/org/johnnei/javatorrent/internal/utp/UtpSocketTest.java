@@ -18,6 +18,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.FinPayload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.ResetPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
@@ -215,6 +216,32 @@ public class UtpSocketTest {
 		assertThat("Payload should have been append to the end of the packet header.", buffer.get(21), equalTo((byte) 2));
 		assertThat("Payload should have been append to the end of the packet header.", buffer.get(22), equalTo((byte) 3));
 		assertThat("Payload should have been append to the end of the packet header.", buffer.get(23), equalTo((byte) 4));
+	}
+
+	@Test
+	public void testReset() throws Exception {
+		UtpSocket socket = prepareSocketAfterHandshake();
+
+		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+
+		socket.processSendQueue();
+
+		UtpPacket resetPacket = new UtpPacket(
+			new UtpHeader.Builder()
+				.setAcknowledgeNumber((short) 1)
+				.setConnectionId((short) 42)
+				.setExtension((byte) 0)
+				.setSequenceNumber((short) 675)
+				.setType(PacketType.RESET.getTypeField())
+				.build(),
+			new ResetPayload()
+		);
+
+		// Make the packet considered lost.
+		assertThat(socket.isShutdown(), is(false));
+		socket.onReceivedPacket(resetPacket);
+		assertThat("Reset packet should can abrupt closing.", socket.isShutdown(), is(true));
+		assertThat("Reset packet should can abrupt closing.", socket.isClosed(), is(true));
 	}
 
 	@Test

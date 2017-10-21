@@ -6,6 +6,7 @@ import java.util.function.Function;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.DataPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.FinPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.ResetPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 
@@ -17,7 +18,7 @@ public enum PacketType {
 	DATA(0, data -> new DataPayload(data)),
 	FIN(1, data -> new FinPayload()),
 	STATE(2, data -> new StatePayload()),
-	RESET(3, data -> null),
+	RESET(3, data -> new ResetPayload()),
 	SYN(4, data -> new SynPayload());
 
 	private final byte typeField;

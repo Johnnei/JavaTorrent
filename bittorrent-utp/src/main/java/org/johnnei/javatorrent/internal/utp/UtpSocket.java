@@ -354,7 +354,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	@Override
 	public boolean isClosed() {
-		return connectionState == ConnectionState.PENDING || connectionState == ConnectionState.CLOSED;
+		return connectionState == ConnectionState.PENDING || connectionState == ConnectionState.CLOSED || connectionState == ConnectionState.RESET;
 	}
 
 	@Override
@@ -373,14 +373,13 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	public boolean isShutdown() {
-		return inputStreamState == StreamState.SHUTDOWN
+		return connectionState == ConnectionState.RESET || (inputStreamState == StreamState.SHUTDOWN
 			&& inputStream.isCompleteUntil(endOfStreamSequenceNumber)
 			&& outputStreamState == StreamState.SHUTDOWN
-			&& windowHandler.getBytesInFlight() == 0;
+			&& windowHandler.getBytesInFlight() == 0);
 	}
 
 	public void setConnectionState(ConnectionState newState) {
-		// FIXME Check if transition is allowed.
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
 			LOGGER.trace(
 				"Transitioning state from {} to {}",
