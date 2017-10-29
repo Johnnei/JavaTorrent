@@ -44,25 +44,28 @@ public class SocketWindowHandler {
 		Duration ourDelay = Duration.of((long) measuredDelay - measuredDelays.getMinimum(), ChronoUnit.MICROS);
 		Duration offTarget = CCONTROL_TARGET.minus(ourDelay);
 		double delayFactor = offTarget.toNanos() / (double) CCONTROL_TARGET.toNanos();
-		double windowFactor = (maxWindow == 0) ? 0 : getBytesInFlight() / (double) maxWindow;
+		// Due to window violations the window factor may exceed 1.0d which shouldn't be allow as we shouldn't exceed the max window.
+		double windowFactor = (maxWindow == 0) ? 0 : Math.min(1, getBytesInFlight() / (double) maxWindow);
 		int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
 
 		maxWindow = Math.max(0, maxWindow + scaledGain);
 
 		synchronized (this) {
+			if (LOGGER.isTraceEnabled()) {
+				LOGGER.trace(
+					"our_delay: [{}] us, off_target: [{}] us, delayFactor [{}], windowFactor [{}], scaledGain [{}] bytes, maxWindow [{}] bytes, packets in flight: {}",
+					ourDelay,
+					offTarget,
+					delayFactor,
+					windowFactor,
+					scaledGain,
+					maxWindow,
+					packetsInFlight.values().stream().map(p -> Short.toUnsignedInt(p.getHeader().getSequenceNumber()) + "-" + p.getSize()).collect(Collectors.toList())
+				);
+			}
+
 			packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
 		}
-
-		LOGGER.trace(
-			"our_delay: [{}] us, off_target: [{}] us, delayFactor [{}], windowFactor [{}], scaledGain [{}] bytes, maxWindow [{}] bytes, packets in flight: {}",
-			ourDelay,
-			offTarget,
-			delayFactor,
-			windowFactor,
-			scaledGain,
-			maxWindow,
-			packetsInFlight.values().stream().map(p -> Short.toUnsignedInt(p.getHeader().getSequenceNumber())).collect(Collectors.toList())
-		);
 	}
 
 	public void onSentPacket(UtpPacket packet) {

@@ -9,6 +9,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -60,6 +61,11 @@ public class UtpSocket implements ISocket, Closeable {
 	private final short sendConnectionId;
 
 	private final DatagramChannel channel;
+
+	/**
+	 * The time which needs to expire until we are allowed to violate the window as defined by the spec.
+	 */
+	private Instant nextWindowViolation;
 
 	private short sequenceNumberCounter;
 
@@ -134,6 +140,7 @@ public class UtpSocket implements ISocket, Closeable {
 		packetSizeHandler = new PacketSizeHandler(windowHandler);
 		inputStreamState = StreamState.ACTIVE;
 		outputStreamState = StreamState.ACTIVE;
+		nextWindowViolation = clock.instant();
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -217,7 +224,7 @@ public class UtpSocket implements ISocket, Closeable {
 			send(resendQueue.poll());
 		} else {
 			int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
-			if (!sendQueue.isEmpty() && sendQueue.peek().getData().length <= maxPayloadSize) {
+			if (canSendNewPacket(maxPayloadSize)) {
 				send(sendQueue.poll());
 			} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
 				send(new FinPayload());
@@ -226,6 +233,35 @@ public class UtpSocket implements ISocket, Closeable {
 				send(new StatePayload());
 			}
 		}
+	}
+
+	private boolean canSendNewPacket(int maxPayloadSize) {
+		if (sendQueue.isEmpty()) {
+			return false;
+		}
+
+		int payloadSize = sendQueue.peek().getData().length;
+
+		if (payloadSize <= maxPayloadSize) {
+			return true;
+		}
+
+		// Consider window violation for packets which are exceeding the max window size and thus will block the entire buffer.
+		int maxWindow = windowHandler.getMaxWindow();
+		if (payloadSize > maxWindow && maxWindow > 0 && clock.instant().isAfter(nextWindowViolation)) {
+			int secondsToAdd = payloadSize / maxWindow;
+			nextWindowViolation = clock.instant().plusSeconds(secondsToAdd);
+			LOGGER.trace(
+				"Violating window of [{}] bytes by [{}] bytes (shortage: [{}]). Blocking exceeds for [{}] seconds",
+				maxWindow,
+				payloadSize,
+				payloadSize - maxWindow,
+				secondsToAdd
+			);
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
