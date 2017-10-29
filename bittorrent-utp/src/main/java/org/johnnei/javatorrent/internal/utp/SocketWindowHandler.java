@@ -94,9 +94,11 @@ public class SocketWindowHandler {
 
 	public void onTimeout() {
 		maxWindow = 150;
+		LOGGER.trace("Timeout occurred. max_window=[{}]", maxWindow);
 	}
 
 	public void onPacketLoss() {
 		maxWindow /= 2;
+		LOGGER.trace("Packet was lost. max_window=[{}]", maxWindow);
 	}
 }

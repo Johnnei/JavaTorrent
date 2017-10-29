@@ -220,19 +220,25 @@ public class UtpSocket implements ISocket, Closeable {
 	 * This will consume elements from {@link #resendQueue}, {@link #sendQueue} and {@link #packetAckHandler}
 	 */
 	public void processSendQueue() throws IOException {
-		if (!resendQueue.isEmpty()) {
-			send(resendQueue.poll());
-		} else {
-			int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
-			if (canSendNewPacket(maxPayloadSize)) {
-				send(sendQueue.poll());
-			} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
-				send(new FinPayload());
-				outputStreamState = StreamState.SHUTDOWN;
-			} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
-				send(new StatePayload());
+		boolean canSendMultiple;
+		do {
+			canSendMultiple = false;
+			if (!resendQueue.isEmpty()) {
+				send(resendQueue.poll());
+				canSendMultiple = true;
+			} else {
+				int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
+				if (canSendNewPacket(maxPayloadSize)) {
+					send(sendQueue.poll());
+					canSendMultiple = true;
+				} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
+					send(new FinPayload());
+					outputStreamState = StreamState.SHUTDOWN;
+				} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
+					send(new StatePayload());
+				}
 			}
-		}
+		} while (canSendMultiple);
 	}
 
 	private boolean canSendNewPacket(int maxPayloadSize) {
