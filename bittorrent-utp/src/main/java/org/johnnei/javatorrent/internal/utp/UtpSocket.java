@@ -207,7 +207,7 @@ public class UtpSocket implements ISocket, Closeable {
 	 */
 	public void resend(UtpPacket packet) {
 		resendQueue.add(packet);
-		windowHandler.onPacketLoss();
+		windowHandler.onPacketLoss(packet);
 		packetSizeHandler.onPacketLoss();
 	}
 

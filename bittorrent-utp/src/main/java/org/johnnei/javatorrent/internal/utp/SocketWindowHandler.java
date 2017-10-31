@@ -97,8 +97,8 @@ public class SocketWindowHandler {
 		LOGGER.trace("Timeout occurred. max_window=[{}]", maxWindow);
 	}
 
-	public void onPacketLoss() {
+	public void onPacketLoss(UtpPacket packet) {
 		maxWindow /= 2;
-		LOGGER.trace("Packet was lost. max_window=[{}]", maxWindow);
+		LOGGER.trace("Packet [{}] was lost. max_window=[{}]", Short.toUnsignedInt(packet.getHeader().getSequenceNumber()), maxWindow);
 	}
 }

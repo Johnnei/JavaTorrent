@@ -82,7 +82,9 @@ public class SocketWindowHandlerTest {
 
 	@Test
 	public void testOnPacketLoss() {
-		cut.onPacketLoss();
+		UtpPacket packet = mock(UtpPacket.class);
+		when(packet.getHeader()).thenReturn(mock(UtpHeader.class));
+		cut.onPacketLoss(packet);
 		assertThat(cut.getMaxWindow(), is(75));
 	}
 
