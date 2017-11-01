@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.utp.stream;
+package org.johnnei.javatorrent.internal.utp;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

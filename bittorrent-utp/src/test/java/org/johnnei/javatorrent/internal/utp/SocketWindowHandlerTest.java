@@ -60,6 +60,12 @@ public class SocketWindowHandlerTest {
 	}
 
 	@Test
+	public void testOnReceivedPacketReturnsTrueWhenPacketWasAcked() {
+		cut.onSentPacket(sentPacket);
+		assertThat(cut.onReceivedPacket(receivedPacket), is(true));
+	}
+
+	@Test
 	public void testCountBytesInFlightAckedPacket() {
 		cut.onSentPacket(sentPacket);
 		cut.onReceivedPacket(receivedPacket);

@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.utp.stream;
+package org.johnnei.javatorrent.internal.utp;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -51,7 +51,13 @@ public class SocketTimeoutHandler {
 
 		Duration newTimeout = Duration.of(roundTripTime + roundTripTimeVariance * 4L, ChronoUnit.MICROS);
 		timeout = Duration.of(Math.max(newTimeout.toMillis(), MINIMUM_TIMEOUT.toMillis()), ChronoUnit.MILLIS);
-		LOGGER.trace("Packet [{}] caused timeout to become [{}]. rtt += [{}], rtt_var += [{}]", packet, timeout, roundTripTimeAdjustment, varianceAdjustment);
+		LOGGER.trace(
+			"Packet [{}] caused timeout to become [{}]. rtt += [{}], rtt_var += [{}]",
+			Short.toUnsignedInt(packet.getHeader().getSequenceNumber()),
+			timeout,
+			roundTripTimeAdjustment,
+			varianceAdjustment
+		);
 	}
 
 	public void onSentPacket() {

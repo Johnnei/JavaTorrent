@@ -36,7 +36,6 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
-import org.johnnei.javatorrent.internal.utp.stream.SocketTimeoutHandler;
 import org.johnnei.javatorrent.internal.utp.stream.StreamState;
 import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
@@ -184,9 +183,10 @@ public class UtpSocket implements ISocket, Closeable {
 
 			packetAckHandler.onReceivedPacket(packet);
 			packetLossHandler.onReceivedPacket(packet);
-			windowHandler.onReceivedPacket(packet);
+			if (windowHandler.onReceivedPacket(packet)) {
+				timeoutHandler.onReceivedPacket(packet);
+			}
 			packetSizeHandler.onReceivedPacket(packet);
-			// TODO When packet in flight is ack'ed update the timeout (JBT-65)
 			packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 		}
 	}

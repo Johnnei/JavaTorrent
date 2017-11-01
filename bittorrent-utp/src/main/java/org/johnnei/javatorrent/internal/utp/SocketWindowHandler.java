@@ -37,7 +37,12 @@ public class SocketWindowHandler {
 		packetsInFlight = new HashMap<>();
 	}
 
-	public void onReceivedPacket(UtpPacket packet) {
+	/**
+	 * Updates the Socket Window based on the received packet.
+	 * @param packet The received packet.
+	 * @return <code>true</code> when a packet in flight was ACK'ed, otherwise <code>false</code>
+	 */
+	public boolean onReceivedPacket(UtpPacket packet) {
 		int measuredDelay = packet.getHeader().getTimestampDifference();
 		measuredDelays.addValue(measuredDelay);
 
@@ -64,7 +69,7 @@ public class SocketWindowHandler {
 				);
 			}
 
-			packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
+			return packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber()) != null;
 		}
 	}
 
