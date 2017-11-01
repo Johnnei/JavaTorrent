@@ -97,6 +97,7 @@ public class SocketTimeoutHandlerTest {
 	public void testIgnoreResentPackets() {
 		UtpPacket packet = mock(UtpPacket.class);
 		when(packet.isSendOnce()).thenReturn(false);
+		when(packet.getHeader()).thenReturn(mock(UtpHeader.class));
 		
 		cut.onReceivedPacket(packet);
 		assertThat(cut.getTimeout(), equalTo(1_000));

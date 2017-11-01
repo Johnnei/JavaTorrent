@@ -37,7 +37,7 @@ public class SocketTimeoutHandler {
 	public void onReceivedPacket(UtpPacket packet) {
 		int receiveTime = timer.getCurrentMicros();
 		if (!packet.isSendOnce()) {
-			LOGGER.trace("Ignoring re-sent packet [{}] for timeout adjustment.", packet);
+			LOGGER.trace("Ignoring re-sent packet [{}] for timeout adjustment.", Short.toUnsignedInt(packet.getHeader().getSequenceNumber()));
 			return;
 		}
 
