@@ -235,15 +235,35 @@ public class UtpSocket implements ISocket, Closeable {
 						send(new FinPayload());
 						outputStreamState = StreamState.SHUTDOWN;
 					} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
-						send(new StatePayload());
+						sendStatePackets(maxPayloadSize);
 					}
 				}
 			} while (canSendMultiple);
 		}
 	}
 
+	private void sendStatePackets(int maxPayLoadSize) throws IOException {
+		// Send out at least 1 state packet with a limit of n packets.
+		// Where n is the smaller of the ack queue size or the amount of packets to fit in the payload size.
+		int remainingPackets = Math.min(acknowledgeQueue.size(), Math.max(1, maxPayLoadSize / PacketWriter.OVERHEAD_IN_BYTES));
+
+		if (remainingPackets > 1) {
+			LOGGER.trace("Sending out ST_STATE burst of [{}] packets.", remainingPackets);
+		}
+
+		while (remainingPackets > 0) {
+			send(new StatePayload());
+			remainingPackets--;
+		}
+	}
+
 	private boolean canSendNewPacket(int maxPayloadSize) {
 		if (sendQueue.isEmpty()) {
+			return false;
+		}
+
+		if (!acknowledgeQueue.isEmpty()) {
+			// Favor releasing the other end window over violating our own window.
 			return false;
 		}
 

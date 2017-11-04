@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
+import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 
@@ -61,20 +62,24 @@ public class UtpMultiplexer implements Closeable, Runnable {
 			return;
 		}
 
-		// Transform message
-		UtpPacket packet = packetReader.read(buffer);
+		try {
+			// Transform message
+			UtpPacket packet = packetReader.read(buffer);
 
-		// Retrieve socket
-		UtpSocket socket;
-		if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
-			LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
-			socket = socketRegistry.createSocket(socketAddress, packet);
-			connectionAcceptor.onReceivedConnection(socket);
-		} else {
-			socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());
+			// Retrieve socket
+			UtpSocket socket;
+			if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
+				LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
+				socket = socketRegistry.createSocket(socketAddress, packet);
+				connectionAcceptor.onReceivedConnection(socket);
+			} else {
+				socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());
+			}
+
+			socket.onReceivedPacket(packet);
+		} catch (UtpProtocolViolationException e) {
+			LOGGER.trace("uTP protocol was violated.", e);
 		}
-
-		socket.onReceivedPacket(packet);
 	}
 
 	public ISocket createUnconnectedSocket() {
