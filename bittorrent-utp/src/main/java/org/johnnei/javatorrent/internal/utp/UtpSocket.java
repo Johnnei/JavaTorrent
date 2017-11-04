@@ -224,7 +224,7 @@ public class UtpSocket implements ISocket, Closeable {
 		do {
 			canSendMultiple = false;
 			if (!resendQueue.isEmpty()) {
-				send(resendQueue.poll());
+				send(resendQueue.poll(), false);
 				canSendMultiple = true;
 			} else {
 				int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
@@ -305,12 +305,14 @@ public class UtpSocket implements ISocket, Closeable {
 			.setWindowSize(windowHandler.getBytesInFlight())
 			.build();
 		UtpPacket packet = new UtpPacket(header, payload);
-		send(packet);
+		send(packet, true);
 	}
 
-	private void send(UtpPacket packet) throws IOException {
+	private void send(UtpPacket packet, boolean renewAck) throws IOException {
 		short ackNumber = lastSentAcknowledgeNumber;
-		if (!acknowledgeQueue.isEmpty()) {
+		if (!renewAck) {
+			ackNumber = packet.getHeader().getAcknowledgeNumber();
+		} else if (!acknowledgeQueue.isEmpty()) {
 			ackNumber = acknowledgeQueue.poll().getSequenceNumber();
 			lastSentAcknowledgeNumber = ackNumber;
 		}
