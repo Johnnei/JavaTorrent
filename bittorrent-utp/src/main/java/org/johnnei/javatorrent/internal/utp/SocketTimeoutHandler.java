@@ -58,7 +58,7 @@ public class SocketTimeoutHandler {
 		LOGGER.trace(
 			"Packet [{}] caused timeout to become [{}]. rtt += [{}], rtt_var += [{}]",
 			Short.toUnsignedInt(packet.getHeader().getSequenceNumber()),
-			timeout,
+			timeout.toMillis(),
 			roundTripTimeAdjustment,
 			varianceAdjustment
 		);
