@@ -219,25 +219,27 @@ public class UtpSocket implements ISocket, Closeable {
 	 * This will consume elements from {@link #resendQueue}, {@link #sendQueue} and {@link #packetAckHandler}
 	 */
 	public void processSendQueue() throws IOException {
-		boolean canSendMultiple;
-		do {
-			canSendMultiple = false;
-			if (!resendQueue.isEmpty()) {
-				send(resendQueue.poll(), false);
-				canSendMultiple = true;
-			} else {
-				int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
-				if (canSendNewPacket(maxPayloadSize)) {
-					send(sendQueue.poll());
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
+			boolean canSendMultiple;
+			do {
+				canSendMultiple = false;
+				if (!resendQueue.isEmpty()) {
+					send(resendQueue.poll(), false);
 					canSendMultiple = true;
-				} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
-					send(new FinPayload());
-					outputStreamState = StreamState.SHUTDOWN;
-				} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
-					send(new StatePayload());
+				} else {
+					int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
+					if (canSendNewPacket(maxPayloadSize)) {
+						send(sendQueue.poll());
+						canSendMultiple = true;
+					} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
+						send(new FinPayload());
+						outputStreamState = StreamState.SHUTDOWN;
+					} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
+						send(new StatePayload());
+					}
 				}
-			}
-		} while (canSendMultiple);
+			} while (canSendMultiple);
+		}
 	}
 
 	private boolean canSendNewPacket(int maxPayloadSize) {
@@ -288,11 +290,11 @@ public class UtpSocket implements ISocket, Closeable {
 				sendQueue.peek(),
 				acknowledgeQueue.size()
 			);
-		}
 
-		timeoutHandler.onTimeout();
-		packetSizeHandler.onTimeout();
-		windowHandler.onTimeout();
+			timeoutHandler.onTimeout();
+			packetSizeHandler.onTimeout();
+			windowHandler.onTimeout();
+		}
 	}
 
 	private void send(Payload payload) throws IOException {
