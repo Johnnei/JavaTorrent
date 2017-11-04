@@ -183,9 +183,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 			packetAckHandler.onReceivedPacket(packet);
 			packetLossHandler.onReceivedPacket(packet);
-			if (windowHandler.onReceivedPacket(packet)) {
-				timeoutHandler.onReceivedPacket(packet);
-			}
+			timeoutHandler.onReceivedPacket();
+			windowHandler.onReceivedPacket(packet).ifPresent(timeoutHandler::onAckedPacket);
 			packetSizeHandler.onReceivedPacket(packet);
 			packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 		}

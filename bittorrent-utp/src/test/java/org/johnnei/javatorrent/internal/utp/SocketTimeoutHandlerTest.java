@@ -26,7 +26,7 @@ public class SocketTimeoutHandlerTest {
 	private SocketTimeoutHandler cut;
 
 	@Test
-	public void testOnReceivedPacket() throws Exception {
+	public void testOnAckedPacket() throws Exception {
 		UtpPacket packet = mock(UtpPacket.class);
 		UtpHeader header = mock(UtpHeader.class);
 		when(packet.getHeader()).thenReturn(header);
@@ -34,7 +34,7 @@ public class SocketTimeoutHandlerTest {
 		when(header.getTimestamp()).thenReturn(525_000);
 		when(precisionTimer.getCurrentMicros()).thenReturn(575_000);
 
-		cut.onReceivedPacket(packet);
+		cut.onAckedPacket(packet);
 
 		// delta = 50'000
 		assertThat(cut.getRoundTripTimeVariance(), equalTo(12_500));
@@ -44,7 +44,7 @@ public class SocketTimeoutHandlerTest {
 	}
 
 	@Test
-	public void testOnReceivedPacketSlowPacket() throws Exception {
+	public void testOnAckedPacketSlowPacket() throws Exception {
 		UtpPacket packet = mock(UtpPacket.class);
 		UtpHeader header = mock(UtpHeader.class);
 		when(packet.getHeader()).thenReturn(header);
@@ -52,7 +52,7 @@ public class SocketTimeoutHandlerTest {
 		when(header.getTimestamp()).thenReturn(25_000);
 		when(precisionTimer.getCurrentMicros()).thenReturn(575_000);
 
-		cut.onReceivedPacket(packet);
+		cut.onAckedPacket(packet);
 
 		// delta = 550'000
 		assertThat(cut.getRoundTripTimeVariance(), equalTo(137_500));
@@ -61,7 +61,7 @@ public class SocketTimeoutHandlerTest {
 	}
 
 	@Test
-	public void testOnReceivedPacketVariances() throws Exception {
+	public void testOnAckedPacketVariances() throws Exception {
 		UtpPacket packet = mock(UtpPacket.class);
 		UtpHeader header = mock(UtpHeader.class);
 		when(packet.getHeader()).thenReturn(header);
@@ -76,7 +76,7 @@ public class SocketTimeoutHandlerTest {
 
 		when(precisionTimer.getCurrentMicros()).thenReturn(575_000).thenReturn(1_275_000);
 
-		cut.onReceivedPacket(packet);
+		cut.onAckedPacket(packet);
 
 		// packet_rtt = 550'000
 		// delta = 550'000
@@ -84,7 +84,7 @@ public class SocketTimeoutHandlerTest {
 		assertThat(cut.getRoundTripTime(), equalTo(68_750));
 		assertThat(cut.getTimeout(), equalTo(618));
 
-		cut.onReceivedPacket(packet2);
+		cut.onAckedPacket(packet2);
 
 		// packet_rtt = 675'000
 		// delta = -606'250
@@ -98,8 +98,8 @@ public class SocketTimeoutHandlerTest {
 		UtpPacket packet = mock(UtpPacket.class);
 		when(packet.isSendOnce()).thenReturn(false);
 		when(packet.getHeader()).thenReturn(mock(UtpHeader.class));
-		
-		cut.onReceivedPacket(packet);
+
+		cut.onAckedPacket(packet);
 		assertThat(cut.getTimeout(), equalTo(1_000));
 	}
 

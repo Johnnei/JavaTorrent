@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -40,9 +41,9 @@ public class SocketWindowHandler {
 	/**
 	 * Updates the Socket Window based on the received packet.
 	 * @param packet The received packet.
-	 * @return <code>true</code> when a packet in flight was ACK'ed, otherwise <code>false</code>
+	 * @return The acked packet or {@link Optional#empty()} if no new packet was acked.
 	 */
-	public boolean onReceivedPacket(UtpPacket packet) {
+	public Optional<UtpPacket>  onReceivedPacket(UtpPacket packet) {
 		int measuredDelay = packet.getHeader().getTimestampDifference();
 		measuredDelays.addValue(measuredDelay);
 
@@ -69,7 +70,7 @@ public class SocketWindowHandler {
 				);
 			}
 
-			return packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber()) != null;
+			return Optional.ofNullable(packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber()));
 		}
 	}
 

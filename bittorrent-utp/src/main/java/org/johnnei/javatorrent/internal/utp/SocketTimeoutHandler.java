@@ -34,7 +34,11 @@ public class SocketTimeoutHandler {
 		timeout = Duration.of(1000, ChronoUnit.MILLIS);
 	}
 
-	public void onReceivedPacket(UtpPacket packet) {
+	public void onReceivedPacket() {
+		updateLastActivity();
+	}
+
+	public void onAckedPacket(UtpPacket packet) {
 		int receiveTime = timer.getCurrentMicros();
 		if (!packet.isSendOnce()) {
 			LOGGER.trace("Ignoring re-sent packet [{}] for timeout adjustment.", Short.toUnsignedInt(packet.getHeader().getSequenceNumber()));
@@ -61,6 +65,10 @@ public class SocketTimeoutHandler {
 	}
 
 	public void onSentPacket() {
+		updateLastActivity();
+	}
+
+	public void updateLastActivity() {
 		lastActivity = timer.getCurrentMicros();
 	}
 
