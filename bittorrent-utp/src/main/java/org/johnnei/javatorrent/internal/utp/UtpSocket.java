@@ -266,15 +266,15 @@ public class UtpSocket implements ISocket, Closeable {
 			return false;
 		}
 
-		if (!acknowledgeQueue.isEmpty()) {
-			// Favor releasing the other end window over violating our own window.
-			return false;
-		}
-
 		int payloadSize = sendQueue.peek().getData().length;
 
 		if (payloadSize <= maxPayloadSize) {
 			return true;
+		}
+
+		if (!acknowledgeQueue.isEmpty()) {
+			// Favor releasing the other end window over violating our own window.
+			return false;
 		}
 
 		// Consider window violation for packets which are exceeding the max window size and thus will block the entire buffer.
