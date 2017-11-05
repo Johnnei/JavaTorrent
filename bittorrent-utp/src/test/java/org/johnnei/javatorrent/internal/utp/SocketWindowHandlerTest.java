@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.internal.utp;
 
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,9 +62,10 @@ public class SocketWindowHandlerTest {
 	}
 
 	@Test
-	public void testOnReceivedPacketReturnsTrueWhenPacketWasAcked() {
+	public void testOnReceivedPacketReturnsAckedPacked() {
 		cut.onSentPacket(sentPacket);
-		assertThat(cut.onReceivedPacket(receivedPacket), is(true));
+		Optional<UtpPacket> ackedPacket = cut.onReceivedPacket(receivedPacket);
+		assertThat(ackedPacket.orElse(null), is(sentPacket));
 	}
 
 	@Test

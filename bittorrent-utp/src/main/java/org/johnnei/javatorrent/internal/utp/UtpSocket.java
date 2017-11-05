@@ -96,6 +96,8 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private PacketSizeHandler packetSizeHandler;
 
+	private final SocketDelayHandler delayHandler;
+
 	private StreamState outputStreamState;
 
 	private StreamState inputStreamState;
@@ -140,6 +142,7 @@ public class UtpSocket implements ISocket, Closeable {
 		inputStreamState = StreamState.ACTIVE;
 		outputStreamState = StreamState.ACTIVE;
 		nextWindowViolation = clock.instant();
+		delayHandler = new SocketDelayHandler(precisionTimer);
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -186,6 +189,7 @@ public class UtpSocket implements ISocket, Closeable {
 			timeoutHandler.onReceivedPacket();
 			windowHandler.onReceivedPacket(packet).ifPresent(timeoutHandler::onAckedPacket);
 			packetSizeHandler.onReceivedPacket(packet);
+			delayHandler.onReceivedPacket(packet);
 			packet.getPayload().onReceivedPayload(packet.getHeader(), this);
 		}
 	}
@@ -338,7 +342,7 @@ public class UtpSocket implements ISocket, Closeable {
 			lastSentAcknowledgeNumber = ackNumber;
 		}
 
-		packet.getHeader().renew(ackNumber, precisionTimer.getCurrentMicros(), 0);
+		packet.getHeader().renew(ackNumber, precisionTimer.getCurrentMicros(), delayHandler.getMeasuredDelay());
 
 		ByteBuffer buffer = packetWriter.write(packet);
 

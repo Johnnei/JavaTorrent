@@ -27,6 +27,7 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import static com.jayway.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
@@ -128,6 +129,7 @@ public class UtpSocketTest {
 		assertThat("Packet would indicate wrong return path.", buffer.getShort(2), equalTo((short) 42));
 		assertThat("Response to ST_SYN should be ST_STATE.", (byte) (buffer.get(0) >>> 4), equalTo(PacketType.SYN.getTypeField()));
 		assertThat("Packet Sequence number must be 1", buffer.getShort(16), equalTo((short) 1));
+		assertThat("Initial timestamp_diff is unknown.", buffer.getInt(8), equalTo(0));
 
 		assertThat("The connect call should be blocking until either connection has been made or timeout", connector.isAlive(), is(true));
 
@@ -209,6 +211,7 @@ public class UtpSocketTest {
 		// Validate header
 		assertThat("Connection id for second packet should be 1 higher than the one used in SYN packet.", buffer.getShort(2), equalTo((short) 43));
 		assertThat("Data packet should have been sent.", (byte) (buffer.get(0) >>> 4), equalTo(PacketType.DATA.getTypeField()));
+		assertThat("timestamp_diff should have been updated.", buffer.getInt(8), not(equalTo(0)));
 		assertThat("Packet Sequence number must increment", buffer.getShort(16), equalTo((short) 2));
 		assertThat("Acknowledge field should contain sequence number of the ST_STATE confirming the connection.", buffer.getShort(18), equalTo((short) 675));
 		// Validate payload
