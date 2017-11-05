@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
 /**
@@ -33,6 +34,10 @@ public class PacketLossHandler {
 
 		if (registration == null) {
 			// When a connection gets accepted the first packet received contains a non-existing ack_nr.
+			return;
+		}
+
+		if (packet.getPayload().getType() != PacketType.STATE) {
 			return;
 		}
 

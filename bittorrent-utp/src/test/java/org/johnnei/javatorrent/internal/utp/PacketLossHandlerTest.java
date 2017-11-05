@@ -7,6 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
+import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 
@@ -34,14 +36,19 @@ public class PacketLossHandlerTest {
 
 	@Before
 	public void setUp() {
+		Payload payload = mock(Payload.class);
+		when(payload.getType()).thenReturn(PacketType.STATE);
+
 		packet = mock(UtpPacket.class);
 		UtpHeader header = mock(UtpHeader.class);
 		when(packet.getHeader()).thenReturn(header);
+		when(packet.getPayload()).thenReturn(payload);
 		when(header.getAcknowledgeNumber()).thenReturn((short) 4);
 
 		packet2 = mock(UtpPacket.class);
 		UtpHeader header2 = mock(UtpHeader.class);
 		when(packet2.getHeader()).thenReturn(header2);
+		when(packet2.getPayload()).thenReturn(payload);
 		when(header2.getAcknowledgeNumber()).thenReturn((short) 5);
 
 		sentPacket = mock(UtpPacket.class);
