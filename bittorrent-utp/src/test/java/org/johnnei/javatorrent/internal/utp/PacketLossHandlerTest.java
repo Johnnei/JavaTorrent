@@ -96,6 +96,7 @@ public class PacketLossHandlerTest {
 		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
+		cut.onReceivedPacket(packet);
 
 		verify(socket).resend(sentPacket2);
 	}
@@ -107,6 +108,7 @@ public class PacketLossHandlerTest {
 		cut.onSentPacket(sentPacket2);
 
 		// Handle as if was lost.
+		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
@@ -127,6 +129,7 @@ public class PacketLossHandlerTest {
 		cut.onSentPacket(sentPacket2);
 
 		// Handle as if was lost.
+		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
 		cut.onReceivedPacket(packet);
