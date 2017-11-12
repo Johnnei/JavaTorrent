@@ -24,7 +24,7 @@ public class SocketWindowHandler {
 
 	private static final Duration CCONTROL_TARGET = Duration.ofMillis(100);
 
-	private static final int MAX_WINDOW_CHANGE_PER_PACKET = 50;
+	private static final int MAX_WINDOW_CHANGE_PER_PACKET = 500;
 
 	private int maxWindow;
 
@@ -40,38 +40,49 @@ public class SocketWindowHandler {
 
 	/**
 	 * Updates the Socket Window based on the received packet.
+	 *
 	 * @param packet The received packet.
 	 * @return The acked packet or {@link Optional#empty()} if no new packet was acked.
 	 */
-	public Optional<UtpPacket>  onReceivedPacket(UtpPacket packet) {
+	public Optional<UtpPacket> onReceivedPacket(UtpPacket packet) {
 		int measuredDelay = packet.getHeader().getTimestampDifference();
 		measuredDelays.addValue(measuredDelay);
 
 		Duration ourDelay = Duration.of((long) measuredDelay - measuredDelays.getMinimum(), ChronoUnit.MICROS);
-		Duration offTarget = CCONTROL_TARGET.minus(ourDelay);
-		double delayFactor = offTarget.toNanos() / (double) CCONTROL_TARGET.toNanos();
-		// Due to window violations the window factor may exceed 1.0d which shouldn't be allow as we shouldn't exceed the max window.
-		double windowFactor = (maxWindow == 0) ? 0 : Math.min(1, getBytesInFlight() / (double) maxWindow);
-		int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
 
-		maxWindow = Math.max(0, maxWindow + scaledGain);
+		UtpPacket ackedPacket = packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
+		if (!ourDelay.isZero() && ackedPacket != null) {
+			Duration offTarget = CCONTROL_TARGET.minus(ourDelay);
+			double delayFactor = offTarget.toNanos() / (double) CCONTROL_TARGET.toNanos();
 
-		synchronized (this) {
-			if (LOGGER.isTraceEnabled()) {
-				LOGGER.trace(
-					"our_delay: [{}] us, off_target: [{}] us, delayFactor [{}], windowFactor [{}], scaledGain [{}] bytes, maxWindow [{}] bytes, packets in flight: {}",
-					ourDelay,
-					offTarget,
-					delayFactor,
-					windowFactor,
-					scaledGain,
-					maxWindow,
-					packetsInFlight.values().stream().map(p -> Short.toUnsignedInt(p.getHeader().getSequenceNumber()) + "-" + p.getSize()).collect(Collectors.toList())
-				);
+			// Due to window violations the window factor may exceed 1.0d which shouldn't be allow as we shouldn't exceed the max window.
+			int ackedBytes = ackedPacket.getSize();
+
+			double windowFactor = Math.min(ackedBytes, (double) maxWindow) / Math.max(ackedBytes, (double) maxWindow);
+			int scaledGain = (int) (MAX_WINDOW_CHANGE_PER_PACKET * delayFactor * windowFactor);
+
+			maxWindow = Math.max(0, maxWindow + scaledGain);
+
+			synchronized (this) {
+				if (LOGGER.isTraceEnabled()) {
+					LOGGER.trace(
+						"our_delay: [{}] us, off_target: [{}] us, delayFactor [{}], windowFactor [{}], scaledGain [{}] bytes, maxWindow [{}] bytes, packets in flight: {}",
+						ourDelay,
+						offTarget,
+						delayFactor,
+						windowFactor,
+						scaledGain,
+						maxWindow,
+						packetsInFlight.values()
+							.stream()
+							.map(p -> Short.toUnsignedInt(p.getHeader().getSequenceNumber()) + "-" + p.getSize())
+							.collect(Collectors.toList())
+					);
+				}
 			}
-
-			return Optional.ofNullable(packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber()));
 		}
+
+		return Optional.ofNullable(ackedPacket);
 	}
 
 	public void onSentPacket(UtpPacket packet) {

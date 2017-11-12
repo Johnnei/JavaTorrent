@@ -80,6 +80,12 @@ public class SocketWindowHandlerTest {
 	public void testOnTimeout() {
 		// Cause the window to drift.
 		cut.onSentPacket(sentPacket);
+
+		when(receivedHeader.getTimestampDifference())
+			.thenReturn(75_521)
+			.thenReturn(78_344);
+		cut.onReceivedPacket(receivedPacket);
+		cut.onSentPacket(sentPacket);
 		cut.onReceivedPacket(receivedPacket);
 
 		assertThat(cut.getMaxWindow(), not(is(150)));
@@ -105,17 +111,9 @@ public class SocketWindowHandlerTest {
 			.thenReturn(75_521)
 			.thenReturn(78_344);
 
-		// our_delay = 0 (the first packet can't have delay)
-		// target = 100'000
-		// off_target = 100'000
-		// outstanding_packet = 25
-		// delay_factor = 1.0
-		// window_factor = 0.16666
-		// scaled gain -> 50 * 1.0 * 0.16666 = 8.33 -> 8
-
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getMaxWindow(), is(158));
+		assertThat("The first packet can't have a delay", cut.getMaxWindow(), is(150));
 
 		cut.onSentPacket(sentPacket);
 
@@ -124,12 +122,12 @@ public class SocketWindowHandlerTest {
 		// off_target = 97'177
 		// outstanding_packet = 25
 		// delay_factor = 0.97177
-		// window_factor = 0.15822
-		// scaled gain -> 50 * 0.97177 * 0.15822 = 7.68 -> 7
+		// window_factor = 0.16666
+		// scaled gain -> 500 * 0.97177 * 0.15822 = 80.97 -> 80
 
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getMaxWindow(), is(165));
+		assertThat(cut.getMaxWindow(), is(230));
 	}
 
 	@Test
@@ -141,16 +139,10 @@ public class SocketWindowHandlerTest {
 			.thenReturn(253_486);
 
 		// our_delay = 0 (the first packet can't have delay)
-		// target = 100'000
-		// off_target = 100'000
-		// outstanding_packet = 25
-		// delay_factor = 1.0
-		// window_factor = 0.16666
-		// scaled gain -> 50 * 1.0 * 0.16666 = 8.33 -> 8
 
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getMaxWindow(), is(158));
+		assertThat("The first packet can't have a delay", cut.getMaxWindow(), is(150));
 
 		cut.onSentPacket(sentPacket);
 
@@ -159,12 +151,12 @@ public class SocketWindowHandlerTest {
 		// off_target = -77'965
 		// outstanding_packet = 25
 		// delay_factor = -0.77965
-		// window_factor = 0.15822
-		// scaled gain -> 50 * -0.77965 * 0.15822 = -6.16 -> -6
+		// window_factor = 0.16666
+		// scaled gain -> 500 * -0.77965 * 0.16666 = -64.94 -> -64
 
 		cut.onReceivedPacket(receivedPacket);
 
-		assertThat(cut.getMaxWindow(), is(152));
+		assertThat(cut.getMaxWindow(), is(86));
 	}
 
 }
