@@ -50,7 +50,11 @@ public class SocketWindowHandler {
 
 		Duration ourDelay = Duration.of((long) measuredDelay - measuredDelays.getMinimum(), ChronoUnit.MICROS);
 
-		UtpPacket ackedPacket = packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
+		UtpPacket ackedPacket;
+		synchronized (this) {
+			ackedPacket = packetsInFlight.remove(packet.getHeader().getAcknowledgeNumber());
+		}
+
 		if (!ourDelay.isZero() && ackedPacket != null) {
 			Duration offTarget = CCONTROL_TARGET.minus(ourDelay);
 			double delayFactor = offTarget.toNanos() / (double) CCONTROL_TARGET.toNanos();

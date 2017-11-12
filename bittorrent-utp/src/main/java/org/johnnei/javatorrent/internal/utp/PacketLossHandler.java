@@ -30,9 +30,6 @@ public class PacketLossHandler {
 	}
 
 	public void onReceivedPacket(UtpPacket packet) {
-		// Purge the second to last packet as we no longer need it to track packet loss of n + 1.
-		packetsInFlight.remove((short) (packet.getHeader().getAcknowledgeNumber() - 1));
-
 		if (Short.toUnsignedInt(packet.getHeader().getAcknowledgeNumber()) > lastAck) {
 			lastAck = Short.toUnsignedInt(packet.getHeader().getAcknowledgeNumber());
 			duplicateCount = 0;
@@ -40,8 +37,11 @@ public class PacketLossHandler {
 			duplicateCount++;
 		}
 
-		final short nextPacketSeqNr = (short) (packet.getHeader().getAcknowledgeNumber() + 1);
 		synchronized (this) {
+			// Purge the second to last packet as we no longer need it to track packet loss of n + 1.
+			packetsInFlight.remove((short) (packet.getHeader().getAcknowledgeNumber() - 1));
+
+			final short nextPacketSeqNr = (short) (packet.getHeader().getAcknowledgeNumber() + 1);
 			if (duplicateCount >= 3 && canResendPacket(nextPacketSeqNr)) {
 				UtpPacket nextPacket = packetsInFlight.get(nextPacketSeqNr);
 				socket.resend(nextPacket);
