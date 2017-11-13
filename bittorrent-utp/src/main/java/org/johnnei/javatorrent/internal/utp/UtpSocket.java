@@ -78,7 +78,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private short lastSentAcknowledgeNumber;
 
-	private final Queue<Payload> sendQueue;
+	private final LinkedList<DataPayload> sendQueue;
 
 	private PacketAckHandler packetAckHandler;
 
@@ -269,6 +269,7 @@ public class UtpSocket implements ISocket, Closeable {
 		int payloadSize = sendQueue.peek().getData().length;
 
 		if (payloadSize <= maxPayloadSize) {
+			mergePayloadsIfPossible(Math.min(packetSizeHandler.getPacketSize(), maxPayloadSize));
 			return true;
 		}
 
@@ -293,6 +294,40 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 
 		return false;
+	}
+
+	private void mergePayloadsIfPossible(int maxPayloadSize) {
+		if (sendQueue.size() < 2) {
+			return;
+		}
+
+		int combinedPayloads = 1;
+
+		while (sendQueue.size() > 1) {
+			DataPayload payloadOne = sendQueue.get(0);
+			DataPayload payloadTwo = sendQueue.get(1);
+			int payloadSum = payloadOne.getData().length + payloadTwo.getData().length;
+
+			if (payloadSum <= maxPayloadSize) {
+				// Dequeue the two payloads.
+				sendQueue.poll();
+				sendQueue.poll();
+				// Combine the payloads in order.
+				ByteBuffer combinedPayload = ByteBuffer.allocate(payloadSum);
+				combinedPayload.put(payloadOne.getData());
+				combinedPayload.put(payloadTwo.getData());
+				combinedPayload.flip();
+				sendQueue.addFirst(new DataPayload(combinedPayload));
+				combinedPayloads++;
+			} else {
+				break;
+			}
+		}
+
+		if (combinedPayloads > 1) {
+			LOGGER.trace("Combined [{}] data payloads into 1.", combinedPayloads);
+		}
+
 	}
 
 	/**
