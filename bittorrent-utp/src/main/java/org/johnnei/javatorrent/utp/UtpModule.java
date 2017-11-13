@@ -3,29 +3,48 @@ package org.johnnei.javatorrent.utp;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
-import org.johnnei.javatorrent.internal.utp.protocol.UtpMultiplexer;
+import org.johnnei.javatorrent.internal.utp.UtpMultiplexer;
+import org.johnnei.javatorrent.internal.utp.UtpPeerConnectionAcceptor;
+import org.johnnei.javatorrent.internal.utp.UtpSocket;
+import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.module.ModuleBuildException;
-import org.johnnei.javatorrent.internal.network.socket.UtpSocket;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.utils.Argument;
 
 /**
  * Module which allows for creating connections via uTP.
- *
+ * <p>
  * It's advised to re-use instances of this module as each will create a dedicated thread to receive uTP messages.
  * Using more instances allows for more connections to be used as each instance is limited to 65536 (2^16) connections by protocol design.
- *
  */
 public class UtpModule implements IModule {
 
-	private LoopingRunnable multiplexerRunnable;
+	private static final Logger LOGGER = LoggerFactory.getLogger(UtpModule.class);
 
-	private UtpMultiplexer utpMultiplexer;
+	private UtpMultiplexer multiplexer;
+
+	private Thread workerThread;
+
+	private LoopingRunnable multiplexerRunner;
+
+	private ScheduledFuture<?> socketProcessorTask;
+
+	private int listeningPort;
+
+	private UtpModule(Builder builder) {
+		listeningPort = builder.listeningPort;
+	}
 
 	@Override
 	public void configureTorrentClient(TorrentClient.Builder builder) {
@@ -49,21 +68,32 @@ public class UtpModule implements IModule {
 
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException {
-		utpMultiplexer = createMultiplexer(torrentClient);
-		multiplexerRunnable = new LoopingRunnable(utpMultiplexer);
-		Thread thread = new Thread(multiplexerRunnable, "uTP Multiplexer");
-		thread.setDaemon(true);
-		thread.start();
-	}
-
-	UtpMultiplexer createMultiplexer(TorrentClient torrentClient) throws ModuleBuildException {
-		return new UtpMultiplexer(torrentClient);
+		try {
+			multiplexer = new UtpMultiplexer(new UtpPeerConnectionAcceptor(torrentClient), new PacketReader(), listeningPort);
+			multiplexerRunner = new LoopingRunnable(multiplexer);
+			workerThread = new Thread(multiplexerRunner, "uTP Packet Reader");
+			workerThread.start();
+			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(multiplexer::updateSockets, 0, 100, TimeUnit.MILLISECONDS);
+		} catch (IOException e) {
+			throw new ModuleBuildException("Failed to create uTP Multiplexer.", e);
+		}
 	}
 
 	@Override
 	public void onShutdown() {
-		utpMultiplexer.shutdown();
-		multiplexerRunnable.stop();
+		multiplexerRunner.stop();
+		try {
+			multiplexer.close();
+		} catch (IOException e) {
+			LOGGER.warn("Failed to shutdown uTP Multiplexer", e);
+		}
+		try {
+			workerThread.join();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			LOGGER.warn("Interrupted while waiting for uTP worker to exit.", e);
+		}
+		socketProcessorTask.cancel(true);
 	}
 
 	/**
@@ -71,15 +101,38 @@ public class UtpModule implements IModule {
 	 */
 	@SuppressWarnings("unchecked")
 	public Class<ISocket> getUtpSocketClass() {
-		// As I cannot directly cast down the UtpSocket class to ISocket class I'll take a round-about with an unchecked cast to make it happen.
-		return (Class<ISocket>) ((Class<?>) UtpSocket.class);
+		return (Class<ISocket>) (Class<? extends ISocket>) UtpSocket.class;
 	}
 
 	/**
 	 * @return A supplier capable of creating new {@link UtpSocket}
 	 */
 	public Supplier<ISocket> createSocketFactory() {
-		return () -> new UtpSocket(utpMultiplexer);
+		return () -> multiplexer.createUnconnectedSocket();
+	}
+
+	public static final class Builder {
+
+		private int listeningPort;
+
+		/**
+		 * Configures on which UDP port uTP connections will be accepted.
+		 * @param port The UDP port.
+		 * @return The updated builder (this).
+		 */
+		public Builder listenOn(int port) {
+			Argument.requireWithinBounds(port, 0, Short.MAX_VALUE + 1, () -> "Port must be a valid port (0 >= x < 2^16)");
+			listeningPort = port;
+			return this;
+		}
+
+		/**
+		 * @return The newly created and configured UtpModule instance.
+		 */
+		public UtpModule build() {
+			return new UtpModule(this);
+		}
+
 	}
 
 }

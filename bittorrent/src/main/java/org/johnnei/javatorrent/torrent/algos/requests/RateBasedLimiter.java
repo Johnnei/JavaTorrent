@@ -35,7 +35,7 @@ public class RateBasedLimiter implements IRequestLimiter {
 				} else {
 					diff = Math.min(diff, MAX_INCREASE);
 				}
-				peer.setRequestLimit(peer.getRequestLimit() + diff);
+				peer.setRequestLimit(Math.max(1, peer.getRequestLimit() + diff));
 			});
 		});
 	}

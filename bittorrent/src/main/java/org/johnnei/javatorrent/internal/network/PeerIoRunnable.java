@@ -2,15 +2,15 @@ package org.johnnei.javatorrent.internal.network;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PeerIoRunnable implements Runnable {
 
@@ -39,8 +39,8 @@ public class PeerIoRunnable implements Runnable {
 		try {
 			handleWrite(peer);
 			handleRead(peer);
-		} catch (IOException e) {
-			LOGGER.error(String.format("IO Error for peer: %s", peer), e);
+		} catch (Exception e) {
+			LOGGER.error("Error for peer: {}", peer, e);
 			peer.getBitTorrentSocket().close();
 			peer.getTorrent().removePeer(peer);
 		}

@@ -26,8 +26,10 @@ integration-tests:
     stage: test
     script: "mvn -B verify --fail-at-end -DskipUTs=true"
     artifacts:
+      when: always
       expire_in: 1 week
       paths:
+      - "**/target/*.log"
       - "**/target/jacoco-it.exec"
 
 # PR Analysis

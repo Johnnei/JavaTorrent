@@ -5,7 +5,7 @@
       <PatternLayout pattern="%d{HH:mm:ss,SSS} %-5level %c{1.} - [%X{context}] %msg%n" />
     </Console>
     <File name="PersistentLog" filename="${build.directory}/${project.artifactId}.log" append="false">
-      <PatternLayout pattern="%d{HH:mm:ss,SSS} %-5level %c{1.} - [%X{context}] %msg%n" />
+      <PatternLayout pattern="%d{ISO8601} %-5level %c{1.} - [%X{context}] %msg%n" />
     </File>
   </Appenders>
   <Loggers>

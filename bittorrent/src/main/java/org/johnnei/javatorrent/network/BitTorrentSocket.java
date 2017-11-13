@@ -12,6 +12,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
@@ -20,9 +24,6 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.internal.network.ByteOutputStream;
 import org.johnnei.javatorrent.internal.network.socket.ISocket;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BitTorrentSocket {
 
@@ -169,7 +170,10 @@ public class BitTorrentSocket {
 		int id = stream.readByte();
 		IMessage message = messageFactory.createById(id);
 		message.read(stream);
-		LOGGER.trace("Read message: {}", message);
+
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", socket.toString())) {
+			LOGGER.trace("Read message: {}", message);
+		}
 		return message;
 	}
 
@@ -194,7 +198,9 @@ public class BitTorrentSocket {
 			return;
 		}
 
-		LOGGER.trace("Writing message {}", message);
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", socket.toString())) {
+			LOGGER.trace("Writing message {}", message);
+		}
 
 		OutStream outBuffer = new OutStream(message.getLength() + 4);
 		outBuffer.writeInt(message.getLength());
@@ -220,6 +226,10 @@ public class BitTorrentSocket {
 	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
 		if (passedHandshake) {
 			throw new IllegalStateException("Handshake has already been completed.");
+		}
+
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", socket.toString())) {
+			LOGGER.debug("Writing handshake", socket);
 		}
 
 		outStream.writeByte(0x13);

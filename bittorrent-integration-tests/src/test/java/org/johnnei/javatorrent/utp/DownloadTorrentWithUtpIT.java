@@ -20,7 +20,7 @@ import org.johnnei.javatorrent.tracker.UncappedDistributor;
 /**
  * Tests the ability to cleanly download a torrent.
  */
-@Ignore
+@Ignore("JBT-59 has significantly improved the stability of uTP, it is not fast enough yet to actually pass this test within reasonable time.")
 public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 
 	public DownloadTorrentWithUtpIT() {
@@ -30,7 +30,8 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 	}
 
 	protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
-		UtpModule utpModule = new UtpModule();
+		int port = DummyEntity.findAvailableUdpPort();
+		UtpModule utpModule = new UtpModule.Builder().listenOn(port).build();
 
 		return new TorrentClient.Builder()
 				// Disable incoming TCP connections, only expect UTP
@@ -40,7 +41,7 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 						.registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory())
 						.build())
 				.setRequestLimiter(new RateBasedLimiter())
-				.setDownloadPort(DummyEntity.findAvailableTcpPort())
+				.setDownloadPort(port)
 				.setExecutorService(Executors.newScheduledThreadPool(2))
 				.setPeerConnector(PeerConnector::new)
 				.setPeerDistributor(UncappedDistributor::new)
