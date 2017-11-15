@@ -14,6 +14,7 @@ more re-usable for other systems.
 
 ## Fixes
 - [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`
+- [JBT-75](https://jira.johnnei.org/browse/JBT-75): The default included `PhaseData` no longer ingores choke states.
 
 ## API Changes
 - [JBT-50](https://jira.johnnei.org/browse/JBT-50): `IBencodedValue#serialise()` now returns `byte[]` instead of `String` to correctly be capable of handling

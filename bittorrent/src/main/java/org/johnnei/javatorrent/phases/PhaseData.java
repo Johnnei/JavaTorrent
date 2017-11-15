@@ -6,6 +6,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -18,9 +21,9 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+/**
+ * The download phase in which the actual torrent files will be downloaded.
+ */
 public class PhaseData implements IDownloadPhase {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PhaseData.class);
@@ -31,6 +34,11 @@ public class PhaseData implements IDownloadPhase {
 
 	private final IChokingStrategy chokingStrategy;
 
+	/**
+	 * Creates a new Data Phase for the given torrent.
+	 * @param torrentClient The client used to notify trackers.
+	 * @param torrent The torrent which we are downloading.
+	 */
 	public PhaseData(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
@@ -90,8 +98,8 @@ public class PhaseData implements IDownloadPhase {
 		Collection<Piece> neededPiece = torrent.getFileSet().getNeededPieces().collect(Collectors.toList());
 
 		return peers.stream()
-				.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())));
-//				.collect(Collectors.toList());
+			.filter(peer -> !peer.isChoked(PeerDirection.Download))
+			.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())));
 	}
 
 	@Override

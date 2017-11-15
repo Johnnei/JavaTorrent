@@ -25,13 +25,19 @@ import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
+import org.hamcrest.core.IsCollectionContaining;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.powermock.reflect.Whitebox;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -56,11 +62,11 @@ public class PhaseDataTest {
 	public void testGetRelevantPeers() {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 
-		Peer peerOne = mock(Peer.class);
-		Peer peerTwo = mock(Peer.class);
-		Peer peerThree = mock(Peer.class);
-		Peer peerFour = mock(Peer.class);
-		Peer peerFive = mock(Peer.class);
+		Peer peerOne = mock(Peer.class, "Peer 1");
+		Peer peerTwo = mock(Peer.class, "Peer 2");
+		Peer peerThree = mock(Peer.class, "Peer 3");
+		Peer peerFour = mock(Peer.class, "Peer 4");
+		Peer peerFive = mock(Peer.class, "Peer 5");
 
 		when(peerOne.hasPiece(anyInt())).thenReturn(false);
 		when(peerTwo.hasPiece(anyInt())).thenReturn(true);
@@ -83,13 +89,12 @@ public class PhaseDataTest {
 
 		when(torrentFileSetMock.getNeededPieces()).thenReturn(Stream.of(pieceMock, pieceMockTwo));
 
+		when(peerThree.isChoked(PeerDirection.Download)).thenReturn(true);
+
 		PhaseData cut = new PhaseData(torrentClientMock, torrent);
 		Collection<Peer> relevantPeers = cut.getRelevantPeers(peerList).collect(Collectors.toList());
 
-		assertEquals("Incorrect amount of peers", 3, relevantPeers.size());
-		assertTrue("Relevant peer is missing", relevantPeers.contains(peerTwo));
-		assertTrue("Relevant peer is missing", relevantPeers.contains(peerThree));
-		assertTrue("Relevant peer is missing", relevantPeers.contains(peerFive));
+		assertThat(relevantPeers, containsInAnyOrder(peerTwo, peerFive));
 	}
 
 	private ITracker createTrackerExpectingSetCompleted(Torrent torrent) {
@@ -209,6 +214,7 @@ public class PhaseDataTest {
 		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(1);
 		peer.setHavingPiece(0);
+		peer.setChoked(PeerDirection.Download, false);
 
 		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peer));
 		when(torrentMock.getPieceSelector()).thenReturn(pieceSelectorMock);
@@ -237,6 +243,7 @@ public class PhaseDataTest {
 		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(1);
 		peer.setHavingPiece(0);
+		peer.setChoked(PeerDirection.Download, false);
 
 		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peer));
 		when(torrentMock.getPieceSelector()).thenReturn(pieceSelectorMock);
@@ -269,6 +276,7 @@ public class PhaseDataTest {
 		Peer peer = DummyEntity.createPeer(bitTorrentSocketMock);
 		peer.setRequestLimit(2);
 		peer.setHavingPiece(0);
+		peer.setChoked(PeerDirection.Download, false);
 
 		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peer));
 		when(torrentMock.getPieceSelector()).thenReturn(pieceSelectorMock);
