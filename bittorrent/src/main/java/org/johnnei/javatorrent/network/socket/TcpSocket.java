@@ -7,10 +7,16 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Objects;
 
+/**
+ * A Socket implementation which utilizes TCP to connect the two endpoints.
+ */
 public class TcpSocket implements ISocket {
 
 	private Socket socket;
 
+	/**
+	 * Creates a new unconnected socket.
+	 */
 	public TcpSocket() {
 		socket = new Socket();
 	}
