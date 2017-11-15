@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
-import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
+import org.johnnei.javatorrent.network.socket.TcpSocket;
 import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.ConnectionDegradation;

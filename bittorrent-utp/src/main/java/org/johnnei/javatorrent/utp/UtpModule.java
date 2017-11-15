@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utp.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.UtpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.utp.UtpSocket;

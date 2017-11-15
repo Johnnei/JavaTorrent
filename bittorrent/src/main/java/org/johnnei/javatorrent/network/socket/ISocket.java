@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.network.socket;
+package org.johnnei.javatorrent.network.socket;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,48 +17,49 @@ public interface ISocket extends AutoCloseable {
 	 * @param endpoint The Address to connect to
 	 * @throws IOException When connection fails
 	 */
-	public void connect(InetSocketAddress endpoint) throws IOException;
+	void connect(InetSocketAddress endpoint) throws IOException;
 	/**
 	 * Gets the inputstream from the underlaying socket
 	 * @return An InputStream which allows to read data from it
 	 * @throws IOException when the stream could not be created
 	 */
-	public InputStream getInputStream() throws IOException;
+	InputStream getInputStream() throws IOException;
 	/**
 	 * Gets the outputstream from the underlaying socket
 	 * @return An outputstream which allows to write data to the socket
 	 * @throws IOException when the stream could not be created
 	 */
-	public OutputStream getOutputStream() throws IOException;
+	OutputStream getOutputStream() throws IOException;
 
 	/**
 	 * Formally closes the connection
 	 * @throws IOException When the connection could not be closed
 	 */
 	@Override
-	public void close() throws IOException;
+	void close() throws IOException;
 
 	/**
 	 * Checks if the connection has been closed
 	 * @return true if the connection is closing/closed
 	 */
-	public boolean isClosed();
+	boolean isClosed();
 
 	/**
 	 * Checks if there will be no more data incoming
 	 * @return true if EOF has been found
 	 */
-	public boolean isInputShutdown();
+	boolean isInputShutdown();
 
 	/**
 	 * Checks if no more data can be send on this socket
 	 * @return true if EOF has been send
 	 */
-	public boolean isOutputShutdown();
+	boolean isOutputShutdown();
 
 	/**
-	 * Forces the socket to send all data<br>
+	 * Forces the socket to send all data
+	 * @throws IOException When the flushing fails due to IO errors.
 	 */
-	public void flush() throws IOException;
+	void flush() throws IOException;
 
 }

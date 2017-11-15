@@ -11,6 +11,7 @@
 - [JBT-10](https://jira.johnnei.org/browse/JBT-10): The internal `Job` system now relies on the `AbstractFileSet` of the given `Piece`. This makes the system
 more re-usable for other systems.
 - [JBT-33](https://jira.johnnei.org/browse/JBT-33): Doubled Torrent download throughput (According to integration test).
+- [JBT-70](https://jira.johnnei.org/browse/JBT-70): `ISocket` and `TcpSocket` have become part of the public API.
 
 ## Fixes
 - [JBT-44](https://jira.johnnei.org/browse/JBT-44): Completion of pieces no longer has a chance to cause `IndexOutOfBounds`

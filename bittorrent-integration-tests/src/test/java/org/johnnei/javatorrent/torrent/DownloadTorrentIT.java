@@ -4,7 +4,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
+import org.johnnei.javatorrent.network.socket.TcpSocket;
 import org.johnnei.javatorrent.it.EndToEndDownload;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.PhaseData;
