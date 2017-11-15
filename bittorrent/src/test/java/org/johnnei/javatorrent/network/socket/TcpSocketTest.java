@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.network.socket;
+package org.johnnei.javatorrent.network.socket;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -8,12 +8,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import org.johnnei.javatorrent.test.TestUtils;
-
 import org.easymock.EasyMockSupport;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
+
+import org.johnnei.javatorrent.test.TestUtils;
 
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;

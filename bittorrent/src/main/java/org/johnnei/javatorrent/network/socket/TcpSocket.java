@@ -1,4 +1,4 @@
-package org.johnnei.javatorrent.internal.network.socket;
+package org.johnnei.javatorrent.network.socket;
 
 import java.io.IOException;
 import java.io.InputStream;
