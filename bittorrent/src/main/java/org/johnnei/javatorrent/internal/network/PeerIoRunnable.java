@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
@@ -36,7 +37,7 @@ public class PeerIoRunnable implements Runnable {
 			return;
 		}
 
-		try {
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", peer.getIdAsString())) {
 			handleWrite(peer);
 			handleRead(peer);
 		} catch (Exception e) {

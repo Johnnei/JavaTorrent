@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
@@ -27,10 +30,17 @@ import org.johnnei.javatorrent.utils.StringUtils;
 
 public class Peer {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(Peer.class);
+
 	/**
 	 * The torrent on which this peer is participating.
 	 */
 	private final Torrent torrent;
+
+	/**
+	 * {@link #id} as string.
+	 */
+	private final String idString;
 
 	/**
 	 * The peer id as reported by the peer.
@@ -99,11 +109,12 @@ public class Peer {
 		this.socket = Argument.requireNonNull(builder.socket, "Peer must have a socket.");
 		this.extensionBytes = Argument.requireNonNull(builder.extensionBytes, "Peer extension bytes must be set.");
 		this.id = Argument.requireNonNull(builder.id, "Peer ID must be set.");
+		this.idString = StringUtils.byteArrayToString(id);
 
 		peerClient = new Client();
 		myClient = new Client();
 		extensions = new HashMap<>();
-		clientName = StringUtils.byteArrayToString(id);
+		clientName = idString;
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFileSet() != null) {
 			haveState = new Bitfield(torrent.getFileSet().getBitfieldBytes().length);
@@ -248,7 +259,7 @@ public class Peer {
 	 */
 	@Override
 	public String toString() {
-		return String.format("Peer[id=%s]", StringUtils.byteArrayToString(id));
+		return String.format("Peer[id=%s]", idString);
 	}
 
 	/**
@@ -372,6 +383,7 @@ public class Peer {
 		}
 
 		this.requestLimit = Math.min(requestLimit, absoluteRequestLimit);
+		LOGGER.trace("Request limit is now [{}]", this.requestLimit);
 	}
 
 	/**
@@ -527,6 +539,13 @@ public class Peer {
 		addToPendingMessages(1);
 
 		torrent.addDiskJob(new DiskJobReadBlock(request.getPiece(), request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
+	}
+
+	/**
+	 * @return The ID of the peer in base-12.
+	 */
+	public String getIdAsString() {
+		return idString;
 	}
 
 	private void onReadBlockComplete(DiskJobReadBlock readJob) {
