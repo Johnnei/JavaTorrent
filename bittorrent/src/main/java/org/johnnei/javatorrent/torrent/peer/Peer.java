@@ -31,6 +31,7 @@ import org.johnnei.javatorrent.utils.StringUtils;
 public class Peer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Peer.class);
+	private static final String LOG_OUTSTANDING_BLOCK_REQUESTS = "Outstanding block requests [{}]";
 
 	/**
 	 * The torrent on which this peer is participating.
@@ -200,6 +201,7 @@ public class Peer {
 			return;
 		}
 
+		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(this, piece, byteOffset, blockLength));
 	}
 
@@ -225,6 +227,7 @@ public class Peer {
 		}
 
 		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createCancelRequestFor(this, piece, byteOffset, blockLength));
+		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 	}
 
 	/**
@@ -235,6 +238,7 @@ public class Peer {
 	public void onReceivedBlock(Piece piece, int byteOffset) {
 		int blockLength = piece.getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
 		getClientByDirection(PeerDirection.Download).removeJob(createJob(piece, byteOffset, blockLength, PeerDirection.Download));
+		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 	}
 
 	private Job createJob(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
