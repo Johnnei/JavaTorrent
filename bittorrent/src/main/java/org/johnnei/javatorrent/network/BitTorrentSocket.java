@@ -409,6 +409,7 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if there is at least one {@link IMessage} waiting to be sent.
 	 */
 	public boolean hasOutboundMessages() {
+		LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
 		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
 	}
 
