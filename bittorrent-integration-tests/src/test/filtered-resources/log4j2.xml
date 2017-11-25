@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss,SSS} %-5level %c{1.} - [%X{context}] %msg%n" />
+    </Console>
+    <File name="PersistentLog" filename="${build.directory}/${project.artifactId}.log" append="false">
+      <PatternLayout pattern="%d{ISO8601} %-5level %c{1.} - [%X{context}] %msg%n" />
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="trace">
+      <AppenderRef ref="Console" level="debug" />
+      <AppenderRef ref="PersistentLog" level="trace" />
+    </Root>
+  </Loggers>
+</Configuration>

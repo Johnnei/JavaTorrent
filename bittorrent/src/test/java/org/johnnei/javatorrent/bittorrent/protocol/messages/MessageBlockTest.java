@@ -1,30 +1,32 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
-import java.time.Duration;
-
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
+import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
+import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import static org.easymock.EasyMock.aryEq;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Test {@link MessageBlock}
  */
-@RunWith(EasyMockRunner.class)
-public class MessageBlockTest extends EasyMockSupport {
+public class MessageBlockTest {
+
+	private Peer peerMock = mock(Peer.class);
+	private Torrent torrentMock = mock(Torrent.class);
+	private TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
+	private Piece pieceMock = mock(Piece.class);
+	private IRequestLimiter requestLimiterMock = mock(IRequestLimiter.class);
 
 	@Test
 	public void testStaticMethods() {
@@ -37,50 +39,23 @@ public class MessageBlockTest extends EasyMockSupport {
 		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageBlock["));
 	}
 
-	@Test
-	public void testProcessQuickReceive() {
-		InStream inStream = new InStream(new byte[] {
-				0x00, 0x00, 0x00, 0x05,
-				0x00, 0x00, 0x38, 0x00,
-				0x00
-		}, Duration.ofMillis(200));
-		Peer peerMock = createMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
-
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
-
-		torrentMock.onReceivedBlock(eq(fileSetMock), eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
-		peerMock.onReceivedBlock(eq(5), eq(0x3800));
-		peerMock.addStrike(-1);
-		peerMock.setRequestLimit(5);
-
-		replayAll();
-
-		MessageBlock cut = new MessageBlock();
-		cut.read(inStream);
-		cut.process(peerMock);
-
-		verifyAll();
+	private void prepareTest() {
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.getFileSet()).thenReturn(fileSetMock);
+		when(torrentMock.getRequestLimiter()).thenReturn(requestLimiterMock);
+		when(pieceMock.getIndex()).thenReturn(5);
+		when(fileSetMock.getPiece(5)).thenReturn(pieceMock);
 	}
 
 	@Test
 	public void testProcessInvalidLength() {
-		Peer peerMock = createMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-
-		peerMock.onReceivedBlock(eq(5), eq(0x37FF));
-		peerMock.addStrike(1);
-
-		replayAll();
+		prepareTest();
 
 		MessageBlock cut = new MessageBlock(5, 0x37FF, new byte[] {});
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).onReceivedBlock(pieceMock, 0x37FF);
+		verify(peerMock).addStrike(1);
 	}
 
 	@Test
@@ -90,26 +65,19 @@ public class MessageBlockTest extends EasyMockSupport {
 				0x00, 0x00, 0x38, 0x00,
 				0x00
 		});
-		Peer peerMock = createMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
+		prepareTest();
 
-		torrentMock.onReceivedBlock(eq(fileSetMock), eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
-		peerMock.onReceivedBlock(eq(5), eq(0x3800));
-		peerMock.addStrike(-1);
-		expect(peerMock.getRequestLimit()).andStubReturn(2);
-		peerMock.setRequestLimit(6);
-
-		replayAll();
+		when(peerMock.getRequestLimit()).thenReturn(2);
 
 		MessageBlock cut = new MessageBlock();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(torrentMock).onReceivedBlock(fileSetMock, 5, 0x3800, new byte[] { 0x00 });
+		verify(peerMock).onReceivedBlock(pieceMock, 0x3800);
+		verify(peerMock).addStrike(-1);
+		verify(requestLimiterMock).onReceivedBlock(peerMock, cut);
 	}
 
 	@Test
@@ -119,25 +87,18 @@ public class MessageBlockTest extends EasyMockSupport {
 				0x00, 0x00, 0x38, 0x00,
 				0x00
 		});
-		Peer peerMock = createMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet fileSetMock = createMock(AbstractFileSet.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFileSet()).andReturn(fileSetMock);
+		prepareTest();
 
-		torrentMock.onReceivedBlock(eq(fileSetMock), eq(5), eq(0x3800), aryEq(new byte[] { 0x00 }));
-		peerMock.onReceivedBlock(eq(5), eq(0x3800));
-		peerMock.addStrike(-1);
-		expect(peerMock.getRequestLimit()).andStubReturn(5);
-
-		replayAll();
+		when(peerMock.getRequestLimit()).thenReturn(5);
 
 		MessageBlock cut = new MessageBlock();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(torrentMock).onReceivedBlock(fileSetMock, 5, 0x3800, new byte[] { 0x00 });
+		verify(peerMock).onReceivedBlock(pieceMock, 0x3800);
+		verify(peerMock).addStrike(-1);
 	}
 
 	@Test

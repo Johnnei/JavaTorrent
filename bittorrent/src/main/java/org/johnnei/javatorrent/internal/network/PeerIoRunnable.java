@@ -2,15 +2,16 @@ package org.johnnei.javatorrent.internal.network;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PeerIoRunnable implements Runnable {
 
@@ -25,12 +26,6 @@ public class PeerIoRunnable implements Runnable {
 	@Override
 	public void run() {
 		manager.getTorrents().forEach(this::processTorrent);
-		try {
-			Thread.sleep(5);
-		} catch (InterruptedException e) {
-			LOGGER.warn("Peer IO got interrupted", e);
-			Thread.currentThread().interrupt();
-		}
 	}
 
 	private void processTorrent(final Torrent torrent) {
@@ -42,12 +37,13 @@ public class PeerIoRunnable implements Runnable {
 			return;
 		}
 
-		try {
+		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", peer.getIdAsString())) {
 			handleWrite(peer);
 			handleRead(peer);
-		} catch (IOException e) {
-			LOGGER.error(String.format("IO Error for peer: %s", peer), e);
+		} catch (Exception e) {
+			LOGGER.error("Error for peer: {}", peer, e);
 			peer.getBitTorrentSocket().close();
+			peer.getTorrent().removePeer(peer);
 		}
 	}
 

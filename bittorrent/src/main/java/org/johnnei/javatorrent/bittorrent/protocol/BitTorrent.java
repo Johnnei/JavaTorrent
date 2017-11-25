@@ -1,10 +1,14 @@
 package org.johnnei.javatorrent.bittorrent.protocol;
 
+import java.nio.charset.Charset;
+
 public final class BitTorrent {
 
 	/*
 	 * There is a message without ID. This message only contains a length integer. The message is used as keep-alive
 	 */
+
+	public static final Charset DEFAULT_ENCODING = Charset.forName("UTF-8");
 
 	/**
 	 * Used to notify the peer that we choked them<br>

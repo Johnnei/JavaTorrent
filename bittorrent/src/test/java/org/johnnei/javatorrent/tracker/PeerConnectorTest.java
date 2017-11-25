@@ -17,6 +17,7 @@ import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -53,14 +54,23 @@ public class PeerConnectorTest {
 	 */
 	private Thread workerThread;
 
+	private Torrent torrent;
+
+	private void prepareMetadata(byte[] torrentHash) {
+		torrent = mock(Torrent.class);
+		Metadata metadataMock = mock(Metadata.class);
+		when(metadataMock.getHash()).thenReturn(torrentHash);
+		when(torrent.getMetadata()).thenReturn(metadataMock);
+	}
+
 	@Test
 	public void testRun() throws Exception {
 		final byte[] peerId = DummyEntity.createPeerId();
 		final byte[] torrentHash = DummyEntity.createRandomBytes(20);
 		final byte[] extensionBytes = DummyEntity.createRandomBytes(8);
 
-		Torrent torrent = mock(Torrent.class);
-		when(torrent.getHashArray()).thenReturn(torrentHash);
+		prepareMetadata(torrentHash);
+
 		torrent.addPeer(isA(Peer.class));
 
 		PeerConnectInfo peerConnectInfo = new PeerConnectInfo(torrent, new InetSocketAddress(InetAddress.getLocalHost(), 27960));
@@ -183,8 +193,7 @@ public class PeerConnectorTest {
 		}
 		final byte[] extensionBytes = DummyEntity.createRandomBytes(8);
 
-		Torrent torrent = mock(Torrent.class);
-		when(torrent.getHashArray()).thenReturn(torrentHash);
+		prepareMetadata(torrentHash);
 
 		PeerConnectInfo peerConnectInfo = new PeerConnectInfo(torrent, new InetSocketAddress(InetAddress.getLocalHost(), 27960));
 
@@ -218,10 +227,12 @@ public class PeerConnectorTest {
 		}
 
 		TorrentClient torrentClient = mock(TorrentClient.class);
-		Torrent torrent = mock(Torrent.class);
-		when(torrent.getHashArray()).thenReturn(torrentHash);
-		Torrent torrentTwo = mock(Torrent.class);
-		when(torrentTwo.getHashArray()).thenReturn(torrentHashTwo);
+
+		prepareMetadata(torrentHash);
+		Torrent torrent = this.torrent;
+
+		prepareMetadata(torrentHashTwo);
+		Torrent torrentTwo = this.torrent;
 
 		PeerConnector cut = new PeerConnector(torrentClient);
 		PeerConnectInfo peerConnectInfo = new PeerConnectInfo(torrent, new InetSocketAddress(InetAddress.getLocalHost(), 27960));
@@ -240,8 +251,7 @@ public class PeerConnectorTest {
 	public void testRunIOException() throws Exception {
 		final byte[] torrentHash = DummyEntity.createRandomBytes(20);
 
-		Torrent torrent = mock(Torrent.class);
-		when(torrent.getHashArray()).thenReturn(torrentHash);
+		prepareMetadata(torrentHash);
 
 		PeerConnectInfo peerConnectInfo = new PeerConnectInfo(torrent, new InetSocketAddress(InetAddress.getLocalHost(), 27960));
 

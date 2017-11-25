@@ -126,7 +126,7 @@ public class TorrentManager {
 	public Optional<Torrent> getTorrent(byte[] hash) {
 		return activeTorrents.stream()
 				.map(TorrentPair::getTorrent)
-				.filter(torrent -> Arrays.equals(torrent.getHashArray(), hash))
+				.filter(torrent -> Arrays.equals(torrent.getMetadata().getHash(), hash))
 				.findAny();
 	}
 

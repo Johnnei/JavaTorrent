@@ -11,8 +11,9 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.test.DummyEntity;
-import org.johnnei.javatorrent.test.StubEntity;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 
 import org.easymock.EasyMockRunner;
@@ -22,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.powermock.reflect.Whitebox;
 
 import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
 import static org.johnnei.javatorrent.test.TestUtils.copySection;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -49,7 +51,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		OutStream outStream = new OutStream();
 
 		Torrent torrent = new Torrent.Builder()
-				.setHash(DummyEntity.createRandomBytes(20))
+				.setMetadata(new Metadata.Builder().setHash(DummyEntity.createRandomBytes(20)).build())
 				.setName("Dummy Torrent")
 				.build();
 
@@ -62,7 +64,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		byte[] actual = outStream.toByteArray();
 
 		byte[] expectedOutput = new byte[84];
-		copySection(torrent.getHashArray(), expectedOutput, 0);
+		copySection(torrent.getMetadata().getHash(), expectedOutput, 0);
 		copySection(peerId, expectedOutput, 20);
 		copySection(DOWNLOADED_BYTES, expectedOutput, 40);
 		copySection(REMAINING_BYTES, expectedOutput, 48);
@@ -92,11 +94,16 @@ public class AnnounceRequestTest extends EasyMockSupport {
 
 		OutStream outStream = new OutStream();
 
+		TorrentFileSet torrentFileSetMock = createMock(TorrentFileSet.class);
+		expect(torrentFileSetMock.countRemainingBytes()).andReturn(3L);
+
+		replayAll();
+
 		Torrent torrent = new Torrent.Builder()
-				.setHash(DummyEntity.createRandomBytes(20))
+				.setMetadata(new Metadata.Builder().setHash(DummyEntity.createUniqueTorrentHash()).build())
 				.setName("Dummy Torrent")
 				.build();
-		torrent.setFileSet(StubEntity.stubAFiles(3));
+		torrent.setFileSet(torrentFileSetMock);
 
 		Whitebox.setInternalState(torrent, "downloadedBytes", 5);
 		torrent.addUploadedBytes(7);
@@ -110,7 +117,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		byte[] actual = outStream.toByteArray();
 
 		byte[] expectedOutput = new byte[84];
-		copySection(torrent.getHashArray(), expectedOutput, 0);
+		copySection(torrent.getMetadata().getHash(), expectedOutput, 0);
 		copySection(peerId, expectedOutput, 20);
 		copySection(DOWNLOADED_BYTES, expectedOutput, 40);
 		copySection(REMAINING_BYTES, expectedOutput, 48);
@@ -122,6 +129,8 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		copySection(PEERS_WANTED_BYES, expectedOutput, 76);
 		copySection(PORT_BYTES, expectedOutput, 80);
 		copySection(EXTENSION_BYTES, expectedOutput, 82);
+
+		verifyAll();;
 
 		assertEquals("Written bytes has incorrect length", 84, actual.length);
 		assertArrayEquals("Written bytes output is incorrect.", expectedOutput, actual);

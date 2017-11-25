@@ -1,17 +1,13 @@
 package org.johnnei.javatorrent.torrent;
 
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
@@ -21,11 +17,11 @@ import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
 import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
+import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
-import org.johnnei.javatorrent.utils.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +36,6 @@ public class Torrent {
 	private String displayName;
 
 	/**
-	 * The SHA1 hash from the magnetLink
-	 */
-	private byte[] btihHash;
-	/**
 	 * All connected peers
 	 */
 	private List<Peer> peers;
@@ -51,12 +43,12 @@ public class Torrent {
 	/**
 	 * Contains all data of the actual torrent
 	 */
-	private AbstractFileSet files;
+	private TorrentFileSet fileSet;
 
 	/**
 	 * Contains the information about the metadata backing this torrent.
 	 */
-	private MetadataFileSet metadata;
+	private Metadata metadata;
 
 	/**
 	 * Regulates the selection of pieces and the peers to download the pieces
@@ -83,9 +75,14 @@ public class Torrent {
 	 * @param builder The builder with the components for the torrent.
 	 */
 	public Torrent(Builder builder) {
-		displayName = Argument.requireNonNull(builder.displayName, "Torrent name is required");
+		this.metadata = builder.metadata;
+		this.metadata = Argument.requireNonNull(builder.metadata, "Torrent without minimal metadata information is not downloadable.");
+		if (builder.displayName == null) {
+			displayName = builder.metadata.getName();
+		} else {
+			displayName = builder.displayName;
+		}
 		torrentClient = builder.torrentClient;
-		btihHash = builder.hash;
 		downloadedBytes = 0L;
 		peers = new LinkedList<>();
 		pieceSelector = new FullPieceSelect(this);
@@ -144,21 +141,21 @@ public class Torrent {
 			return;
 		}
 
-		if (files.countCompletedPieces() == 0) {
+		if (fileSet.countCompletedPieces() == 0) {
 			return;
 		}
 
 		final int bitfieldOverhead = 1;
-		final int bitfieldPacketSize = files.getBitfieldBytes().length + bitfieldOverhead;
+		final int bitfieldPacketSize = fileSet.getBitfieldBytes().length + bitfieldOverhead;
 
 		final int haveOverheadPerPiece = 5;
-		final int havePacketsSize = files.countCompletedPieces() * haveOverheadPerPiece;
+		final int havePacketsSize = fileSet.countCompletedPieces() * haveOverheadPerPiece;
 
 		if (bitfieldPacketSize < havePacketsSize) {
-			peer.getBitTorrentSocket().enqueueMessage(new MessageBitfield(files.getBitfieldBytes()));
+			peer.getBitTorrentSocket().enqueueMessage(new MessageBitfield(fileSet.getBitfieldBytes()));
 		} else {
-			for (int pieceIndex = 0; pieceIndex < files.getPieceCount(); pieceIndex++) {
-				if (!files.hasPiece(pieceIndex)) {
+			for (int pieceIndex = 0; pieceIndex < fileSet.getPieceCount(); pieceIndex++) {
+				if (!fileSet.hasPiece(pieceIndex)) {
 					continue;
 				}
 
@@ -172,24 +169,6 @@ public class Torrent {
 	}
 
 	/**
-	 * Gets the 20 byte BTIH hash of the torrent.
-	 * @return The 20 byte BTIH hash.
-	 */
-	public byte[] getHashArray() {
-		return btihHash;
-	}
-
-	/**
-	 * Gets the {@link #getHashArray()} formatted as hexadecimal.
-	 * @return The BTIH hash in hexadecimal.
-	 *
-	 * @see #getHashArray()
-	 */
-	public String getHash() {
-		return StringUtils.byteArrayToString(btihHash);
-	}
-
-	/**
 	 * If the Torrent should be downloading the metadata information.
 	 * Depending on the installed modules the torrent might be stuck at this point.
 	 * BEP 10 and UT_METADATA extension must be available to download metadata.
@@ -197,15 +176,7 @@ public class Torrent {
 	 * @return <code>true</code> when the torrent is currently downloading the metadata, otherwise <code>false</code>
 	 */
 	public boolean isDownloadingMetadata() {
-		if (metadata == null) {
-			return true;
-		}
-
-		if (!metadata.isDone()) {
-			return true;
-		}
-
-		return files == null;
+		return fileSet == null;
 	}
 
 	/**
@@ -247,14 +218,12 @@ public class Torrent {
 			return;
 		}
 
-		// TODO Generalize this code to use fileset of the given piece.
-		if (isDownloadingMetadata()) {
-			metadata.setHavingPiece(piece.getIndex());
-		} else {
-			files.setHavingPiece(piece.getIndex());
+		piece.getFileSet().setHavingPiece(piece.getIndex());
+		if (piece.getFileSet().equals(fileSet)) {
 			broadcastMessage(new MessageHave(piece.getIndex()));
 			downloadedBytes += piece.getSize();
 		}
+
 		LOGGER.debug("Completed piece {}", piece.getIndex());
 	}
 
@@ -274,11 +243,11 @@ public class Torrent {
 	}
 
 	/**
-	 * Calculates the current progress based on all available files on the HDD
+	 * Calculates the current progress based on all available fileSet on the HDD
 	 */
 	public void checkProgress() {
 		LOGGER.info("Checking progress...");
-		files.getNeededPieces()
+		fileSet.getNeededPieces()
 				.filter(p -> {
 					try {
 						return p.checkHash();
@@ -288,7 +257,7 @@ public class Torrent {
 					}
 				}).
 				forEach(p -> {
-						files.setHavingPiece(p.getIndex());
+						fileSet.setHavingPiece(p.getIndex());
 						broadcastMessage(new MessageHave(p.getIndex()));
 					}
 				);
@@ -305,30 +274,21 @@ public class Torrent {
 	}
 
 	/**
-	 * Sets the current set of files this torrent is downloading.
+	 * Sets the current set of fileSet this torrent is downloading.
 	 *
 	 * @param files The file set.
 	 */
-	public void setFileSet(AbstractFileSet files) {
-		this.files = files;
+	public void setFileSet(TorrentFileSet files) {
+		this.fileSet = files;
 	}
 
-	/**
-	 * Sets the associated metadata file of the torrent
-	 *
-	 * @param metadata the metadata which is backing this torrent
-	 */
-	public void setMetadata(MetadataFileSet metadata) {
-		this.metadata = Argument.requireNonNull(metadata, "Metadata can not be set to null");
-	}
-
-	public Optional<MetadataFileSet> getMetadata() {
-		return Optional.ofNullable(metadata);
+	public Metadata getMetadata() {
+		return metadata;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Torrent[hash=%s]", getHash());
+		return String.format("Torrent[hash=%s]", metadata.getHashString());
 	}
 
 	/**
@@ -341,14 +301,14 @@ public class Torrent {
 	}
 
 	/**
-	 * Gets the files which are being downloaded within this torrent. This could be the metadata of the torrent (.torrent file),
-	 * the files in the torrent or something else if a module changed it with {@link #setFileSet(AbstractFileSet)}.
+	 * Gets the fileSet which are being downloaded within this torrent. This could be the metadata of the torrent (.torrent file),
+	 * the fileSet in the torrent or something else if a module changed it with {@link #setFileSet(TorrentFileSet)}.
 	 *
-	 * @return The set of files being downloaded.
-	 * @see #setFileSet(AbstractFileSet)
+	 * @return The set of fileSet being downloaded.
+	 * @see #setFileSet(TorrentFileSet)
 	 */
-	public AbstractFileSet getFileSet() {
-		return files;
+	public TorrentFileSet getFileSet() {
+		return fileSet;
 	}
 
 	/**
@@ -385,7 +345,7 @@ public class Torrent {
 		}
 
 		synchronized (this) {
-			return (int) peers.stream().filter(p -> p.countHavePieces() == files.getPieceCount()).count();
+			return (int) peers.stream().filter(p -> p.countHavePieces() == fileSet.getPieceCount()).count();
 		}
 	}
 
@@ -438,7 +398,7 @@ public class Torrent {
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(btihHash);
+		return Arrays.hashCode(metadata.getHash());
 	}
 
 	@Override
@@ -454,11 +414,15 @@ public class Torrent {
 		}
 		Torrent other = (Torrent) obj;
 
-		return Arrays.equals(btihHash, other.btihHash);
+		return metadata.equals(other.metadata);
 	}
 
 	public void setPieceSelector(IPieceSelector downloadRegulator) {
 		this.pieceSelector = downloadRegulator;
+	}
+
+	public IRequestLimiter getRequestLimiter() {
+		return torrentClient.getRequestLimiter();
 	}
 
 	/**
@@ -468,9 +432,11 @@ public class Torrent {
 
 		private TorrentClient torrentClient;
 
-		private String displayName;
+		private File downloadFolder;
 
-		private byte[] hash;
+		private Metadata metadata;
+
+		private String displayName;
 
 		/**
 		 * Sets the torrent client on which this torrent will be registered.
@@ -479,16 +445,6 @@ public class Torrent {
 		 */
 		public Builder setTorrentClient(TorrentClient torrentClient) {
 			this.torrentClient = torrentClient;
-			return this;
-		}
-
-		/**
-		 * Sets the hash of the torrent.
-		 * @param hash The expected hash.
-		 * @return The adjusted builder.
-		 */
-		public Builder setHash(byte[] hash) {
-			this.hash = hash;
 			return this;
 		}
 
@@ -502,14 +458,21 @@ public class Torrent {
 			return this;
 		}
 
+		public Builder setMetadata(Metadata metadata) {
+			this.metadata = metadata;
+			return this;
+		}
+
+		public Builder setDownloadFolder(File downloadFolder) {
+			this.downloadFolder = downloadFolder;
+			return this;
+		}
+
 		/**
-		 * This method check if {@link #setHash(byte[])} has been called as depending on the configured BEPs that requirements
-		 * before something is 'downloadable' changes.
-		 *
-		 * @return <code>true</code> if the hash has been set.
+		 * @return <code>true</code> if the hash of the metadata is available.
 		 */
 		public boolean canDownload() {
-			return hash != null;
+			return metadata != null;
 		}
 
 		/**
@@ -517,35 +480,19 @@ public class Torrent {
 		 * @return The newly created torrent.
 		 */
 		public Torrent build() {
-			return new Torrent(this);
-		}
-
-		/**
-		 * Creates a torrent with metadata information (the .torrent file is present).
-		 * @param metadata The metadata file to provision this torrent instance with.
-		 * @param downloadFolder The folder in which the torrent should be downloaded.
-		 * @return The newly created torrent.
-		 * @throws IOException When the metadata file cannot be read.
-		 */
-		public Torrent buildFromMetata(File metadata, File downloadFolder) throws IOException {
-			try (DataInputStream inputStream = new DataInputStream(new FileInputStream(metadata))) {
-				byte[] data = new byte[(int) metadata.length()];
-				inputStream.readFully(data);
-				setHash(SHA1.hash(data));
+			Argument.requireNonNull(metadata, "Torrent without minimal metadata information is not downloadable.");
+			Torrent torrent = new Torrent(this);
+			if (downloadFolder == null) {
+				downloadFolder = new File(metadata.getName());
 			}
 
-			Torrent torrent = build();
-
-			MetadataFileSet metadataFileSet = new MetadataFileSet(torrent, metadata);
-			metadataFileSet.getNeededPieces().forEach(p -> metadataFileSet.setHavingPiece(p.getIndex()));
-			TorrentFileSet fileSet = new TorrentFileSet(metadata, downloadFolder);
-
-			torrent.setMetadata(metadataFileSet);
-			torrent.setFileSet(fileSet);
+			if (!metadata.getFileEntries().isEmpty()) {
+				TorrentFileSet fileSet = new TorrentFileSet(metadata, downloadFolder);
+				torrent.setFileSet(fileSet);
+			}
 
 			return torrent;
 		}
-
 	}
 
 }

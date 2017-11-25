@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
-import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -50,7 +50,7 @@ public abstract class AbstractPeerConnectionAcceptor implements Runnable {
 		}
 
 		Peer peer = createPeer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes(), handshake.getPeerId());
-		peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getHashArray());
+		peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getMetadata().getHash());
 		LOGGER.debug("Accepted connection from {}", peerSocket);
 		torrent.get().addPeer(peer);
 	}

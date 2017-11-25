@@ -50,11 +50,15 @@ public class Bencoding {
 
 		BencodedList list = new BencodedList();
 
-		char token = peekCharacter(inStream);
-		while ('e' != token) {
-			list.add(decodeNextValue(inStream));
+		try {
+			char token = peekCharacter(inStream);
+			while ('e' != token) {
+				list.add(decodeNextValue(inStream));
 
-			token = peekCharacter(inStream);
+				token = peekCharacter(inStream);
+			}
+		} catch (Exception e) {
+			throw new IOException("Failed to read entry for list: " + list.asList().toString(), e);
 		}
 
 		consumeToken('e', inStream);

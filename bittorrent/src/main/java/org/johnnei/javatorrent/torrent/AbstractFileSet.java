@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
+import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
@@ -80,7 +81,7 @@ public abstract class AbstractFileSet {
 	}
 
 	private void validateGetFileForBytes(int pieceIndex, int blockIndex, int byteOffset) {
-		Argument.requireWithinBounds(pieceIndex, 0, pieces.size(), String.format("Piece %d is not within the file set.", pieceIndex));
+		Argument.requireWithinBounds(pieceIndex, 0, pieces.size(), () -> String.format("Piece %d is not within the file set.", pieceIndex));
 		Argument.requirePositive(blockIndex, "Block index cannot be negative.");
 		Argument.requirePositive(byteOffset, "Byte offset cannot be negative.");
 
@@ -104,6 +105,11 @@ public abstract class AbstractFileSet {
 		Argument.requireWithinBounds(index, 0, pieces.size(), String.format("Piece %s is outside of the file set.", index));
 		return pieces.get(index);
 	}
+
+	/**
+	 * @return The request factory which can create requests for this {@link AbstractFileSet}.
+	 */
+	public abstract IFileSetRequestFactory getRequestFactory();
 
 	/**
 	 * Gets the size of a non-truncated piece.

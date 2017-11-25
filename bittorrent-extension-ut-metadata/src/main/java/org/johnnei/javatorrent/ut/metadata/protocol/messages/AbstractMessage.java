@@ -12,18 +12,20 @@ import org.johnnei.javatorrent.network.OutStream;
  */
 public abstract class AbstractMessage implements IMessage {
 
+	private static final byte[] EMPTY_ARRAY = new byte[0];
+
 	private Bencoding bencoding = new Bencoding();
 
 	protected static final String PIECE_KEY = "piece";
 	protected BencodedMap dictionary;
-	protected String bencodedData;
+	protected byte[] bencodedData;
 
 	/**
 	 * Creates a new empty message.
 	 */
 	public AbstractMessage() {
 		dictionary = new BencodedMap();
-		bencodedData = "";
+		bencodedData = EMPTY_ARRAY;
 	}
 
 	/**
@@ -40,7 +42,7 @@ public abstract class AbstractMessage implements IMessage {
 
 	@Override
 	public void write(OutStream outStream) {
-		outStream.writeString(bencodedData);
+		outStream.write(bencodedData);
 	}
 
 	@Override

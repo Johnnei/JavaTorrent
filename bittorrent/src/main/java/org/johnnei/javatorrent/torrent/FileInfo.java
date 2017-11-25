@@ -3,7 +3,8 @@ package org.johnnei.javatorrent.torrent;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Objects;
+
+import org.johnnei.javatorrent.torrent.fileset.FileEntry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,25 +13,12 @@ public class FileInfo {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FileInfo.class);
 
-	/**
-	 * The fileName
-	 */
-	private String fileName;
-
-	/**
-	 * The filesize of this file in the torrent
-	 */
-	private long filesize;
+	private final FileEntry fileEntry;
 
 	/**
 	 * The amount of pieces which contain a part of data for this file
 	 */
 	private int pieceCount;
-
-	/**
-	 * The offset of the first byte crossed across all files
-	 */
-	private long firstByteOffset;
 
 	/**
 	 * The link between the file on the harddrive
@@ -43,9 +31,7 @@ public class FileInfo {
 	public final Object fileLock = new Object();
 
 	public FileInfo(long filesize, long firstByteOffset, File file, int pieceCount) {
-		this.firstByteOffset = firstByteOffset;
-		this.fileName = file.getName();
-		this.filesize = filesize;
+		this.fileEntry = new FileEntry(file.getName(), filesize, firstByteOffset);
 		this.pieceCount = pieceCount;
 		try {
 			if (!file.exists()) {
@@ -73,7 +59,7 @@ public class FileInfo {
 	 * @return The size of this file.
 	 */
 	public long getSize() {
-		return filesize;
+		return fileEntry.getSize();
 	}
 
 	/**
@@ -82,7 +68,7 @@ public class FileInfo {
 	 * @return the first byte offset
 	 */
 	public long getFirstByteOffset() {
-		return firstByteOffset;
+		return fileEntry.getFirstByteOffset();
 	}
 
 	/**
@@ -90,7 +76,7 @@ public class FileInfo {
 	 * @return The name of this file.
 	 */
 	public String getFileName() {
-		return fileName;
+		return fileEntry.getFileName();
 	}
 
 	/**
@@ -101,14 +87,12 @@ public class FileInfo {
 		return fileAccess;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
+		if (o == this) {
 			return true;
 		}
+
 		if (o == null) {
 			return false;
 		}
@@ -117,23 +101,16 @@ public class FileInfo {
 			return false;
 		}
 
-		FileInfo fileInfo = (FileInfo) o;
-		return filesize == fileInfo.filesize && firstByteOffset == fileInfo.firstByteOffset;
+		return fileEntry.equals(((FileInfo) o).fileEntry);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int hashCode() {
-		return Objects.hash(filesize, firstByteOffset);
+		return fileEntry.hashCode();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String toString() {
-		return String.format("FileInfo[firstByteOffset=%d, length=%d, name=%s]", firstByteOffset, filesize, fileName);
+		return String.format("FileInfo[entry=%s, pieceCount=%d]", fileEntry.toString(), pieceCount);
 	}
 }

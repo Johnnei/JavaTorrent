@@ -10,7 +10,7 @@ public class MathUtils {
 		return (value + (divisor - 1)) / divisor;
 	}
 
-	public static long ceilDivision(long value, int divisor) {
+	public static long ceilDivision(long value, long divisor) {
 		return (value + (divisor - 1)) / divisor;
 	}
 

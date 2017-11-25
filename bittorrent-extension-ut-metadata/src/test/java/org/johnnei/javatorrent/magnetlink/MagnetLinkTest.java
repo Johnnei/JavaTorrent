@@ -4,7 +4,6 @@ import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import org.easymock.EasyMockSupport;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,12 +26,11 @@ public class MagnetLinkTest extends EasyMockSupport {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
-	@Ignore("Base 32 Magnet Links are not implemented yet")
 	public void testMinimalBase32Link() {
 		String[] links = new String[] {
-				"magnet:?xt=urn:btih:p0r9u2t4ntmdgvth7cq3eu1e5hs21epo",
-				"magnet:?xt=urn:btih:P0R9U2T4NTMDGVTH7CQ3EU1E5HS21EPO",
-				"magnet:?xt=urn:btih:P0r9U2t4NTmdGgTh7Cq3EU1e5HS21EPO",
+				"magnet:?xt=urn:btih:za3j6c5ex5wnq75rhm2do6bofr4cbozy",
+				"magnet:?xt=urn:btih:ZA3J6C5EX5WNQ75RHM2DO6BOFR4CBOZY",
+				"magnet:?xt=urn:btih:za3J6C5EX5wNq75RhM2DO6Bofr4CBoZY"
 		};
 
 		TorrentClient torrentClientMock = createNiceMock(TorrentClient.class);
@@ -52,7 +50,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 			assertEquals("No tracker listed, list should be empty", 0, magnetLink.getTrackerUrls().size());
 
 			Torrent torrent = magnetLink.getTorrent();
-			assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+			assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		}
 
 		verifyAll();
@@ -83,7 +81,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 			assertEquals("No tracker listed, list should be empty", 0, magnetLink.getTrackerUrls().size());
 
 			Torrent torrent = magnetLink.getTorrent();
-			assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+			assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		}
 
 		verifyAll();
@@ -108,7 +106,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 		assertTrue("Tracker udp://localhost:80 is missing", magnetLink.getTrackerUrls().contains("udp://localhost:80"));
 
 		Torrent torrent = magnetLink.getTorrent();
-		assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+		assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		assertEquals("Incorrect name", "GIMP 2.8.16-setup-1.exe", torrent.getDisplayName());
 	}
 
@@ -131,7 +129,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 		assertTrue("Tracker udp://localhost:80 is missing", magnetLink.getTrackerUrls().contains("udp://localhost:80"));
 
 		Torrent torrent = magnetLink.getTorrent();
-		assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+		assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		assertEquals("Incorrect name", "GIMP 2.8.16-setup-1.exe", torrent.getDisplayName());
 	}
 
@@ -170,7 +168,7 @@ public class MagnetLinkTest extends EasyMockSupport {
 		assertEquals("No tracker listed, list should be empty", 0, magnetLink.getTrackerUrls().size());
 
 		Torrent torrent = magnetLink.getTorrent();
-		assertArrayEquals("Incorrect hash", expectedHash, torrent.getHashArray());
+		assertArrayEquals("Incorrect hash", expectedHash, torrent.getMetadata().getHash());
 		assertEquals("Incorrect name", "GIMP 2.8.16+setup-1#GA.exe", torrent.getDisplayName());
 	}
 

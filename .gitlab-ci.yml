@@ -2,28 +2,82 @@ stages:
     - build
     - test
     - qa
+    - deploy
 
-# Cache Maven output
-cache:
-    key: "$CI_BUILD_REF_NAME"
-    untracked: true
+image: maven:3.5.2-jdk-8
+
+variables:
+  MAVEN_OPTS: -Dmaven.repo.local=/cache/.repository
 
 # Compile the code, must succeed before we start testing.
 build:
     stage: build
-    script: "mvn clean compile -B"
+    script: "mvn -B clean compile"
 
 # Run the quick test suite (Unit tests mostly)
 quicktests:
     stage: test
-    script: "mvn test -B --fail-at-end"
+    script: "mvn -B test --fail-at-end"
+    artifacts:
+      expire_in: 1 week
+      paths:
+      - "**/target/jacoco.exec"
+      - "**/target/surefire-reports/*.xml"
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
-    script: "mvn verify -B --fail-at-end"
+    script: "mvn -B verify --fail-at-end -DskipUTs=true"
+    artifacts:
+      when: always
+      expire_in: 1 week
+      paths:
+      - "**/target/*.log"
+      - "**/target/jacoco-it.exec"
+      - "**/target/failsafe-reports/*.xml"
+
+# PR Analysis
+sonarqube:
+    stage: qa
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.analysis.mode=issues -Dsonar.gitlab.analyse.commit=$CI_BUILD_REF -Dsonar.login=$SONAR_TOKEN"
+    only: ["/^feature\\/.*$/"]
+    dependencies: []
 
 # Run a sonar analysis.
-sonar:
+sonarqube.johnnei.org:
     stage: qa
-    script: "mvn compile test-compile sonar:sonar -B -Dsonar.host.url=https://sonarqube.johnnei.org"
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
+    only: ["develop"]
+    dependencies:
+      - quicktests
+      - integration-tests
+
+test deployment:
+    stage: test
+    script: "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
+    tags: ["deploy"]
+    dependencies: []
+    variables:
+      MAVEN_OPTS: ""
+    artifacts:
+      expire_in: 1 week
+      paths:
+      - "**/target/*.jar"
+      - "**/target/*.jar.asc"
+    only: ["/^release\\/.*$/"]
+
+deploy to maven central:
+    stage: deploy
+    script: "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
+    environment: MavenCentral
+    dependencies: []
+    variables:
+      MAVEN_OPTS: ""
+    artifacts:
+      paths:
+      - "**/target/*.jar"
+      - "**/target/*.jar.asc"
+    when: manual
+    tags: ["deploy"]
+    only:
+      - tags

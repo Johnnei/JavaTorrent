@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.utils;
 
+import java.util.function.Supplier;
+
 /**
  * A class which mimics {@link java.util.Objects} but throws {@link IllegalArgumentException} instead of {@link NullPointerException}
  */
@@ -43,6 +45,23 @@ public class Argument {
 	 * @param lowerLimit The lower limit (inclusive)
 	 * @param upperLimit The upper limit (exclusive)
 	 */
+	public static void requireWithinBounds(int amount, int lowerLimit, int upperLimit, Supplier<String> message) {
+		if (amount >= lowerLimit && amount < upperLimit) {
+			return;
+		}
+
+		throw new IllegalArgumentException(message.get());
+	}
+
+
+	/**
+	 * Tests if the given amount is within the bounds.
+	 * @param amount The amount to test
+	 * @param lowerLimit The lower limit (inclusive)
+	 * @param upperLimit The upper limit (exclusive)
+	 * @deprecated Replaced by {@link #requireWithinBounds(int, int, int, Supplier)}
+	 */
+	@Deprecated
 	public static void requireWithinBounds(int amount, int lowerLimit, int upperLimit, String message) {
 		if (amount >= lowerLimit && amount < upperLimit) {
 			return;

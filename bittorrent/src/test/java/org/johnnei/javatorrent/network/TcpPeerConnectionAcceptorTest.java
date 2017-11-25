@@ -10,8 +10,9 @@ import java.util.Optional;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
-import org.johnnei.javatorrent.internal.network.socket.ISocket;
-import org.johnnei.javatorrent.internal.network.socket.TcpSocket;
+import org.johnnei.javatorrent.network.socket.ISocket;
+import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -71,7 +72,10 @@ public class TcpPeerConnectionAcceptorTest extends EasyMockSupport {
 		expect(torrentClientMock.getTorrentByHash(aryEq(handshake.getTorrentHash()))).andReturn(Optional.of(torrentMock));
 		expect(torrentClientMock.getExtensionBytes()).andReturn(extensionBytes);
 		expect(torrentClientMock.getPeerId()).andReturn(peerId);
-		expect(torrentMock.getHashArray()).andReturn(handshake.getTorrentHash());
+
+		Metadata metadataMock = createMock(Metadata.class);
+		expect(metadataMock.getHash()).andReturn(handshake.getTorrentHash());
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
 		bitTorrentSocketMock.sendHandshake(aryEq(extensionBytes), aryEq(peerId), aryEq(handshake.getTorrentHash()));
 		torrentMock.addPeer(same(peerMock));
 

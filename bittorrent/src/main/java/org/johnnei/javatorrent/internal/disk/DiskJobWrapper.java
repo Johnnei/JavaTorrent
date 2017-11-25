@@ -1,6 +1,9 @@
 package org.johnnei.javatorrent.internal.disk;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 import org.johnnei.javatorrent.disk.IDiskJob;
@@ -15,12 +18,17 @@ class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DiskJobWrapper.class);
 
+	private static final Clock clock = Clock.systemDefaultZone();
+
 	private final IDiskJob diskJob;
+
+	private final Instant submitTime;
 
 	private int attempt;
 
 	DiskJobWrapper(IDiskJob diskJob) {
 		this.diskJob = Objects.requireNonNull(diskJob, "Can't wrap a null-job");
+		this.submitTime = clock.instant();
 	}
 
 	/**
@@ -29,7 +37,13 @@ class DiskJobWrapper implements Comparable<DiskJobWrapper> {
 	 */
 	public boolean process() {
 		try {
+			Instant startTime = clock.instant();
 			diskJob.process();
+			Instant runTime = clock.instant();
+			LOGGER.trace("Processed {}. Wait Time: {}ms, Run Time: {}ns",
+					diskJob,
+					Duration.between(submitTime, startTime).toMillis(),
+					Duration.between(startTime, runTime).toNanos());
 			return true;
 		} catch (IOException e) {
 			attempt++;

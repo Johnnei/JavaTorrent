@@ -2,9 +2,9 @@ package org.johnnei.javatorrent.torrent.algos.pieceselector;
 
 import java.util.Optional;
 
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.MetadataSelect;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -25,12 +25,14 @@ public class MetadataSelectTest extends EasyMockSupport {
 	@Test
 	public void testGetPieceForPeer() throws Exception {
 		Torrent torrentMock = createNiceMock(Torrent.class);
-		MetadataFileSet metadataMock = createNiceMock(MetadataFileSet.class);
+		Metadata metadataMock = createMock(Metadata.class);
+		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
 		Peer peerMock = createNiceMock(Peer.class);
 		Piece pieceMock = createNiceMock(Piece.class);
 
-		expect(torrentMock.getMetadata()).andReturn(Optional.of(metadataMock));
-		expect(metadataMock.getPiece(0)).andReturn(pieceMock);
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
+		expect(metadataFileSetMock.getPiece(0)).andReturn(pieceMock);
 		expect(pieceMock.hasBlockWithStatus(BlockStatus.Needed)).andReturn(true);
 
 		replayAll();
@@ -47,12 +49,14 @@ public class MetadataSelectTest extends EasyMockSupport {
 	@Test
 	public void testGetPieceForPeerNothingNeeded() throws Exception {
 		Torrent torrentMock = createNiceMock(Torrent.class);
-		MetadataFileSet metadataMock = createNiceMock(MetadataFileSet.class);
+		Metadata metadataMock = createMock(Metadata.class);
+		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
 		Peer peerMock = createNiceMock(Peer.class);
 		Piece pieceMock = createNiceMock(Piece.class);
 
-		expect(torrentMock.getMetadata()).andReturn(Optional.of(metadataMock));
-		expect(metadataMock.getPiece(0)).andReturn(pieceMock);
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
+		expect(metadataFileSetMock.getPiece(0)).andReturn(pieceMock);
 		expect(pieceMock.hasBlockWithStatus(BlockStatus.Needed)).andReturn(false);
 
 		replayAll();
@@ -68,7 +72,9 @@ public class MetadataSelectTest extends EasyMockSupport {
 	@Test
 	public void testGetPieceForPeerNoMetadata() throws Exception {
 		Torrent torrentMock = createNiceMock(Torrent.class);
-		expect(torrentMock.getMetadata()).andReturn(Optional.empty());
+		Metadata metadataMock = createMock(Metadata.class);
+		expect(torrentMock.getMetadata()).andReturn(metadataMock);
+		expect(metadataMock.getFileSet()).andReturn(Optional.empty());
 
 		Peer peerMock = createNiceMock(Peer.class);
 

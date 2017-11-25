@@ -1,10 +1,12 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
 public class MessageBlock implements IMessage {
@@ -37,26 +39,23 @@ public class MessageBlock implements IMessage {
 		index = inStream.readInt();
 		offset = inStream.readInt();
 		data = inStream.readFully(inStream.available());
-		readDuration = inStream.getReadDuration().orElse(Duration.ofSeconds(1));
+		readDuration = inStream.getReadDuration().orElse(null);
 	}
 
 	@Override
 	public void process(Peer peer) {
-		peer.onReceivedBlock(index, offset);
+		TorrentFileSet torrentFileSet = peer.getTorrent().getFileSet();
+
+		peer.onReceivedBlock(torrentFileSet.getPiece(index), offset);
 		if (data.length <= 0) {
 			peer.addStrike(1);
 			return;
 		}
 
-		peer.getTorrent().onReceivedBlock(peer.getTorrent().getFileSet(), index, offset, data);
+		peer.getTorrent().onReceivedBlock(torrentFileSet, index, offset, data);
+		peer.getTorrent().getRequestLimiter().onReceivedBlock(peer, this);
 
 		peer.addStrike(-1);
-		if (readDuration.minusSeconds(1).isNegative()) { // Set by extreme speed
-			peer.setRequestLimit((int) Math.ceil(1000f / Math.max(1, readDuration.toMillis())));
-		} else if (peer.getRequestLimit() < 5) {
-			// Set by trust
-			peer.setRequestLimit(2 * (peer.getRequestLimit() + 1));
-		}
 	}
 
 	@Override
@@ -74,4 +73,7 @@ public class MessageBlock implements IMessage {
 		return String.format("MessageBlock[index=%d, offset=%d, length=%d]", index, offset, data != null ? data.length : -1);
 	}
 
+	public Optional<Duration> getReadDuration() {
+		return Optional.ofNullable(readDuration);
+	}
 }

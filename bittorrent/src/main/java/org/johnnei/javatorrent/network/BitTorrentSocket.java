@@ -12,6 +12,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
@@ -19,10 +22,7 @@ import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
 import org.johnnei.javatorrent.internal.network.ByteInputStream;
 import org.johnnei.javatorrent.internal.network.ByteOutputStream;
-import org.johnnei.javatorrent.internal.network.socket.ISocket;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.johnnei.javatorrent.network.socket.ISocket;
 
 public class BitTorrentSocket {
 
@@ -169,6 +169,7 @@ public class BitTorrentSocket {
 		int id = stream.readByte();
 		IMessage message = messageFactory.createById(id);
 		message.read(stream);
+
 		LOGGER.trace("Read message: {}", message);
 		return message;
 	}
@@ -221,6 +222,8 @@ public class BitTorrentSocket {
 		if (passedHandshake) {
 			throw new IllegalStateException("Handshake has already been completed.");
 		}
+
+		LOGGER.debug("Writing handshake", socket);
 
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
@@ -406,6 +409,7 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if there is at least one {@link IMessage} waiting to be sent.
 	 */
 	public boolean hasOutboundMessages() {
+		LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
 		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
 	}
 

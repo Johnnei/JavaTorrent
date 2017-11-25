@@ -1,39 +1,36 @@
 package org.johnnei.javatorrent.internal.utp.protocol;
 
 /**
- * The possible connection states of {@link org.johnnei.javatorrent.internal.network.socket.UtpSocketImpl}
+ * The states the connection of a uTP socket can be in.
  */
 public enum ConnectionState {
 
 	/**
-	 * Connecting to other side
+	 * The socket has been created but there has no action been taken to initiate or receive a connection on it.
 	 */
-	CONNECTING(false),
+	PENDING,
 	/**
-	 * Connected to other side
+	 * We sent the initial SYN packet and are awaiting confirmation to establish the connection.
 	 */
-	CONNECTED(false),
+	SYN_SENT,
 	/**
-	 * Closing connection in the official manner
+	 * We received the initial SYN packet from the remote and have sent the confirmation that we want to establish a connection.
 	 */
-	DISCONNECTING(true),
+	SYN_RECEIVED,
 	/**
-	 * Connection got closed (Either normally or by a reset)
+	 * The connection has been established and application data is able to be sent over the line.
 	 */
-	CLOSED(true);
-
-	private final boolean isClosed;
-
-	ConnectionState(boolean isClosed) {
-		this.isClosed = isClosed;
-	}
-
+	CONNECTED,
 	/**
-	 * Returns whether this state is considered closed for data.
-	 * @return <code>true</code> when the state disallows data to be sent, otherwise <code>false</code>.
+	 * We've either received or sent a FIN packet indicating that the connection will be terminated.
 	 */
-	public final boolean isClosedState() {
-		return isClosed;
-	}
-
+	CLOSING,
+	/**
+	 * All application data has passed the line and has been confirmed. The connection is now stale.
+	 */
+	CLOSED,
+	/**
+	 * Connection has been abruptly closed by a {@link org.johnnei.javatorrent.internal.utp.protocol.packet.ResetPayload}
+	 */
+	RESET;
 }

@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -73,16 +74,20 @@ public class DummyEntity {
 				.build();
 	}
 
+	public static Metadata createMetadata() {
+		return new Metadata.Builder().setHash(createUniqueTorrentHash()).build();
+	}
+
 	public static Torrent createUniqueTorrent(Torrent... torrents) {
 		byte[][] hashes = new byte[torrents.length][];
 		for (int i = 0; i < torrents.length; i++) {
-			hashes[i] = torrents[i].getHashArray();
+			hashes[i] = torrents[i].getMetadata().getHash();
 		}
 
 		byte[] hash = createUniqueTorrentHash(hashes);
 
 		return new Torrent.Builder()
-				.setHash(hash)
+				.setMetadata(new Metadata.Builder().setHash(hash).build())
 				.setName("Dummy Torrent")
 				.build();
 	}
@@ -90,13 +95,13 @@ public class DummyEntity {
 	public static Torrent createUniqueTorrent(TorrentClient torrentClient, Torrent... torrents) {
 		byte[][] hashes = new byte[torrents.length][];
 		for (int i = 0; i < torrents.length; i++) {
-			hashes[i] = torrents[i].getHashArray();
+			hashes[i] = torrents[i].getMetadata().getHash();
 		}
 
 		byte[] hash = createUniqueTorrentHash(hashes);
 
 		return new Torrent.Builder()
-				.setHash(hash)
+				.setMetadata(new Metadata.Builder().setHash(hash).build())
 				.setTorrentClient(torrentClient)
 				.setName("Dummy Torrent")
 				.build();

@@ -3,17 +3,13 @@
   <parent>
     <groupId>org.johnnei</groupId>
     <artifactId>javatorrent</artifactId>
-    <version>0.5.2-SNAPSHOT</version>
+    <version>0.6.0</version>
   </parent>
   <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
-  <name>JavaTorrent Module: ut_metadata (BEP #9)</name>
+  <name>JavaTorrent :: Module :: ut_metadata (BEP #9)</name>
   <description>ut_metadata implementation for JavaTorrent</description>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -36,10 +32,17 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.johnnei</groupId>

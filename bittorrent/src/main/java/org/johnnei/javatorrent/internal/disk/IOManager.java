@@ -1,8 +1,12 @@
 package org.johnnei.javatorrent.internal.disk;
 
 import java.util.PriorityQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.johnnei.javatorrent.disk.IDiskJob;
+import org.johnnei.javatorrent.internal.utils.Sync;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,10 +15,16 @@ public class IOManager implements Runnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(IOManager.class);
 
+	private final Lock lock;
+
+	private final Condition newTaskEvent;
+
 	private PriorityQueue<DiskJobWrapper> taskQueue;
 
 	public IOManager() {
 		taskQueue = new PriorityQueue<>();
+		lock = new ReentrantLock();
+		newTaskEvent = lock.newCondition();
 	}
 
 	/**
@@ -26,14 +36,27 @@ public class IOManager implements Runnable {
 		synchronized (this) {
 			taskQueue.add(new DiskJobWrapper(task));
 		}
+		Sync.signalAll(lock, newTaskEvent);
+
 	}
 
-	/**
-	 * Processes all pending tasks.
-	 *
-	 */
-	@Override
-	public void run() {
+	private boolean awaitTask() {
+		while (taskQueue.isEmpty()) {
+			try {
+				lock.lock();
+				newTaskEvent.await();
+			} catch (InterruptedException e) {
+				LOGGER.info("IO Manager was interrupted. Stopping thread.", e);
+				return false;
+			} finally {
+				lock.unlock();
+			}
+		}
+
+		return true;
+	}
+
+	private void processTasks() {
 		while (!taskQueue.isEmpty()) {
 			DiskJobWrapper task;
 			synchronized (this) {
@@ -48,6 +71,19 @@ public class IOManager implements Runnable {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Processes all pending tasks.
+	 *
+	 */
+	@Override
+	public void run() {
+		if (!awaitTask()) {
+			return;
+		}
+
+		processTasks();
 	}
 
 }

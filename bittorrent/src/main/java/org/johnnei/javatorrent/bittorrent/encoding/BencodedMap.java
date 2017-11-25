@@ -1,6 +1,6 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
-import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -8,12 +8,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
+
 /**
  * A bencoded dictionary.
  */
 public class BencodedMap extends AbstractBencodedValue {
 
-	private static final Charset UTF8 = Charset.forName("UTF-8");
+	private static final byte[] ENTRY_START_BYTES = "d".getBytes(BitTorrent.DEFAULT_ENCODING);
 
 	private Map<String, IBencodedValue> map;
 
@@ -57,7 +59,7 @@ public class BencodedMap extends AbstractBencodedValue {
 	}
 
 	@Override
-	public String serialize() {
+	public byte[] serialize() {
 		// For performance reasons we now sort the values.
 		// The used comparator is using a lot of encoding to resolve the bytes values which is expensive to do very often.
 		// And only at this we absolutely need them sorted, so now do so.
@@ -65,13 +67,38 @@ public class BencodedMap extends AbstractBencodedValue {
 		Map<String, IBencodedValue> sortedMap = new TreeMap<>(new RawStringComparator());
 		sortedMap.putAll(map);
 
-		StringBuilder bencoded = new StringBuilder("d");
+		Entry[] entries = new Entry[sortedMap.size()];
+		int entryByteCount = 0;
+
+		int index = 0;
 		for (Map.Entry<String, IBencodedValue> entry : sortedMap.entrySet()) {
-			bencoded.append(new BencodedString(entry.getKey()).serialize());
-			bencoded.append(entry.getValue().serialize());
+			entries[index] = new Entry(new BencodedString(entry.getKey()).serialize(), entry.getValue().serialize());
+			entryByteCount += entries[index].keyBytes.length + entries[index].valueBytes.length;
+			index++;
 		}
-		bencoded.append("e");
-		return bencoded.toString();
+
+		ByteBuffer buffer = ByteBuffer.wrap(new byte[ENTRY_START_BYTES.length + ENTRY_END_BYTES.length + entryByteCount]);
+		buffer.put(ENTRY_START_BYTES);
+		for (Entry entry : entries) {
+			buffer.put(entry.keyBytes);
+			buffer.put(entry.valueBytes);
+		}
+		buffer.put(ENTRY_END_BYTES);
+
+		return buffer.array();
+
+	}
+
+	private static class Entry {
+
+		final byte[] keyBytes;
+
+		final byte[] valueBytes;
+
+		Entry(byte[] keyBytes, byte[] valueBytes) {
+			this.keyBytes = keyBytes;
+			this.valueBytes = valueBytes;
+		}
 	}
 
 	/**
@@ -81,8 +108,8 @@ public class BencodedMap extends AbstractBencodedValue {
 
 		@Override
 		public int compare(String a, String b) {
-			byte[] aBytes = a.getBytes(UTF8);
-			byte[] bBytes = b.getBytes(UTF8);
+			byte[] aBytes = a.getBytes(BitTorrent.DEFAULT_ENCODING);
+			byte[] bBytes = b.getBytes(BitTorrent.DEFAULT_ENCODING);
 
 			int lengthCompare = Integer.compare(aBytes.length, bBytes.length);
 			if (lengthCompare != 0) {

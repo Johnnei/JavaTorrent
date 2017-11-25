@@ -7,12 +7,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageChoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageInterested;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
-import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUnchoke;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageUninterested;
 import org.johnnei.javatorrent.disk.DiskJobReadBlock;
@@ -29,10 +30,18 @@ import org.johnnei.javatorrent.utils.StringUtils;
 
 public class Peer {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(Peer.class);
+	private static final String LOG_OUTSTANDING_BLOCK_REQUESTS = "Outstanding block requests [{}]";
+
 	/**
 	 * The torrent on which this peer is participating.
 	 */
 	private final Torrent torrent;
+
+	/**
+	 * {@link #id} as string.
+	 */
+	private final String idString;
 
 	/**
 	 * The peer id as reported by the peer.
@@ -101,11 +110,12 @@ public class Peer {
 		this.socket = Argument.requireNonNull(builder.socket, "Peer must have a socket.");
 		this.extensionBytes = Argument.requireNonNull(builder.extensionBytes, "Peer extension bytes must be set.");
 		this.id = Argument.requireNonNull(builder.id, "Peer ID must be set.");
+		this.idString = StringUtils.byteArrayToString(id);
 
 		peerClient = new Client();
 		myClient = new Client();
 		extensions = new HashMap<>();
-		clientName = StringUtils.byteArrayToString(id);
+		clientName = idString;
 		absoluteRequestLimit = Integer.MAX_VALUE;
 		if (torrent.getFileSet() != null) {
 			haveState = new Bitfield(torrent.getFileSet().getBitfieldBytes().length);
@@ -178,57 +188,64 @@ public class Peer {
 	 * Adds a download or upload job to the peer. In case of a download request this will also send out a
 	 * {@link MessageBlock} for the given block.
 	 *
-	 * @param pieceIndex The index of the requested piece.
+	 * @param piece The requested piece.
 	 * @param byteOffset The offset in bytes within the piece.
 	 * @param blockLength The amount of bytes requested.
 	 * @param type The direction of the request.
 	 */
-	public void addBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
-		Job job = createJob(pieceIndex, byteOffset, blockLength, type);
+	public void addBlockRequest(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
+		Job job = createJob(piece, byteOffset, blockLength, type);
 		getClientByDirection(type).addJob(job);
 
 		if (type != PeerDirection.Download) {
 			return;
 		}
 
-		socket.enqueueMessage(new MessageRequest(pieceIndex, byteOffset, blockLength));
+		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
+		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(this, piece, byteOffset, blockLength));
 	}
 
 	/**
 	 * Removes the download or upload job from the peer. In case of a download request this will also send out a
 	 * {@link org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel} for the given block.
 	 *
-	 * @param pieceIndex The index of the requested piece.
+	 * @param piece The piece to cancel.
 	 * @param byteOffset The offset in bytes within the piece.
 	 * @param blockLength The amount of bytes requested.
 	 * @param type The direction of the request.
 	 */
-	public void cancelBlockRequest(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
-		Job job = createJob(pieceIndex, byteOffset, blockLength, type);
+	public void cancelBlockRequest(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
+		if (!piece.getFileSet().getRequestFactory().supportsCancellation()) {
+			throw new IllegalArgumentException(String.format("The file set of %s doesn't support cancelling piece requests.", piece));
+		}
+
+		Job job = createJob(piece, byteOffset, blockLength, type);
 		getClientByDirection(type).removeJob(job);
 
 		if (type != PeerDirection.Download) {
 			return;
 		}
 
-		socket.enqueueMessage(new MessageCancel(pieceIndex, byteOffset, blockLength));
+		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createCancelRequestFor(this, piece, byteOffset, blockLength));
+		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 	}
 
 	/**
-	 * Indicates that we've successfully received the requested block from the peer.
-	 * @param pieceIndex The index of the requested piece.
+	 * Indicates that we've received the requested block from the peer.
+	 * @param piece The requested piece.
 	 * @param byteOffset The offset in bytes within the piece.
 	 */
-	public void onReceivedBlock(int pieceIndex, int byteOffset) {
-		int blockLength = torrent.getFileSet().getPiece(pieceIndex).getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
-		getClientByDirection(PeerDirection.Download).removeJob(createJob(pieceIndex, byteOffset, blockLength, PeerDirection.Download));
+	public void onReceivedBlock(Piece piece, int byteOffset) {
+		int blockLength = piece.getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
+		getClientByDirection(PeerDirection.Download).removeJob(createJob(piece, byteOffset, blockLength, PeerDirection.Download));
+		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 	}
 
-	private Job createJob(int pieceIndex, int byteOffset, int blockLength, PeerDirection type) {
+	private Job createJob(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
 		if (type == PeerDirection.Download) {
-			return new Job(pieceIndex, byteOffset / torrent.getFileSet().getBlockSize(), blockLength);
+			return new Job(piece, byteOffset / piece.getFileSet().getBlockSize(), blockLength);
 		} else {
-			return new Job(pieceIndex, byteOffset, blockLength);
+			return new Job(piece, byteOffset, blockLength);
 		}
 	}
 
@@ -246,7 +263,7 @@ public class Peer {
 	 */
 	@Override
 	public String toString() {
-		return String.format("Peer[id=%s]", StringUtils.byteArrayToString(id));
+		return String.format("Peer[id=%s]", idString);
 	}
 
 	/**
@@ -297,7 +314,7 @@ public class Peer {
 	public void discardAllBlockRequests() {
 		synchronized (this) {
 			for (Job job : myClient.getJobs()) {
-				torrent.getFileSet().getPiece(job.getPieceIndex()).setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
+				job.getPiece().setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
 			}
 			myClient.clearJobs();
 		}
@@ -370,6 +387,7 @@ public class Peer {
 		}
 
 		this.requestLimit = Math.min(requestLimit, absoluteRequestLimit);
+		LOGGER.trace("Request limit is now [{}]", this.requestLimit);
 	}
 
 	/**
@@ -524,8 +542,14 @@ public class Peer {
 
 		addToPendingMessages(1);
 
-		Piece piece = torrent.getFileSet().getPiece(request.getPieceIndex());
-		torrent.addDiskJob(new DiskJobReadBlock(piece, request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
+		torrent.addDiskJob(new DiskJobReadBlock(request.getPiece(), request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
+	}
+
+	/**
+	 * @return The ID of the peer in base-12.
+	 */
+	public String getIdAsString() {
+		return idString;
 	}
 
 	private void onReadBlockComplete(DiskJobReadBlock readJob) {

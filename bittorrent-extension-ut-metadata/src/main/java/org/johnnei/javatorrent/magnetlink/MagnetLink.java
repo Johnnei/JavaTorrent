@@ -3,21 +3,28 @@ package org.johnnei.javatorrent.magnetlink;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 
+import org.apache.commons.codec.binary.Base32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MagnetLink {
 
+	private static final Base32 base32 = new Base32(32);
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(MagnetLink.class);
 
-	private static final Pattern BTIH_BASE16_PATTERN = Pattern.compile("urn:btih:([a-zA-Z0-9]{40})");
-	private static final Pattern BTIH_BASE32_PATTERN = Pattern.compile("urn:btih:([a-zA-Z0-9]{32})");
+	private static final PatternToExtractor[] SUPPORTED_BASES = {
+			new PatternToExtractor(Pattern.compile("urn:btih:([a-fA-F0-9]{40})"), MagnetLink::convertBase16Hash),
+			new PatternToExtractor(Pattern.compile("urn:btih:([a-zA-Z0-9]{32})"), base32::decode)
+	};
 
 	/**
 	 * The resulting torrent from this Magnet link
@@ -71,28 +78,25 @@ public class MagnetLink {
 	}
 
 	private void extractHash(String value) {
-		Matcher matcher = BTIH_BASE16_PATTERN.matcher(value);
-		if (matcher.find()) {
-			String hashString = matcher.group(1);
+		for (PatternToExtractor base : SUPPORTED_BASES) {
+			Matcher matcher = base.getBasePattern().matcher(value);
 
-			if (!hasName) {
-				torrentBuilder.setName(hashString);
+			if (matcher.find()) {
+				String hashString = matcher.group(1);
+
+				if (!hasName) {
+					torrentBuilder.setName(hashString);
+				}
+
+				torrentBuilder.setMetadata(new Metadata.Builder().setHash(base.getExtractFunction().apply(hashString.toUpperCase())).build());
+				return;
 			}
-
-			torrentBuilder.setHash(extractBase16Hash(hashString));
-			return;
-		}
-
-		matcher = BTIH_BASE32_PATTERN.matcher(value);
-		if (matcher.find()) {
-			torrentBuilder.setHash(convertBase32Hash(matcher.group(1)));
-			return;
 		}
 
 		throw new IllegalArgumentException("Failed to parse XT entry of magnet link.");
 	}
 
-	private byte[] extractBase16Hash(String hashSection) {
+	private static byte[] convertBase16Hash(String hashSection) {
 		byte[] hash = new byte[20];
 		for (int j = 0; j < hashSection.length() / 2; j++) {
 			hash[j] = (byte) Integer.parseInt(hashSection.substring(j * 2, j * 2 + 2), 16);
@@ -130,10 +134,6 @@ public class MagnetLink {
 		return s.replaceAll("\\+", " ");
 	}
 
-	private byte[] convertBase32Hash(String hashSection) {
-		throw new IllegalArgumentException("Base 32 hashes are not yet supported.");
-	}
-
 	/**
 	 * Gets the torrent which this magnet link produced.
 	 * @return The torrent based on this magnet link.
@@ -169,4 +169,23 @@ public class MagnetLink {
 		return torrentBuilder.canDownload();
 	}
 
+	private static final class PatternToExtractor {
+
+		private final Pattern basePattern;
+
+		private final Function<String, byte[]> extractFunction;
+
+		PatternToExtractor(Pattern basePattern, Function<String, byte[]> extractFunction) {
+			this.basePattern = basePattern;
+			this.extractFunction = extractFunction;
+		}
+
+		Pattern getBasePattern() {
+			return basePattern;
+		}
+
+		Function<String, byte[]> getExtractFunction() {
+			return extractFunction;
+		}
+	}
 }

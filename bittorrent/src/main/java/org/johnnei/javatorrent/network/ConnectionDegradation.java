@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.johnnei.javatorrent.internal.network.socket.ISocket;
+import org.johnnei.javatorrent.network.socket.ISocket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +71,9 @@ public class ConnectionDegradation {
 		return stringBuilder.toString();
 	}
 
+	/**
+	 * A builder pattern styled class to create {@link ConnectionDegradation} instances.
+	 */
 	public static class Builder {
 
 		private Class<? extends ISocket> preferredType;
@@ -79,12 +82,42 @@ public class ConnectionDegradation {
 
 		private Map<Class<? extends ISocket>, Supplier<? extends ISocket>> socketSuppliers;
 
+		/**
+		 * Creates a new builder without configured defaults.
+		 */
 		public Builder() {
 			socketDegradation = new HashMap<>();
 			socketSuppliers = new HashMap<>();
 		}
 
-		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<? extends ISocket>> fallbackType) {
+		/**
+		 * Registers a new supported connection type. This type will be used first to connect with peers. When the connection fails there will be no further
+		 * attempts to connect. This will override any previously configured default
+		 *
+		 * socket types.
+		 * @param socketType The type of the socket.
+		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
+		 * @param <T> The type of the socket
+		 * @return The builder with updated configuration.
+		 *
+		 * @see #registerDefaultConnectionType(Class, Supplier, Class)
+		 */
+		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier) {
+			return registerDefaultConnectionType(socketType, supplier, null);
+		}
+
+		/**
+		 * Registers a new supported connection type. This type will be used first to connect with peers. The given fallback will be the used to connect when
+		 * this type fails to connect to the peer. This will override any previously configured default socket types.
+		 * @param socketType The type of the socket.
+		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
+		 * @param fallbackType The socket type to use when <code>socketType</code> connection fails.
+		 * @param <T> The type of the socket
+		 * @return The builder with updated configuration.
+		 *
+		 * @see #registerConnectionType(Class, Supplier, Class)
+		 */
+		public <T extends ISocket> Builder registerDefaultConnectionType(Class<T> socketType, Supplier<T> supplier, Class<? extends ISocket> fallbackType) {
 			Objects.requireNonNull(socketType, "Socket type can not be null");
 			if (preferredType != null) {
 				LOGGER.warn("Overriding existing default connection type: {}.", preferredType.getSimpleName());
@@ -95,7 +128,33 @@ public class ConnectionDegradation {
 			return this;
 		}
 
-		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier, Optional<Class<? extends ISocket>> fallbackType) {
+		/**
+		 * Registers a new supported connection type. When the connection fails there will be no further attempts to connect.
+		 *
+		 * socket types.
+		 * @param socketType The type of the socket.
+		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
+		 * @param <T> The type of the socket
+		 * @return The builder with updated configuration.
+		 *
+		 * @see #registerDefaultConnectionType(Class, Supplier)
+		 */
+		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier) {
+			return registerConnectionType(socketType, supplier, null);
+		}
+
+		/**
+		 * Registers a new supported connection type. The given fallback will be the used to connect when this type fails to connect to the peer. This will
+		 * override any previously configured default socket types.
+		 * @param socketType The type of the socket.
+		 * @param supplier The {@link Supplier} method which creates new unconnected socket instances
+		 * @param fallbackType The socket type to use when <code>socketType</code> connection fails.
+		 * @param <T> The type of the socket
+		 * @return The builder with updated configuration.
+		 *
+		 * @see #registerDefaultConnectionType(Class, Supplier, Class)
+		 */
+		public <T extends ISocket> Builder registerConnectionType(Class<T> socketType, Supplier<T> supplier, Class<? extends ISocket> fallbackType) {
 			Objects.requireNonNull(socketType, "Socket type can not be null");
 			Objects.requireNonNull(supplier, "Socket supplier can not be null");
 
@@ -104,14 +163,17 @@ public class ConnectionDegradation {
 			return this;
 		}
 
-		private void registerFallback(Class<? extends ISocket> from, Optional<Class<? extends ISocket>> to) {
-			if (!to.isPresent()) {
+		private void registerFallback(Class<? extends ISocket> from, Class<? extends ISocket> to) {
+			if (to == null) {
 				return;
 			}
 
-			socketDegradation.put(from, to.get());
+			socketDegradation.put(from, to);
 		}
 
+		/**
+		 * @return The newly created configured {@link ConnectionDegradation} instance.
+		 */
 		public ConnectionDegradation build() {
 			if (preferredType == null) {
 				throw new IllegalStateException("No preferred connection type has been configured.");

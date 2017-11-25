@@ -335,6 +335,13 @@ public class Piece {
 	}
 
 	/**
+	 * @return The {@link AbstractFileSet} which contains this piece.
+	 */
+	public AbstractFileSet getFileSet() {
+		return files;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 */
 	@Override

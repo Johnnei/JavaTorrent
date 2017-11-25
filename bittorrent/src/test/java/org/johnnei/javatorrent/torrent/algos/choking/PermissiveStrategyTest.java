@@ -2,8 +2,8 @@ package org.johnnei.javatorrent.torrent.algos.choking;
 
 import java.util.stream.Stream;
 
-import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
@@ -25,7 +25,7 @@ public class PermissiveStrategyTest extends EasyMockSupport {
 	@Test
 	public void testUpdateChokingChoke() throws Exception {
 		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
+		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
 		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
@@ -50,7 +50,7 @@ public class PermissiveStrategyTest extends EasyMockSupport {
 	@Test
 	public void testUpdateChokingUnchoke() throws Exception {
 		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
+		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
 		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
@@ -74,7 +74,7 @@ public class PermissiveStrategyTest extends EasyMockSupport {
 	@Test
 	public void testUpdateChokingUpdateInterested() throws Exception {
 		Torrent torrentMock = createMock(Torrent.class);
-		AbstractFileSet filesMock = createMock(AbstractFileSet.class);
+		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
 		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
