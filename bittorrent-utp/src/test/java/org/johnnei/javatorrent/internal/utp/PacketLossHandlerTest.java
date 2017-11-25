@@ -32,7 +32,6 @@ public class PacketLossHandlerTest {
 	private UtpPacket sentPacket2;
 
 	private UtpPacket packet;
-	private UtpPacket packet2;
 
 	@Before
 	public void setUp() {
@@ -44,12 +43,6 @@ public class PacketLossHandlerTest {
 		when(packet.getHeader()).thenReturn(header);
 		when(packet.getPayload()).thenReturn(payload);
 		when(header.getAcknowledgeNumber()).thenReturn((short) 4);
-
-		packet2 = mock(UtpPacket.class);
-		UtpHeader header2 = mock(UtpHeader.class);
-		when(packet2.getHeader()).thenReturn(header2);
-		when(packet2.getPayload()).thenReturn(payload);
-		when(header2.getAcknowledgeNumber()).thenReturn((short) 5);
 
 		sentPacket = mock(UtpPacket.class);
 		UtpHeader header3 = mock(UtpHeader.class);

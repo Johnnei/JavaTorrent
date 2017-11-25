@@ -3,7 +3,6 @@ package org.johnnei.javatorrent.internal.utp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
@@ -48,8 +47,8 @@ public class UtpSocketTest {
 	@Before
 	public void setUp() throws Exception {
 		channel = mock(DatagramChannel.class);
-		when(channel.send(any(ByteBuffer.class), any(SocketAddress.class))).thenAnswer(invocation -> {
-			ByteBuffer buffer = invocation.getArgumentAt(0, ByteBuffer.class);
+		when(channel.send(any(ByteBuffer.class), any())).thenAnswer(invocation -> {
+			ByteBuffer buffer = invocation.getArgument(0);
 			int sent = buffer.remaining();
 			buffer.get(new byte[sent]);
 			return sent;
@@ -75,7 +74,7 @@ public class UtpSocketTest {
 		socket.processSendQueue();
 
 		ArgumentCaptor<ByteBuffer> bufferArgumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
-		verify(channel).send(bufferArgumentCaptor.capture(), any(InetSocketAddress.class));
+		verify(channel).send(bufferArgumentCaptor.capture(), any());
 		ByteBuffer buffer = bufferArgumentCaptor.getValue();
 
 		assertThat("Packet would arrive at wrong socket.", buffer.getShort(2), equalTo((short) 5));
