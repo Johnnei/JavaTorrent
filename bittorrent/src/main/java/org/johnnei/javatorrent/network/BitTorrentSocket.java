@@ -14,7 +14,6 @@ import java.util.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
@@ -171,9 +170,7 @@ public class BitTorrentSocket {
 		IMessage message = messageFactory.createById(id);
 		message.read(stream);
 
-		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", socket.toString())) {
-			LOGGER.trace("Read message: {}", message);
-		}
+		LOGGER.trace("Read message: {}", message);
 		return message;
 	}
 
@@ -198,9 +195,7 @@ public class BitTorrentSocket {
 			return;
 		}
 
-		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", socket.toString())) {
-			LOGGER.trace("Writing message {}", message);
-		}
+		LOGGER.trace("Writing message {}", message);
 
 		OutStream outBuffer = new OutStream(message.getLength() + 4);
 		outBuffer.writeInt(message.getLength());
@@ -228,9 +223,7 @@ public class BitTorrentSocket {
 			throw new IllegalStateException("Handshake has already been completed.");
 		}
 
-		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", socket.toString())) {
-			LOGGER.debug("Writing handshake", socket);
-		}
+		LOGGER.debug("Writing handshake", socket);
 
 		outStream.writeByte(0x13);
 		outStream.writeString("BitTorrent protocol");
@@ -416,6 +409,7 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if there is at least one {@link IMessage} waiting to be sent.
 	 */
 	public boolean hasOutboundMessages() {
+		LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
 		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
 	}
 

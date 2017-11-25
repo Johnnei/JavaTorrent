@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalDouble;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -26,8 +26,8 @@ public class RateBasedLimiter implements IRequestLimiter {
 		messageBlock.getReadDuration().ifPresent(duration -> {
 			RateInfo rateInfo = getRateInfo(peer);
 			rateInfo.addEntry(clock, duration);
-			rateInfo.getAvarage(clock).ifPresent(avg -> {
-				int blocksPerSecond = (int) (Duration.ofSeconds(1).toNanos() / Math.max(1, avg.toNanos()));
+			rateInfo.getAverage(clock).ifPresent(avg -> {
+				int blocksPerSecond = (int) (Duration.ofSeconds(1).toMillis() / Math.max(Double.MIN_NORMAL, avg));
 				// Request blocks for the next three seconds.
 				int diff = (3 * blocksPerSecond) - peer.getRequestLimit();
 				if (diff < 0) {
@@ -57,12 +57,12 @@ public class RateBasedLimiter implements IRequestLimiter {
 		}
 
 		void addEntry(Clock clock, Duration readTime) {
-			readTimes.add(new RateEntry(clock, readTime));
+			readTimes.add(new RateEntry(clock.instant(), readTime));
 		}
 
-		Optional<Duration> getAvarage(Clock clock) {
+		OptionalDouble getAverage(Clock clock) {
 			cleanReadTimes(clock);
-			return readTimes.stream().map(e -> e.readTime).reduce(Duration::plus).map(duration -> duration.dividedBy(readTimes.size()));
+			return readTimes.stream().mapToLong(e -> e.readTime.toMillis()).average();
 		}
 
 		private void cleanReadTimes(Clock clock) {
@@ -78,9 +78,9 @@ public class RateBasedLimiter implements IRequestLimiter {
 
 		private final Duration readTime;
 
-		RateEntry(Clock clock, Duration readTime) {
+		RateEntry(Instant instant, Duration readTime) {
 			this.readTime = readTime;
-			timestamp = clock.instant();
+			this.timestamp = instant;
 		}
 
 	}

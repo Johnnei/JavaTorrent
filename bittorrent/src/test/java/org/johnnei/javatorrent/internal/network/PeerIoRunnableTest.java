@@ -1,8 +1,13 @@
 package org.johnnei.javatorrent.internal.network;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
@@ -11,81 +16,103 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.easymock.EasyMockSupport;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.expectLastCall;
-import static org.easymock.EasyMock.same;
+import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link PeerIoRunnable}
  */
-public class PeerIoRunnableTest extends EasyMockSupport {
+@RunWith(MockitoJUnitRunner.class)
+public class PeerIoRunnableTest {
 
+	@Mock
 	private TorrentManager torrentManager;
 
+	@InjectMocks
 	private PeerIoRunnable cut;
 
-	@Before
-	public void setUp() {
-		torrentManager = createMock(TorrentManager.class);
-		cut = new PeerIoRunnable(torrentManager);
-	}
-
 	@Test
-	public void testRun() throws Exception {
-		Torrent torrent = createMock(Torrent.class);
-		expect(torrentManager.getTorrents()).andReturn(Collections.singletonList(torrent));
+	public void testHandleClosedSocket() throws Exception {
+		Torrent torrent = mock(Torrent.class);
+		when(torrentManager.getTorrents()).thenReturn(Collections.singletonList(torrent));
 
-		// Closed peer
-		Peer peerOne = createMock(Peer.class);
-		BitTorrentSocket socketOne = createMock(BitTorrentSocket.class);
-		expect(peerOne.getBitTorrentSocket()).andReturn(socketOne).atLeastOnce();
-		expect(socketOne.closed()).andReturn(true);
+		Peer peer = mock(Peer.class);
+		BitTorrentSocket socket = mock(BitTorrentSocket.class);
+		when(peer.getBitTorrentSocket()).thenReturn(socket);
+		when(socket.closed()).thenReturn(true);
 
-		// No read, write pending
-		Peer peerTwo = createMock(Peer.class);
-		BitTorrentSocket socketTwo = createMock(BitTorrentSocket.class);
-		expect(peerTwo.getBitTorrentSocket()).andReturn(socketTwo).atLeastOnce();
-		expect(socketTwo.closed()).andReturn(false);
-		expect(socketTwo.hasOutboundMessages()).andReturn(true);
-		socketTwo.sendMessage();
-		expect(socketTwo.canReadMessage()).andReturn(false);
-
-		// Read, queue next
-		Peer peerThree = createMock(Peer.class);
-		BitTorrentSocket socketThree = createMock(BitTorrentSocket.class);
-		IMessage messageMock = createMock(IMessage.class);
-		expect(peerThree.getBitTorrentSocket()).andReturn(socketThree).atLeastOnce();
-		expect(socketThree.closed()).andReturn(false);
-		expect(socketThree.hasOutboundMessages()).andReturn(false);
-		expect(peerThree.getWorkQueueSize(same(PeerDirection.Upload))).andReturn(1);
-		peerThree.queueNextPieceForSending();
-		expect(socketThree.canReadMessage()).andReturn(true);
-		expect(socketThree.readMessage()).andReturn(messageMock);
-		messageMock.process(same(peerThree));
-
-		// IOException
-		Peer peerFour = createMock(Peer.class);
-		BitTorrentSocket socketFour = createMock(BitTorrentSocket.class);
-		expect(peerFour.getBitTorrentSocket()).andReturn(socketFour).atLeastOnce();
-		expect(socketFour.closed()).andReturn(false);
-		expect(socketFour.hasOutboundMessages()).andReturn(true);
-		socketFour.sendMessage();
-		expectLastCall().andThrow(new IOException("IOException stub"));
-		socketFour.close();
-		// Remove peer four so we won't interact with it anymore.
-		expect(peerFour.getTorrent()).andReturn(torrent);
-		torrent.removePeer(peerFour);
-
-		expect(torrent.getPeers()).andReturn(Arrays.asList(peerOne, peerTwo, peerThree, peerFour));
-
-		replayAll();
+		when(torrent.getPeers()).thenReturn(Collections.singletonList(peer));
 
 		cut.run();
 
-		verifyAll();
+		verify(peer).getBitTorrentSocket();
+		verifyNoMoreInteractions(peer);
+	}
+
+	@Test
+	public void testHandleWritePending() throws Exception {
+		Torrent torrent = mock(Torrent.class);
+		when(torrentManager.getTorrents()).thenReturn(Collections.singletonList(torrent));
+
+		Peer peer = mock(Peer.class);
+		BitTorrentSocket socket = mock(BitTorrentSocket.class);
+		when(peer.getBitTorrentSocket()).thenReturn(socket);
+		when(socket.closed()).thenReturn(false);
+		when(socket.hasOutboundMessages()).thenReturn(true);
+		when(socket.canReadMessage()).thenReturn(false);
+
+		when(torrent.getPeers()).thenReturn(Collections.singletonList(peer));
+
+		cut.run();
+
+		verify(socket).sendMessage();
+	}
+
+	@Test
+	public void testQueueNextBlock() throws Exception {
+		Torrent torrent = mock(Torrent.class);
+		when(torrentManager.getTorrents()).thenReturn(Collections.singletonList(torrent));
+
+		Peer peer = mock(Peer.class);
+		BitTorrentSocket socket = mock(BitTorrentSocket.class);
+		IMessage messageMock = mock(IMessage.class);
+		when(peer.getBitTorrentSocket()).thenReturn(socket);
+		when(socket.closed()).thenReturn(false);
+		when(socket.hasOutboundMessages()).thenReturn(false);
+		when(peer.getWorkQueueSize(same(PeerDirection.Upload))).thenReturn(1);
+		when(socket.canReadMessage()).thenReturn(true);
+		when(socket.readMessage()).thenReturn(messageMock);
+
+		when(torrent.getPeers()).thenReturn(Collections.singletonList(peer));
+
+		cut.run();
+
+		verify(peer).queueNextPieceForSending();
+		verify(messageMock).process(same(peer));
+	}
+
+	@Test
+	public void testPeerCauseException() throws Exception {
+		Torrent torrent = mock(Torrent.class);
+		when(torrentManager.getTorrents()).thenReturn(Collections.singletonList(torrent));
+
+		Peer peer = mock(Peer.class);
+		BitTorrentSocket socket = mock(BitTorrentSocket.class);
+		when(peer.getBitTorrentSocket()).thenReturn(socket);
+		when(socket.closed()).thenReturn(false);
+		when(socket.hasOutboundMessages()).thenReturn(true);
+		doThrow(new IOException("IOException stub")).when(socket).sendMessage();
+		when(peer.getTorrent()).thenReturn(torrent);
+
+		when(torrent.getPeers()).thenReturn(Collections.singletonList(peer));
+
+		cut.run();
+
+		verify(torrent).removePeer(same(peer));
+		verify(socket).close();
 	}
 }
