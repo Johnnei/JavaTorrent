@@ -7,19 +7,7 @@
   </parent>
   <artifactId>javatorrent-bittorrent-utp</artifactId>
   <name>JavaTorrent :: Module :: uTP Protocol (BEP #29)</name>
-  <build>
 
-    <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.sonarsource.scanner.maven</groupId>
-        <artifactId>sonar-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.johnnei</groupId>

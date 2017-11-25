@@ -8,18 +8,7 @@
   <artifactId>javatorrent-bittorrent-extension-ut-metadata</artifactId>
   <name>JavaTorrent :: Module :: ut_metadata (BEP #9)</name>
   <description>ut_metadata implementation for JavaTorrent</description>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.sonarsource.scanner.maven</groupId>
-        <artifactId>sonar-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.johnnei</groupId>
@@ -28,11 +17,6 @@
     <dependency>
       <groupId>org.johnnei</groupId>
       <artifactId>javatorrent-bittorrent</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>

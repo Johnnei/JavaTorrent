@@ -8,18 +8,7 @@
   <artifactId>javatorrent-bittorrent-extension</artifactId>
   <name>JavaTorrent :: Module :: Extension Protocol (BEP #10)</name>
   <description>Implementation of the Extension Protocol for JavaTorrent</description>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.sonarsource.scanner.maven</groupId>
-        <artifactId>sonar-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.johnnei</groupId>
@@ -28,11 +17,6 @@
     <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
