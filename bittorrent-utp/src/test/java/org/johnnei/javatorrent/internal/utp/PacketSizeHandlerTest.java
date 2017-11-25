@@ -45,8 +45,6 @@ public class PacketSizeHandlerTest {
 
 	@Test
 	public void testIgnoreDuplicateAck() {
-		when(windowHandler.getMaxWindow()).thenReturn(3000);
-
 		cut.onReceivedPacket(receivedPacket);
 
 		assertThat(cut.getPacketSize(), is(150));
