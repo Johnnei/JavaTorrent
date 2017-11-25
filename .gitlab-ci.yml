@@ -4,6 +4,8 @@ stages:
     - qa
     - deploy
 
+image: maven:3.5.2-jdk-8
+
 variables:
   MAVEN_OPTS: -Dmaven.repo.local=/cache/.repository
 
@@ -50,14 +52,32 @@ sonarqube.johnnei.org:
       - quicktests
       - integration-tests
 
+test deployment:
+    stage: test
+    script: "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
+    tags: ["deploy"]
+    dependencies: []
+    variables:
+      MAVEN_OPTS: ""
+    artifacts:
+      expire_in: 1 week
+      paths:
+      - "**/target/*.jar"
+      - "**/target/*.jar.asc"
+    only: ["/^release\\/.*$/"]
+
 deploy to maven central:
     stage: deploy
     script: "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
     environment: MavenCentral
+    dependencies: []
+    variables:
+      MAVEN_OPTS: ""
     artifacts:
       paths:
       - "**/target/*.jar"
       - "**/target/*.jar.asc"
     when: manual
+    tags: ["deploy"]
     only:
       - tags
