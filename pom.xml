@@ -78,12 +78,14 @@
     <dependency.org.powermock.powermock-reflect.version>1.6.5</dependency.org.powermock.powermock-reflect.version>
     <dependency.org.slf4j.slf4j-api>1.7.21</dependency.org.slf4j.slf4j-api>
   </properties>
+
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
   </distributionManagement>
+
   <build>
     <plugins>
       <plugin>
@@ -197,6 +199,7 @@
               </execution>
             </executions>
             <configuration>
+              <excludePackageNames>org.johnnei.javatorrent.internal.*</excludePackageNames>
               <tags>
                 <!-- Introduced in Java 8, but not officially promoted for outside JDK use. But I like them! -->
                 <tag>
