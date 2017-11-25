@@ -1,5 +1,6 @@
 # Unreleased
 
+# 0.6.0
 ## Added
 - [JBT-19](https://jira.johnnei.org/browse/JBT-19): Support for HTTP(s) trackers with the `HttpTrackerModule`.
 - [JBT-8](https://jira.johnnei.org/browse/JBT-8): Support for base-32 magnet links.

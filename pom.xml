@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.johnnei</groupId>
   <artifactId>javatorrent</artifactId>
-  <version>0.5.2-SNAPSHOT</version>
+  <version>0.6.0</version>
   <packaging>pom</packaging>
   <name>JavaTorrent</name>
   <description>BitTorrent Protocol implementation as java library</description>
