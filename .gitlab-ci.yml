@@ -53,9 +53,12 @@ sonarqube.johnnei.org:
       - integration-tests
 
 test deployment:
-    stage: qa
+    stage: test
     script: "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
     tags: ["deploy"]
+    dependencies: []
+    variables:
+      MAVEN_OPTS: ""
     artifacts:
       expire_in: 1 week
       paths:
@@ -67,6 +70,9 @@ deploy to maven central:
     stage: deploy
     script: "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
     environment: MavenCentral
+    dependencies: []
+    variables:
+      MAVEN_OPTS: ""
     artifacts:
       paths:
       - "**/target/*.jar"
