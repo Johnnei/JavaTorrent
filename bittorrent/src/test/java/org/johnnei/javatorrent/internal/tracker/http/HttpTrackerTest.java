@@ -2,6 +2,8 @@ package org.johnnei.javatorrent.internal.tracker.http;
 
 import java.io.IOException;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
@@ -10,13 +12,12 @@ import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 
-import org.junit.Test;
-
 import static org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent.EVENT_NONE;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.when;
  */
 public class HttpTrackerTest {
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testScrape() {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 
@@ -36,7 +37,7 @@ public class HttpTrackerTest {
 				.setUrl("http://tracker.localhost:8989/announce")
 				.build();
 
-		cut.scrape();
+		assertThrows(UnsupportedOperationException.class, cut::scrape);
 	}
 
 	@Test
@@ -63,16 +64,16 @@ public class HttpTrackerTest {
 				.setUrl("http://tracker.localhost:8989/announce")
 				.build();
 
-		assertFalse("Torrent one should not be available yet.", cut.hasTorrent(torrentOne));
-		assertFalse("Torrent two should not be available yet.", cut.hasTorrent(torrentTwo));
+		assertFalse(cut.hasTorrent(torrentOne), "Torrent one should not be available yet.");
+		assertFalse(cut.hasTorrent(torrentTwo), "Torrent two should not be available yet.");
 		cut.addTorrent(torrentOne);
-		assertTrue("Torrent one should be available.", cut.hasTorrent(torrentOne));
+		assertTrue(cut.hasTorrent(torrentOne), "Torrent one should be available.");
 		assertPresent("Torrent one info should have been created.", cut.getInfo(torrentOne));
-		assertFalse("Torrent two should not be available yet.", cut.hasTorrent(torrentTwo));
+		assertFalse(cut.hasTorrent(torrentTwo), "Torrent two should not be available yet.");
 		cut.addTorrent(torrentTwo);
-		assertTrue("Torrent one should be available.", cut.hasTorrent(torrentOne));
+		assertTrue(cut.hasTorrent(torrentOne), "Torrent one should be available.");
 		assertPresent("Torrent two info should have been created.", cut.getInfo(torrentTwo));
-		assertTrue("Torrent two should be available.", cut.hasTorrent(torrentTwo));
+		assertTrue(cut.hasTorrent(torrentTwo), "Torrent two should be available.");
 	}
 
 	@Test
@@ -86,7 +87,7 @@ public class HttpTrackerTest {
 				.build();
 
 		cut.addTorrent(torrent);
-		assertTrue("Torrent should not be available yet.", cut.hasTorrent(torrent));
+		assertTrue(cut.hasTorrent(torrent), "Torrent should not be available yet.");
 		assertPresent("Torrent one info should have been created.", cut.getInfo(torrent));
 
 		TorrentInfo info = cut.getInfo(torrent).get();
@@ -95,7 +96,7 @@ public class HttpTrackerTest {
 		cut.addTorrent(torrent);
 
 		info = cut.getInfo(torrent).get();
-		assertEquals("Torrent state should not have been reset.", EVENT_NONE, info.getEvent());
+		assertEquals(EVENT_NONE, info.getEvent(), "Torrent state should not have been reset.");
 	}
 
 	@Test
@@ -134,6 +135,6 @@ public class HttpTrackerTest {
 		cut.addTorrent(torrent);
 		cut.announce(torrent);
 
-		assertEquals("Incorrect tracker status after announce error", "Announce failed", cut.getStatus());
+		assertEquals("Announce failed", cut.getStatus(), "Incorrect tracker status after announce error");
 	}
 }

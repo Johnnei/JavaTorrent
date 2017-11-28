@@ -8,24 +8,24 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
 import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
+import org.johnnei.javatorrent.network.socket.TcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseMetadata;
 import org.johnnei.javatorrent.phases.PhasePreMetadata;
@@ -38,13 +38,17 @@ import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 import org.johnnei.javatorrent.utils.StringUtils;
+import org.johnnei.junit.jupiter.Folder;
+import org.johnnei.junit.jupiter.TempFolderExtension;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the integration between all ut_metadata components by downloading a torrent metadata file.
  */
+@ExtendWith(TempFolderExtension.class)
 public class DownloadMetadataIT {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DownloadMetadataIT.class);
@@ -60,12 +64,6 @@ public class DownloadMetadataIT {
 
 	private static final String METADATA_LINK = "magnet:?dn=GIMP+2.8.16-setup-1.exe&xt=urn:btih:c8369f0ba4bf6cd87fb13b3437782e2c7820bb38";
 
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-	@Rule
-	public Timeout timeout = new Timeout(1, TimeUnit.MINUTES);
-
 	private void copy(File from, File to) throws IOException {
 		Path pathFrom = from.toPath();
 		Path pathTo = to.toPath();
@@ -77,7 +75,7 @@ public class DownloadMetadataIT {
 	}
 
 	@Test
-	public void downloadMetadata() throws Exception {
+	public void downloadMetadata(@Folder Path tmp) throws Exception {
 		LOGGER.info("Verifying expected torrent files to exist.");
 		File torrentFile = new File(DownloadMetadataIT.class.getResource(SINGLE_FILE_TORRENT).toURI());
 
@@ -85,8 +83,11 @@ public class DownloadMetadataIT {
 
 		LOGGER.info("Setting up test environment.");
 		copy(torrentFile, new File(torrentFile.getParentFile(), StringUtils.byteArrayToString(TORRENT_FILE_HASH).toLowerCase() + ".torrent"));
-		File downloadFolderOne = temporaryFolder.newFolder();
-		File downloadFolderTwo = temporaryFolder.newFolder();
+		File downloadFolderOne = tmp.resolve("client-one").toFile();
+		File downloadFolderTwo = tmp.resolve("client-two").toFile();
+
+		assertTrue(downloadFolderOne.mkdirs());
+		assertTrue(downloadFolderTwo.mkdirs());
 
 		LOGGER.info("Preparing torrent client to download with magnetlink.");
 		CountDownLatch linkCompleteLatch = new CountDownLatch(1);
@@ -122,19 +123,21 @@ public class DownloadMetadataIT {
 		clientWithLink.download(torrentFromLink);
 
 		LOGGER.info("Waiting for client with torrent metadata to initialize the metadata structures.");
-		assertTrue("Torrent failed to initialize metadata structure.", metadataInitalizedLatch.await(5, TimeUnit.SECONDS));
+		assertTrue(metadataInitalizedLatch.await(5, TimeUnit.SECONDS), "Torrent failed to initialize metadata structure.");
 
 		LOGGER.info("Adding peer connect request to client.");
 		clientWithTorrent.getPeerConnector().enqueuePeer(
 				new PeerConnectInfo(torrentFromFile, new InetSocketAddress("localhost", clientWithLink.getDownloadPort())));
 
-		do {
-			linkCompleteLatch.await(1, TimeUnit.SECONDS);
-			torrentFromFile.pollRates();
-			torrentFromLink.pollRates();
-			LOGGER.debug("[MAGNET ] Download: {}kb/s, Upload: {}kb/s", torrentFromLink.getDownloadRate() / 1024, torrentFromLink.getUploadRate() / 1024);
-			LOGGER.debug("[TORRENT] Download: {}kb/s, Upload: {}kb/s", torrentFromFile.getDownloadRate() / 1024, torrentFromFile.getUploadRate() / 1024);
-		} while (linkCompleteLatch.getCount() > 0);
+		assertTimeoutPreemptively(Duration.of(1, ChronoUnit.MINUTES), () -> {
+				do {
+					linkCompleteLatch.await(1, TimeUnit.SECONDS);
+					torrentFromFile.pollRates();
+					torrentFromLink.pollRates();
+					LOGGER.debug("[MAGNET ] Download: {}kb/s, Upload: {}kb/s", torrentFromLink.getDownloadRate() / 1024, torrentFromLink.getUploadRate() / 1024);
+					LOGGER.debug("[TORRENT] Download: {}kb/s, Upload: {}kb/s", torrentFromFile.getDownloadRate() / 1024, torrentFromFile.getUploadRate() / 1024);
+				} while (linkCompleteLatch.getCount() > 0);
+			});
 
 		clientWithLink.shutdown();
 		clientWithTorrent.shutdown();
@@ -171,7 +174,7 @@ public class DownloadMetadataIT {
 			inputStream.readFully(bytes);
 		}
 
-		assertArrayEquals("The torrent file used to setup the test has a mismatching hash.", TORRENT_FILE_HASH, SHA1.hash(bytes));
+		assertArrayEquals(TORRENT_FILE_HASH, SHA1.hash(bytes), "The torrent file used to setup the test has a mismatching hash.");
 	}
 
 	private static class PhaseDataCountDown extends PhaseData {

@@ -7,10 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
@@ -37,14 +35,11 @@ import static org.mockito.Mockito.when;
 
 public class UtpSocketTest {
 
-	@Rule
-	public Timeout timeout = Timeout.seconds(30);
-
 	private Exception threadException;
 
 	private DatagramChannel channel;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		channel = mock(DatagramChannel.class);
 		when(channel.send(any(ByteBuffer.class), any())).thenAnswer(invocation -> {

@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -8,11 +10,9 @@ import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,11 +32,11 @@ public class MessageBlockTest {
 	public void testStaticMethods() {
 		MessageBlock cut = new MessageBlock();
 
-		assertEquals("Incorrect message ID", 7 ,cut.getId());
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageBlock["));
+		assertEquals(7 ,cut.getId(), "Incorrect message ID");
+		assertTrue(cut.toString().startsWith("MessageBlock["), "Incorrect toString start.");
 
 		cut = new MessageBlock(1, 2, new byte[] {});
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageBlock["));
+		assertTrue(cut.toString().startsWith("MessageBlock["), "Incorrect toString start.");
 	}
 
 	private void prepareTest() {
@@ -114,8 +114,8 @@ public class MessageBlockTest {
 		OutStream outStream = new OutStream();
 		cut.write(outStream);
 
-		assertEquals("Incorrect message length", 12 ,cut.getLength());
-		assertArrayEquals("Incorrect output", expectedOutput, outStream.toByteArray());
+		assertEquals(12 ,cut.getLength(), "Incorrect message length");
+		assertArrayEquals(expectedOutput, outStream.toByteArray(), "Incorrect output");
 	}
 
 }

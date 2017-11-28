@@ -2,26 +2,24 @@ package org.johnnei.javatorrent.tracker;
 
 import java.util.Arrays;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.powermock.reflect.Whitebox;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.torrent.Torrent;
 
-import org.easymock.EasyMock;
-import org.easymock.EasyMockSupport;
-import org.junit.Before;
-import org.junit.Test;
-import org.powermock.reflect.Whitebox;
-
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.same;
-import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link PeerConnectorPool}
  */
-public class PeerConnectorPoolTest extends EasyMockSupport {
+public class PeerConnectorPoolTest {
 
 	private IPeerConnector peerConnectorMockOne;
 
@@ -30,83 +28,63 @@ public class PeerConnectorPoolTest extends EasyMockSupport {
 
 	private PeerConnectorPool cut;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
-		peerConnectorMockOne = createMock(IPeerConnector.class);
-		peerConnectorMockTwo = createMock(IPeerConnector.class);
+		peerConnectorMockOne = mock(IPeerConnector.class);
+		peerConnectorMockTwo = mock(IPeerConnector.class);
 
-		// Because the torrent client is irrelevant to the test this mock is being managed within the setup method.
-		TorrentClient torrentClientMock = EasyMock.createMock(TorrentClient.class);
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
 
-		replay(torrentClientMock);
 		cut = new PeerConnectorPool(torrentClientMock, 2);
-		verify(torrentClientMock);
 		Whitebox.setInternalState(cut, "connectors", Arrays.asList(peerConnectorMockOne, peerConnectorMockTwo));
 	}
 
 	@Test
 	public void testStart() throws Exception {
-		peerConnectorMockOne.start();
-		peerConnectorMockTwo.start();
-		replayAll();
-
 		cut.start();
 
-		verifyAll();
+		verify(peerConnectorMockOne).start();
+		verify(peerConnectorMockTwo).start();
 	}
 
 	@Test
 	public void testStop() throws Exception {
-		peerConnectorMockOne.stop();
-		peerConnectorMockTwo.stop();
-		replayAll();
-
 		cut.stop();
 
-		verifyAll();
+		verify(peerConnectorMockOne).stop();
+		verify(peerConnectorMockTwo).stop();
 	}
 
 	@Test
 	public void testEnqueuePeer() throws Exception {
-		expect(peerConnectorMockOne.getConnectingCount()).andStubReturn(3);
-		expect(peerConnectorMockTwo.getConnectingCount()).andStubReturn(2);
+		when(peerConnectorMockOne.getConnectingCount()).thenReturn(3);
+		when(peerConnectorMockTwo.getConnectingCount()).thenReturn(2);
 
-		PeerConnectInfo peerConnectInfoMock = createMock(PeerConnectInfo.class);
-
-		peerConnectorMockTwo.enqueuePeer(same(peerConnectInfoMock));
-
-		replayAll();
+		PeerConnectInfo peerConnectInfoMock = mock(PeerConnectInfo.class);
 
 		cut.enqueuePeer(peerConnectInfoMock);
 
-		verifyAll();
+		verify(peerConnectorMockTwo).enqueuePeer(same(peerConnectInfoMock));
 	}
 
 	@Test
 	public void testGetConnectingCountFor() throws Exception {
-		Torrent torrentMock = createMock(Torrent.class);
-		expect(peerConnectorMockOne.getConnectingCountFor(same(torrentMock))).andReturn(3);
-		expect(peerConnectorMockTwo.getConnectingCountFor(same(torrentMock))).andReturn(2);
-
-		replayAll();
+		Torrent torrentMock = mock(Torrent.class);
+		when(peerConnectorMockOne.getConnectingCountFor(same(torrentMock))).thenReturn(3);
+		when(peerConnectorMockTwo.getConnectingCountFor(same(torrentMock))).thenReturn(2);
 
 		int result = cut.getConnectingCountFor(torrentMock);
 
-		verifyAll();
-
-		assertEquals("Incorrect connecting count returned", 5, result);
+		assertEquals(5, result, "Incorrect connecting count returned");
 	}
 
 	@Test
 	public void testGetConnectingCount() throws Exception {
-		expect(peerConnectorMockOne.getConnectingCount()).andReturn(10);
-		expect(peerConnectorMockTwo.getConnectingCount()).andReturn(5);
-		replayAll();
+		when(peerConnectorMockOne.getConnectingCount()).thenReturn(10);
+		when(peerConnectorMockTwo.getConnectingCount()).thenReturn(5);
 
 		int result = cut.getConnectingCount();
 
-		verifyAll();
-
-		assertEquals("Incorrect sum of connecting peers", 15, result);
+		assertEquals(15, result, "Incorrect sum of connecting peers");
 	}
 }

@@ -5,16 +5,18 @@ import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.test.StubEntity;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link DiskJobReadBlock}
@@ -29,7 +31,7 @@ public class DiskJobReadBlockTest {
 		testFile = new File(DiskJobReadBlockTest.class.getResource("readblock.txt").toURI());
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		countDownLatch = new CountDownLatch(1);
 	}
@@ -42,11 +44,13 @@ public class DiskJobReadBlockTest {
 		DiskJobReadBlock cut = new DiskJobReadBlock(piece, 0, 18, x -> countDownLatch.countDown());
 		cut.process();
 
-		assertTrue("Callback method wasn't called", countDownLatch.await(5, TimeUnit.SECONDS));
-		assertEquals("Incorrect message read", "Hello world block!", new String(cut.getBlockData(), Charset.forName("UTF-8")));
-		assertEquals("Incorrect piece", piece, cut.getPiece());
-		assertEquals("Incorrect offset", 0, cut.getOffset());
-		assertEquals("Incorrect priority", 10, cut.getPriority());
+		assertTrue(countDownLatch.await(5, TimeUnit.SECONDS), "Callback method wasn't called");
+		assertAll(
+			() -> assertEquals("Hello world block!", new String(cut.getBlockData(), Charset.forName("UTF-8")), "Incorrect message read"),
+			() -> assertEquals(piece, cut.getPiece(), "Incorrect piece"),
+			() -> assertEquals(0, cut.getOffset(), "Incorrect offset"),
+			() -> assertEquals(10, cut.getPriority(), "Incorrect priority")
+		);
 	}
 
 }

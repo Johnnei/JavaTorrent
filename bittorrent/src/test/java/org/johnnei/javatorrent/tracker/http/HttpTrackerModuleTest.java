@@ -1,13 +1,15 @@
 package org.johnnei.javatorrent.tracker.http;
 
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,17 +30,17 @@ public class HttpTrackerModuleTest {
 
 		verify(torrentClientBuilderMock).registerTrackerProtocol(eq("http"), supplier.capture());
 
-		assertNotNull("Supplier is not allowed to return null values", supplier.getValue().apply("http://localhost.nl", mock(TorrentClient.class)));
+		assertNotNull(supplier.getValue().apply("http://localhost.nl", mock(TorrentClient.class)), "Supplier is not allowed to return null values");
 	}
 
 	@Test
 	public void testGetRelatedBep() {
-		assertEquals("HTTP Trackers are defined by BEP 3", 3, new HttpTrackerModule().getRelatedBep());
+		assertEquals(3, new HttpTrackerModule().getRelatedBep(), "HTTP Trackers are defined by BEP 3");
 	}
 
 	@Test
 	public void testGetDependsOn() {
-		assertEquals("No dependencies were expected", 0, new HttpTrackerModule().getDependsOn().size());
+		assertThat("No dependencies were expected", new HttpTrackerModule().getDependsOn(), empty());
 	}
 
 	@Test

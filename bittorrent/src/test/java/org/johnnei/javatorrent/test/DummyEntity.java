@@ -13,7 +13,7 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMock;
+import static org.mockito.Mockito.mock;
 
 public class DummyEntity {
 
@@ -55,9 +55,7 @@ public class DummyEntity {
 	}
 
 	public static Peer createPeer() {
-		BitTorrentSocket socketMock = EasyMock.createMock(BitTorrentSocket.class);
-		EasyMock.replay(socketMock);
-
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 		return createPeer(socketMock);
 	}
 

@@ -2,6 +2,7 @@ package org.johnnei.javatorrent.phases;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,6 +10,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.powermock.reflect.Whitebox;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
@@ -26,20 +31,14 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
-import org.hamcrest.core.IsCollectionContaining;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
-import org.powermock.reflect.Whitebox;
+import org.johnnei.junit.jupiter.Folder;
+import org.johnnei.junit.jupiter.TempFolderExtension;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -50,13 +49,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(TempFolderExtension.class)
 public class PhaseDataTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Test
 	public void testGetRelevantPeers() {
@@ -121,13 +115,13 @@ public class PhaseDataTest {
 	}
 
 	@Test
-	public void testOnPhaseEnter() throws IOException {
+	public void testOnPhaseEnter(@Folder Path temporaryFolder) throws IOException {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		Torrent torrentMock = mock(Torrent.class);
 		TorrentFileSet torrentFileSetMock = mock(TorrentFileSet.class);
 
 		when(torrentMock.getFileSet()).thenReturn(torrentFileSetMock);
-		when(torrentFileSetMock.getDownloadFolder()).thenReturn(temporaryFolder.newFolder());
+		when(torrentFileSetMock.getDownloadFolder()).thenReturn(temporaryFolder.toFile());
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
@@ -137,8 +131,8 @@ public class PhaseDataTest {
 	}
 
 	@Test
-	public void testOnPhaseEnterCreateFolder() throws IOException {
-		File file = new File(temporaryFolder.getRoot(), "myFolder");
+	public void testOnPhaseEnterCreateFolder(@Folder Path temporaryFolder) throws IOException {
+		File file = temporaryFolder.resolve("myFolder").toFile();
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		Torrent torrentMock = mock(Torrent.class);
@@ -152,14 +146,11 @@ public class PhaseDataTest {
 
 		verify(torrentMock).checkProgress();
 		verify(torrentMock).setPieceSelector(isA(FullPieceSelect.class));
-		assertTrue("Download folder should have been created.", file.exists());
+		assertTrue(file.exists(), "Download folder should have been created.");
 	}
 
 	@Test
 	public void testOnPhaseEnterCreateFolderFailure() throws IOException {
-		thrown.expect(TorrentException.class);
-		thrown.expectMessage("download folder");
-
 		File fileMock = mock(File.class);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
@@ -173,7 +164,8 @@ public class PhaseDataTest {
 		when(fileMock.mkdirs()).thenReturn(false);
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
-		cut.onPhaseEnter();
+		Exception e = assertThrows(TorrentException.class, cut::onPhaseEnter);
+		assertThat(e.getMessage(), containsString("download folder"));
 
 		verify(torrentMock).checkProgress();
 		verify(torrentMock).setPieceSelector(isA(FullPieceSelect.class));
@@ -190,9 +182,7 @@ public class PhaseDataTest {
 
 		PhaseData cut = new PhaseData(torrentClientMock, torrentMock);
 
-		boolean result = cut.isDone();
-
-		assertTrue("File set should have returned done, so the phase should have been done", result);
+		assertTrue(cut.isDone(), "File set should have returned done, so the phase should have been done");
 	}
 
 	@Test

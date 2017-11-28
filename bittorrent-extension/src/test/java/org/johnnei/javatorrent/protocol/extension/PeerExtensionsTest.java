@@ -1,39 +1,40 @@
 package org.johnnei.javatorrent.protocol.extension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PeerExtensionsTest {
 
-	@Test(expected=NoSuchElementException.class)
+	@Test
 	public void testGetExtensionIdMissing() {
 		PeerExtensions cut = new PeerExtensions();
-		cut.getExtensionId("jt_stub");
+		assertThrows(NoSuchElementException.class, () -> cut.getExtensionId("jt_stub"));
 	}
 
 	@Test
 	public void testGetExtensionId() {
 		PeerExtensions cut = new PeerExtensions();
 
-		assertFalse("Got extension before registered.", cut.hasExtension("jt_stub"));
+		assertFalse(cut.hasExtension("jt_stub"), "Got extension before registered.");
 
 		cut.registerExtension(1, "jt_stub");
 
-		assertTrue("Doesn't got extension after registered.", cut.hasExtension("jt_stub"));
-		assertEquals("Incorrect ID returned", 1, cut.getExtensionId("jt_stub"));
+		assertTrue(cut.hasExtension("jt_stub"), "Doesn't got extension after registered.");
+		assertEquals(1, cut.getExtensionId("jt_stub"), "Incorrect ID returned");
 
 	}
 
-	@Test(expected=IllegalStateException.class)
+	@Test
 	public void testRegisterExtensionDuplicate() {
 		PeerExtensions cut = new PeerExtensions();
 		cut.registerExtension(1, "jt_stub");
-		cut.registerExtension(1, "jt_stub");
+		assertThrows(IllegalStateException.class, () -> cut.registerExtension(1, "jt_stub"));
 	}
 
 }

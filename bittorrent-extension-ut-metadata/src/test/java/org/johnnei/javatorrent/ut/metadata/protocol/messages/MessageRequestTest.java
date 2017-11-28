@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.disk.DiskJobReadBlock;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
@@ -17,23 +19,18 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.Capture;
-import org.easymock.EasyMock;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-
-import static org.easymock.EasyMock.and;
-import static org.easymock.EasyMock.capture;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.isA;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link MessageRequest}
  */
-public class MessageRequestTest extends EasyMockSupport {
+public class MessageRequestTest {
 
 	private MessageRequest cut;
 	private Peer peerMock;
@@ -52,8 +49,8 @@ public class MessageRequestTest extends EasyMockSupport {
 		byte[] result = outStream.toByteArray();
 		String expectedOutput = "d5:piecei5e8:msg_typei0ee";
 
-		assertEquals("Incorrect length", expectedOutput.getBytes(Charset.forName("UTF-8")).length, cut.getLength());
-		assertEquals("Incorrect output", expectedOutput, new String(result, Charset.forName("UTF-8")));
+		assertEquals(expectedOutput.getBytes(Charset.forName("UTF-8")).length, cut.getLength(), "Incorrect length");
+		assertEquals(expectedOutput, new String(result, Charset.forName("UTF-8")), "Incorrect output");
 	}
 
 	private void prepareSuccessfulRead() {
@@ -62,99 +59,85 @@ public class MessageRequestTest extends EasyMockSupport {
 		final String input = "d8:msg_typei0e5:piecei5ee";
 		inStream = new InStream(input.getBytes(Charset.forName("UTF-8")));
 
-		peerMock = createNiceMock(Peer.class);
-		torrentMock = createNiceMock(Torrent.class);
-		pieceMock = createNiceMock(Piece.class);
-		Metadata metadataMock = createMock(Metadata.class);
-		metadataFileSetMock = createNiceMock(MetadataFileSet.class);
+		peerMock = mock(Peer.class);
+		torrentMock = mock(Torrent.class);
+		pieceMock = mock(Piece.class);
+		Metadata metadataMock = mock(Metadata.class);
+		metadataFileSetMock = mock(MetadataFileSet.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
-		expect(metadataFileSetMock.getPiece(0)).andReturn(pieceMock);
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getFileSet()).thenReturn(Optional.of(metadataFileSetMock));
+		when(metadataFileSetMock.getPiece(0)).thenReturn(pieceMock);
 	}
 
 	@Test
 	public void testReadAndProcess() {
 		prepareSuccessfulRead();
 
-		replayAll();
-
 		cut.read(inStream);
 		cut.process(peerMock);
-
-		verifyAll();
 	}
 
 	@Test
 	public void testOnReadMetadataBlockCompleted() throws IOException {
 		prepareSuccessfulRead();
-		PeerExtensions extensionsMock = createNiceMock(PeerExtensions.class);
-		BitTorrentSocket socketMock = createNiceMock(BitTorrentSocket.class);
+		PeerExtensions extensionsMock = mock(PeerExtensions.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 
-		Capture<IDiskJob> diskJobCapture = EasyMock.newCapture();
-		torrentMock.addDiskJob(and(isA(DiskJobReadBlock.class), capture(diskJobCapture)));
+		ArgumentCaptor<IDiskJob> diskJobCapture = ArgumentCaptor.forClass(IDiskJob.class);
 
-		expect(peerMock.getModuleInfo(PeerExtensions.class)).andReturn(Optional.of(extensionsMock));
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		expect(extensionsMock.hasExtension(eq("ut_metadata"))).andReturn(true);
-		expect(extensionsMock.getExtensionId(eq("ut_metadata"))).andReturn(3);
-		socketMock.enqueueMessage(isA(MessageExtension.class));
-
-		replayAll();
+		when(peerMock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionsMock));
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
+		when(extensionsMock.hasExtension(eq("ut_metadata"))).thenReturn(true);
+		when(extensionsMock.getExtensionId(eq("ut_metadata"))).thenReturn(3);
 
 		cut.read(inStream);
 		cut.process(peerMock);
 
+		verify(torrentMock).addDiskJob(diskJobCapture.capture());
 		diskJobCapture.getValue().process();
 
-		verifyAll();
+		verify(socketMock).enqueueMessage(isA(MessageExtension.class));
 	}
 
 	@Test
 	public void testOnReadMetadataBlockCompletedMissingExtensions() throws IOException {
 		prepareSuccessfulRead();
-		BitTorrentSocket socketMock = createNiceMock(BitTorrentSocket.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 
-		Capture<IDiskJob> diskJobCapture = EasyMock.newCapture();
-		torrentMock.addDiskJob(and(isA(DiskJobReadBlock.class), capture(diskJobCapture)));
+		ArgumentCaptor<IDiskJob> diskJobCapture = ArgumentCaptor.forClass(IDiskJob.class);
 
-		expect(peerMock.getModuleInfo(PeerExtensions.class)).andReturn(Optional.empty());
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		socketMock.close();
-
-		replayAll();
+		when(peerMock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.empty());
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
 
 		cut.read(inStream);
 		cut.process(peerMock);
 
+		verify(torrentMock).addDiskJob(diskJobCapture.capture());
 		diskJobCapture.getValue().process();
-
-		verifyAll();
+		verify(socketMock).close();
 	}
 
 	@Test
 	public void testOnReadMetadataBlockCompletedMissingUtMetadata() throws IOException {
 		prepareSuccessfulRead();
-		PeerExtensions extensionsMock = createNiceMock(PeerExtensions.class);
-		BitTorrentSocket socketMock = createNiceMock(BitTorrentSocket.class);
+		PeerExtensions extensionsMock = mock(PeerExtensions.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 
-		Capture<IDiskJob> diskJobCapture = EasyMock.newCapture();
-		torrentMock.addDiskJob(and(isA(DiskJobReadBlock.class), capture(diskJobCapture)));
+		ArgumentCaptor<IDiskJob> diskJobCapture = ArgumentCaptor.forClass(IDiskJob.class);
 
-		expect(peerMock.getModuleInfo(PeerExtensions.class)).andReturn(Optional.of(extensionsMock));
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		expect(extensionsMock.hasExtension(eq("ut_metadata"))).andReturn(false);
-		socketMock.close();
-
-		replayAll();
+		when(peerMock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionsMock));
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
+		when(extensionsMock.hasExtension(eq("ut_metadata"))).thenReturn(false);
 
 		cut.read(inStream);
 		cut.process(peerMock);
 
+		verify(torrentMock).addDiskJob(diskJobCapture.capture());
 		diskJobCapture.getValue().process();
 
-		verifyAll();
+		verify(socketMock).close();
 	}
 
 	@Test
@@ -164,25 +147,22 @@ public class MessageRequestTest extends EasyMockSupport {
 		final String input = "d8:msg_typei0e5:piecei5ee";
 		InStream inStream = new InStream(input.getBytes(Charset.forName("UTF-8")));
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createNiceMock(Torrent.class);
-		PeerExtensions extensionsMock = createNiceMock(PeerExtensions.class);
-		BitTorrentSocket socketMock = createNiceMock(BitTorrentSocket.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		PeerExtensions extensionsMock = mock(PeerExtensions.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(peerMock.getModuleInfo(PeerExtensions.class)).andReturn(Optional.of(extensionsMock));
-		expect(extensionsMock.hasExtension(eq("ut_metadata"))).andReturn(true);
-		expect(extensionsMock.getExtensionId(eq("ut_metadata"))).andReturn(3);
-		socketMock.enqueueMessage(isA(MessageExtension.class));
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
+		when(torrentMock.isDownloadingMetadata()).thenReturn(true);
+		when(peerMock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionsMock));
+		when(extensionsMock.hasExtension(eq("ut_metadata"))).thenReturn(true);
+		when(extensionsMock.getExtensionId(eq("ut_metadata"))).thenReturn(3);
 
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(socketMock).enqueueMessage(isA(MessageExtension.class));
 	}
 
 	@Test
@@ -192,19 +172,15 @@ public class MessageRequestTest extends EasyMockSupport {
 		final String input = "d8:msg_typei0e5:piecei5ee";
 		InStream inStream = new InStream(input.getBytes(Charset.forName("UTF-8")));
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createNiceMock(Torrent.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(peerMock.getModuleInfo(PeerExtensions.class)).andReturn(Optional.empty());
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.isDownloadingMetadata()).thenReturn(true);
+		when(peerMock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.empty());
 
 		cut.read(inStream);
 		cut.process(peerMock);
-
-		verifyAll();
 	}
 
 	@Test
@@ -214,27 +190,23 @@ public class MessageRequestTest extends EasyMockSupport {
 		final String input = "d8:msg_typei0e5:piecei5ee";
 		InStream inStream = new InStream(input.getBytes(Charset.forName("UTF-8")));
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createNiceMock(Torrent.class);
-		PeerExtensions extensionsMock = createNiceMock(PeerExtensions.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		PeerExtensions extensionsMock = mock(PeerExtensions.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(peerMock.getModuleInfo(PeerExtensions.class)).andReturn(Optional.of(extensionsMock));
-		expect(extensionsMock.hasExtension(eq("ut_metadata"))).andReturn(false);
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.isDownloadingMetadata()).thenReturn(true);
+		when(peerMock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionsMock));
+		when(extensionsMock.hasExtension(eq("ut_metadata"))).thenReturn(false);
 
 		cut.read(inStream);
 		cut.process(peerMock);
-
-		verifyAll();
 	}
 
 	@Test
 	public void testToString() {
 		MessageRequest cut = new MessageRequest();
-		assertTrue("Incorrect toString start", cut.toString().startsWith("MessageRequest["));
+		assertTrue(cut.toString().startsWith("MessageRequest["), "Incorrect toString start");
 	}
 
 }

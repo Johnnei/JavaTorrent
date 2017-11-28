@@ -60,35 +60,13 @@
       <groupId>com.jayway.awaitility</groupId>
       <artifactId>awaitility</artifactId>
     </dependency>
-    <!-- Mockito can be dropped once Trackers are their own API -->
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-reflect</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.github.tomakehurst</groupId>
       <artifactId>wiremock</artifactId>
-    </dependency>
-
-    <!-- Add logging implementation -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

@@ -6,12 +6,13 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.socket.ISocket;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ConnectionDegradation}
@@ -21,29 +22,29 @@ public class ConnectionDegradationTest {
 	@Test
 	public void testDegradeConnection() {
 		ConnectionDegradation cut = new ConnectionDegradation.Builder()
-				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new)
-				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, SocketTypeTwo.class)
-				.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new)
-				.build();
+			.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new)
+			.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, SocketTypeTwo.class)
+			.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new)
+			.build();
 
 		ISocket preferredSocket = cut.createPreferredSocket();
-		assertTrue("Incorrect preferred socket", preferredSocket instanceof SocketTypeOne);
+		assertTrue(preferredSocket instanceof SocketTypeOne, "Incorrect preferred socket");
 		Optional<ISocket> fallbackSocket = cut.degradeSocket(preferredSocket);
-		assertTrue("Fallback socket should be present", fallbackSocket.isPresent());
-		assertTrue("Incorrect fallback socket", fallbackSocket.get() instanceof SocketTypeTwo);
+		assertTrue(fallbackSocket.isPresent(), "Fallback socket should be present");
+		assertTrue(fallbackSocket.get() instanceof SocketTypeTwo, "Incorrect fallback socket");
 
 		fallbackSocket = cut.degradeSocket(fallbackSocket.get());
-		assertFalse("Second fallback socket shouldn't have been there", fallbackSocket.isPresent());
+		assertFalse(fallbackSocket.isPresent(), "Second fallback socket shouldn't have been there");
 
-		assertTrue("Incorrect toString start", cut.toString().startsWith("ConnectionDegradation["));
+		assertTrue(cut.toString().startsWith("ConnectionDegradation["), "Incorrect toString start");
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void testBadConfiguration() {
-		new ConnectionDegradation.Builder()
-				.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, SocketTypeTwo.class)
-				.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new, SocketTypeThree.class)
-				.build();
+		assertThrows(IllegalStateException.class, () -> new ConnectionDegradation.Builder()
+			.registerDefaultConnectionType(SocketTypeOne.class, SocketTypeOne::new, SocketTypeTwo.class)
+			.registerConnectionType(SocketTypeTwo.class, SocketTypeTwo::new, SocketTypeThree.class)
+			.build());
 	}
 
 	private static class SocketTypeOne extends ASocketType {

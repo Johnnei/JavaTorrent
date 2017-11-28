@@ -2,8 +2,7 @@ package org.johnnei.javatorrent.internal.utp.protocol.packet;
 
 import java.nio.ByteBuffer;
 
-import org.hamcrest.collection.IsArrayContainingInOrder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

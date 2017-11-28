@@ -1,16 +1,16 @@
 package org.johnnei.javatorrent.internal.torrent;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageCancel;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Test;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**

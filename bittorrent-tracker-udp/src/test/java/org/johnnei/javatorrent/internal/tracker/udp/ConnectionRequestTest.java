@@ -1,26 +1,21 @@
 package org.johnnei.javatorrent.internal.tracker.udp;
 
-import static org.easymock.EasyMock.and;
-import static org.easymock.EasyMock.capture;
-import static org.easymock.EasyMock.newCapture;
-import static org.easymock.EasyMock.notNull;
-import static org.junit.Assert.assertEquals;
-
 import java.time.Clock;
 
-import org.easymock.Capture;
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
-import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.tracker.UdpTracker;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(EasyMockRunner.class)
-public class ConnectionRequestTest extends EasyMockSupport {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+
+public class ConnectionRequestTest {
 
 	@Test
 	public void testWriteRequest() {
@@ -30,7 +25,7 @@ public class ConnectionRequestTest extends EasyMockSupport {
 		request.writeRequest(outStream);
 
 		byte[] output = outStream.toByteArray();
-		assertEquals("Didn't expect any output", 0, output.length);
+		assertEquals(0, output.length, "Didn't expect any output");
 	}
 
 	@Test
@@ -43,32 +38,29 @@ public class ConnectionRequestTest extends EasyMockSupport {
 
 		ConnectionRequest request = new ConnectionRequest(clock);
 
-		UdpTracker trackerMock = createMock(UdpTracker.class);
-		Capture<Connection> connectionCapture = newCapture();
-		trackerMock.setConnection(and(notNull(), capture(connectionCapture)));
-
-		replayAll();
+		UdpTracker trackerMock = mock(UdpTracker.class);
+		ArgumentCaptor<Connection> connectionCapture = ArgumentCaptor.forClass(Connection.class);
 
 		request.readResponse(inStream);
 		request.process(trackerMock);
 
-		verifyAll();
+		verify(trackerMock).setConnection(connectionCapture.capture());
 
-		assertEquals("Incorrect id", 281479271743489L, connectionCapture.getValue().getId());
+		assertEquals(281479271743489L, connectionCapture.getValue().getId(), "Incorrect id");
 	}
 
 	@Test
 	public void testGetAction() {
 		ConnectionRequest request = new ConnectionRequest(Clock.systemDefaultZone());
 
-		assertEquals("Incorrect action", TrackerAction.CONNECT, request.getAction());
+		assertEquals(TrackerAction.CONNECT, request.getAction(), "Incorrect action");
 	}
 
 	@Test
 	public void testMinimalSize() {
 		ConnectionRequest request = new ConnectionRequest(Clock.systemDefaultZone());
 
-		assertEquals("Incorrect action", 8, request.getMinimalSize());
+		assertEquals(8, request.getMinimalSize(), "Incorrect action");
 	}
 
 }

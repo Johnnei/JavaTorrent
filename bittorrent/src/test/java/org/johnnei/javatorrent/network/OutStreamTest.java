@@ -2,28 +2,27 @@ package org.johnnei.javatorrent.network;
 
 import java.io.IOException;
 
-import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 /**
  * Tests {@link OutStream}
  */
 public class OutStreamTest {
 
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
 	private OutStream cut;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		cut = new OutStream();
 	}
@@ -34,8 +33,8 @@ public class OutStreamTest {
 
 		cut.write(expectedOutput);
 
-		assertEquals("Incorrect amount of bytes written", 4, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(4, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -45,8 +44,8 @@ public class OutStreamTest {
 
 		cut.write(input, 1, 2);
 
-		assertEquals("Incorrect amount of bytes written", 2, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(2, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -56,8 +55,8 @@ public class OutStreamTest {
 		cut.writeBoolean(false);
 		cut.writeBoolean(true);
 
-		assertEquals("Incorrect amount of bytes written", 2, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(2, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -66,8 +65,8 @@ public class OutStreamTest {
 
 		cut.writeByte(45);
 
-		assertEquals("Incorrect amount of bytes written", 1, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(1, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -76,8 +75,8 @@ public class OutStreamTest {
 
 		cut.writeInt(1606561783);
 
-		assertEquals("Incorrect amount of bytes written", 4, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(4, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -86,8 +85,8 @@ public class OutStreamTest {
 
 		cut.writeLong(3213123567494133336L);
 
-		assertEquals("Incorrect amount of bytes written", 8, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(8, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -96,8 +95,8 @@ public class OutStreamTest {
 
 		cut.writeShort(32144);
 
-		assertEquals("Incorrect amount of bytes written", 2, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(2, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 	}
 
 	@Test
@@ -109,19 +108,17 @@ public class OutStreamTest {
 
 		cut.writeString("BitTorrent protocol");
 
-		assertEquals("Incorrect amount of bytes written", 0x13, cut.size());
-		assertArrayEquals("Incorrect written bytes", expectedOutput, cut.toByteArray());
+		assertEquals(0x13, cut.size(), "Incorrect amount of bytes written");
+		assertArrayEquals(expectedOutput, cut.toByteArray(), "Incorrect written bytes");
 
 	}
 
 	@Test
 	public void testExceptionWriteUnchecked() throws Exception {
-		thrown.expect(RuntimeException.class);
-		thrown.expectMessage("IO Exception on in-memory byte array");
-
 		CheckedRunnable<IOException> runnable = () -> { throw new IOException("Test exception path"); };
 		OutStream cut = new OutStream();
 
-		Whitebox.invokeMethod(cut, "writeUnchecked", runnable);
+		RuntimeException exception = assertThrows(RuntimeException.class, () -> Whitebox.invokeMethod(cut, "writeUnchecked", runnable));
+		assertThat(exception.getMessage(), containsString("IO Exception on in-memory byte array"));
 	}
 }

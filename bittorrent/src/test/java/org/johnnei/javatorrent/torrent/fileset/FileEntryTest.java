@@ -1,11 +1,11 @@
 package org.johnnei.javatorrent.torrent.fileset;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.test.TestUtils;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link FileEntry}
@@ -14,7 +14,7 @@ public class FileEntryTest {
 
 	@Test
 	public void testGetFileName() {
-		assertEquals("myFile.txt", new FileEntry("myFile.txt", 42, 7).getFileName());
+		assertEquals(new FileEntry("myFile.txt", 42, 7).getFileName(), "myFile.txt");
 	}
 
 	@Test
@@ -29,7 +29,7 @@ public class FileEntryTest {
 
 	@Test
 	public void testToString() {
-		assertTrue("Incorrect toString start.", new FileEntry("myFile.txt", 42, 7).toString().startsWith("FileEntry["));
+		assertTrue(new FileEntry("myFile.txt", 42, 7).toString().startsWith("FileEntry["), "Incorrect toString start.");
 	}
 
 	@Test

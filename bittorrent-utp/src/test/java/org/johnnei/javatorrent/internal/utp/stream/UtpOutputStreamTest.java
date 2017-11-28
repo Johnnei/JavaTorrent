@@ -2,31 +2,32 @@ package org.johnnei.javatorrent.internal.utp.stream;
 
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import org.johnnei.javatorrent.internal.utp.UtpSocket;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class UtpOutputStreamTest {
 
-	@Mock
 	private UtpSocket socket;
 
-	@InjectMocks
 	private UtpOutputStream cut;
+
+	@BeforeEach
+	public void setUp() {
+		socket = mock(UtpSocket.class);
+		cut = new UtpOutputStream(socket);
+	}
 
 	@Test
 	public void testWriteCacheUntilPacketSize() {

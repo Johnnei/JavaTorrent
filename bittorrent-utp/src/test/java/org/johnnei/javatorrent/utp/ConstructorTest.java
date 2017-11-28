@@ -1,9 +1,10 @@
 package org.johnnei.javatorrent.utp;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.test.TestUtils;
 
-import org.junit.Test;
 
 /**
  * Invokes the private constructors of the various utility classes to maximize the coverage validity.

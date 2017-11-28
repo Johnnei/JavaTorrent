@@ -1,9 +1,7 @@
 package org.johnnei.javatorrent.internal.utp.protocol.packet;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 
@@ -12,12 +10,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class UtpPacketTest {
 
 	private UtpPacket cut;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		UtpHeader header = mock(UtpHeader.class);
 		Payload payload = mock(Payload.class);

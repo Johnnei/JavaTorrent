@@ -2,17 +2,17 @@ package org.johnnei.javatorrent.phases;
 
 import java.util.Arrays;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -29,7 +29,7 @@ public class PhaseSeedTest {
 
 	private PhaseSeed cut;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		cut = new PhaseSeed(torrentClientMock, torrentMock);
 	}
@@ -60,7 +60,7 @@ public class PhaseSeedTest {
 
 	@Test
 	public void testIsDone() {
-		assertFalse("This phase will never end", cut.isDone());
+		assertFalse(cut.isDone(), "This phase will never end");
 	}
 
 	@Test
@@ -81,7 +81,7 @@ public class PhaseSeedTest {
 
 	@Test
 	public void testGetChokingStrategy() {
-		assertNotNull("This method may never return null, even though won't care about what kind of strategy it returns.", cut.getChokingStrategy());
+		assertNotNull(cut.getChokingStrategy(), "This method may never return null, even though won't care about what kind of strategy it returns.");
 	}
 
 }

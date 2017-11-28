@@ -3,26 +3,24 @@ package org.johnnei.javatorrent.network;
 import java.io.IOException;
 import java.time.Duration;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.powermock.reflect.Whitebox;
+
 import org.johnnei.javatorrent.internal.utils.CheckedRunnable;
 import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.powermock.reflect.Whitebox;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link InStream}
  */
 public class InStreamTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testRead() {
@@ -47,48 +45,48 @@ public class InStreamTest {
 		byte[] expectedBytesReadFullyOffset = new byte[]{0x01, 0x01, 0x02, 0x04};
 		byte[] expectedBytesReadFullyInt = new byte[]{0x01, 0x02, 0x03, 0x04};
 
-		assertTrue("Available bytes is <= 0", inStream.available() > 0);
+		assertTrue(inStream.available() > 0, "There should be data in the stream.");
 
-		assertTrue("readBoolean returned wrong value", inStream.readBoolean());
-		assertEquals("readByte returned wrong value", 23, inStream.readByte());
-		assertEquals("readShort returned wrong value", 0x123, inStream.readShort());
-		assertEquals("readInt returned wrong value", 0x1234567, inStream.readInt());
-		assertEquals("readLong returned wrong value", 0x123456789ABCDEFL, inStream.readLong());
-		assertEquals("readUnsignedByte returned wrong value", 0xFF, inStream.readUnsignedByte());
-		assertEquals("readUnsignedShort returned wrong value", 0xFFFF, inStream.readUnsignedShort());
+		assertTrue(inStream.readBoolean(), "readBoolean returned wrong value");
+		Assertions.assertEquals(23, inStream.readByte(), "readByte returned wrong value");
+		Assertions.assertEquals(0x123, inStream.readShort(), "readShort returned wrong value");
+		Assertions.assertEquals(0x1234567, inStream.readInt(), "readInt returned wrong value");
+		Assertions.assertEquals(0x123456789ABCDEFL, inStream.readLong(), "readLong returned wrong value");
+		Assertions.assertEquals(0xFF, inStream.readUnsignedByte(), "readUnsignedByte returned wrong value");
+		Assertions.assertEquals(0xFFFF, inStream.readUnsignedShort(), "readUnsignedShort returned wrong value");
 
 		inStream.readFully(bufferReadFully);
 		inStream.readFully(bufferReadFullyOffset, 1, 2);
 
-		assertArrayEquals("readFully(byte[]) returned wrong value", expectedBytesReadFully, bufferReadFully);
-		assertArrayEquals("readFully(byte[], int, int) returned wrong value", expectedBytesReadFullyOffset, bufferReadFullyOffset);
-		assertArrayEquals("readFully(int) returned wrong value", expectedBytesReadFullyInt, inStream.readFully(4));
+		assertArrayEquals(expectedBytesReadFully, bufferReadFully, "readFully(byte[]) returned wrong value");
+		assertArrayEquals(expectedBytesReadFullyOffset, bufferReadFullyOffset, "readFully(byte[], int, int) returned wrong value");
+		assertArrayEquals(expectedBytesReadFullyInt, inStream.readFully(4), "readFully(int) returned wrong value");
 
-		assertEquals("readChar returned wrong value", 'J', inStream.readChar());
-		assertEquals("readString returned wrong value", "hello world", inStream.readString(11));
-		assertEquals("All data should have been read", 0, inStream.available());
+		Assertions.assertEquals('J', inStream.readChar(), "readChar returned wrong value");
+		Assertions.assertEquals("hello world", inStream.readString(11), "readString returned wrong value");
+		Assertions.assertEquals(0, inStream.available(), "All data should have been read");
 	}
 
 	@Test
 	public void testSkipBytes() {
 		InStream inStream = new InStream(new byte[] { 0x0, 0x0, 0x0 });
 
-		assertEquals("Incorrect starting size", 3, inStream.available());
+		Assertions.assertEquals(3, inStream.available(), "Incorrect starting size");
 		inStream.skipBytes(2);
-		assertEquals("Incorrect ending size", 1, inStream.available());
+		Assertions.assertEquals(1, inStream.available(), "Incorrect ending size");
 	}
 
 	@Test
 	public void testMoveBack() {
 		InStream inStream = new InStream(new byte[] { 0x1, 0x2 });
 
-		assertEquals("Incorrect starting size", 2, inStream.available());
-		assertEquals("Incorrect byte value", 1, inStream.readByte());
-		assertEquals("Incorrect available, should have read only 1 byte at this point.", 1, inStream.available());
+		Assertions.assertEquals(2, inStream.available(), "Incorrect starting size");
+		Assertions.assertEquals(1, inStream.readByte(), "Incorrect byte value");
+		Assertions.assertEquals(1, inStream.available(), "Incorrect available, should have read only 1 byte at this point.");
 		inStream.moveBack(1);
-		assertEquals("Incorrect available, should have moved back to beginning of stream", 2, inStream.available());
-		assertEquals("Incorrect byte value", 1, inStream.readByte());
-		assertEquals("Incorrect byte value", 2, inStream.readByte());
+		Assertions.assertEquals(2, inStream.available(), "Incorrect available, should have moved back to beginning of stream");
+		Assertions.assertEquals(1, inStream.readByte(), "Incorrect byte value");
+		Assertions.assertEquals(2, inStream.readByte(), "Incorrect byte value");
 	}
 
 	@Test
@@ -96,39 +94,35 @@ public class InStreamTest {
 		InStream inStream = new InStream(new byte[] { 0x0, 0x0, 0x0, 0x0 });
 		inStream.mark();
 		inStream.readShort();
-		assertEquals("Incorrect available value after reading short with mark", 2, inStream.available());
+		Assertions.assertEquals(2, inStream.available(), "Incorrect available value after reading short with mark");
 		inStream.resetToMark();
-		assertEquals("Incorrect available value after returning to mark", 4, inStream.available());
+		Assertions.assertEquals(4, inStream.available(), "Incorrect available value after returning to mark");
 	}
 
 	@Test
 	public void testDuration() {
 		InStream inStream = new InStream(new byte[] {}, Duration.ZERO);
-		assertEquals("Incorrect duration", Duration.ZERO, inStream.getReadDuration().get());
+		Assertions.assertEquals(Duration.ZERO, inStream.getReadDuration().get(), "Incorrect duration");
 		inStream = new InStream(new byte[] { 0x0, 0x0 }, 1, 1);
-		assertFalse("Incorrect duration", inStream.getReadDuration().isPresent());
+		assertFalse(inStream.getReadDuration().isPresent(), "Incorrect duration");
 	}
 
 	@Test
 	public void testExceptionDoUncheckedSupplier() throws Exception {
-		thrown.expect(RuntimeException.class);
-		thrown.expectMessage("IO Exception on in-memory byte array");
-
 		CheckedSupplier<Integer, IOException> runnable = () -> { throw new IOException("Test exception path"); };
 		InStream cut = new InStream(new byte[0]);
 
-		Whitebox.invokeMethod(cut, "doUnchecked", runnable);
+		Exception e = assertThrows(RuntimeException.class, () -> Whitebox.invokeMethod(cut, "doUnchecked", runnable));
+		assertThat(e.getMessage(), containsString("IO Exception on in-memory byte array"));
 	}
 
 	@Test
 	public void testExceptionDoUncheckedRunnable() throws Exception {
-		thrown.expect(RuntimeException.class);
-		thrown.expectMessage("IO Exception on in-memory byte array");
-
 		CheckedRunnable<IOException> runnable = () -> { throw new IOException("Test exception path"); };
 		InStream cut = new InStream(new byte[0]);
 
-		Whitebox.invokeMethod(cut, "doUnchecked", runnable);
+		Exception e = assertThrows(RuntimeException.class, () -> Whitebox.invokeMethod(cut, "doUnchecked", runnable));
+		assertThat(e.getMessage(), containsString("IO Exception on in-memory byte array"));
 	}
 
 }

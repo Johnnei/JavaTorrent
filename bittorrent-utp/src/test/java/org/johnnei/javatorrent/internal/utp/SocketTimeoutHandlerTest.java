@@ -1,10 +1,7 @@
 package org.johnnei.javatorrent.internal.utp;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
@@ -16,14 +13,17 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class SocketTimeoutHandlerTest {
 
-	@Mock
 	private PrecisionTimer precisionTimer;
 
-	@InjectMocks
 	private SocketTimeoutHandler cut;
+
+	@BeforeEach
+	public void setUp() {
+		precisionTimer = mock(PrecisionTimer.class);
+		cut = new SocketTimeoutHandler(precisionTimer);
+	}
 
 	@Test
 	public void testOnAckedPacket() throws Exception {

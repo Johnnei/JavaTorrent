@@ -5,7 +5,7 @@ import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StubMessage implements IMessage {
 
@@ -16,7 +16,7 @@ public class StubMessage implements IMessage {
 
 	@Override
 	public void read(InStream inStream) {
-		Assert.assertEquals("Incorrect payload", 1, inStream.readByte());
+		assertEquals(1, inStream.readByte(), "Incorrect payload");
 	}
 
 	@Override

@@ -4,6 +4,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Clock;
 
+import org.junit.jupiter.api.Test;
+import org.powermock.reflect.Whitebox;
+
 import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
@@ -16,25 +19,21 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.reflect.Whitebox;
-
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
 import static org.johnnei.javatorrent.test.TestUtils.copySection;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@RunWith(EasyMockRunner.class)
-public class AnnounceRequestTest extends EasyMockSupport {
+public class AnnounceRequestTest {
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testAnnounceRequest() {
 		TorrentInfo info = new TorrentInfo(DummyEntity.createUniqueTorrent(), Clock.systemDefaultZone());
-		new AnnounceRequest(info, new byte[0], 5);
+		assertThrows(IllegalArgumentException.class, () -> new AnnounceRequest(info, new byte[0], 5));
 	}
 
 	@Test
@@ -77,8 +76,8 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		copySection(PORT_BYTES, expectedOutput, 80);
 		copySection(EXTENSION_BYTES, expectedOutput, 82);
 
-		assertEquals("Written bytes has incorrect length", 84, actual.length);
-		assertArrayEquals("Written bytes output is incorrect.", expectedOutput, actual);
+		assertEquals(84, actual.length, "Written bytes has incorrect length");
+		assertArrayEquals(expectedOutput, actual, "Written bytes output is incorrect.");
 	}
 
 	@Test
@@ -94,10 +93,8 @@ public class AnnounceRequestTest extends EasyMockSupport {
 
 		OutStream outStream = new OutStream();
 
-		TorrentFileSet torrentFileSetMock = createMock(TorrentFileSet.class);
-		expect(torrentFileSetMock.countRemainingBytes()).andReturn(3L);
-
-		replayAll();
+		TorrentFileSet torrentFileSetMock = mock(TorrentFileSet.class);
+		when(torrentFileSetMock.countRemainingBytes()).thenReturn(3L);
 
 		Torrent torrent = new Torrent.Builder()
 				.setMetadata(new Metadata.Builder().setHash(DummyEntity.createUniqueTorrentHash()).build())
@@ -130,10 +127,8 @@ public class AnnounceRequestTest extends EasyMockSupport {
 		copySection(PORT_BYTES, expectedOutput, 80);
 		copySection(EXTENSION_BYTES, expectedOutput, 82);
 
-		verifyAll();;
-
-		assertEquals("Written bytes has incorrect length", 84, actual.length);
-		assertArrayEquals("Written bytes output is incorrect.", expectedOutput, actual);
+		assertEquals(84, actual.length, "Written bytes has incorrect length");
+		assertArrayEquals(expectedOutput, actual, "Written bytes output is incorrect.");
 	}
 
 	@Test
@@ -157,19 +152,16 @@ public class AnnounceRequestTest extends EasyMockSupport {
 
 		request.readResponse(inStream);
 
-		UdpTracker trackerMock = createMock(UdpTracker.class);
+		UdpTracker trackerMock = mock(UdpTracker.class);
 		PeerConnectInfo peerInfo = new PeerConnectInfo(info.getTorrent(), new InetSocketAddress(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 27960));
-		trackerMock.connectPeer(eq(peerInfo));
-		trackerMock.setAnnounceInterval(eq(30_000));
-
-		replayAll();
 
 		request.process(trackerMock);
 
-		verifyAll();
+		verify(trackerMock).connectPeer(eq(peerInfo));
+		verify(trackerMock).setAnnounceInterval(eq(30_000));
 
-		assertEquals("Incorrect leechers amount", 5, info.getLeechers());
-		assertEquals("Incorrect seeders amount", 42, info.getSeeders());
+		assertEquals(5, info.getLeechers(), "Incorrect leechers amount");
+		assertEquals(42, info.getSeeders(), "Incorrect seeders amount");
 	}
 
 	@Test
@@ -193,17 +185,14 @@ public class AnnounceRequestTest extends EasyMockSupport {
 
 		request.readResponse(inStream);
 
-		UdpTracker trackerMock = createMock(UdpTracker.class);
-		trackerMock.setAnnounceInterval(eq(30_000));
-
-		replayAll();
+		UdpTracker trackerMock = mock(UdpTracker.class);
 
 		request.process(trackerMock);
 
-		verifyAll();
+		verify(trackerMock).setAnnounceInterval(eq(30_000));
 
-		assertEquals("Incorrect leechers amount", 5, info.getLeechers());
-		assertEquals("Incorrect seeders amount", 42, info.getSeeders());
+		assertEquals(5, info.getLeechers(), "Incorrect leechers amount");
+		assertEquals(42, info.getSeeders(), "Incorrect seeders amount");
 	}
 
 	@Test
@@ -213,7 +202,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 				DummyEntity.createPeerId(),
 				5);
 
-		assertEquals("Incorrect action.", TrackerAction.ANNOUNCE, request.getAction());
+		assertEquals(TrackerAction.ANNOUNCE, request.getAction(), "Incorrect action.");
 	}
 
 	@Test
@@ -223,7 +212,7 @@ public class AnnounceRequestTest extends EasyMockSupport {
 				DummyEntity.createPeerId(),
 				5);
 
-		assertEquals("Incorrect minimal size.", 12, request.getMinimalSize());
+		assertEquals(12, request.getMinimalSize(), "Incorrect minimal size.");
 	}
 
 }

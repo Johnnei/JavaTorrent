@@ -1,8 +1,8 @@
 package org.johnnei.javatorrent.module;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@link ModuleBuildException}
@@ -13,7 +13,7 @@ public class ModuleBuildExceptionTest {
 	public void testConstructorCauseless() {
 		ModuleBuildException e = new ModuleBuildException("test");
 
-		assertEquals("Incorrect message", "test", e.getMessage());
+		assertEquals("test", e.getMessage(), "Incorrect message");
 	}
 
 	@Test
@@ -21,8 +21,8 @@ public class ModuleBuildExceptionTest {
 		IllegalArgumentException cause = new IllegalArgumentException("test cause");
 		ModuleBuildException e = new ModuleBuildException("test", cause);
 
-		assertEquals("Incorrect message", "test", e.getMessage());
-		assertEquals("Incorrect cause", cause, e.getCause());
+		assertEquals("test", e.getMessage(), "Incorrect message");
+		assertEquals(cause, e.getCause(), "Incorrect cause");
 	}
 
 }

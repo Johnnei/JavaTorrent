@@ -4,6 +4,8 @@ import java.time.Clock;
 import java.util.Collections;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.network.InStream;
@@ -12,20 +14,16 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.UdpTracker;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import static java.util.Arrays.asList;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
 import static org.johnnei.javatorrent.test.TestUtils.copySection;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-@RunWith(EasyMockRunner.class)
-public class ScrapeRequestTest extends EasyMockSupport {
+public class ScrapeRequestTest {
 
 	@Test
 	public void testWriteRequest() {
@@ -45,8 +43,8 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 		byte[] actual = outStream.toByteArray();
 
-		assertEquals("Unexpected request length", expectedOutput.length, actual.length);
-		assertArrayEquals("Incorrect output", expectedOutput, actual);
+		assertEquals(expectedOutput.length, actual.length, "Unexpected request length");
+		assertArrayEquals(expectedOutput, actual, "Incorrect output");
 	}
 
 	@Test
@@ -75,29 +73,25 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 		ScrapeRequest request = new ScrapeRequest(asList(torrentOne, torrentTwo, torrentThree));
 		InStream inStream = new InStream(inputBytes);
-		UdpTracker trackerMock = createMock(UdpTracker.class);
+		UdpTracker trackerMock = mock(UdpTracker.class);
 
-		expect(trackerMock.getInfo(eq(torrentOne))).andReturn(Optional.of(infoOne));
-		expect(trackerMock.getInfo(eq(torrentTwo))).andReturn(Optional.empty());
-		expect(trackerMock.getInfo(eq(torrentThree))).andReturn(Optional.of(infoTwo));
-
-		replayAll();
+		when(trackerMock.getInfo(eq(torrentOne))).thenReturn(Optional.of(infoOne));
+		when(trackerMock.getInfo(eq(torrentTwo))).thenReturn(Optional.empty());
+		when(trackerMock.getInfo(eq(torrentThree))).thenReturn(Optional.of(infoTwo));
 
 		request.readResponse(inStream);
 		request.process(trackerMock);
 
-		verifyAll();
+		assertEquals(1, infoOne.getSeeders(), "Incorrect seeders");
+		assertEquals("2", infoOne.getDownloadCount(), "Incorrect download count");
+		assertEquals(3, infoOne.getLeechers(), "Incorrect leechers");
 
-		assertEquals("Incorrect seeders", 1, infoOne.getSeeders());
-		assertEquals("Incorrect download count", "2", infoOne.getDownloadCount());
-		assertEquals("Incorrect leechers", 3, infoOne.getLeechers());
-
-		assertEquals("Incorrect seeders", 7, infoTwo.getSeeders());
-		assertEquals("Incorrect download count", "8", infoTwo.getDownloadCount());
-		assertEquals("Incorrect leechers", 9, infoTwo.getLeechers());
+		assertEquals(7, infoTwo.getSeeders(), "Incorrect seeders");
+		assertEquals("8", infoTwo.getDownloadCount(), "Incorrect download count");
+		assertEquals(9, infoTwo.getLeechers(), "Incorrect leechers");
 	}
 
-	@Test(expected=TrackerException.class)
+	@Test
 	public void testReadAndProcessBrokenRequest() throws Exception {
 		Torrent torrentOne = DummyEntity.createUniqueTorrent();
 		Torrent torrentTwo = DummyEntity.createUniqueTorrent();
@@ -120,19 +114,14 @@ public class ScrapeRequestTest extends EasyMockSupport {
 
 		ScrapeRequest request = new ScrapeRequest(asList(torrentOne, torrentTwo, torrentThree));
 		InStream inStream = new InStream(inputBytes);
-		UdpTracker trackerMock = createMock(UdpTracker.class);
-		replayAll();
 
-		request.readResponse(inStream);
-		request.process(trackerMock);
-
-		verifyAll();
+		assertThrows(TrackerException.class, () -> request.readResponse(inStream));
 	}
 
 	@Test
 	public void testMinimalSize() {
 		ScrapeRequest request = new ScrapeRequest(Collections.emptyList());
-		assertEquals("Incorrect minimal size.", 0, request.getMinimalSize());
+		assertEquals(0, request.getMinimalSize(), "Incorrect minimal size.");
 	}
 
 }

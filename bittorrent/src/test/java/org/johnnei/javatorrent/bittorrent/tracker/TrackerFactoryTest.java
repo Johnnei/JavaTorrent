@@ -1,65 +1,53 @@
 package org.johnnei.javatorrent.bittorrent.tracker;
 
 import java.util.Optional;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
-import org.easymock.EasyMockSupport;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.same;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link TrackerFactory}
  */
-public class TrackerFactoryTest extends EasyMockSupport {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
+public class TrackerFactoryTest {
 
 	@Test
 	public void testBuildFailureOnNoProtocols() {
-		thrown.expect(IllegalStateException.class);
-		thrown.expectMessage("At least one tracker protocol");
-
-		new TrackerFactory.Builder().build();
+		Exception e = assertThrows(IllegalStateException.class, () -> new TrackerFactory.Builder().build());
+		assertThat(e.getMessage(), containsString("At least one tracker protocol"));
 	}
 
 	@Test
 	public void testBuildFailureOnNoTorrentClient() {
-		thrown.expect(IllegalStateException.class);
-		thrown.expectMessage("Torrent client");
-
-		final ITracker trackerMock = createMock(ITracker.class);
-
-		replayAll();
-
-		try {
-			new TrackerFactory.Builder()
-					.registerProtocol("udp", (url, client) -> trackerMock)
-					.build();
-		} finally {
-			verifyAll();
-		}
+		Exception e = assertThrows(IllegalStateException.class, () -> new TrackerFactory.Builder()
+					.registerProtocol("udp", (url, client) -> mock(ITracker.class))
+					.build());
+		assertThat(e.getMessage(), containsString("Torrent client"));
 	}
 
 	@Test
 	public void testBuildOverrideProtocol() {
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
-		final ITracker trackerMockTwo = createMock(ITracker.class);
-
-		replayAll();
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		ITracker trackerMock = mock(ITracker.class);
+		ITracker trackerMockTwo = mock(ITracker.class);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -69,18 +57,14 @@ public class TrackerFactoryTest extends EasyMockSupport {
 
 		Optional<ITracker> result = cut.getTrackerFor("udp://localhost:80");
 
-		verifyAll();
-
-		assertTrue("Tracker should have been present", result.isPresent());
-		assertEquals("Incorrect tracker has been returned", trackerMockTwo, result.get());
+		assertTrue(result.isPresent(), "Tracker should have been present");
+		assertEquals(trackerMockTwo, result.get(), "Incorrect tracker has been returned");
 	}
 
 	@Test
 	public void testToString() {
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
-
-		replayAll();
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		final ITracker trackerMock = mock(ITracker.class);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -89,21 +73,16 @@ public class TrackerFactoryTest extends EasyMockSupport {
 
 		String result = cut.toString();
 
-		verifyAll();
-
 		assertTrue(result.startsWith("TrackerFactory["));
 	}
 
 	@Test
 	public void testGetTrackersHavingTorrent() throws Exception {
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		ITracker trackerMock = mock(ITracker.class);
 		Torrent torrent = DummyEntity.createUniqueTorrent();
 
-		expect(trackerMock.hasTorrent(eq(torrent))).andReturn(false);
-		expect(trackerMock.hasTorrent(eq(torrent))).andReturn(true);
-
-		replayAll();
+		when(trackerMock.hasTorrent(eq(torrent))).thenReturn(false).thenReturn(true);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -111,39 +90,30 @@ public class TrackerFactoryTest extends EasyMockSupport {
 				.build();
 
 		Optional<ITracker> tracker = cut.getTrackerFor("udp://localhost:80");
-		assertTrue("Tracker should have been added", tracker.isPresent());
+		assertTrue(tracker.isPresent(), "Tracker should have been added");
 
-		assertEquals("No tracker should have the given torrent", 0, cut.getTrackersHavingTorrent(torrent).size());
-		assertEquals("No tracker should have the given torrent", 1, cut.getTrackersHavingTorrent(torrent).size());
-
-		verifyAll();
+		assertEquals(0, cut.getTrackersHavingTorrent(torrent).size(), "No tracker should have the given torrent");
+		assertEquals(1, cut.getTrackersHavingTorrent(torrent).size(), "Tracker should have the given torrent");
 	}
 
 	@Test
 	public void testGetTrackerFor() {
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
-
-		replayAll();
+		ITracker tracker = mock(ITracker.class);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
-				.setTorrentClient(torrentClientMock)
-				.registerProtocol("udp", (url, client) -> trackerMock)
+				.setTorrentClient(mock(TorrentClient.class))
+				.registerProtocol("udp", (url, client) -> tracker)
 				.build();
 
 		Optional<ITracker> result = cut.getTrackerFor("udp://localhost:80");
 
-		verifyAll();
-
-		assertTrue("Tracker should have been present", result.isPresent());
-		assertEquals("Incorrect tracker has been returned", trackerMock, result.get());
+		assertTrue(result.isPresent(), "Tracker should have been present");
+		assertEquals(tracker, result.get(), "Incorrect tracker has been returned");
 	}
 
 	@Test
 	public void testGetTrackerForException() {
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-
-		replayAll();
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -152,22 +122,18 @@ public class TrackerFactoryTest extends EasyMockSupport {
 
 		Optional<ITracker> result = cut.getTrackerFor("udp://localhost:80");
 
-		verifyAll();
-
-		assertFalse("Tracker should have been present", result.isPresent());
+		assertFalse(result.isPresent(), "Tracker should have been present");
 	}
 
 	@Test
 	public void testGetTrackerForCaching() throws Exception {
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		final ITracker trackerMock = mock(ITracker.class);
 
 		final String trackerUrl = "udp://localhost:80";
 
-		CheckedBiFunction<String, TorrentClient, ITracker, TrackerException> supplierMock = createMock(CheckedBiFunction.class);
-		expect(supplierMock.apply(eq(trackerUrl), same(torrentClientMock))).andReturn(trackerMock);
-
-		replayAll();
+		CheckedBiFunction<String, TorrentClient, ITracker, TrackerException> supplierMock = mock(CheckedBiFunction.class);
+		when(supplierMock.apply(eq(trackerUrl), same(torrentClientMock))).thenReturn(trackerMock);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
 				.setTorrentClient(torrentClientMock)
@@ -177,51 +143,32 @@ public class TrackerFactoryTest extends EasyMockSupport {
 		Optional<ITracker> result = cut.getTrackerFor(trackerUrl);
 		Optional<ITracker> resultTwo = cut.getTrackerFor(trackerUrl);
 
-		verifyAll();
-
-		assertTrue("Tracker should have been present", result.isPresent());
-		assertTrue("Second tracker should have been present", resultTwo.isPresent());
-		assertEquals("Incorrect tracker has been returned", trackerMock, result.get());
-		assertTrue("Trackers should have been the same instance", resultTwo.get() == result.get());
+		assertTrue(result.isPresent(), "Tracker should have been present");
+		assertTrue(resultTwo.isPresent(), "Second tracker should have been present");
+		assertEquals(trackerMock, result.get(), "Incorrect tracker has been returned");
+		assertTrue(resultTwo.get() == result.get(), "Trackers should have been the same instance");
 	}
 
-	@Test
-	public void testGetTrackerForInvalidUrl() {
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("protocol definition");
-
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
-
-		replayAll();
+	@ParameterizedTest
+	@MethodSource("incorrectProtocols")
+	public void testGetTrackerForInvalidUrl(String trackerUrl, String message) {
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		ITracker trackerMock = mock(ITracker.class);
 
 		TrackerFactory cut = new TrackerFactory.Builder()
 				.setTorrentClient(torrentClientMock)
 				.registerProtocol("udp", (url, client) -> trackerMock)
 				.build();
 
-		cut.getTrackerFor("not_a_valid_url");
-
-		verifyAll();
+		Exception e = assertThrows(IllegalArgumentException.class, () -> cut.getTrackerFor(trackerUrl));
+		assertThat(e.getMessage(), containsString(message));
 	}
 
-	@Test
-	public void testGetTrackerForUnknownProtocol() {
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("Unsupported protocol");
-
-		TorrentClient torrentClientMock = createMock(TorrentClient.class);
-		final ITracker trackerMock = createMock(ITracker.class);
-
-		replayAll();
-
-		TrackerFactory cut = new TrackerFactory.Builder()
-				.setTorrentClient(torrentClientMock)
-				.registerProtocol("udp", (url, client) -> trackerMock)
-				.build();
-
-		cut.getTrackerFor("http://example.com");
-
-		verifyAll();
+	public static Stream<Arguments> incorrectProtocols() {
+		return Stream.of(
+			Arguments.of("not_a_valid_url", "protocol definition"),
+			Arguments.of("http://example.com", "Unsupported protocol")
+		);
 	}
+
 }

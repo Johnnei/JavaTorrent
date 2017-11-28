@@ -1,11 +1,15 @@
 package org.johnnei.javatorrent.tracker.http;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import org.junit.Rule;
-import org.junit.Test;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +29,9 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.PeerConnector;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,8 +44,7 @@ public class HttpTrackerIT {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(HttpTrackerIT.class);
 
-	@Rule
-	public WireMockRule wireMockRule = new WireMockRule(0);
+	private WireMockServer wireMock = new WireMockServer(options().dynamicPort());
 
 	// @formatter:off
 	private final byte[] torrentHash = new byte[] {
@@ -57,6 +61,24 @@ public class HttpTrackerIT {
 		(byte) 0x58, 0x58, (byte) 0x58, (byte) 0x58,        0x58
 	};
 	// @formatter:on
+
+	@AfterEach
+	public void tearDown() {
+		try {
+			List<LoggedRequest> nearMisses = wireMock.findAllUnmatchedRequests();
+			if (!nearMisses.isEmpty()) {
+				throw VerificationException.forUnmatchedRequests(nearMisses);
+			}
+		} finally {
+			wireMock.stop();
+		}
+	}
+
+	@BeforeEach
+	public void setUp() {
+		wireMock.start();
+		WireMock.configureFor("localhost", wireMock.port());
+	}
 
 	@Test
 	public void testAnnounce() throws Exception {
@@ -85,7 +107,7 @@ public class HttpTrackerIT {
 		OutStream outStream = new OutStream();
 		outStream.write(announceResult.serialize());
 
-		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
+		final String url = String.format("http://localhost:%d/announce", wireMock.port());
 
 		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 			// Can't match the exact requests as jetty parses the incorrect UTF-8.
@@ -124,10 +146,10 @@ public class HttpTrackerIT {
 		ArgumentCaptor<PeerConnectInfo> connectInfo = ArgumentCaptor.forClass(PeerConnectInfo.class);
 		verify(peerConnectorMock).enqueuePeer(connectInfo.capture());
 
-		assertEquals("Incorrect connect info: host", InetSocketAddress.createUnresolved("127.0.0.1", 123), connectInfo.getValue().getAddress());
-		assertEquals("Incorrect connect info: torrent", torrentMock, connectInfo.getValue().getTorrent());
-		assertEquals("Status should have returned to idle", "Idle", cut.getStatus());
-		assertEquals("Incorrect interval", 15_000, cut.getAnnounceInterval());
+		assertEquals(InetSocketAddress.createUnresolved("127.0.0.1", 123), connectInfo.getValue().getAddress(), "Incorrect connect info: host");
+		assertEquals(torrentMock, connectInfo.getValue().getTorrent(), "Incorrect connect info: torrent");
+		assertEquals("Idle", cut.getStatus(), "Status should have returned to idle");
+		assertEquals(15_000, cut.getAnnounceInterval(), "Incorrect interval");
 	}
 
 	@Test
@@ -139,7 +161,7 @@ public class HttpTrackerIT {
 		OutStream outStream = new OutStream();
 		outStream.write(announceResult.serialize());
 
-		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
+		final String url = String.format("http://localhost:%d/announce", wireMock.port());
 
 		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 			// Can't match the exact requests as jetty parses the incorrect UTF-8.
@@ -171,13 +193,13 @@ public class HttpTrackerIT {
 
 		cut.addTorrent(torrentMock);
 
-		assertTrue("Add of torrent failed", cut.hasTorrent(torrentMock));
+		assertTrue(cut.hasTorrent(torrentMock), "Add of torrent failed");
 
 		cut.getInfo(torrentMock).get().setEvent(TrackerEvent.EVENT_COMPLETED);
 		cut.announce(torrentMock);
 
-		assertEquals("Incorrect interval", 15_000, cut.getAnnounceInterval());
-		assertEquals("Status should have returned to idle", "Idle", cut.getStatus());
+		assertEquals(15_000, cut.getAnnounceInterval(), "Incorrect interval");
+		assertEquals("Idle", cut.getStatus(), "Status should have returned to idle");
 		verify(torrentClientMock, never()).getPeerConnector();
 	}
 
@@ -190,7 +212,7 @@ public class HttpTrackerIT {
 		OutStream outStream = new OutStream();
 		outStream.write(announceResult.serialize());
 
-		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
+		final String url = String.format("http://localhost:%d/announce", wireMock.port());
 
 		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 			// Can't match the exact requests as jetty parses the incorrect UTF-8.
@@ -222,13 +244,13 @@ public class HttpTrackerIT {
 
 		cut.addTorrent(torrentMock);
 
-		assertTrue("Add of torrent failed", cut.hasTorrent(torrentMock));
+		assertTrue(cut.hasTorrent(torrentMock), "Add of torrent failed");
 
 		cut.getInfo(torrentMock).get().setEvent(TrackerEvent.EVENT_NONE);
 		cut.announce(torrentMock);
 
-		assertEquals("Incorrect interval", 15_000, cut.getAnnounceInterval());
-		assertEquals("Status should have returned to idle", "Idle", cut.getStatus());
+		assertEquals(15_000, cut.getAnnounceInterval(), "Incorrect interval");
+		assertEquals("Idle", cut.getStatus(), "Status should have returned to idle");
 		verify(torrentClientMock, never()).getPeerConnector();
 	}
 
@@ -241,7 +263,7 @@ public class HttpTrackerIT {
 		OutStream outStream = new OutStream();
 		outStream.write(announceResult.serialize());
 
-		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
+		final String url = String.format("http://localhost:%d/announce", wireMock.port());
 
 		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 			// Can't match the exact requests as jetty parses the incorrect UTF-8.
@@ -272,13 +294,13 @@ public class HttpTrackerIT {
 
 		cut.addTorrent(torrentMock);
 
-		assertTrue("Add of torrent failed", cut.hasTorrent(torrentMock));
+		assertTrue(cut.hasTorrent(torrentMock), "Add of torrent failed");
 
 		cut.getInfo(torrentMock).get().setEvent(TrackerEvent.EVENT_NONE);
 		cut.announce(torrentMock);
 
-		assertEquals("Incorrect interval", 15_000, cut.getAnnounceInterval());
-		assertEquals("Status should have returned to idle", "Idle", cut.getStatus());
+		assertEquals(15_000, cut.getAnnounceInterval(), "Incorrect interval");
+		assertEquals("Idle", cut.getStatus(), "Status should have returned to idle");
 		verify(torrentClientMock, never()).getPeerConnector();
 
 		// This request should be denied because the interval hasn't expired yet.
@@ -295,7 +317,7 @@ public class HttpTrackerIT {
 		OutStream outStream = new OutStream();
 		outStream.write(announceResult.serialize());
 
-		final String url = String.format("http://localhost:%d/announce", wireMockRule.port());
+		final String url = String.format("http://localhost:%d/announce", wireMock.port());
 
 		WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/announce"))
 			// Can't match the exact requests as jetty parses the incorrect UTF-8.
@@ -327,12 +349,12 @@ public class HttpTrackerIT {
 
 		cut.addTorrent(torrentMock);
 
-		assertTrue("Add of torrent failed", cut.hasTorrent(torrentMock));
+		assertTrue(cut.hasTorrent(torrentMock), "Add of torrent failed");
 
 		cut.getInfo(torrentMock).get().setEvent(TrackerEvent.EVENT_COMPLETED);
 		cut.announce(torrentMock);
 
-		assertEquals("Status should not have returned to idle", "Announce failed", cut.getStatus());
+		assertEquals("Announce failed", cut.getStatus(), "Status should not have returned to idle");
 		verify(torrentClientMock, never()).getPeerConnector();
 	}
 
@@ -364,7 +386,7 @@ public class HttpTrackerIT {
 		tracker.addTorrent(torrentMock);
 		tracker.announce(torrentMock);
 
-		assertEquals("Status should have returned to idle", "Idle", tracker.getStatus());
+		assertEquals("Idle", tracker.getStatus(), "Status should have returned to idle");
 
 		LOGGER.info("Announce has completed.");
 
@@ -373,7 +395,7 @@ public class HttpTrackerIT {
 
 		tracker.announce(torrentMock);
 
-		assertEquals("Status should have returned to idle", "Idle", tracker.getStatus());
+		assertEquals("Idle", tracker.getStatus(), "Status should have returned to idle");
 
 		LOGGER.info("Announce completed.");
 	}

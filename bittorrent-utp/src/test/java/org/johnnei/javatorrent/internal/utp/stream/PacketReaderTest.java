@@ -2,7 +2,7 @@ package org.johnnei.javatorrent.internal.utp.stream;
 
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 

@@ -11,6 +11,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.powermock.reflect.Whitebox;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
@@ -21,16 +25,10 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.mockito.ArgumentCaptor;
-import org.powermock.reflect.Whitebox;
-
 import static com.jayway.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -45,9 +43,6 @@ import static org.mockito.Mockito.when;
  * Tests {@link PeerConnector}
  */
 public class PeerConnectorTest {
-
-	@Rule
-	public Timeout timeout = Timeout.seconds(10);
 
 	/**
 	 * The thread on which the {@link #testStartStop()} methods anonymous class is working.
@@ -176,11 +171,11 @@ public class PeerConnectorTest {
 		ArgumentCaptor<Runnable> runnableCapture = ArgumentCaptor.forClass(Runnable.class);
 		verify(executorServiceMock).schedule(runnableCapture.capture(), eq(10L), eq(TimeUnit.SECONDS));
 
-		assertEquals("Peer connector queue must be empty", 0, cut.getConnectingCount());
+		assertEquals(0, cut.getConnectingCount(), "Peer connector queue must be empty");
 
 		// Executing the captured runnable should requeue the peer.
 		runnableCapture.getValue().run();
-		assertEquals("Peer connector queue must not be empty", 1, cut.getConnectingCount());
+		assertEquals(1, cut.getConnectingCount(), "Peer connector queue must not be empty");
 	}
 
 	@Test
@@ -238,13 +233,13 @@ public class PeerConnectorTest {
 		PeerConnectInfo peerConnectInfo = new PeerConnectInfo(torrent, new InetSocketAddress(InetAddress.getLocalHost(), 27960));
 
 		cut.enqueuePeer(null);
-		assertEquals("Incorrect connecting count", 0, cut.getConnectingCount());
+		assertEquals(0, cut.getConnectingCount(), "Incorrect connecting count");
 
 		cut.enqueuePeer(peerConnectInfo);
 
-		assertEquals("Incorrect connecting count", 1, cut.getConnectingCount());
-		assertEquals("Incorrect connecting count", 1, cut.getConnectingCountFor(torrent));
-		assertEquals("Incorrect connecting count", 0, cut.getConnectingCountFor(torrentTwo));
+		assertEquals(1, cut.getConnectingCount(), "Incorrect connecting count");
+		assertEquals(1, cut.getConnectingCountFor(torrent), "Incorrect connecting count");
+		assertEquals(0, cut.getConnectingCountFor(torrentTwo), "Incorrect connecting count");
 	}
 
 	@Test
@@ -292,7 +287,7 @@ public class PeerConnectorTest {
 
 		connector.stop();
 		workerThread.join(5000);
-		assertFalse("Thread should have died by now.", workerThread.isAlive());
+		assertFalse(workerThread.isAlive(), "Thread should have died by now.");
 	}
 
 	private class DisconnectedPeerConnector extends PeerConnector {

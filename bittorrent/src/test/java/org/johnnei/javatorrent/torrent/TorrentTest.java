@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.powermock.reflect.Whitebox;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageHave;
@@ -22,17 +27,19 @@ import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.junit.jupiter.TempFolderExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.ArgumentCaptor;
-import org.powermock.reflect.Whitebox;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.hamcrest.core.IsCollectionContaining.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -45,10 +52,8 @@ import static org.mockito.Mockito.when;
 /**
  * Tests {@link Torrent}
  */
+@ExtendWith(TempFolderExtension.class)
 public class TorrentTest {
-
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Test
 	public void testSetGetPieceSelector() {
@@ -56,11 +61,11 @@ public class TorrentTest {
 
 		IPieceSelector selector = (p) -> Optional.empty();
 
-		assertNotEquals("Selector should not be equal before setting", selector, cut.getPieceSelector());
+		assertNotEquals(selector, cut.getPieceSelector(), "Selector should not be equal before setting");
 
 		cut.setPieceSelector(selector);
 
-		assertEquals("Selector should not be equal before setting", selector, cut.getPieceSelector());
+		assertEquals(selector, cut.getPieceSelector(), "Selector should not be equal before setting");
 	}
 
 	@Test
@@ -157,13 +162,13 @@ public class TorrentTest {
 		cut.addPeer(peerMock);
 		cut.addPeer(peerMockTwo);
 
-		assertEquals("All peers should be leechers at this point.", 2, cut.getLeecherCount());
-		assertEquals("We don't know if any peers are seeders yet.", 0, cut.getSeedCount());
+		assertEquals(2, cut.getLeecherCount(), "All peers should be leechers at this point.");
+		assertEquals(0, cut.getSeedCount(), "We don't know if any peers are seeders yet.");
 
 		cut.setFileSet(fileSetMock);
 
-		assertEquals("All peers should be leechers at this point.", 1, cut.getLeecherCount());
-		assertEquals("We don't know if any peers are seeders yet.", 1, cut.getSeedCount());
+		assertEquals(1, cut.getLeecherCount(), "All peers should be leechers at this point.");
+		assertEquals(1, cut.getSeedCount(), "We don't know if any peers are seeders yet.");
 	}
 
 	@Test
@@ -199,8 +204,8 @@ public class TorrentTest {
 		cut.addPeer(peerMockTwo);
 		cut.pollRates();
 
-		assertEquals("Download speed aren't added up correctly", 15, cut.getDownloadRate());
-		assertEquals("Upload speed aren't added up correctly", 16, cut.getUploadRate());
+		assertEquals(15, cut.getDownloadRate(), "Download speed aren't added up correctly");
+		assertEquals(16, cut.getUploadRate(), "Upload speed aren't added up correctly");
 	}
 
 	@Test
@@ -281,14 +286,14 @@ public class TorrentTest {
 		cut.addPeer(peerMock);
 		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
 
-		assertEquals("Incorrect downloaded bytes, nothing is completed yet.", 0, cut.getDownloadedBytes());
+		assertEquals(0, cut.getDownloadedBytes(), "Incorrect downloaded bytes, nothing is completed yet.");
 
 		verify(torrentClient).addDiskJob(writeJobCapture.capture());
 		writeJobCapture.getValue().process();
 		verify(torrentClient, times(2)).addDiskJob(checkHashCapture.capture());
 		checkHashCapture.getValue().process();
 
-		assertEquals("Incorrect downloaded bytes, piece size should have been added.", 15, cut.getDownloadedBytes());
+		assertEquals(15, cut.getDownloadedBytes(), "Incorrect downloaded bytes, piece size should have been added.");
 	}
 
 	@Test
@@ -414,7 +419,7 @@ public class TorrentTest {
 	public void testToString() {
 		Torrent cut = DummyEntity.createUniqueTorrent();
 
-		assertTrue("Incorrect toString start", cut.toString().startsWith("Torrent["));
+		assertTrue(cut.toString().startsWith("Torrent["), "Incorrect toString start");
 	}
 
 	@Test
@@ -423,13 +428,8 @@ public class TorrentTest {
 		byte[] peerIdTwo = DummyEntity.createUniquePeerId(peerId);
 
 		BitTorrentSocket socketMockOne = mock(BitTorrentSocket.class);
-		socketMockOne.setPassedHandshake();
-
 		BitTorrentSocket socketMockTwo = mock(BitTorrentSocket.class);
-		socketMockTwo.setPassedHandshake();
-
 		BitTorrentSocket socketMockThree = mock(BitTorrentSocket.class);
-		socketMockThree.close();
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		when(torrentClientMock.getModules()).thenReturn(Collections.emptyList());
@@ -457,31 +457,34 @@ public class TorrentTest {
 				.setId(peerIdTwo)
 				.build();
 
-		assertEquals("Peer list should be empty", 0, cut.getPeers().size());
+		assertEquals(0, cut.getPeers().size(), "Peer list should be empty");
 
 		cut.addPeer(peerOne);
 
-		assertEquals("Peer one should have been added to the list.", 1, cut.getPeers().size());
-		assertTrue("Peer one should have been added to the list.", cut.getPeers().contains(peerOne));
+		assertEquals(1, cut.getPeers().size(), "Peer one should have been added to the list.");
+		assertThat("Peer one should have been added to the list.", cut.getPeers(), hasItems(peerOne));
+		verify(socketMockOne).setPassedHandshake();
 
 		cut.addPeer(peerThree);
 
-		assertEquals("Peer three should not have been added to the list twice.", 1, cut.getPeers().size());
-		assertFalse("Peer three should not be present in the list.", cut.getPeers().stream().anyMatch(p -> p == peerThree));
+		assertEquals(1, cut.getPeers().size(), "Peer three should not have been added to the list as it has the same peer id as peer one.");
+		assertThat("Peer three should not be present in the list.", cut.getPeers(), not(hasItems(sameInstance(peerThree))));
+		verify(socketMockThree).close();
 
 		cut.addPeer(peerTwo);
 
-		assertEquals("Peer two should have been added to the list.", 2, cut.getPeers().size());
-		assertTrue("Peer two should have been added to the list.", cut.getPeers().contains(peerTwo));
+		assertThat("Peer two should have been added to the list.", cut.getPeers(), hasSize(2));
+		assertThat("Peer two should have been added to the list.", cut.getPeers(), hasItem(peerTwo));
+		verify(socketMockTwo).setPassedHandshake();
 
 		cut.removePeer(peerTwo);
 
-		assertEquals("Peer two should have been removed from the list.", 1, cut.getPeers().size());
-		assertFalse("Peer two should have been removed to the list.", cut.getPeers().contains(peerTwo));
+		assertThat("Peer two should have been removed from the list.", cut.getPeers(), hasSize(1));
+		assertThat("Peer two should have been removed to the list.", cut.getPeers(), not(hasItem(peerTwo)));
 
 		cut.removePeer(peerTwo);
 
-		assertEquals("Removal of peer two twice should not affect the list on the second attempt.", 1, cut.getPeers().size());
+		assertThat("Removal of peer two twice should not affect the list on the second attempt.", cut.getPeers(), hasSize(1));
 	}
 
 	@Test
@@ -582,22 +585,22 @@ public class TorrentTest {
 			expectedPieces.remove(Whitebox.<Integer>getInternalState(message, "pieceIndex"));
 		}
 
-		assertEquals("All pieces marked as have should have been send as have message", 0, expectedPieces.size());
+		assertThat("All pieces marked as have should have been send as have message", expectedPieces, empty());
 	}
 
 	@Test
 	public void testBuilderCanDownload() {
 		Torrent.Builder builder = new Torrent.Builder();
 
-		assertFalse("Torrent should not be downloadable yet", builder.canDownload());
+		assertFalse(builder.canDownload(), "Torrent should not be downloadable yet");
 
 		builder.setName("Can download");
 
-		assertFalse("Torrent should not be downloadable yet", builder.canDownload());
+		assertFalse(builder.canDownload(), "Torrent should not be downloadable yet");
 
 		builder.setMetadata(mock(Metadata.class));
 
-		assertTrue("Torrent should be downloadable", builder.canDownload());
+		assertTrue(builder.canDownload(), "Torrent should be downloadable");
 	}
 
 	@Test
@@ -607,7 +610,7 @@ public class TorrentTest {
 				.setMetadata(DummyEntity.createMetadata())
 				.build();
 
-		assertEquals("Incorrect display name", "Test", cut.getDisplayName());
+		assertEquals("Test", cut.getDisplayName(), "Incorrect display name");
 	}
 
 	@Test
@@ -617,9 +620,9 @@ public class TorrentTest {
 				.setMetadata(DummyEntity.createMetadata())
 				.build();
 
-		assertEquals("Incorrect amount of uploaded bytes, nothing is uploaded", 0, cut.getUploadedBytes());
+		assertEquals(0, cut.getUploadedBytes(), "Incorrect amount of uploaded bytes, nothing is uploaded");
 		cut.addUploadedBytes(15);
-		assertEquals("Incorrect amount of uploaded bytes, data has been uploaded", 15, cut.getUploadedBytes());
+		assertEquals(15, cut.getUploadedBytes(), "Incorrect amount of uploaded bytes, data has been uploaded");
 	}
 
 	@Test
@@ -640,12 +643,12 @@ public class TorrentTest {
 				.setMetadata(metadataMock)
 				.build();
 
-		assertTrue("Metadata should have returned that it is not done yet", cut.isDownloadingMetadata());
-		assertTrue("Metadata should have returned that it is done, but the torrent fileset has not been set yet.", cut.isDownloadingMetadata());
+		assertTrue(cut.isDownloadingMetadata(), "Metadata should have returned that it is not done yet");
+		assertTrue(cut.isDownloadingMetadata(), "Metadata should have returned that it is done, but the torrent fileset has not been set yet.");
 
 		cut.setFileSet(fileSetMock);
 
-		assertFalse("Metadata should have returned that it is done", cut.isDownloadingMetadata());
+		assertFalse(cut.isDownloadingMetadata(), "Metadata should have returned that it is done");
 	}
 
 	@Test
@@ -657,6 +660,6 @@ public class TorrentTest {
 				.setMetadata(metadataMock)
 				.build();
 
-		assertEquals("As no name has been supplied the metadata name should be used", "magnet(ab)", cut.getDisplayName());
+		assertEquals("magnet(ab)", cut.getDisplayName(), "As no name has been supplied the metadata name should be used");
 	}
 }

@@ -6,16 +6,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Test;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -47,7 +49,7 @@ public class FullPieceSelectTest {
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		assertEquals("Incorrect piece has been selected", pieceOne, chosenPiece.get());
+		assertEquals(pieceOne, chosenPiece.get(), "Incorrect piece has been selected");
 	}
 
 	@Test
@@ -99,7 +101,7 @@ public class FullPieceSelectTest {
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		assertEquals("Incorrect piece has been selected", pieceTwo, chosenPiece.get());
+		assertThat("Incorrect piece has been selected", assertPresent("A piece should be selected", chosenPiece), equalTo(pieceTwo));
 	}
 
 	@Test
@@ -121,7 +123,7 @@ public class FullPieceSelectTest {
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		assertEquals("Incorrect piece has been selected", pieceTwo, chosenPiece.get());
+		assertThat("Incorrect piece has been selected", assertPresent("A piece should be selected", chosenPiece), equalTo(pieceTwo));
 	}
 
 	@Test
@@ -146,6 +148,6 @@ public class FullPieceSelectTest {
 		FullPieceSelect cut = new FullPieceSelect(torrentMock);
 		Optional<Piece> chosenPiece = cut.getPieceForPeer(peerMock);
 
-		assertEquals("Incorrect piece has been selected", pieceTwo, chosenPiece.get());
+		assertThat("Incorrect piece has been selected", assertPresent("A piece should be selected.", chosenPiece), equalTo(pieceTwo));
 	}
 }

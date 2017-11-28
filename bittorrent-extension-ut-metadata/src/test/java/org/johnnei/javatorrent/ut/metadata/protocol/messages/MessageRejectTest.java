@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.ut.metadata.protocol.messages;
 import java.nio.charset.Charset;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -13,10 +15,8 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,8 +36,8 @@ public class MessageRejectTest {
 		byte[] result = outStream.toByteArray();
 		String expectedOutput = "d5:piecei5e8:msg_typei2ee";
 
-		assertEquals("Incorrect length", expectedOutput.getBytes(Charset.forName("UTF-8")).length, cut.getLength());
-		assertEquals("Incorrect output", expectedOutput, new String(result, Charset.forName("UTF-8")));
+		assertEquals(expectedOutput.getBytes(Charset.forName("UTF-8")).length, cut.getLength(), "Incorrect length");
+		assertEquals(expectedOutput, new String(result, Charset.forName("UTF-8")), "Incorrect output");
 	}
 
 	@Test
@@ -87,7 +87,7 @@ public class MessageRejectTest {
 	@Test
 	public void testToString() {
 		MessageReject cut = new MessageReject();
-		assertTrue("Incorrect toString start", cut.toString().startsWith("MessageReject["));
+		assertTrue(cut.toString().startsWith("MessageReject["), "Incorrect toString start");
 	}
 
 }

@@ -2,10 +2,8 @@ package org.johnnei.javatorrent.utp;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-import org.junit.Ignore;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.it.EndToEndDownload;
@@ -20,13 +18,10 @@ import org.johnnei.javatorrent.tracker.UncappedDistributor;
 /**
  * Tests the ability to cleanly download a torrent.
  */
-@Ignore("JBT-59 has significantly improved the stability of uTP, it is not fast enough yet to actually pass this test within reasonable time.")
+@Disabled("JBT-59 has significantly improved the stability of uTP, it is not fast enough yet to actually pass this test within reasonable time.")
 public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 
 	public DownloadTorrentWithUtpIT() {
-		// The uTP implementation doesn't actually benefit from the speed gains in JBT-33.
-		// Increase this timeout to ensure this test can still pass.
-		timeout = new Timeout(10, TimeUnit.MINUTES);
 	}
 
 	protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {

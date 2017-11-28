@@ -4,8 +4,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CallbackFutureTest {
 
@@ -15,26 +17,23 @@ public class CallbackFutureTest {
 
 	@Test
 	public void testDone() throws Exception {
-		final String result = "Called";
 		consumerCalled = false;
 
 		Consumer<FutureTask<String>> consumer = (f) -> {
 			try {
-				Assert.assertEquals("Expected result", f.get(), result);
+				assertEquals("Called", f.get());
 			} catch (Exception e) {
 				throw new AssertionError("Consumer failed to get result of task", e);
 			}
 			consumerCalled = true;
 		};
 
-		Callable<String> callable = () -> {
-			return "Called";
-		};
+		Callable<String> callable = () -> "Called";
 
 		cut = new CallbackFuture<>(callable, consumer);
 		cut.run();
 
-		Assert.assertTrue("Consumer didn't get called", consumerCalled);
+		assertTrue(consumerCalled, "Consumer didn't get called");
 	}
 
 }

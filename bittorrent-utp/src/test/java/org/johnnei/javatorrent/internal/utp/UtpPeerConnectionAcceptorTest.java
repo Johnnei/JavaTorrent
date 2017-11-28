@@ -1,20 +1,21 @@
 package org.johnnei.javatorrent.internal.utp;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 
 import static com.jayway.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -22,9 +23,6 @@ import static org.mockito.Mockito.when;
  * Tests {@link UtpPeerConnectionAcceptor}
  */
 public class UtpPeerConnectionAcceptorTest {
-
-	@Rule
-	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 
 	@Test
 	public void testAcceptSocket() throws IOException {
@@ -51,7 +49,7 @@ public class UtpPeerConnectionAcceptorTest {
 			cut.onReceivedConnection(socketMock);
 		}).start();
 
-		assertEquals("Incorrect socket has been returned", socketMock, cut.acceptSocket());
+		assertTimeoutPreemptively(Duration.of(5, ChronoUnit.SECONDS), () -> assertEquals(socketMock, cut.acceptSocket(), "Incorrect socket has been returned"));
 	}
 
 }
