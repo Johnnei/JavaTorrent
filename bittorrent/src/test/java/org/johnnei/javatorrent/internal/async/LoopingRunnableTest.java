@@ -3,12 +3,12 @@ package org.johnnei.javatorrent.internal.async;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.async.LoopingRunnable;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests {@link LoopingRunnable}
@@ -17,7 +17,7 @@ public class LoopingRunnableTest {
 
 	private CountDownLatch countDownLatch;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		countDownLatch = new CountDownLatch(1);
 	}

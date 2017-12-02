@@ -1,11 +1,7 @@
 package org.johnnei.javatorrent.internal.utp;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
@@ -16,20 +12,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class PacketSizeHandlerTest {
 
-	@Mock
 	private SocketWindowHandler windowHandler;
 
-	@InjectMocks
 	private PacketSizeHandler cut;
 
 	private UtpPacket sentPacket;
 	private UtpPacket receivedPacket;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
+		windowHandler = mock(SocketWindowHandler.class);
+		cut = new PacketSizeHandler(windowHandler);
+
 		sentPacket = mock(UtpPacket.class);
 		UtpHeader sentHeader = mock(UtpHeader.class);
 

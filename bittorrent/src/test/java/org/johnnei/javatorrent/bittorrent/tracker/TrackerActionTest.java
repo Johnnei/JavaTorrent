@@ -1,36 +1,37 @@
 package org.johnnei.javatorrent.bittorrent.tracker;
 
-import org.junit.Test;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests {@link TrackerAction}
  */
 public class TrackerActionTest {
 
-	@Test
-	public void testConnect() {
-		assertEquals(TrackerAction.CONNECT, TrackerAction.of(0));
+	@ParameterizedTest
+	@MethodSource("actionIdMapping")
+	public void testConnect(TrackerAction action, int expectedId) {
+		assertEquals(expectedId, action.getId());
+	}
+
+	public static Stream<Arguments> actionIdMapping() {
+		return Stream.of(
+			Arguments.of(TrackerAction.CONNECT, 0),
+			Arguments.of(TrackerAction.ANNOUNCE, 1),
+			Arguments.of(TrackerAction.SCRAPE, 2),
+			Arguments.of(TrackerAction.ERROR, 3)
+		);
 	}
 
 	@Test
-	public void testAnnounce() {
-		assertEquals(TrackerAction.ANNOUNCE, TrackerAction.of(1));
-	}
-
-	@Test
-	public void testScrape() {
-		assertEquals(TrackerAction.SCRAPE, TrackerAction.of(2));
-	}
-
-	@Test
-	public void testError() {
-		assertEquals(TrackerAction.ERROR, TrackerAction.of(3));
-	}
-
-	@Test(expected = IllegalArgumentException.class)
 	public void testIncorrectId() {
-		TrackerAction.of(4);
+		assertThrows(IllegalArgumentException.class, () -> TrackerAction.of(4));
 	}
 }

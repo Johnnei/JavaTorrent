@@ -1,11 +1,11 @@
 package org.johnnei.javatorrent.utils;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 import org.johnnei.javatorrent.test.TestUtils;
-
-import org.junit.Test;
 
 /**
  * Invokes the private constructors of the various utility classes to maximize the coverage validity.

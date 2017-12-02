@@ -1,62 +1,63 @@
 package org.johnnei.javatorrent.torrent.files;
 
+import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.johnnei.junit.jupiter.Folder;
+import org.johnnei.junit.jupiter.TempFolderExtension;
 
 import static org.johnnei.javatorrent.test.TestUtils.assertEqualityMethods;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link Piece}
  */
+@ExtendWith(TempFolderExtension.class)
 public class PieceTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Test
 	public void testStatusCounts() {
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 
-		assertEquals("Incorrect amount of blocks have been created", 10, piece.getBlockCount());
-		assertEquals("Incorrect amount of blocks with status Needed", 10, piece.countBlocksWithStatus(BlockStatus.Needed));
-		assertTrue("No piece with Needed status but there should be 10", piece.hasBlockWithStatus(BlockStatus.Needed));
-		assertFalse("Piece is started but shouldn't be", piece.isStarted());
-		assertFalse("Piece is done but shouldn't be", piece.isDone());
-		assertEquals("Incorrect amount of bytes remaining", 50, piece.countRemainingBytes());
+		assertEquals(10, piece.getBlockCount(), "Incorrect amount of blocks have been created");
+		assertEquals(10, piece.countBlocksWithStatus(BlockStatus.Needed), "Incorrect amount of blocks with status Needed");
+		assertTrue(piece.hasBlockWithStatus(BlockStatus.Needed), "No piece with Needed status but there should be 10");
+		assertFalse(piece.isStarted(), "Piece is started but shouldn't be");
+		assertFalse(piece.isDone(), "Piece is done but shouldn't be");
+		assertEquals(50, piece.countRemainingBytes(), "Incorrect amount of bytes remaining");
 		piece.setBlockStatus(0, BlockStatus.Requested);
-		assertTrue("No piece with Requested status but there should be 1", piece.hasBlockWithStatus(BlockStatus.Requested));
+		assertTrue(piece.hasBlockWithStatus(BlockStatus.Requested), "No piece with Requested status but there should be 1");
 		piece.setBlockStatus(1, BlockStatus.Stored);
-		assertTrue("No piece with Stored status but there should be 1", piece.hasBlockWithStatus(BlockStatus.Stored));
+		assertTrue(piece.hasBlockWithStatus(BlockStatus.Stored), "No piece with Stored status but there should be 1");
 		piece.setBlockStatus(2, BlockStatus.Verified);
-		assertTrue("No piece with Verified status but there should be 1", piece.hasBlockWithStatus(BlockStatus.Verified));
-		assertEquals("Incorrect amount of blocks with status Needed", 7, piece.countBlocksWithStatus(BlockStatus.Needed));
-		assertEquals("Incorrect amount of blocks with status Requested", 1, piece.countBlocksWithStatus(BlockStatus.Requested));
-		assertEquals("Incorrect amount of blocks with status Stored", 1, piece.countBlocksWithStatus(BlockStatus.Stored));
-		assertEquals("Incorrect amount of blocks with status Verified", 1, piece.countBlocksWithStatus(BlockStatus.Verified));
-		assertEquals("Incorrect amount of bytes remaining", 45, piece.countRemainingBytes());
-		assertTrue("Piece should be started but isn't", piece.isStarted());
-		assertFalse("Piece shouldn't be done but is.", piece.isDone());
+		assertTrue(piece.hasBlockWithStatus(BlockStatus.Verified), "No piece with Verified status but there should be 1");
+		assertEquals(7, piece.countBlocksWithStatus(BlockStatus.Needed), "Incorrect amount of blocks with status Needed");
+		assertEquals(1, piece.countBlocksWithStatus(BlockStatus.Requested), "Incorrect amount of blocks with status Requested");
+		assertEquals(1, piece.countBlocksWithStatus(BlockStatus.Stored), "Incorrect amount of blocks with status Stored");
+		assertEquals(1, piece.countBlocksWithStatus(BlockStatus.Verified), "Incorrect amount of blocks with status Verified");
+		assertEquals(45, piece.countRemainingBytes(), "Incorrect amount of bytes remaining");
+		assertTrue(piece.isStarted(), "Piece should be started but isn't");
+		assertFalse(piece.isDone(), "Piece shouldn't be done but is.");
 		for (int i = 0; i < piece.getBlockCount(); i++) {
 			piece.setBlockStatus(i, BlockStatus.Verified);
 		}
-		assertTrue("Piece should be started but isn't", piece.isStarted());
-		assertTrue("Piece should be done but isn't.", piece.isDone());
-		assertEquals("Incorrect amount of bytes remaining", 0, piece.countRemainingBytes());
+		assertTrue(piece.isStarted(), "Piece should be started but isn't");
+		assertTrue(piece.isDone(), "Piece should be done but isn't.");
+		assertEquals(0, piece.countRemainingBytes(), "Incorrect amount of bytes remaining");
 	}
 
 	@Test
@@ -64,40 +65,40 @@ public class PieceTest {
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 
 		Optional<Block> blockOptional = piece.getRequestBlock();
-		assertTrue("Piece should have returned a block, but didn't", blockOptional.isPresent());
-		assertTrue("Piece should be started but isn't", piece.isStarted());
+		assertTrue(blockOptional.isPresent(), "Piece should have returned a block, but didn't");
+		assertTrue(piece.isStarted(), "Piece should be started but isn't");
 
-		assertEquals("Incorrect piece has been returned", 0, blockOptional.get().getIndex());
-		assertEquals("Incorrect block size", 5, blockOptional.get().getSize());
-		assertEquals("Incorrect block size", 5, piece.getBlockSize(0));
-		assertEquals("Incorrect block status", BlockStatus.Requested, piece.getBlockStatus(0));
-		assertEquals("Incorrect block status", BlockStatus.Requested, blockOptional.get().getStatus());
+		assertEquals(0, blockOptional.get().getIndex(), "Incorrect piece has been returned");
+		assertEquals(5, blockOptional.get().getSize(), "Incorrect block size");
+		assertEquals(5, piece.getBlockSize(0), "Incorrect block size");
+		assertEquals(BlockStatus.Requested, piece.getBlockStatus(0), "Incorrect block status");
+		assertEquals(BlockStatus.Requested, blockOptional.get().getStatus(), "Incorrect block status");
 
 		for (int i = 1; i < piece.getBlockCount(); i++) {
 			blockOptional = piece.getRequestBlock();
-			assertTrue("Piece should have returned a block, but didn't", blockOptional.isPresent());
-			assertTrue("Piece should be started but isn't", piece.isStarted());
+			assertTrue(blockOptional.isPresent(), "Piece should have returned a block, but didn't");
+			assertTrue(piece.isStarted(), "Piece should be started but isn't");
 		}
 
-		assertFalse("Should not have returned a piece after all pieces have been requested", piece.getRequestBlock().isPresent());
+		assertFalse(piece.getRequestBlock().isPresent(), "Should not have returned a piece after all pieces have been requested");
 	}
 
 	@Test
 	public void testOnHashFail() {
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
 
-		assertEquals("Test relies on 10 pieces. Incorrect piece as starting state.", 10, piece.getBlockCount());
+		assertEquals(10, piece.getBlockCount(), "Test relies on 10 pieces. Incorrect piece as starting state.");
 		for (int i = 0; i < 10; i++) {
 			piece.setBlockStatus(i, BlockStatus.Verified);
 		}
 
-		assertTrue("Piece should be done but isn't.", piece.isDone());
+		assertTrue(piece.isDone(), "Piece should be done but isn't.");
 
 		for (int i = 0; i < 10; i++) {
 			piece.onHashMismatch();
-			assertEquals("Incorrect amount of pieces with status Verified", 9, piece.countBlocksWithStatus(BlockStatus.Verified));
-			assertEquals("Incorrect amount of pieces with status Needed", 1, piece.countBlocksWithStatus(BlockStatus.Needed));
-			assertEquals("Incorrect status for expected piece to be reset", BlockStatus.Needed, piece.getBlockStatus(i));
+			assertEquals(9, piece.countBlocksWithStatus(BlockStatus.Verified), "Incorrect amount of pieces with status Verified");
+			assertEquals(1, piece.countBlocksWithStatus(BlockStatus.Needed), "Incorrect amount of pieces with status Needed");
+			assertEquals(BlockStatus.Needed, piece.getBlockStatus(i), "Incorrect status for expected piece to be reset");
 			piece.setBlockStatus(i, BlockStatus.Verified);
 		}
 	}
@@ -106,7 +107,7 @@ public class PieceTest {
 	public void testGetFileSet() {
 		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
 		Piece piece = new Piece(fileSetMock, new byte[20], 0, 50, 5);
-		assertEquals("Incorrect fileset has been returned", fileSetMock, piece.getFileSet());
+		assertEquals(fileSetMock, piece.getFileSet(), "Incorrect fileset has been returned");
 	}
 
 	@Test
@@ -114,91 +115,61 @@ public class PieceTest {
 		Piece pieceOne = new Piece(null, new byte[20], 0, 50, 5);
 		Piece pieceTwo = new Piece(null, new byte[20], 0, 50, 5);
 		Piece pieceThree = new Piece(null, new byte[20], 1, 50, 5);
-		assertTrue("Incorrect toString start", pieceOne.toString().startsWith("Piece["));
+		assertTrue(pieceOne.toString().startsWith("Piece["), "Incorrect toString start");
 		assertEqualityMethods(pieceOne, pieceTwo, pieceThree);
 	}
 
-	@Test
-	public void testSetStatusIAEUnderflow() {
-		thrown.expect(IllegalArgumentException.class);
-
+	@ParameterizedTest
+	@MethodSource("invalidStatusCalls")
+	public void testRangeValidations(Consumer<Piece> consumer) {
 		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
-		piece.setBlockStatus(-1, BlockStatus.Needed);
+		assertThrows(IllegalArgumentException.class, () -> consumer.accept(piece));
+	}
+
+	public static Stream<Consumer<Piece>> invalidStatusCalls() {
+		return Stream.of(
+			piece -> piece.setBlockStatus(-1, BlockStatus.Needed),
+			piece -> piece.setBlockStatus(11, BlockStatus.Verified),
+			piece -> piece.getBlockStatus(-1),
+			piece -> piece.getBlockStatus(11),
+			piece -> piece.getBlockSize(-1),
+			piece -> piece.getBlockSize(11)
+		);
 	}
 
 	@Test
-	public void testSetStatusIAEOverflow() {
-		thrown.expect(IllegalArgumentException.class);
-
-		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
-		piece.setBlockStatus(11, BlockStatus.Verified);
-	}
-
-	@Test
-	public void testGetStatusIAEUnderflow() {
-		thrown.expect(IllegalArgumentException.class);
-
-		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
-		piece.getBlockStatus(-1);
-	}
-
-	@Test
-	public void testGetStatusIAEOverflow() {
-		thrown.expect(IllegalArgumentException.class);
-
-		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
-		piece.getBlockStatus(11);
-	}
-
-	@Test
-	public void testGetSizeIAEUnderflow() {
-		thrown.expect(IllegalArgumentException.class);
-
-		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
-		piece.getBlockSize(-1);
-	}
-
-	@Test
-	public void testGetSizeIAEOverflow() {
-		thrown.expect(IllegalArgumentException.class);
-
-		Piece piece = new Piece(null, new byte[20], 0, 50, 5);
-		piece.getBlockSize(11);
-	}
-
-	@Test
-	public void testCheckHashOnIncompleteFile() throws Exception {
+	public void testCheckHashOnIncompleteFile(@Folder Path temporaryFolder) throws Exception {
 		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
 		when(fileSetMock.getBlockSize()).thenReturn(5);
 		when(fileSetMock.getPieceSize()).thenReturn(20L);
 
-		FileInfo fileInfo = new FileInfo(20, 0, temporaryFolder.newFile(), 1);
+		FileInfo fileInfo = new FileInfo(20, 0, temporaryFolder.resolve("1").toFile(), 1);
 		when(fileSetMock.getFileForBytes(0, 0, 0)).thenReturn(fileInfo);
 
 		Piece cut = new Piece(fileSetMock, new byte[20], 0, 50, 5);
 
-		assertFalse("Hash should not be matching, but also not throw an exception.", cut.checkHash());
+		assertFalse(cut.checkHash(), "Hash should not be matching, but also not throw an exception.");
 	}
 
 	@Test
-	public void testCheckHashOnIncompleteFileSpanningMultipleFiles() throws Exception {
+	public void testCheckHashOnIncompleteFileSpanningMultipleFiles(@Folder Path temporaryFolder) throws Exception {
 		AbstractFileSet fileSetMock = mock(AbstractFileSet.class);
 		when(fileSetMock.getBlockSize()).thenReturn(5);
 		when(fileSetMock.getPieceSize()).thenReturn(20L);
 
-		FileInfo fileInfoOne = new FileInfo(10, 0, temporaryFolder.newFile(), 1);
+		FileInfo fileInfoOne = new FileInfo(10, 0, temporaryFolder.resolve("1").toFile(), 1);
 
 		// Ensure that the first file passes the length requirement so the test could fail on the second file.
 		fileInfoOne.getFileAccess().seek(0);
 		fileInfoOne.getFileAccess().setLength(10);
 
-		FileInfo fileInfoTwo = new FileInfo(10, 10, temporaryFolder.newFile(), 1);
+		FileInfo fileInfoTwo = new FileInfo(10, 10, temporaryFolder.resolve("2").toFile(), 1);
 		when(fileSetMock.getFileForBytes(0, 0, 0)).thenReturn(fileInfoOne);
 		when(fileSetMock.getFileForBytes(0, 2, 0)).thenReturn(fileInfoTwo);
 
 		Piece cut = new Piece(fileSetMock, new byte[20], 0, 50, 5);
 
-		assertFalse("Hash should not be matching, but also not throw an exception.", cut.checkHash());
+		assertFalse(cut.checkHash(), "Hash should not be matching, but also not throw an exception.");
 	}
 
 }

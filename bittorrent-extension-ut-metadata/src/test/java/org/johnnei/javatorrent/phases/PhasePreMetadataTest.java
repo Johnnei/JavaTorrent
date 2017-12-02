@@ -1,9 +1,14 @@
 package org.johnnei.javatorrent.phases;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.module.MetadataInformation;
@@ -17,193 +22,142 @@ import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.StringUtils;
+import org.johnnei.junit.jupiter.Folder;
+import org.johnnei.junit.jupiter.TempFolderExtension;
 
-import org.easymock.EasyMockSupport;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.isA;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link PhasePreMetadata}
  */
-public class PhasePreMetadataTest extends EasyMockSupport {
-
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+@ExtendWith(TempFolderExtension.class)
+public class PhasePreMetadataTest {
 
 	private File metadataFile;
 	private Torrent torrentMock;
 	private Metadata metadataMock;
 	private TorrentClient torrentClientMock;
 
-	private void setUpTorrentClient() throws Exception {
+	@BeforeEach
+	public void setUpTorrentClient(@Folder Path tmp) throws Exception {
 		metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
-		torrentMock = createMock(Torrent.class);
-		metadataMock = createMock(Metadata.class);
-		ExtensionModule extensionModuleMock = createMock(ExtensionModule.class);
-		UTMetadataExtension metadataExtensionMock = createMock(UTMetadataExtension.class);
-		torrentClientMock = createMock(TorrentClient.class);
+		torrentMock = mock(Torrent.class);
+		metadataMock = mock(Metadata.class);
+		ExtensionModule extensionModuleMock = mock(ExtensionModule.class);
+		UTMetadataExtension metadataExtensionMock = mock(UTMetadataExtension.class);
+		torrentClientMock = mock(TorrentClient.class);
 
-		expect(torrentMock.getMetadata()).andReturn(metadataMock).anyTimes();
-		expect(torrentClientMock.getModule(eq(ExtensionModule.class))).andReturn(Optional.of(extensionModuleMock));
-		expect(extensionModuleMock.getExtensionByName(eq("ut_metadata"))).andReturn(Optional.of(metadataExtensionMock));
-		expect(metadataExtensionMock.getTorrentFile(eq(torrentMock))).andAnswer(() -> metadataFile);
-		expect(metadataExtensionMock.getDownloadFolder()).andReturn(temporaryFolder.newFolder());
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(torrentClientMock.getModule(eq(ExtensionModule.class))).thenReturn(Optional.of(extensionModuleMock));
+		when(extensionModuleMock.getExtensionByName(eq("ut_metadata"))).thenReturn(Optional.of(metadataExtensionMock));
+		when(metadataExtensionMock.getTorrentFile(eq(torrentMock))).thenAnswer(inv -> metadataFile);
+		when(metadataExtensionMock.getDownloadFolder()).thenReturn(tmp.resolve("folder").toFile());
 	}
 
 	@Test
 	public void testIsDone() throws Exception {
-		setUpTorrentClient();
-		metadataFile = temporaryFolder.newFile();
-		Peer peerMockOne = createMock(Peer.class);
-		Peer peerMockTwo = createMock(Peer.class);
+		Peer peerMockOne = mock(Peer.class);
+		Peer peerMockTwo = mock(Peer.class);
 
-		expect(torrentMock.getPeers()).andStubReturn(Arrays.asList(peerMockOne, peerMockTwo));
-		expect(peerMockOne.getModuleInfo(eq(MetadataInformation.class))).andReturn(Optional.empty());
-		expect(peerMockTwo.getModuleInfo(eq(MetadataInformation.class))).andReturn(Optional.of(new MetadataInformation()));
-
-		replayAll();
+		when(torrentMock.getPeers()).thenReturn(Arrays.asList(peerMockOne, peerMockTwo));
+		when(peerMockOne.getModuleInfo(eq(MetadataInformation.class))).thenReturn(Optional.empty());
+		when(peerMockTwo.getModuleInfo(eq(MetadataInformation.class))).thenReturn(Optional.of(new MetadataInformation()));
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
-		boolean result = cut.isDone();
 
-		verifyAll();
-
-		assertTrue("Peer has information so it should have been done.", result);
+		assertTrue(cut.isDone(), "Peer has information so it should have been done.");
 	}
 
 	@Test
 	public void testIsDoneNoPeers() throws Exception {
-		setUpTorrentClient();
-		metadataFile = temporaryFolder.newFile();
-
-		expect(torrentMock.getPeers()).andStubReturn(Collections.emptyList());
-
-		replayAll();
+		when(torrentMock.getPeers()).thenReturn(Collections.emptyList());
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
-		boolean result = cut.isDone();
 
-		verifyAll();
-
-		assertFalse("No peers registered so can't be done.", result);
+		assertFalse(cut.isDone(), "No peers registered so can't be done.");
 	}
 
 	@Test
 	public void testProcess() throws Exception {
-		setUpTorrentClient();
-		metadataFile = temporaryFolder.newFile();
-
-		replayAll();
-
 		// No interaction expected.
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		cut.process();
-
-		verifyAll();
 	}
 
 	@Test
 	public void testOnPhaseEnter() throws Exception {
-		setUpTorrentClient();
-
-		expect(metadataMock.getHash()).andStubReturn(new byte[] {
+		when(metadataMock.getHash()).thenReturn(new byte[] {
 				(byte) 0xc8, 0x36, (byte) 0x9f, 0x0b, (byte) 0xa4, (byte) 0xbf, 0x6c, (byte) 0xd8,        0x7f, (byte) 0xb1,
 				       0x3b, 0x34,        0x37, 0x78,        0x2e,        0x2c, 0x78,        0x20, (byte) 0xbb,        0x38 });
-
-		replayAll();
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
-		verifyAll();
-
-		assertTrue("Torrent file should have matched", cut.foundMatchingFile);
+		assertTrue(cut.foundMatchingFile, "Torrent file should have matched");
 	}
 
 	@Test
 	public void testOnPhaseEnterMissingFile() throws Exception {
-		setUpTorrentClient();
 		metadataFile = new File("this_file_should_never_exist_hopefully.torrent");
-
-		replayAll();
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
-		verifyAll();
-
-		assertFalse("Torrent file should not have matched", cut.foundMatchingFile);
+		assertFalse(cut.foundMatchingFile, "Torrent file should not have matched");
 	}
 
 	@Test
 	public void testOnPhaseEnterMismatchedHash() throws Exception {
-		setUpTorrentClient();
-
-		expect(metadataMock.getHash()).andStubReturn(new byte[0]);
-
-		replayAll();
+		when(metadataMock.getHash()).thenReturn(new byte[0]);
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
-		verifyAll();
-
-		assertFalse("Torrent file should not have matched", cut.foundMatchingFile);
+		assertFalse(cut.foundMatchingFile, "Torrent file should not have matched");
 	}
 
 	@Test
-	public void testOnPhaseExit() throws Exception {
-		setUpTorrentClient();
-		metadataFile = temporaryFolder.newFile();
+	public void testOnPhaseExit(@Folder Path path) throws Exception {
+		metadataFile = path.resolve("metadata.torrent").toFile();
 
 		byte[] hash = DummyEntity.createUniqueTorrentHash();
 
-		Peer peerMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
 
 		MetadataInformation info = new MetadataInformation();
 		info.setMetadataSize(42);
-		expect(torrentMock.getPeers()).andStubReturn(Collections.singletonList(peerMock));
-		expect(peerMock.getModuleInfo(eq(MetadataInformation.class))).andReturn(Optional.of(info));
+		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peerMock));
+		when(peerMock.getModuleInfo(eq(MetadataInformation.class))).thenReturn(Optional.of(info));
 
-		expect(metadataMock.getHash()).andStubReturn(hash);
-		expect(metadataMock.getHashString()).andStubReturn(StringUtils.byteArrayToString(hash));
-		metadataMock.setFileSet(isA(MetadataFileSet.class));
-
-		replayAll();
+		when(metadataMock.getHash()).thenReturn(hash);
+		when(metadataMock.getHashString()).thenReturn(StringUtils.byteArrayToString(hash));
 
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		cut.isDone();
 		cut.onPhaseExit();
 
-		verifyAll();
+		verify(metadataMock).setFileSet(isA(MetadataFileSet.class));
 
-		assertTrue(String.format("Metadata file %s should have been created", metadataFile), metadataFile.exists());
-		assertEquals("Incorrect metadata size", 42, metadataFile.length());
+		assertTrue(metadataFile.exists(), String.format("Metadata file %s should have been created", metadataFile));
+		assertEquals(42, metadataFile.length(), "Incorrect metadata size");
 	}
 
 	@Test
 	public void testGetChokingStrategy() throws Exception {
-		setUpTorrentClient();
-
-		replayAll();
-
 		// No interaction expected.
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		IChokingStrategy result = cut.getChokingStrategy();
 
-		verifyAll();
-
-		assertNotNull("Value can never be null", result);
-		assertTrue("Strategy should have been Permissive", result instanceof PermissiveStrategy);
+		assertNotNull(result, "Value can never be null");
+		assertTrue(result instanceof PermissiveStrategy, "Strategy should have been Permissive");
 	}
 
 }

@@ -2,11 +2,8 @@ package org.johnnei.javatorrent.internal.utp;
 
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
@@ -18,10 +15,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class SocketWindowHandlerTest {
 
-	@InjectMocks
 	private SocketWindowHandler cut;
 
 	private UtpPacket sentPacket;
@@ -29,8 +24,10 @@ public class SocketWindowHandlerTest {
 	private UtpHeader receivedHeader;
 	private UtpHeader sentHeader;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
+		cut = new SocketWindowHandler();
+
 		sentPacket = mock(UtpPacket.class);
 		sentHeader = mock(UtpHeader.class);
 

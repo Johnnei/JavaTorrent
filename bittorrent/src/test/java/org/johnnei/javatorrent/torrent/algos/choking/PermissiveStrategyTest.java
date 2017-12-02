@@ -2,97 +2,87 @@ package org.johnnei.javatorrent.torrent.algos.choking;
 
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link PermissiveStrategy}
  */
-@RunWith(EasyMockRunner.class)
-public class PermissiveStrategyTest extends EasyMockSupport {
+public class PermissiveStrategyTest {
 
 	@Test
 	public void testUpdateChokingChoke() throws Exception {
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(filesMock.getNeededPieces()).andStubReturn(Stream.of(piece));
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+		when(filesMock.getNeededPieces()).thenReturn(Stream.of(piece));
 
-		Peer peerMock = createMock(Peer.class);
-		expect(peerMock.getTorrent()).andReturn(torrentMock);
-		expect(peerMock.hasPiece(eq(1))).andReturn(true);
-		expect(peerMock.isInterested(eq(PeerDirection.Download))).andReturn(true);
-		expect(peerMock.isInterested(eq(PeerDirection.Upload))).andReturn(false);
-		expect(peerMock.isChoked(eq(PeerDirection.Upload))).andReturn(false);
-		peerMock.setChoked(eq(PeerDirection.Upload), eq(true));
-
-		replayAll();
+		Peer peerMock = mock(Peer.class);
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(peerMock.hasPiece(eq(1))).thenReturn(true);
+		when(peerMock.isInterested(eq(PeerDirection.Download))).thenReturn(true);
+		when(peerMock.isInterested(eq(PeerDirection.Upload))).thenReturn(false);
+		when(peerMock.isChoked(eq(PeerDirection.Upload))).thenReturn(false);
 
 		PermissiveStrategy cut = new PermissiveStrategy();
 		cut.updateChoking(peerMock);
 
-		verifyAll();
+		verify(peerMock).setChoked(eq(PeerDirection.Upload), eq(true));
 	}
 
 	@Test
 	public void testUpdateChokingUnchoke() throws Exception {
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(filesMock.getNeededPieces()).andStubReturn(Stream.of(piece));
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+		when(filesMock.getNeededPieces()).thenReturn(Stream.of(piece));
 
-		Peer peerMock = createMock(Peer.class);
-		expect(peerMock.getTorrent()).andReturn(torrentMock);
-		expect(peerMock.hasPiece(eq(1))).andReturn(true);
-		expect(peerMock.isInterested(eq(PeerDirection.Download))).andReturn(true);
-		expect(peerMock.isInterested(eq(PeerDirection.Upload))).andReturn(true);
-		expect(peerMock.isChoked(eq(PeerDirection.Upload))).andReturn(true);
-		peerMock.setChoked(eq(PeerDirection.Upload), eq(false));
-
-		replayAll();
+		Peer peerMock = mock(Peer.class);
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(peerMock.hasPiece(eq(1))).thenReturn(true);
+		when(peerMock.isInterested(eq(PeerDirection.Download))).thenReturn(true);
+		when(peerMock.isInterested(eq(PeerDirection.Upload))).thenReturn(true);
+		when(peerMock.isChoked(eq(PeerDirection.Upload))).thenReturn(true);
 
 		PermissiveStrategy cut = new PermissiveStrategy();
 		cut.updateChoking(peerMock);
 
-		verifyAll();
+		verify(peerMock).setChoked(eq(PeerDirection.Upload), eq(false));
 	}
+
 	@Test
 	public void testUpdateChokingUpdateInterested() throws Exception {
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
 		Piece piece = new Piece(null, new byte[0], 1, 1, 1);
 
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(filesMock.getNeededPieces()).andStubReturn(Stream.of(piece));
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+		when(filesMock.getNeededPieces()).thenReturn(Stream.of(piece));
 
-		Peer peerMock = createMock(Peer.class);
-		expect(peerMock.getTorrent()).andReturn(torrentMock);
-		expect(peerMock.hasPiece(eq(1))).andReturn(true);
-		expect(peerMock.isInterested(eq(PeerDirection.Download))).andReturn(false);
-		expect(peerMock.isInterested(eq(PeerDirection.Upload))).andReturn(false);
-		expect(peerMock.isChoked(eq(PeerDirection.Upload))).andReturn(true);
-		peerMock.setInterested(eq(PeerDirection.Download), eq(true));
-
-		replayAll();
+		Peer peerMock = mock(Peer.class);
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(peerMock.hasPiece(eq(1))).thenReturn(true);
+		when(peerMock.isInterested(eq(PeerDirection.Download))).thenReturn(false);
+		when(peerMock.isInterested(eq(PeerDirection.Upload))).thenReturn(false);
+		when(peerMock.isChoked(eq(PeerDirection.Upload))).thenReturn(true);
 
 		PermissiveStrategy cut = new PermissiveStrategy();
 		cut.updateChoking(peerMock);
 
-		verifyAll();
+		verify(peerMock).setInterested(eq(PeerDirection.Download), eq(true));
 	}
 }

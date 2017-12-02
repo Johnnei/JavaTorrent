@@ -5,6 +5,9 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
@@ -14,20 +17,19 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockSupport;
-import org.junit.Before;
-import org.junit.Test;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import static org.easymock.EasyMock.anyLong;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
-import static org.easymock.EasyMock.same;
 
 /**
  * Tests {@link TorrentProcessor}
  */
-public class TorrentProcessorTest extends EasyMockSupport {
+public class TorrentProcessorTest {
 
 
 	private TorrentManager managerMock;
@@ -37,110 +39,100 @@ public class TorrentProcessorTest extends EasyMockSupport {
 	private ScheduledFuture futureMock;
 	private ScheduledExecutorService executorServiceMock;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
-		managerMock = createMock(TorrentManager.class);
-		torrentClient = createMock(TorrentClient.class);
+		managerMock = mock(TorrentManager.class);
+		torrentClient = mock(TorrentClient.class);
 
-		phaseMock = createMock(IDownloadPhase.class);
+		phaseMock = mock(IDownloadPhase.class);
 		phaseMock.onPhaseEnter();
-		phaseRegulatorMock = createMock(PhaseRegulator.class);
-		executorServiceMock = createMock(ScheduledExecutorService.class);
-		futureMock = createMock(ScheduledFuture.class);
+		phaseRegulatorMock = mock(PhaseRegulator.class);
+		executorServiceMock = mock(ScheduledExecutorService.class);
+		futureMock = mock(ScheduledFuture.class);
 
-		expect(torrentClient.getPhaseRegulator()).andStubReturn(phaseRegulatorMock);
-		expect(torrentClient.getExecutorService()).andStubReturn(executorServiceMock);
-		expect(phaseRegulatorMock.createInitialPhase(notNull(), notNull())).andReturn(phaseMock);
-		expect(executorServiceMock.scheduleAtFixedRate(notNull(), anyLong(), anyLong(), notNull())).andStubReturn(futureMock);
+		when(torrentClient.getPhaseRegulator()).thenReturn(phaseRegulatorMock);
+		when(torrentClient.getExecutorService()).thenReturn(executorServiceMock);
+		when(phaseRegulatorMock.createInitialPhase(notNull(), notNull())).thenReturn(phaseMock);
+		when(executorServiceMock.scheduleAtFixedRate(notNull(), anyLong(), anyLong(), notNull())).thenReturn(futureMock);
 	}
 
 	@Test
 	public void testUpdateTorrentStateEnd() {
-		Torrent torrentMock = createMock(Torrent.class);
-		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TrackerManager trackerManagerMock = mock(TrackerManager.class);
 
-		expect(phaseMock.isDone()).andReturn(true);
-		phaseMock.onPhaseExit();
-		expect(phaseRegulatorMock.createNextPhase(same(phaseMock), same(torrentClient), same(torrentMock))).andReturn(Optional.empty());
-		expect(futureMock.cancel(eq(false))).andReturn(true).times(4);
-		managerMock.removeTorrent(same(torrentMock));
+		when(phaseMock.isDone()).thenReturn(true);
+		when(phaseRegulatorMock.createNextPhase(same(phaseMock), same(torrentClient), same(torrentMock))).thenReturn(Optional.empty());
+		when(futureMock.cancel(eq(false))).thenReturn(true);
 
-		replayAll();
 		TorrentProcessor processor = new TorrentProcessor(managerMock, trackerManagerMock, torrentClient, torrentMock);
 		processor.updateTorrentState();
 
-		verifyAll();
+		verify(phaseMock).onPhaseExit();
+		verify(managerMock).removeTorrent(same(torrentMock));
 	}
 
 	@Test
 	public void testUpdateTorrentStateChangePhase() {
-		Torrent torrentMock = createMock(Torrent.class);
-		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
-		IDownloadPhase phaseTwoMock = createMock(IDownloadPhase.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TrackerManager trackerManagerMock = mock(TrackerManager.class);
+		IDownloadPhase phaseTwoMock = mock(IDownloadPhase.class);
 
-		expect(phaseMock.isDone()).andReturn(true);
-		phaseMock.onPhaseExit();
-		expect(phaseRegulatorMock.createNextPhase(same(phaseMock), same(torrentClient), same(torrentMock))).andReturn(Optional.of(phaseTwoMock));
-		phaseTwoMock.onPhaseEnter();
-		phaseTwoMock.process();
+		when(phaseMock.isDone()).thenReturn(true);
+		when(phaseRegulatorMock.createNextPhase(same(phaseMock), same(torrentClient), same(torrentMock))).thenReturn(Optional.of(phaseTwoMock));
 
-		replayAll();
 		TorrentProcessor processor = new TorrentProcessor(managerMock, trackerManagerMock, torrentClient, torrentMock);
 		processor.updateTorrentState();
 
-		verifyAll();
+		verify(phaseMock).onPhaseExit();
+		verify(phaseTwoMock).onPhaseEnter();
+		verify(phaseTwoMock).process();
 	}
 
 	@Test
 	public void testUpdateTorrentState() {
-		Torrent torrentMock = createMock(Torrent.class);
-		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TrackerManager trackerManagerMock = mock(TrackerManager.class);
 
-		expect(phaseMock.isDone()).andReturn(false);
-		phaseMock.process();
+		when(phaseMock.isDone()).thenReturn(false);
 
-		replayAll();
 		TorrentProcessor processor = new TorrentProcessor(managerMock, trackerManagerMock, torrentClient, torrentMock);
 		processor.updateTorrentState();
 
-		verifyAll();
+		verify(phaseMock).process();
 	}
 
 	@Test
 	public void testUpdateChokingStates() {
-		Torrent torrentMock = createMock(Torrent.class);
-		Peer peerMock = createMock(Peer.class);
-		IChokingStrategy chokingStrategyMock = createMock(IChokingStrategy.class);
-		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
+		Torrent torrentMock = mock(Torrent.class);
+		Peer peerMock = mock(Peer.class);
+		IChokingStrategy chokingStrategyMock = mock(IChokingStrategy.class);
+		TrackerManager trackerManagerMock = mock(TrackerManager.class);
 
-		expect(torrentMock.getPeers()).andReturn(Collections.singletonList(peerMock));
-		expect(phaseMock.getChokingStrategy()).andReturn(chokingStrategyMock);
-		chokingStrategyMock.updateChoking(same(peerMock));
+		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peerMock));
+		when(phaseMock.getChokingStrategy()).thenReturn(chokingStrategyMock);
 
-		replayAll();
 		TorrentProcessor processor = new TorrentProcessor(managerMock, trackerManagerMock, torrentClient, torrentMock);
 		processor.updateChokingStates();
 
-		verifyAll();
+		verify(chokingStrategyMock).updateChoking(same(peerMock));
 	}
 
 	@Test
 	public void testRemoveDisconnectedPeers() {
-		Torrent torrentMock = createMock(Torrent.class);
-		Peer peerMock = createMock(Peer.class);
-		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
-		TrackerManager trackerManagerMock = createMock(TrackerManager.class);
+		Torrent torrentMock = mock(Torrent.class);
+		Peer peerMock = mock(Peer.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
+		TrackerManager trackerManagerMock = mock(TrackerManager.class);
 
-		expect(torrentMock.getPeers()).andReturn(Collections.singletonList(peerMock));
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		expect(socketMock.closed()).andReturn(true);
-		torrentMock.removePeer(same(peerMock));
+		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peerMock));
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
+		when(socketMock.closed()).thenReturn(true);
 
-		replayAll();
 		TorrentProcessor processor = new TorrentProcessor(managerMock, trackerManagerMock, torrentClient, torrentMock);
 		processor.removeDisconnectedPeers();
 
-		verifyAll();
+		verify(torrentMock).removePeer(same(peerMock));
 	}
 
 }

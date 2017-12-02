@@ -1,103 +1,83 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.math.BigInteger;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.johnnei.javatorrent.test.TestUtils.assertEqualityMethods;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link BencodedInteger}
  */
 public class BencodedIntegerTest {
 
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
 	@Test
 	public void testLong() {
 		BencodedInteger integer = new BencodedInteger(35);
 
-		assertEquals("asBigInteger returned a different value", BigInteger.valueOf(35), integer.asBigInteger());
-		assertEquals("asLong returned a different value", 35L, integer.asLong());
-		assertEquals("Serialized form is incorrect", "i35e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals(BigInteger.valueOf(35), integer.asBigInteger(), "asBigInteger returned a different value");
+		assertEquals(35L, integer.asLong(), "asLong returned a different value");
+		assertEquals("i35e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING), "Serialized form is incorrect");
 	}
 
 	@Test
 	public void testBigInteger() {
 		BencodedInteger integer = new BencodedInteger(BigInteger.valueOf(35));
 
-		assertEquals("asBigInteger returned a different value", BigInteger.valueOf(35), integer.asBigInteger());
-		assertEquals("asLong returned a different value", 35L, integer.asLong());
-		assertEquals("Serialized form is incorrect", "i35e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals(BigInteger.valueOf(35), integer.asBigInteger(), "asBigInteger returned a different value");
+		assertEquals(35L, integer.asLong(), "asLong returned a different value");
+		assertEquals("i35e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING), "Serialized form is incorrect");
 	}
 
 	@Test
 	public void testBigIntegerOutOfLongRange() {
 		BencodedInteger integer = new BencodedInteger(new BigInteger("12345678987654321012"));
 
-		assertEquals("asBigInteger returned a different value", new BigInteger("12345678987654321012"), integer.asBigInteger());
-		assertEquals("Serialized form is incorrect", "i12345678987654321012e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals(new BigInteger("12345678987654321012"), integer.asBigInteger(), "asBigInteger returned a different value");
+		assertEquals("i12345678987654321012e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING), "Serialized form is incorrect");
 	}
 
 	@Test
 	public void testBigIntegerNegativeOutOfLongRange() {
 		BencodedInteger integer = new BencodedInteger(new BigInteger("-12345678987654321012"));
 
-		assertEquals("asBigInteger returned a different value", new BigInteger("-12345678987654321012"), integer.asBigInteger());
-		assertEquals("Serialized form is incorrect", "i-12345678987654321012e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals(new BigInteger("-12345678987654321012"), integer.asBigInteger(), "asBigInteger returned a different value");
+		assertEquals("i-12345678987654321012e", new String(integer.serialize(), BitTorrent.DEFAULT_ENCODING), "Serialized form is incorrect");
 	}
 
-	@Test
-	public void testBigIntegerNegativeOutOfLongRangeAsLong() {
-		thrown.expect(UnsupportedOperationException.class);
-		thrown.expectMessage("out of range");
-
-		BencodedInteger integer = new BencodedInteger(new BigInteger("-12345678987654321012"));
-		integer.asLong();
-	}
-
-	@Test
-	public void testBigIntegerOutOfLongRangeAsLong() {
-		thrown.expect(UnsupportedOperationException.class);
-		thrown.expectMessage("out of range");
-
+	@ParameterizedTest
+	@ValueSource(strings = { "-12345678987654321012", "12345678987654321012" })
+	public void testLongOutOfRange() {
 		BencodedInteger integer = new BencodedInteger(new BigInteger("12345678987654321012"));
-		integer.asLong();
+		Exception e = assertThrows(UnsupportedOperationException.class, integer::asLong);
+		assertThat(e.getMessage(), containsString("out of range"));
 	}
 
-	@Test
-	public void testAsBytes() {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedInteger(42L).asBytes();
+	@ParameterizedTest
+	@MethodSource("unsupportedOperations")
+	public void testUnsupportedMethods(Consumer<BencodedInteger> consumer) {
+		assertThrows(UnsupportedOperationException.class, () -> consumer.accept(new BencodedInteger(42L)));
 	}
 
-	@Test
-	public void testAsString() {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedInteger(42L).asString();
-	}
-
-	@Test
-	public void testAsList() {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedInteger(42L).asList();
-	}
-
-	@Test
-	public void testAsMap() {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedInteger(42L).asMap();
+	public static Stream<Consumer<BencodedInteger>> unsupportedOperations() {
+		return Stream.of(
+			BencodedInteger::asBytes,
+			BencodedInteger::asString,
+			BencodedInteger::asList,
+			BencodedInteger::asMap
+		);
 	}
 
 	@Test
@@ -111,7 +91,7 @@ public class BencodedIntegerTest {
 
 	@Test
 	public void testToString() {
-		assertTrue("Incorrect toString start", new BencodedInteger(42L).toString().startsWith("BencodedInteger["));
+		assertTrue(new BencodedInteger(42L).toString().startsWith("BencodedInteger["), "Incorrect toString start");
 	}
 
 }

@@ -8,45 +8,43 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import org.easymock.EasyMockSupport;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
 import org.johnnei.javatorrent.test.TestUtils;
 
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.same;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 
 /**
  * Tests {@link TcpSocket}
  */
-public class TcpSocketTest extends EasyMockSupport {
+public class TcpSocketTest {
 
 	private TcpSocket cut;
 
 	private Socket socketMock;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
-		socketMock = createMock(Socket.class);
+		socketMock = mock(Socket.class);
 		cut = new TcpSocket(socketMock);
 	}
 
 	@Test
 	public void testClose() throws Exception {
-		socketMock.close();
-
-		replayAll();
-
 		cut.close();
 
-		verifyAll();
+		verify(socketMock).close();
 	}
 
 	@Test
@@ -54,26 +52,17 @@ public class TcpSocketTest extends EasyMockSupport {
 		InputStream inputStream = new ByteArrayInputStream(new byte[0]);
 		OutputStream outputStream = new ByteArrayOutputStream();
 
-		expect(socketMock.getInputStream()).andReturn(inputStream);
-		expect(socketMock.getOutputStream()).andReturn(outputStream);
+		when(socketMock.getInputStream()).thenReturn(inputStream);
+		when(socketMock.getOutputStream()).thenReturn(outputStream);
 
-		replayAll();
-
-		assertEquals("Incorrect inputstream", inputStream, cut.getInputStream());
-		assertEquals("Incorrect outputstream", outputStream, cut.getOutputStream());
-
-		verifyAll();
+		assertEquals(inputStream, cut.getInputStream(), "Incorrect inputstream");
+		assertEquals(outputStream, cut.getOutputStream(), "Incorrect outputstream");
 	}
 
 	@Test
 	public void testIsInputShutdown() {
-		expect(socketMock.isInputShutdown()).andReturn(true);
-
-		replayAll();
-
+		when(socketMock.isInputShutdown()).thenReturn(true);
 		assertTrue(cut.isInputShutdown());
-
-		verifyAll();
 	}
 
 	@Test
@@ -86,76 +75,53 @@ public class TcpSocketTest extends EasyMockSupport {
 	public void testConnect() throws Exception {
 		InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), 27960);
 
-		socketMock.connect(same(socketAddress), eq(10_000));
-
-		replayAll();
-
 		cut.connect(socketAddress);
 
-		verifyAll();
+		verify(socketMock).connect(same(socketAddress), eq(10_000));
 	}
 
 	@Test
 	public void testEqualsAndHashcode() throws Exception {
-		Socket mockOne = createMock(Socket.class);
-		Socket mockTwo = createMock(Socket.class);
+		Socket mockOne = mock(Socket.class);
+		Socket mockTwo = mock(Socket.class);
 
 		TcpSocket socketOne = new TcpSocket(mockOne);
 		TcpSocket socketTwo = new TcpSocket(mockOne);
 		TcpSocket socketThree = new TcpSocket(mockTwo);
 
-		expect(mockOne.getRemoteSocketAddress()).andReturn(new InetSocketAddress(InetAddress.getLocalHost(), 27960));
+		when(mockOne.getRemoteSocketAddress()).thenReturn(new InetSocketAddress(InetAddress.getLocalHost(), 27960));
 
-		replayAll();
 		TestUtils.assertEqualityMethods(socketOne, socketTwo, socketThree);
 
-		assertTrue("Incorrect toString start", socketOne.toString().startsWith("TcpSocket["));
-
-		verifyAll();
+		assertTrue(socketOne.toString().startsWith("TcpSocket["), "Incorrect toString start");
 	}
 
 	@Test
 	public void testFlush() throws Exception {
-		OutputStream outputStreamMock = createMock(OutputStream.class);
+		OutputStream outputStreamMock = mock(OutputStream.class);
 
-		expect(socketMock.getOutputStream()).andReturn(outputStreamMock);
-		outputStreamMock.flush();
-
-		replayAll();
+		when(socketMock.getOutputStream()).thenReturn(outputStreamMock);
 
 		cut.flush();
 
-		verifyAll();
+		verify(outputStreamMock).flush();
 	}
 
 	@Test
 	public void testIsOutputShutdown() {
-		expect(socketMock.isOutputShutdown()).andReturn(true);
-
-		replayAll();
+		when(socketMock.isOutputShutdown()).thenReturn(true);
 
 		assertTrue(cut.isOutputShutdown());
-
-		verifyAll();
 	}
 
 	@Test
 	public void testIsClosed() {
-		expect(socketMock.isClosed()).andReturn(false);
-		expect(socketMock.isConnected()).andReturn(false);
-
-		expect(socketMock.isClosed()).andReturn(true);
-
-		expect(socketMock.isClosed()).andReturn(false);
-		expect(socketMock.isConnected()).andReturn(true);
-
-		replayAll();
+		when(socketMock.isClosed()).thenReturn(false, true, false);
+		when(socketMock.isConnected()).thenReturn(false, true);
 
 		assertTrue(cut.isClosed());
 		assertTrue(cut.isClosed());
 		assertFalse(cut.isClosed());
-
-		verifyAll();
 	}
 
 }

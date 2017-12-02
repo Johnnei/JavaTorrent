@@ -1,11 +1,7 @@
 package org.johnnei.javatorrent.internal.utp;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.Payload;
@@ -19,13 +15,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class PacketLossHandlerTest {
 
-	@Mock
 	private UtpSocket socket;
 
-	@InjectMocks
 	private PacketLossHandler cut;
 
 	private UtpPacket sentPacket;
@@ -33,8 +26,11 @@ public class PacketLossHandlerTest {
 
 	private UtpPacket packet;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
+		socket = mock(UtpSocket.class);
+		cut = new PacketLossHandler(socket);
+
 		Payload payload = mock(Payload.class);
 		when(payload.getType()).thenReturn(PacketType.STATE);
 

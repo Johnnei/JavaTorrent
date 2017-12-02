@@ -4,14 +4,14 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.InStream;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link Bencoding}
@@ -19,9 +19,6 @@ import static org.junit.Assert.assertTrue;
 public class BencodingTest {
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testDecode() {
@@ -33,15 +30,23 @@ public class BencodingTest {
 		IBencodedValue value = cut.decode(inStream);
 		Map<String, IBencodedValue> dictionary = value.asMap();
 
-		assertEquals("Incorrect element count in dictionary", 2, dictionary.size());
-		assertTrue("Dictionary doesn't contain the key 'eggs'", dictionary.containsKey("eggs"));
-		assertEquals("Eggs value doesn't match 12", 12L, dictionary.get("eggs").asLong());
-		assertTrue("Dictionary doesn't contain the key 'spam'", dictionary.containsKey("spam"));
-		List<IBencodedValue> spam = dictionary.get("spam").asList();
-		assertEquals("List doesn't contain 2 items", 2, spam.size());
-		assertEquals("List[0] doesn't equal a", "a", spam.get(0).asString());
-		assertEquals("List[1] doesn't equal 2", 2, spam.get(1).asLong());
-		assertEquals("Incorrect amount of characters read, the 'unreadInfo' should not be consumed.", 4, inStream.available());
+		assertEquals(2, dictionary.size(), "Incorrect element count in dictionary");
+		assertAll(
+			() -> assertTrue(dictionary.containsKey("eggs"), "Dictionary doesn't contain the key 'eggs'"),
+			() -> assertTrue(dictionary.containsKey("spam"), "Dictionary doesn't contain the key 'spam'"),
+			() -> assertAll(
+				() -> assertEquals(12L, dictionary.get("eggs").asLong(), "Eggs value doesn't match 12"),
+				() -> {
+					List<IBencodedValue> spam = dictionary.get("spam").asList();
+					assertEquals(2, spam.size(), "List doesn't contain 2 items");
+					assertAll(
+						() -> assertEquals("a", spam.get(0).asString(), "List[0] doesn't equal a"),
+						() -> assertEquals(2, spam.get(1).asLong(), "List[1] doesn't equal 2")
+					);
+				}
+			)
+		);
+		assertEquals(4, inStream.available(), "Incorrect amount of characters read, the 'unreadInfo' should not be consumed.");
 	}
 
 	@Test
@@ -51,12 +56,12 @@ public class BencodingTest {
 		InStream inStream = new InStream(bencodedInfo.getBytes(UTF8));
 		Map<String, IBencodedValue> dictionary = cut.decode(inStream).asMap();
 
-		assertEquals("Incorrect element count in dictionary", 1, dictionary.size());
+		assertEquals(1, dictionary.size(), "Incorrect element count in dictionary");
 		Map<String, IBencodedValue> nestedDictionary = dictionary.get("spam").asMap();
 
-		assertEquals("Incorrect element count in nested-dictionary", 1, nestedDictionary.size());
-		assertEquals("Incorrect string in nested-dictionary", "fresh", nestedDictionary.get("eggs").asString());
-		assertEquals("Incorrect amount of characters read, all should have been read", 0, inStream.available());
+		assertEquals(1, nestedDictionary.size(), "Incorrect element count in nested-dictionary");
+		assertEquals("fresh", nestedDictionary.get("eggs").asString(), "Incorrect string in nested-dictionary");
+		assertEquals(0, inStream.available(), "Incorrect amount of characters read, all should have been read");
 	}
 
 	@Test
@@ -66,36 +71,33 @@ public class BencodingTest {
 		InStream inStream = new InStream(bencodedInfo.getBytes(UTF8));
 		List<IBencodedValue> list = cut.decode(inStream).asList();
 
-		assertEquals("Incorrect element count in list", 2, list.size());
+		assertEquals(2, list.size(), "Incorrect element count in list");
 		Map<String, IBencodedValue> nestedDictionary = list.get(0).asMap();
 
-		assertEquals("Incorrect element count in nested-dictionary", 1, nestedDictionary.size());
-		assertEquals("Incorrect string in nested-dictionary", "eggs", nestedDictionary.get("spam").asString());
+		assertEquals(1, nestedDictionary.size(), "Incorrect element count in nested-dictionary");
+		assertEquals("eggs", nestedDictionary.get("spam").asString(), "Incorrect string in nested-dictionary");
 
 		List<IBencodedValue> nestedList = list.get(1).asList();
-		assertEquals("Incorrect nested list element count", 1, nestedList.size());
-		assertEquals("Incorrect integer as second element", 42, nestedList.get(0).asLong());
-		assertEquals("Incorrect amount of characters read, all should have been read", 0, inStream.available());
+		assertEquals(1, nestedList.size(), "Incorrect nested list element count");
+		assertEquals((long) 42, nestedList.get(0).asLong(), "Incorrect integer as second element");
+		assertEquals(0, inStream.available(), "Incorrect amount of characters read, all should have been read");
 	}
 
 	@Test
 	public void testDecodeLong() {
 		String bencodedInfo = "i231312312312312e";
-		assertEquals("Long didn't get read properly", 231312312312312L, new Bencoding().decode(new InStream(bencodedInfo.getBytes(UTF8))).asLong());
+		assertEquals(231312312312312L, new Bencoding().decode(new InStream(bencodedInfo.getBytes(UTF8))).asLong(), "Long didn't get read properly");
 	}
 
 	@Test
 	public void testDecodeString() {
 		String bencodedInfo = "4:spam";
-		assertEquals("Incorrect string", "spam", new Bencoding().decode(new InStream(bencodedInfo.getBytes(UTF8))).asString());
+		assertEquals("spam", new Bencoding().decode(new InStream(bencodedInfo.getBytes(UTF8))).asString(), "Incorrect string");
 	}
 
 	@Test
 	public void testDecodeIncompleteString() {
-		thrown.expect(IllegalArgumentException.class);
-
-		String bencodedInfo = "4:sp";
-		new Bencoding().decode(new InStream(bencodedInfo.getBytes(UTF8))).asString();
+		assertThrows(IllegalArgumentException.class, () -> new Bencoding().decode(new InStream("4:sp".getBytes(UTF8))).asString());
 	}
 
 	@Test
@@ -105,6 +107,6 @@ public class BencodingTest {
 		Bencoding cut = new Bencoding();
 		BencodedMap map = (BencodedMap) cut.decode(new InStream(bencodedInfo.getBytes(UTF8)));
 
-		assertEquals("Incorrect version string has been read", "μTorrent 3.4.7", map.get("v").get().asString());
+		assertEquals("μTorrent 3.4.7", map.get("v").get().asString(), "Incorrect version string has been read");
 	}
 }

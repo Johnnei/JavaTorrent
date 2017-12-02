@@ -4,19 +4,21 @@ import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.test.StubEntity;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.torrent.files.Piece;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link DiskJobCheckHash}
@@ -47,7 +49,7 @@ public class DiskJobCheckHashTest {
 		testFileMismatchSize = testFileMismatch.length();
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		countDownLatch = new CountDownLatch(1);
 
@@ -65,7 +67,7 @@ public class DiskJobCheckHashTest {
 		cut.process();
 		countDownLatch.await(5, TimeUnit.SECONDS);
 
-		assertTrue("Hash should have matched.", cut.isMatchingHash());
+		assertTrue(cut.isMatchingHash(), "Hash should have matched.");
 	}
 
 	@Test
@@ -78,7 +80,7 @@ public class DiskJobCheckHashTest {
 		cut.process();
 		countDownLatch.await(5, TimeUnit.SECONDS);
 
-		assertFalse("Hash should not have matched.", cut.isMatchingHash());
+		assertFalse(cut.isMatchingHash(), "Hash should not have matched.");
 	}
 
 	@Test
@@ -86,8 +88,10 @@ public class DiskJobCheckHashTest {
 		Piece piece = new Piece(null, null, 0, 1, 1);
 
 		DiskJobCheckHash cut = new DiskJobCheckHash(piece, x -> {});
-		assertEquals("Incorrect piece", piece, cut.getPiece());
-		assertEquals("Incorrect priority", 3, cut.getPriority());
+		assertAll(
+			() -> assertEquals(piece, cut.getPiece(), "Incorrect piece"),
+			() -> assertEquals(3, cut.getPriority(), "Incorrect priority")
+		);
 	}
 
 }

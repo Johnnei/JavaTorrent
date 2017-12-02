@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -8,11 +10,9 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,10 +31,10 @@ public class MessageCancelTest {
 
 		cut.write(outStream);
 
-		assertEquals("Incorrect message length", 1 + expectedBytes.length, cut.getLength());
-		assertArrayEquals("Incorrect output", expectedBytes, outStream.toByteArray());
-		assertEquals("Incorrect message ID", 8, cut.getId());
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageCancel["));
+		assertEquals(1 + expectedBytes.length, cut.getLength(), "Incorrect message length");
+		assertArrayEquals(expectedBytes, outStream.toByteArray(), "Incorrect output");
+		assertEquals(8, cut.getId(), "Incorrect message ID");
+		assertTrue(cut.toString().startsWith("MessageCancel["), "Incorrect toString start.");
 	}
 
 	@Test

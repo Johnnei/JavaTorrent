@@ -1,24 +1,21 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import static org.easymock.EasyMock.eq;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests {@link MessageHave}
  */
-@RunWith(EasyMockRunner.class)
-public class MessageHaveTest extends EasyMockSupport {
+public class MessageHaveTest {
 
 	@Test
 	public void testWrite() {
@@ -29,31 +26,28 @@ public class MessageHaveTest extends EasyMockSupport {
 		MessageHave cut = new MessageHave(0x12);
 		cut.write(outStream);
 
-		assertArrayEquals("Incorrect output", expectedOutput, outStream.toByteArray());
+		assertArrayEquals(expectedOutput, outStream.toByteArray(), "Incorrect output");
 	}
 
 	@Test
 	public void testReadAndProcess() {
-		Peer peerMock = createMock(Peer.class);
-		peerMock.setHavingPiece(eq(0x12));
-
-		replayAll();
+		Peer peerMock = mock(Peer.class);
 
 		InStream inStream = new InStream(new byte[] { 0x00, 0x00, 0x00, 0x12 });
 		MessageHave cut = new MessageHave();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).setHavingPiece(0x12);
 	}
 
 	@Test
 	public void testStaticMethods() {
 		MessageHave cut = new MessageHave();
 
-		assertEquals("Incorrect message ID", 4 ,cut.getId());
-		assertEquals("Incorrect message length", 5 ,cut.getLength());
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageHave["));
+		assertEquals(4 ,cut.getId(), "Incorrect message ID");
+		assertEquals(5 ,cut.getLength(), "Incorrect message length");
+		assertTrue(cut.toString().startsWith("MessageHave["), "Incorrect toString start.");
 	}
 
 }

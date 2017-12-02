@@ -4,13 +4,8 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
@@ -21,20 +16,21 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class UtpSocketRegistryTest {
 
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
-	@InjectMocks
 	private UtpSocketRegistry cut;
 
-	@Mock
 	private DatagramChannel channelMock;
+
+	@BeforeEach
+	public void setUp() {
+		channelMock = mock(DatagramChannel.class);
+		cut = new UtpSocketRegistry(channelMock);
+	}
 
 	private UtpSocket createSocket(int connectionId) throws IOException {
 		SocketAddress address = mock(SocketAddress.class);
@@ -49,15 +45,13 @@ public class UtpSocketRegistryTest {
 
 	@Test
 	public void testGetSocketCreateWhenNotExist() throws Exception {
-		thrown.expect(UtpProtocolViolationException.class);
-		cut.getSocket((short) 5);
+		assertThrows(UtpProtocolViolationException.class, () -> cut.getSocket((short) 5));
 	}
 
 	@Test
 	public void testGetSocketCreateWhenDuplicate() throws Exception {
-		thrown.expect(UtpProtocolViolationException.class);
 		createSocket(5);
-		createSocket(5);
+		assertThrows(UtpProtocolViolationException.class, () -> createSocket(5));
 	}
 
 	@Test

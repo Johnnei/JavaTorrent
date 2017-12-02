@@ -1,32 +1,33 @@
 package org.johnnei.javatorrent.bittorrent.tracker;
 
-import org.junit.Test;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@link TrackerEvent}
  */
 public class TrackerEventTest {
 
-	@Test
-	public void testConnect() {
-		assertEquals(0, TrackerEvent.EVENT_NONE.getId());
+	@MethodSource("eventMapping")
+	@DisplayName("Ensure Tracker Event IDs are correct.")
+	@ParameterizedTest(name = "{0} => {1}")
+	public void testEventIds(TrackerEvent event, int expectedId) {
+		assertEquals(expectedId, event.getId());
 	}
 
-	@Test
-	public void testAnnounce() {
-		assertEquals(1, TrackerEvent.EVENT_COMPLETED.getId());
-	}
-
-	@Test
-	public void testScrape() {
-		assertEquals(2, TrackerEvent.EVENT_STARTED.getId());
-	}
-
-	@Test
-	public void testError() {
-		assertEquals(3, TrackerEvent.EVENT_STOPPED.getId());
+	public static Stream<Arguments> eventMapping() {
+		return Stream.of(
+			Arguments.of(TrackerEvent.EVENT_NONE, 0),
+			Arguments.of(TrackerEvent.EVENT_COMPLETED, 1),
+			Arguments.of(TrackerEvent.EVENT_STARTED, 2),
+			Arguments.of(TrackerEvent.EVENT_STOPPED, 3)
+		);
 	}
 
 }

@@ -1,28 +1,26 @@
 package org.johnnei.javatorrent.internal.tracker.udp;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.johnnei.javatorrent.test.TestUtils.assertEqualsMethod;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.time.Clock;
 
-import org.johnnei.javatorrent.network.InStream;
-import org.johnnei.javatorrent.network.OutStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
+import org.johnnei.javatorrent.network.InStream;
+import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.tracker.UdpTracker;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.johnnei.javatorrent.test.TestUtils.assertEqualsMethod;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrackerRequestTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	private MessageStub messageStub;
 
@@ -30,7 +28,7 @@ public class TrackerRequestTest {
 
 	private TrackerRequest request;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		messageStub = new MessageStub(TrackerAction.ANNOUNCE);
 		tracker = new UdpTracker.Builder()
@@ -42,9 +40,9 @@ public class TrackerRequestTest {
 
 	@Test
 	public void testValuesAndStubMessage() {
-		assertEquals("Incorrect tracker", tracker, request.getTracker());
-		assertEquals("Transaction id", 7, request.getTransactionId());
-		assertEquals("Incorrect action", TrackerAction.ANNOUNCE, request.getAction());
+		assertEquals(tracker, request.getTracker(), "Incorrect tracker");
+		assertEquals(7, request.getTransactionId(), "Transaction id");
+		assertEquals(TrackerAction.ANNOUNCE, request.getAction(), "Incorrect action");
 	}
 
 	@Test
@@ -52,10 +50,10 @@ public class TrackerRequestTest {
 		TrackerRequest requestTwo = new TrackerRequest(tracker, 3, messageStub);
 		TrackerRequest requestThree = new TrackerRequest(tracker, 7, messageStub);
 		assertEqualsMethod(request);
-		assertEquals("Requests with same transaction ids didn't match", request, requestThree);
-		assertEquals("Requests with same transaction ids didn't match", request.hashCode(), requestThree.hashCode());
-		assertNotEquals("Requests with different transaction ids mustn't match", request, requestTwo);
-		assertNotEquals("Requests with different transaction ids mustn't match", request.hashCode(), requestTwo.hashCode());
+		assertEquals(request, requestThree, "Requests with same transaction ids didn't match");
+		assertEquals(request.hashCode(), requestThree.hashCode(), "Requests with same transaction ids didn't match");
+		assertNotEquals(request, requestTwo, "Requests with different transaction ids mustn't match");
+		assertNotEquals(request.hashCode(), requestTwo.hashCode(), "Requests with different transaction ids mustn't match");
 	}
 
 	@Test
@@ -74,7 +72,7 @@ public class TrackerRequestTest {
 				0x01
 		};
 
-		assertArrayEquals("Incorrect output", expectedOutput, outStream.toByteArray());
+		assertArrayEquals(expectedOutput, outStream.toByteArray(), "Incorrect output");
 	}
 
 	@Test
@@ -92,13 +90,11 @@ public class TrackerRequestTest {
 		request.readResponse(inStream);
 		request.process();
 
-		assertTrue("Message wasn't processed", messageStub.processed);
+		assertTrue(messageStub.processed, "Message wasn't processed");
 	}
 
 	@Test
 	public void testReadIncorrectTransaction() throws Exception {
-		thrown.expect(TrackerException.class);
-		thrown.expectMessage(containsString("transaction id"));
 		final byte[] input = {
 				// Action
 				0x00, 0x00, 0x00, 0x01,
@@ -109,13 +105,12 @@ public class TrackerRequestTest {
 		};
 
 		InStream inStream = new InStream(input);
-		request.readResponse(inStream);
+		Exception e = assertThrows(TrackerException.class, () -> request.readResponse(inStream));
+		assertThat(e.getMessage(), containsString("transaction id"));
 	}
 
 	@Test
 	public void testReadTrackerError() throws Exception {
-		thrown.expect(TrackerException.class);
-		thrown.expectMessage(containsString("Stub"));
 		final byte[] input = {
 				// Action
 				0x00, 0x00, 0x00, 0x03,
@@ -124,7 +119,8 @@ public class TrackerRequestTest {
 		};
 
 		InStream inStream = new InStream(input);
-		request.readResponse(inStream);
+		Exception e = assertThrows(TrackerException.class, () -> request.readResponse(inStream));
+		assertThat(e.getMessage(), containsString("Stub"));
 	}
 
 	private final static class MessageStub implements IUdpTrackerPayload {
@@ -144,7 +140,7 @@ public class TrackerRequestTest {
 
 		@Override
 		public void readResponse(InStream inStream) throws TrackerException {
-			assertEquals("Incorrect byte read", 1, inStream.readByte());
+			assertEquals(1, inStream.readByte(), "Incorrect byte read");
 		}
 
 		@Override

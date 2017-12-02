@@ -1,8 +1,8 @@
 package org.johnnei.javatorrent.tracker;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests {@link UncappedDistributor}
@@ -10,7 +10,7 @@ import static org.junit.Assert.assertFalse;
 public class UncappedDistributorTest {
 	@Test
 	public void testHasReachedPeerLimit() throws Exception {
-		assertFalse("Limit should never be reached", new UncappedDistributor().hasReachedPeerLimit(null));
+		assertFalse(new UncappedDistributor().hasReachedPeerLimit(null), "Limit should never be reached");
 	}
 
 }

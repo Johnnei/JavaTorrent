@@ -3,12 +3,11 @@ package org.johnnei.javatorrent.internal.utils;
 import java.time.Clock;
 import java.time.Duration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
-import org.johnnei.javatorrent.internal.utils.SlidingTimedValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests {@link SlidingTimedValue}

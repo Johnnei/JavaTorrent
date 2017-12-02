@@ -4,6 +4,8 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.Version;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
@@ -12,133 +14,117 @@ import org.johnnei.javatorrent.protocol.extension.IExtension;
 import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.notNull;
-import static org.easymock.EasyMock.same;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-@RunWith(EasyMockRunner.class)
-public class MessageHandshakeTest extends EasyMockSupport {
+public class MessageHandshakeTest {
 
 	@Test
 	public void testWrite() {
-		IExtension extensionMock = createMock(IExtension.class);
-		Peer peerMock = createMock(Peer.class);
+		IExtension extensionMock = mock(IExtension.class);
+		Peer peerMock = mock(Peer.class);
 
-		expect(extensionMock.getExtensionName()).andReturn("jt_mock").atLeastOnce();
-		extensionMock.addHandshakeMetadata(same(peerMock), notNull());
-
-		replayAll();
+		when(extensionMock.getExtensionName()).thenReturn("jt_mock");
 
 		MessageHandshake cut = new MessageHandshake(peerMock, Collections.singletonMap(1, extensionMock));
 		OutStream outStream = new OutStream();
 		cut.write(outStream);
 
-		verifyAll();
+		verify(extensionMock).addHandshakeMetadata(same(peerMock), notNull());
 
-		final String expectedOutput = String.format("d1:md7:jt_mocki1ee1:v%d:%se", Version.BUILD.length(), Version.BUILD);
-		assertEquals("Incorrect generated bencoding", expectedOutput, new String(outStream.toByteArray(), Charset.forName("UTF-8")));
-		assertEquals("Incorrect lenght", expectedOutput.length(), cut.getLength());
+		final String whenedOutput = String.format("d1:md7:jt_mocki1ee1:v%d:%se", Version.BUILD.length(), Version.BUILD);
+		assertEquals(whenedOutput, new String(outStream.toByteArray(), Charset.forName("UTF-8")), "Incorrect generated bencoding");
+		assertEquals(whenedOutput.length(), cut.getLength(), "Incorrect lenght");
 	}
 
 	@Test
 	public void testProcess() {
-		Peer peerMock = createMock(Peer.class);
-		IExtension extensionMock = createMock(IExtension.class);
-		PeerExtensions peerExtensionsMock = createMock(PeerExtensions.class);
+		Peer peerMock = mock(Peer.class);
+		IExtension extensionMock = mock(IExtension.class);
+		PeerExtensions peerExtensionsMock = mock(PeerExtensions.class);
 
-		expect(peerMock.getModuleInfo(eq(PeerExtensions.class))).andStubReturn(Optional.of(peerExtensionsMock));
-		peerMock.setClientName(eq("JavaTorrent 0.05.0"));
-		peerMock.setAbsoluteRequestLimit(eq(250));
-		extensionMock.processHandshakeMetadata(same(peerMock), notNull(), notNull());
+		when(peerMock.getModuleInfo(eq(PeerExtensions.class))).thenReturn(Optional.of(peerExtensionsMock));
 
 		String input = "d1:md7:jt_mocki1ee1:v18:JavaTorrent 0.05.04:reqqi250ee";
 
-		expect(extensionMock.getExtensionName()).andStubReturn("jt_mock");
-		peerExtensionsMock.registerExtension(eq(1), eq("jt_mock"));
+		when(extensionMock.getExtensionName()).thenReturn("jt_mock");
 
-		replayAll();
 		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));
 		cut.read(new InStream(input.getBytes(Charset.forName("UTF-8"))));
 
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).setClientName(eq("JavaTorrent 0.05.0"));
+		verify(peerMock).setAbsoluteRequestLimit(eq(250));
+		verify(extensionMock).processHandshakeMetadata(same(peerMock), notNull(), notNull());
+		verify(peerExtensionsMock).registerExtension(eq(1), eq("jt_mock"));
 	}
 
 	@Test
 	public void testProcessModuleNotRegistered() {
-		Peer peerMock = createMock(Peer.class);
-		IExtension extensionMock = createMock(IExtension.class);
+		Peer peerMock = mock(Peer.class);
+		IExtension extensionMock = mock(IExtension.class);
 
-		expect(peerMock.getModuleInfo(eq(PeerExtensions.class))).andStubReturn(Optional.empty());
-		peerMock.setClientName(eq("JavaTorrent 0.05.0"));
-		peerMock.setAbsoluteRequestLimit(eq(250));
+		when(peerMock.getModuleInfo(eq(PeerExtensions.class))).thenReturn(Optional.empty());
 
 		String input = "d1:md7:jt_mocki1ee1:v18:JavaTorrent 0.05.04:reqqi250ee";
 
-		expect(extensionMock.getExtensionName()).andStubReturn("jt_mock");
+		when(extensionMock.getExtensionName()).thenReturn("jt_mock");
 
-		replayAll();
 		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));
 		cut.read(new InStream(input.getBytes(Charset.forName("UTF-8"))));
 
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).setClientName(eq("JavaTorrent 0.05.0"));
+		verify(peerMock).setAbsoluteRequestLimit(eq(250));
 	}
 
 	@Test
 	public void testProcessNoInfo() {
-		Peer peerMock = createMock(Peer.class);
-		IExtension extensionMock = createMock(IExtension.class);
+		Peer peerMock = mock(Peer.class);
+		IExtension extensionMock = mock(IExtension.class);
 
 		String input = "de";
 
-		expect(extensionMock.getExtensionName()).andReturn("jt_mock");
+		when(extensionMock.getExtensionName()).thenReturn("jt_mock");
 
-		replayAll();
 		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));
 		cut.read(new InStream(input.getBytes(Charset.forName("UTF-8"))));
 
 		cut.process(peerMock);
-
-		verifyAll();
 	}
 
 	@Test
 	public void testProcessCorruptedInfo() {
-		Peer peerMock = createMock(Peer.class);
-		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
-		IExtension extensionMock = createMock(IExtension.class);
+		Peer peerMock = mock(Peer.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
+		IExtension extensionMock = mock(IExtension.class);
 
 		String input = "d1:mj3ee";
 
-		expect(peerMock.getBitTorrentSocket()).andReturn(socketMock);
-		socketMock.close();
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
 
-		replayAll();
 		MessageHandshake cut = new MessageHandshake(Collections.singletonList(extensionMock));
 		cut.read(new InStream(input.getBytes(Charset.forName("UTF-8"))));
 
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(socketMock).close();
 	}
 
 	@Test
 	public void testSimpleMethods() {
 		MessageHandshake cut = new MessageHandshake(Collections.emptyList());
 
-		assertEquals("Incorrect packet ID", 0, cut.getId());
-		assertTrue("Incorrect start of toString", cut.toString().startsWith("MessageHandshake["));
+		assertEquals(0, cut.getId(), "Incorrect packet ID");
+		assertTrue(cut.toString().startsWith("MessageHandshake["), "Incorrect start of toString");
 	}
 
 }

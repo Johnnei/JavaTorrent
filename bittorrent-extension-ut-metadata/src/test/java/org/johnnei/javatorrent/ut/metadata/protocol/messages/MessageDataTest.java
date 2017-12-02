@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.ut.metadata.protocol.messages;
 import java.nio.charset.Charset;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -12,20 +14,19 @@ import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-
-import static org.easymock.EasyMock.aryEq;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link MessageData}
  */
-public class MessageDataTest extends EasyMockSupport {
+public class MessageDataTest {
 
 	@Test
 	public void testWrite() {
@@ -35,20 +36,20 @@ public class MessageDataTest extends EasyMockSupport {
 
 		MessageData cut = new MessageData(42, expectedOutput);
 
-		assertEquals("Incorrect length. 26 bytes for dictionary + 3 for data", 29, cut.getLength());
+		assertEquals(29, cut.getLength(), "Incorrect length. 26 bytes for dictionary + 3 for data");
 
 		cut.write(outStream);
 
 		String expectedDictionary = "d5:piecei42e8:msg_typei1ee";
 		String dictionary = new String(outStream.toByteArray(), 0, 26, Charset.forName("UTF-8"));
-		assertEquals("Incorrect dictionary part", expectedDictionary, dictionary);
+		assertEquals(expectedDictionary, dictionary, "Incorrect dictionary part");
 
 		byte[] output = outStream.toByteArray();
 		byte[] data = new byte[3];
 		data[0] = output[26];
 		data[1] = output[27];
 		data[2] = output[28];
-		assertArrayEquals("Incorrect data part", expectedOutput, data);
+		assertArrayEquals(expectedOutput, data, "Incorrect data part");
 	}
 
 	@Test
@@ -59,26 +60,22 @@ public class MessageDataTest extends EasyMockSupport {
 		TestUtils.copySection(dictionaryBytes, input, 0);
 		TestUtils.copySection(dataBytes, input, dictionaryBytes.length);
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		Metadata metadataMock = createMock(Metadata.class);
-		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		Metadata metadataMock = mock(Metadata.class);
+		MetadataFileSet metadataFileSetMock = mock(MetadataFileSet.class);
 
-		expect(metadataFileSetMock.getBlockSize()).andReturn(16384);
-		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(torrentMock.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-
-		torrentMock.onReceivedBlock(eq(metadataFileSetMock), eq(0), eq(42 * 16384), aryEq(dataBytes));
-
-		replayAll();
+		when(metadataFileSetMock.getBlockSize()).thenReturn(16384);
+		when(torrentMock.isDownloadingMetadata()).thenReturn(true);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getFileSet()).thenReturn(Optional.of(metadataFileSetMock));
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
 
 		MessageData cut = new MessageData();
 		cut.read(new InStream(input));
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(torrentMock).onReceivedBlock(eq(metadataFileSetMock), eq(0), eq(42 * 16384), aryEq(dataBytes));
 	}
 
 	@Test
@@ -89,19 +86,15 @@ public class MessageDataTest extends EasyMockSupport {
 		TestUtils.copySection(dictionaryBytes, input, 0);
 		TestUtils.copySection(dataBytes, input, dictionaryBytes.length);
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.isDownloadingMetadata()).andReturn(false);
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.isDownloadingMetadata()).thenReturn(false);
 
 		MessageData cut = new MessageData();
 		cut.read(new InStream(input));
 		cut.process(peerMock);
-
-		verifyAll();
 	}
 
 	@Test
@@ -112,31 +105,28 @@ public class MessageDataTest extends EasyMockSupport {
 		TestUtils.copySection(dictionaryBytes, input, 0);
 		TestUtils.copySection(dataBytes, input, dictionaryBytes.length);
 
-		Peer peerMock = createNiceMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
-		Metadata metadataMock = createMock(Metadata.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
+		Metadata metadataMock = mock(Metadata.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(peerMock.getBitTorrentSocket()).andStubReturn(socketMock);
-		expect(torrentMock.isDownloadingMetadata()).andReturn(true);
-		expect(torrentMock.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getFileSet()).andReturn(Optional.empty());
-		socketMock.close();
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
+		when(torrentMock.isDownloadingMetadata()).thenReturn(true);
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getFileSet()).thenReturn(Optional.empty());
 
 		MessageData cut = new MessageData();
 		cut.read(new InStream(input));
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(socketMock).close();
 	}
 
 	@Test
 	public void testToString() {
 		MessageData cut = new MessageData();
-		assertTrue("Incorrect toString start", cut.toString().startsWith("MessageData["));
+		assertTrue(cut.toString().startsWith("MessageData["), "Incorrect toString start");
 	}
 
 }

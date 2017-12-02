@@ -3,11 +3,8 @@ package org.johnnei.javatorrent.internal.network;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
@@ -26,14 +23,17 @@ import static org.mockito.Mockito.when;
 /**
  * Tests {@link PeerIoRunnable}
  */
-@RunWith(MockitoJUnitRunner.class)
 public class PeerIoRunnableTest {
 
-	@Mock
 	private TorrentManager torrentManager;
 
-	@InjectMocks
 	private PeerIoRunnable cut;
+
+	@BeforeEach
+	public void setUp() {
+		torrentManager = mock(TorrentManager.class);
+		cut = new PeerIoRunnable(torrentManager);
+	}
 
 	@Test
 	public void testHandleClosedSocket() throws Exception {

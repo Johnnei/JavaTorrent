@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.network.OutStream;
@@ -9,22 +11,18 @@ import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link MessageRequest}
  */
-@RunWith(EasyMockRunner.class)
-public class MessageRequestTest extends EasyMockSupport {
+public class MessageRequestTest {
 
 	@Test
 	public void testWrite() {
@@ -35,66 +33,60 @@ public class MessageRequestTest extends EasyMockSupport {
 
 		cut.write(outStream);
 
-		assertEquals("Incorrect message length", 1 + expectedBytes.length, cut.getLength());
-		assertArrayEquals("Incorrect output", expectedBytes, outStream.toByteArray());
-		assertEquals("Incorrect message ID", 6, cut.getId());
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageRequest["));
+		assertEquals(1 + expectedBytes.length, cut.getLength(), "Incorrect message length");
+		assertArrayEquals(expectedBytes, outStream.toByteArray(), "Incorrect output");
+		assertEquals(6, cut.getId(), "Incorrect message ID");
+		assertTrue(cut.toString().startsWith("MessageRequest["), "Incorrect toString start.");
 	}
 
 	@Test
 	public void testReadAndProcess() {
-		InStream inStream = new InStream(new byte[] {
-				0, 0, 0, 1,
-				0, 0, 0, 2,
-				0, 0, 0, 3
+		InStream inStream = new InStream(new byte[]{
+			0, 0, 0, 1,
+			0, 0, 0, 2,
+			0, 0, 0, 3
 		});
 
-		Peer peerMock = createMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
-		Piece pieceMock = createMock(Piece.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
+		Piece pieceMock = mock(Piece.class);
 
-		expect(filesMock.getPiece(1)).andReturn(pieceMock);
+		when(filesMock.getPiece(1)).thenReturn(pieceMock);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(filesMock.hasPiece(eq(1))).andReturn(true);
-		peerMock.addBlockRequest(eq(pieceMock), eq(2), eq(3), eq(PeerDirection.Upload));
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+		when(filesMock.hasPiece(eq(1))).thenReturn(true);
 
 		MessageRequest cut = new MessageRequest();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).addBlockRequest(eq(pieceMock), eq(2), eq(3), eq(PeerDirection.Upload));
 	}
 
 	@Test
 	public void testReadAndProcessNotHavingPiece() {
-		InStream inStream = new InStream(new byte[] {
-				0, 0, 0, 1,
-				0, 0, 0, 2,
-				0, 0, 0, 3
+		InStream inStream = new InStream(new byte[]{
+			0, 0, 0, 1,
+			0, 0, 0, 2,
+			0, 0, 0, 3
 		});
 
-		Peer peerMock = createMock(Peer.class);
-		Torrent torrentMock = createMock(Torrent.class);
-		TorrentFileSet filesMock = createMock(TorrentFileSet.class);
-		BitTorrentSocket socketMock = createMock(BitTorrentSocket.class);
+		Peer peerMock = mock(Peer.class);
+		Torrent torrentMock = mock(Torrent.class);
+		TorrentFileSet filesMock = mock(TorrentFileSet.class);
+		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrentMock);
-		expect(torrentMock.getFileSet()).andStubReturn(filesMock);
-		expect(filesMock.hasPiece(eq(1))).andReturn(false);
-		expect(peerMock.getBitTorrentSocket()).andStubReturn(socketMock);
-		socketMock.close();
-
-		replayAll();
+		when(peerMock.getTorrent()).thenReturn(torrentMock);
+		when(torrentMock.getFileSet()).thenReturn(filesMock);
+		when(filesMock.hasPiece(eq(1))).thenReturn(false);
+		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
 
 		MessageRequest cut = new MessageRequest();
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(socketMock).close();
 	}
 }

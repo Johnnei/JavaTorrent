@@ -3,13 +3,13 @@ package org.johnnei.javatorrent.network;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Torrent;
 
-import org.junit.Test;
-
 import static org.johnnei.javatorrent.test.TestUtils.assertEqualityMethods;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests {@link PeerConnectInfo}
@@ -30,7 +30,7 @@ public class PeerConnectInfoTest {
 		PeerConnectInfo notEqualToBaseTwo = new PeerConnectInfo(torrent, socketAddressTwo);
 
 		assertEqualityMethods(base, equalToBase, notEqualToBase);
-		assertFalse("Equals method should not have matched", notEqualToBase.equals(notEqualToBaseTwo));
+		assertFalse(notEqualToBase.equals(notEqualToBaseTwo), "Equals method should not have matched");
 	}
 
 }

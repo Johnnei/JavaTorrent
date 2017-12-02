@@ -1,30 +1,30 @@
 package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link BencodedString}
  */
 public class BencodedStringTest {
 
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
 	@Test
 	public void testAsString() throws Exception {
 		BencodedString cut = new BencodedString("Hello World!");
 
-		assertEquals("asString produced different result.", "Hello World!", cut.asString());
+		assertEquals("Hello World!", cut.asString(), "asString produced different result.");
 	}
 
 	@Test
@@ -32,50 +32,36 @@ public class BencodedStringTest {
 		byte[] input = new byte[] { 'H', 'e', 'l', 'l', 'e', '!' };
 		BencodedString cut = new BencodedString(input);
 
-		assertArrayEquals("asBytes produced different result.", input, cut.asBytes());
+		assertArrayEquals(input, cut.asBytes());
 	}
 
-	@Test
-	public void testAsLong() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedString("").asLong();
+	@ParameterizedTest
+	@MethodSource("unsupportedOperations")
+	public void testUnsupportedMethods(Consumer<BencodedString> consumer) {
+		assertThrows(UnsupportedOperationException.class, () -> consumer.accept(new BencodedString("")));
 	}
 
-	@Test
-	public void testAsBigInteger() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedString("").asBigInteger();
-	}
-
-	@Test
-	public void testAsMap() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedString("").asMap();
-
-	}
-
-	@Test
-	public void testAsList() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedString("").asList();
+	public static Stream<Consumer<BencodedString>> unsupportedOperations() {
+		return Stream.of(
+			BencodedString::asLong,
+			BencodedString::asBigInteger,
+			BencodedString::asMap,
+			BencodedString::asList
+		);
 	}
 
 	@Test
 	public void testSerialize() throws Exception {
 		BencodedString cut = new BencodedString("Hello World!");
 
-		assertEquals("Incorrect serialized form", "12:Hello World!", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals("12:Hello World!", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING), "Incorrect serialized form");
 	}
 
 	@Test
 	public void testSerializeWithNonAsciiCharacters() throws Exception {
 		BencodedString cut = new BencodedString("μTorrent 3.4.7");
 
-		assertEquals("Incorrect serialized form", "15:μTorrent 3.4.7", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals("15:μTorrent 3.4.7", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING), "Incorrect serialized form");
 	}
 
 	@Test
@@ -95,13 +81,13 @@ public class BencodedStringTest {
 
 		BencodedString cut = new BencodedString(invalidSequence);
 
-		assertArrayEquals("Invalid UTF-8 sequence are allowed to occur within BencodedStrings", expectedSerializedForm, cut.serialize());
+		assertArrayEquals(expectedSerializedForm, cut.serialize(), "Invalid UTF-8 sequence are allowed to occur within BencodedStrings");
 	}
 
 	@Test
 	public void testToString() throws Exception {
 		BencodedString cut = new BencodedString("test");
 
-		assertTrue("Incorrect toString() start", cut.toString().startsWith("BencodedString["));
+		assertTrue(cut.toString().startsWith("BencodedString["), "Incorrect toString() start");
 	}
 }

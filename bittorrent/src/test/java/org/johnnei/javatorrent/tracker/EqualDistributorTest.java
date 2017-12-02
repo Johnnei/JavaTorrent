@@ -2,14 +2,14 @@ package org.johnnei.javatorrent.tracker;
 
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +26,7 @@ public class EqualDistributorTest {
 		when(torrentClientMock.getTorrentCount()).thenReturn(6);
 
 		EqualDistributor cut = new EqualDistributor(torrentClientMock, 5);
-		assertFalse("Limit should not have been reached yet (0 < 1)", cut.hasReachedPeerLimit(torrentMock));
+		assertFalse(cut.hasReachedPeerLimit(torrentMock), "Limit should not have been reached yet (0 < 1)");
 	}
 
 	@Test
@@ -40,7 +40,7 @@ public class EqualDistributorTest {
 		when(collectionMock.size()).thenReturn(1);
 
 		EqualDistributor cut = new EqualDistributor(torrentClientMock, 5);
-		assertTrue("Limit should have been reached (1 >= 1)", cut.hasReachedPeerLimit(torrentMock));
+		assertTrue(cut.hasReachedPeerLimit(torrentMock), "Limit should have been reached (1 >= 1)");
 	}
 
 	@Test
@@ -51,7 +51,7 @@ public class EqualDistributorTest {
 		when(torrentClientMock.getTorrentCount()).thenReturn(1);
 
 		EqualDistributor cut = new EqualDistributor(torrentClientMock, 5);
-		assertFalse("Limit should not have been reached yet (1 < 5)", cut.hasReachedPeerLimit(torrentMock));
+		assertFalse(cut.hasReachedPeerLimit(torrentMock), "Limit should not have been reached yet (1 < 5)");
 	}
 
 	@Test
@@ -65,7 +65,7 @@ public class EqualDistributorTest {
 		when(collectionMock.size()).thenReturn(5);
 
 		EqualDistributor cut = new EqualDistributor(torrentClientMock, 5);
-		assertTrue("Limit should have been reached (5 >= 5)", cut.hasReachedPeerLimit(torrentMock));
+		assertTrue(cut.hasReachedPeerLimit(torrentMock), "Limit should have been reached (5 >= 5)");
 	}
 
 	@Test
@@ -79,7 +79,7 @@ public class EqualDistributorTest {
 		when(collectionMock.size()).thenReturn(6);
 
 		EqualDistributor cut = new EqualDistributor(torrentClientMock, 5);
-		assertTrue("Limit should have been reached (6 >= 5)", cut.hasReachedPeerLimit(torrentMock));
+		assertTrue(cut.hasReachedPeerLimit(torrentMock), "Limit should have been reached (6 >= 5)");
 	}
 
 }

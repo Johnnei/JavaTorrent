@@ -5,14 +5,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.test.DummyEntity;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -26,12 +26,12 @@ public class UtpModuleTest {
 
 	@Test
 	public void testGetRelatedBep() {
-		assertEquals("uTP should correctly report it's BEP.", 29, new UtpModule.Builder().build().getRelatedBep());
+		assertEquals(29, new UtpModule.Builder().build().getRelatedBep(), "uTP should correctly report it's BEP.");
 	}
 
 	@Test
 	public void testDependsOn() {
-		assertEquals("uTP has no dependencies on other BEPs", 0, new UtpModule.Builder().build().getDependsOn().size());
+		assertEquals(0, new UtpModule.Builder().build().getDependsOn().size(), "uTP has no dependencies on other BEPs");
 	}
 
 	@Test
@@ -59,7 +59,7 @@ public class UtpModuleTest {
 		cut.onBuild(clientMock);
 
 		try {
-			assertNotNull("Factory should never produce null objects", cut.createSocketFactory().get());
+			assertNotNull(cut.createSocketFactory().get(), "Factory should never produce null objects");
 		} finally {
 			cut.onShutdown();
 			verify(scheduledFuture).cancel(true);

@@ -2,16 +2,19 @@ package org.johnnei.javatorrent.bittorrent.encoding;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import static org.johnnei.javatorrent.test.TestUtils.assertNotPresent;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,9 +22,6 @@ import static org.mockito.Mockito.when;
  * Tests {@link BencodedMap}
  */
 public class BencodedMapTest {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void testPut() throws Exception {
@@ -36,7 +36,7 @@ public class BencodedMapTest {
 
 		Optional<IBencodedValue> value = cut.get(key);
 		assertPresent("Item must be available after adding", value);
-		assertEquals("Incorrect value was returned", valueMock, value.get());
+		assertEquals(valueMock, value.get(), "Incorrect value was returned");
 	}
 
 	@Test
@@ -52,13 +52,13 @@ public class BencodedMapTest {
 
 		Optional<IBencodedValue> value = cut.get(key);
 		assertPresent("Item must be available after adding", value);
-		assertEquals("Incorrect value was returned", valueMock, value.get());
+		assertEquals(valueMock, value.get(), "Incorrect value was returned");
 
 		IBencodedValue valueMockTwo = mock(IBencodedValue.class);
 		cut.put(key, valueMockTwo);
 		value = cut.get(key);
 		assertPresent("Item must be available after adding", value);
-		assertEquals("Incorrect value was returned after overwrite", valueMockTwo, value.get());
+		assertEquals(valueMockTwo, value.get(), "Incorrect value was returned after overwrite");
 	}
 
 	@Test
@@ -77,35 +77,23 @@ public class BencodedMapTest {
 
 		Optional<IBencodedValue> value = cut.remove(key);
 		assertPresent("Value must have been removed.", value);
-		assertEquals("Incorrect item was removed", valueMock, value.get());
+		assertEquals(valueMock, value.get(), "Incorrect item was removed");
 	}
 
-	@Test
-	public void testAsBytes() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedMap().asBytes();
+	@ParameterizedTest
+	@MethodSource("unsupportedOperations")
+	public void testUnsupportedOperations(Consumer<BencodedMap> consumer) {
+		assertThrows(UnsupportedOperationException.class, () -> consumer.accept(new BencodedMap()));
 	}
 
-	@Test
-	public void testAsString() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedMap().asString();
-	}
-
-	@Test
-	public void testAsLong() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedMap().asLong();
-	}
-
-	@Test
-	public void testAsBigInteger() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedMap().asBigInteger();
+	public static Stream<Consumer<BencodedMap>> unsupportedOperations() {
+		return Stream.of(
+			BencodedMap::asBytes,
+			BencodedMap::asString,
+			BencodedMap::asLong,
+			BencodedMap::asBigInteger,
+			BencodedMap::asList
+		);
 	}
 
 	@Test
@@ -121,18 +109,11 @@ public class BencodedMapTest {
 
 		Optional<IBencodedValue> value = cut.get(key);
 		assertPresent("Item must be available after adding", value);
-		assertEquals("Incorrect value was returned", valueMock, value.get());
+		assertEquals(valueMock, value.get(), "Incorrect value was returned");
 
 		Map<String, IBencodedValue> map = cut.asMap();
-		assertEquals("Incorrect amount of items in map copy", 1, map.size());
-		assertEquals("Incorrect value in map copy", valueMock, map.get("cow"));
-	}
-
-	@Test
-	public void testAsList() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-
-		new BencodedMap().asList();
+		assertEquals(1, map.size(), "Incorrect amount of items in map copy");
+		assertEquals(valueMock, map.get("cow"), "Incorrect value in map copy");
 	}
 
 	@Test
@@ -148,7 +129,7 @@ public class BencodedMapTest {
 		cut.put("cow", valueMock);
 		cut.put("spam", valueMockTwo);
 
-		assertEquals("Incorrect serialized form", "d3:cow3:moo4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals("d3:cow3:moo4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING), "Incorrect serialized form");
 	}
 
 	/**
@@ -167,7 +148,7 @@ public class BencodedMapTest {
 		cut.put("cow", valueMock);
 		cut.put("Cow", valueMockTwo);
 
-		assertEquals("Incorrect serialized form", "d3:Cow3:moo3:cow4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals("d3:Cow3:moo3:cow4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING), "Incorrect serialized form");
 	}
 
 	/**
@@ -186,7 +167,7 @@ public class BencodedMapTest {
 		cut.put("spam", valueMockTwo);
 		cut.put("cow", valueMock);
 
-		assertEquals("Incorrect serialized form", "d3:cow3:moo4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING));
+		assertEquals("d3:cow3:moo4:spam4:eggse", new String(cut.serialize(), BitTorrent.DEFAULT_ENCODING), "Incorrect serialized form");
 	}
 
 }

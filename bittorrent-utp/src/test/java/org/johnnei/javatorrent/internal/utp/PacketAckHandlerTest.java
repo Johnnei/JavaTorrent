@@ -2,8 +2,8 @@ package org.johnnei.javatorrent.internal.utp;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
@@ -24,7 +24,7 @@ public class PacketAckHandlerTest {
 
 	private PacketAckHandler cut;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		socket = mock(UtpSocket.class);
 		cut = new PacketAckHandler(socket, (short) 1);

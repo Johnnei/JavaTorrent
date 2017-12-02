@@ -1,9 +1,9 @@
 package org.johnnei.javatorrent.torrent.algos.choking;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-
-import org.junit.Test;
 
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;

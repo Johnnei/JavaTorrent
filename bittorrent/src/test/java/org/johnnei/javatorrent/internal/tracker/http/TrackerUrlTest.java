@@ -1,67 +1,45 @@
 package org.johnnei.javatorrent.internal.tracker.http;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests {@link TrackerUrl}
  */
-@RunWith(Parameterized.class)
 public class TrackerUrlTest {
 
-	private static ExpectedException illegalUrl = ExpectedException.none();
-
-	@BeforeClass
-	public static void setUpClass() {
-		illegalUrl.expect(IllegalArgumentException.class);
-	}
-
-	@Parameterized.Parameters(name = "testConstructor with {0}")
-	public static Collection<Object[]> data() {
-		return Arrays.asList(new Object[][] {
-				{ "http://www.google.com:80/announce", "http", "www.google.com", 80, "announce", ExpectedException.none() },
-				{ "https://localhost:80", "https", "localhost", 80, "", ExpectedException.none() },
-				{ "https://localhost", "https", "localhost", 443, "", ExpectedException.none() },
-				{ "localhost", "https", "localhost", 443, "", illegalUrl}
-		});
-	}
-
-	@Parameterized.Parameter
-	public String url;
-
-	@Parameterized.Parameter(1)
-	public String schema;
-
-	@Parameterized.Parameter(2)
-	public String host;
-
-	@Parameterized.Parameter(3)
-	public int port;
-
-	@Parameterized.Parameter(4)
-	public String path;
-
-	@Rule
-	@Parameterized.Parameter(5)
-	public ExpectedException thrown;
-
-	@Test
-	public void testDomainParsing() {
+	@ParameterizedTest(name = "testConstructor with {0}")
+	@MethodSource("data")
+	public void testDomainParsing(String url, String schema, String host, int port, String path) {
 		TrackerUrl cut = new TrackerUrl(url);
 
-		assertEquals("Incorrect schema", schema, cut.getSchema());
-		assertEquals("Incorrect host", host, cut.getHost());
-		assertEquals("Incorrect port", port, cut.getPort());
-		assertEquals("Incorrect path", path, cut.getPath());
+		assertAll(
+			() -> assertEquals(schema, cut.getSchema(), "Incorrect schema"),
+			() -> assertEquals(host, cut.getHost(), "Incorrect host"),
+			() -> assertEquals(port, cut.getPort(), "Incorrect port"),
+			() -> assertEquals(path, cut.getPath(), "Incorrect path")
+		);
+	}
+
+	public static Stream<Arguments> data() {
+		return Stream.of(
+			Arguments.of("http://www.google.com:80/announce", "http", "www.google.com", 80, "announce"),
+			Arguments.of("https://localhost:80", "https", "localhost", 80, ""),
+			Arguments.of("https://localhost", "https", "localhost", 443, "")
+		);
+	}
+
+	@Test
+	public void testIllegalUrl() {
+		assertThrows(IllegalArgumentException.class, () -> new TrackerUrl("localhost"));
 	}
 
 }

@@ -1,8 +1,10 @@
 package org.johnnei.javatorrent.ut.metadata.protocol.messages;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests {@link MessageUnknown}
@@ -11,16 +13,11 @@ public class MessageUnknownTest {
 
 	private final static String ERR_MESSAGE = "This message can not be written, we don't know what it is!";
 
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
 	@Test
 	public void testWrite() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-		thrown.expectMessage(ERR_MESSAGE);
-
 		MessageUnknown cut = new MessageUnknown();
-		cut.write(null);
+		Exception e = assertThrows(UnsupportedOperationException.class, () -> cut.write(null));
+		assertThat(e.getMessage(), containsString(ERR_MESSAGE));
 	}
 
 	@Test
@@ -41,20 +38,16 @@ public class MessageUnknownTest {
 
 	@Test
 	public void testGetLength() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-		thrown.expectMessage(ERR_MESSAGE);
-
 		MessageUnknown cut = new MessageUnknown();
-		cut.getLength();
+		Exception e = assertThrows(UnsupportedOperationException.class, cut::getLength);
+		assertThat(e.getMessage(), containsString(ERR_MESSAGE));
 	}
 
 	@Test
 	public void testGetId() throws Exception {
-		thrown.expect(UnsupportedOperationException.class);
-		thrown.expectMessage(ERR_MESSAGE);
-
 		MessageUnknown cut = new MessageUnknown();
-		cut.getId();
+		Exception e = assertThrows(UnsupportedOperationException.class, cut::getId);
+		assertThat(e.getMessage(), containsString(ERR_MESSAGE));
 	}
 
 }

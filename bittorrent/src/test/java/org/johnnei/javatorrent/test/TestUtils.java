@@ -3,9 +3,12 @@ package org.johnnei.javatorrent.test;
 import java.lang.reflect.Constructor;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestUtils {
 
@@ -33,33 +36,33 @@ public class TestUtils {
 	 * @param o The object to test on
 	 */
 	public static void assertEqualsMethod(Object o) {
-		assertTrue("Same object instance aren't equal", o.equals(o));
-		assertFalse("Object equals with null", o.equals(null));
-		assertFalse("Object matches with not castable type", o.equals(7));
+		assertEquals(o, o, "Object must equal itself.");
+		assertFalse(o.equals(null), "Object must never match null");
+		assertFalse(o.equals(7), "Object matches with not castable type");
 	}
 
 	public static void assertEqualityMethods(Object base, Object equalToBase, Object... notEqualToBase) {
 		assertEqualsMethod(base);
-		assertTrue("Base didn't equal with the given equal", base.equals(equalToBase));
-		assertEquals("Base hashcode didn't match with given equal", base.hashCode(), equalToBase.hashCode());
+		assertTrue(base.equals(equalToBase), "Base didn't equal with the given equal");
+		assertEquals(base.hashCode(), equalToBase.hashCode(), "Base hashcode didn't match with given equal");
 
 		for (Object notEqual : notEqualToBase) {
-			assertFalse("Base did match with the given non-equal", base.equals(notEqual));
+			assertThat("Base matched with the given non-equal", base, not(equalTo(notEqual)));
 		}
 	}
 
 	public static void assertNotPresent(String message, Optional<?> optional) {
-		assertFalse(message, optional.isPresent());
+		assertFalse(optional.isPresent(), message);
 	}
 
-	public static void assertPresent(String message, Optional<?> optional) {
-		assertTrue(message, optional.isPresent());
+	public static <T> T assertPresent(String message, Optional<T> optional) {
+		return optional.orElseThrow(() -> new AssertionError(message));
 	}
 
 	public static void assertUtilityClassConstructor(Class<?> clazz) throws Exception {
 		Constructor<?>[] constructor = clazz.getDeclaredConstructors();
-		assertEquals("Incorrect amount of constructors for util class", 1, constructor.length);
-		assertFalse("Incorrect accessibility for constructor", constructor[0].isAccessible());
+		assertEquals(1, constructor.length, "Incorrect amount of constructors for util class");
+		assertFalse(constructor[0].isAccessible(), "Incorrect accessibility for constructor");
 		constructor[0].setAccessible(true);
 		constructor[0].newInstance();
 	}

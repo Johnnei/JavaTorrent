@@ -1,22 +1,19 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import static org.easymock.EasyMock.eq;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests {@link MessageChoke}
  */
-@RunWith(EasyMockRunner.class)
-public class MessageChokeTest extends EasyMockSupport {
+public class MessageChokeTest {
 
 	@Test
 	public void testEmptyMethods() {
@@ -31,24 +28,20 @@ public class MessageChokeTest extends EasyMockSupport {
 	public void testStaticMethods() {
 		MessageChoke cut = new MessageChoke();
 
-		assertEquals("Incorrect message ID", 0 ,cut.getId());
-		assertEquals("Incorrect message length", 1 ,cut.getLength());
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageChoke["));
+		assertEquals(0 ,cut.getId(), "Incorrect message ID");
+		assertEquals(1 ,cut.getLength(), "Incorrect message length");
+		assertTrue(cut.toString().startsWith("MessageChoke["), "Incorrect toString start.");
 	}
 
 	@Test
 	public void testProcess() {
-		Peer peerMock = createMock(Peer.class);
-
-		peerMock.setChoked(eq(PeerDirection.Download), eq(true));
-		peerMock.discardAllBlockRequests();
-
-		replayAll();
+		Peer peerMock = mock(Peer.class);
 
 		MessageChoke cut = new MessageChoke();
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).setChoked(PeerDirection.Download, true);
+		verify(peerMock).discardAllBlockRequests();
 	}
 
 }

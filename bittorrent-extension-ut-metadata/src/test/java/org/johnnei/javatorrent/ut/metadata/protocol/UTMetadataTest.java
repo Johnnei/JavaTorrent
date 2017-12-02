@@ -1,9 +1,9 @@
 package org.johnnei.javatorrent.ut.metadata.protocol;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.johnnei.javatorrent.test.TestUtils.assertUtilityClassConstructor;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests {@link UTMetadata}
@@ -17,9 +17,9 @@ public class UTMetadataTest {
 
 	@Test
 	public void testConstants() {
-		assertEquals("Incorrect id for request message", 0, UTMetadata.REQUEST);
-		assertEquals("Incorrect id for reject message", 2, UTMetadata.REJECT);
-		assertEquals("Incorrect id for data message", 1, UTMetadata.DATA);
+		assertEquals(0, UTMetadata.REQUEST, "Incorrect id for request message");
+		assertEquals(2, UTMetadata.REJECT, "Incorrect id for reject message");
+		assertEquals(1, UTMetadata.DATA, "Incorrect id for data message");
 	}
 
 }

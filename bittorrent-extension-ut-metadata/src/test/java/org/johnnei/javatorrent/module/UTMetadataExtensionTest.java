@@ -3,7 +3,13 @@ package org.johnnei.javatorrent.module;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
@@ -17,55 +23,56 @@ import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageData;
 import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageReject;
 import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageUnknown;
+import org.johnnei.junit.jupiter.Folder;
+import org.johnnei.junit.jupiter.TempFolderExtension;
 
-import org.easymock.Capture;
-import org.easymock.EasyMock;
-import org.easymock.EasyMockSupport;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import static org.easymock.EasyMock.capture;
-import static org.easymock.EasyMock.expect;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link UTMetadataExtension}
  */
-public class UTMetadataExtensionTest extends EasyMockSupport {
-
-	@Rule
-	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+@ExtendWith(TempFolderExtension.class)
+public class UTMetadataExtensionTest {
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 
+	private UTMetadataExtension cut;
+
+	private File torrentFileFolder;
+	private File downloadFolder;
+
+	@BeforeEach
+	public void setUp(@Folder Path tmp) {
+		torrentFileFolder = tmp.resolve("a").toFile();
+		downloadFolder = tmp.resolve("b").toFile();
+		cut = new UTMetadataExtension(torrentFileFolder, downloadFolder);
+	}
+
 	@Test
-	public void testGetExtensionName() throws IOException {
-		assertEquals("ut_metadata", new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder()).getExtensionName());
+	public void testGetExtensionName(@Folder Path tmp) throws IOException {
+		assertEquals("ut_metadata", new UTMetadataExtension(tmp.resolve("a").toFile(), tmp.resolve("b").toFile()).getExtensionName());
 	}
 
 	@Test
 	public void testProcessHandshakeMetadataNoMetadataSize() throws IOException {
-		Peer peerMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
 
 		BencodedMap handshakeDictionary = new BencodedMap();
 		BencodedMap mEntry = new BencodedMap();
 
 		handshakeDictionary.put("m", mEntry);
 
-		replayAll();
-
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		cut.processHandshakeMetadata(peerMock, handshakeDictionary, mEntry);
-
-		verifyAll();
 	}
 
 	@Test
 	public void testProcessHandshakeMetadata() throws IOException {
-		Peer peerMock = createMock(Peer.class);
+		Peer peerMock = mock(Peer.class);
 
 		BencodedMap handshakeDictionary = new BencodedMap();
 		BencodedMap mEntry = new BencodedMap();
@@ -73,130 +80,103 @@ public class UTMetadataExtensionTest extends EasyMockSupport {
 		handshakeDictionary.put("metadata_size", new BencodedInteger(512));
 		handshakeDictionary.put("m", mEntry);
 
-		Capture<MetadataInformation> informationCapture = EasyMock.newCapture();
-		peerMock.addModuleInfo(capture(informationCapture));
+		ArgumentCaptor<MetadataInformation> informationCapture = ArgumentCaptor.forClass(MetadataInformation.class);
 
-		replayAll();
-
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		cut.processHandshakeMetadata(peerMock, handshakeDictionary, mEntry);
 
-		verifyAll();
+		verify(peerMock).addModuleInfo(informationCapture.capture());
 
 		MetadataInformation metaInfo = informationCapture.getValue();
-		assertEquals("Incorrect metadata size", 512, metaInfo.getMetadataSize());
+		assertEquals(512, metaInfo.getMetadataSize(), "Incorrect metadata size");
 	}
 
 	@Test
 	public void testAddHandshakeMetadataDownloadingMetadata() throws IOException {
-		Torrent torrent = createNiceMock(Torrent.class);
-		Peer peerMock = createNiceMock(Peer.class);
-		BencodedMap bencodedMapMock = createMock(BencodedMap.class);
+		Torrent torrent = mock(Torrent.class);
+		Peer peerMock = mock(Peer.class);
+		BencodedMap bencodedMapMock = mock(BencodedMap.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrent);
-		expect(torrent.isDownloadingMetadata()).andReturn(true);
+		when(peerMock.getTorrent()).thenReturn(torrent);
+		when(torrent.isDownloadingMetadata()).thenReturn(true);
 
-		replayAll();
-
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		cut.addHandshakeMetadata(peerMock, bencodedMapMock);
-
-		verifyAll();
 	}
 
 	@Test
 	public void testAddHandshakeMetadata() throws IOException {
-		Torrent torrent = createNiceMock(Torrent.class);
-		Metadata metadataMock = createMock(Metadata.class);
-		Peer peerMock = createNiceMock(Peer.class);
-		BencodedMap bencodedMapMock = createMock(BencodedMap.class);
-		MetadataFileSet metadataFileSetMock = createNiceMock(MetadataFileSet.class);
+		Torrent torrent = mock(Torrent.class);
+		Metadata metadataMock = mock(Metadata.class);
+		Peer peerMock = mock(Peer.class);
+		BencodedMap bencodedMapMock = mock(BencodedMap.class);
+		MetadataFileSet metadataFileSetMock = mock(MetadataFileSet.class);
 
-		expect(peerMock.getTorrent()).andStubReturn(torrent);
-		expect(torrent.isDownloadingMetadata()).andReturn(false);
-		expect(torrent.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getFileSet()).andReturn(Optional.of(metadataFileSetMock));
-		expect(metadataFileSetMock.getTotalFileSize()).andReturn(512L);
-		bencodedMapMock.put("metadata_size", new BencodedInteger(512));
+		when(peerMock.getTorrent()).thenReturn(torrent);
+		when(torrent.isDownloadingMetadata()).thenReturn(false);
+		when(torrent.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getFileSet()).thenReturn(Optional.of(metadataFileSetMock));
+		when(metadataFileSetMock.getTotalFileSize()).thenReturn(512L);
 
-		replayAll();
-
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		cut.addHandshakeMetadata(peerMock, bencodedMapMock);
 
-		verifyAll();
+		verify(bencodedMapMock).put("metadata_size", new BencodedInteger(512));
 	}
 
 	@Test
 	public void testGetMessageReject() throws IOException {
 		InStream inStream = new InStream("d8:msg_typei2e5:piecei5ee".getBytes(UTF8));
 
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		IMessage message = cut.getMessage(inStream);
 
-		assertNotNull("A message should have been returned", message);
-		assertTrue("Incorrect message type returned. Expected: MessageReject.", message instanceof MessageReject);
+		assertNotNull(message, "A message should have been returned");
+		assertTrue(message instanceof MessageReject, "Incorrect message type returned. Expected: MessageReject.");
 	}
 
 	@Test
 	public void testGetMessageRequest()  throws IOException {
 		InStream inStream = new InStream("d8:msg_typei0e5:piecei5ee".getBytes(UTF8));
 
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		IMessage message = cut.getMessage(inStream);
 
-		assertNotNull("A message should have been returned", message);
-		assertTrue("Incorrect message type returned. Expected: MessageRequest.", message instanceof MessageRequest);
+		assertNotNull(message, "A message should have been returned");
+		assertTrue(message instanceof MessageRequest, "Incorrect message type returned. Expected: MessageRequest.");
 	}
 
 	@Test
 	public void testGetMessageUnknown() throws IOException {
 		InStream inStream = new InStream("d8:msg_typei151e5:piecei42ee".getBytes(UTF8));
 
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		IMessage message = cut.getMessage(inStream);
 
-		assertNotNull("A message should have been returned", message);
-		assertTrue("Incorrect message type returned. Expected: MessageUnknown.", message instanceof MessageUnknown);
+		assertNotNull(message, "A message should have been returned");
+		assertTrue(message instanceof MessageUnknown, "Incorrect message type returned. Expected: MessageUnknown.");
 	}
 
 	@Test
 	public void testGetMessageData() throws IOException {
 		InStream inStream = new InStream("d8:msg_typei1e5:piecei42ee".getBytes(UTF8));
 
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), temporaryFolder.newFolder());
 		IMessage message = cut.getMessage(inStream);
 
-		assertNotNull("A message should have been returned", message);
-		assertTrue("Incorrect message type returned. Expected: MessageData.", message instanceof MessageData);
+		assertNotNull(message, "A message should have been returned");
+		assertTrue(message instanceof MessageData, "Incorrect message type returned. Expected: MessageData.");
 	}
 
 	@Test
 	public void testGetDownloadFolder() throws IOException {
-		File tempFolder = temporaryFolder.newFolder();
-
-		UTMetadataExtension cut = new UTMetadataExtension(temporaryFolder.newFolder(), tempFolder);
-
-		assertEquals("Incorrect location", tempFolder, cut.getDownloadFolder());
+		assertEquals(downloadFolder, cut.getDownloadFolder(), "Incorrect location");
 	}
 
 	@Test
 	public void testGetTorrentFile() throws IOException {
-		Torrent torrentMock = createMock(Torrent.class);
-		Metadata metadataMock =createMock(Metadata.class);
+		Torrent torrentMock = mock(Torrent.class);
+		Metadata metadataMock = mock(Metadata.class);
 
-		expect(torrentMock.getMetadata()).andReturn(metadataMock);
-		expect(metadataMock.getHashString()).andReturn("c8369f0ba4bf6cd87fb13b3437782e2c7820bb38");
-		replayAll();
+		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(metadataMock.getHashString()).thenReturn("c8369f0ba4bf6cd87fb13b3437782e2c7820bb38");
 
-		File tempFolder = temporaryFolder.newFolder();
-
-		UTMetadataExtension cut = new UTMetadataExtension(tempFolder, temporaryFolder.newFolder());
 		File torrentFile = cut.getTorrentFile(torrentMock);
 
-		verifyAll();
-
-		assertEquals("Incorrect location", new File(tempFolder, "c8369f0ba4bf6cd87fb13b3437782e2c7820bb38.torrent"), torrentFile);
+		assertEquals(new File(torrentFileFolder, "c8369f0ba4bf6cd87fb13b3437782e2c7820bb38.torrent"), torrentFile, "Incorrect location");
 	}
 
 }

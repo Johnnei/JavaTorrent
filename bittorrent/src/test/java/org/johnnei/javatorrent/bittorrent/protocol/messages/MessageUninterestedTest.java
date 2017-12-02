@@ -1,22 +1,20 @@
 package org.johnnei.javatorrent.bittorrent.protocol.messages;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
-import org.easymock.EasyMockRunner;
-import org.easymock.EasyMockSupport;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import static org.easymock.EasyMock.eq;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests {@link MessageUninterested}
  */
-@RunWith(EasyMockRunner.class)
-public class MessageUninterestedTest extends EasyMockSupport {
+public class MessageUninterestedTest {
 
 	@Test
 	public void testEmptyMethods() {
@@ -31,23 +29,19 @@ public class MessageUninterestedTest extends EasyMockSupport {
 	public void testStaticMethods() {
 		MessageUninterested cut = new MessageUninterested();
 
-		assertEquals("Incorrect message ID", 3 ,cut.getId());
-		assertEquals("Incorrect message length", 1 ,cut.getLength());
-		assertTrue("Incorrect toString start.", cut.toString().startsWith("MessageUninterested["));
+		assertEquals(3 ,cut.getId(), "Incorrect message ID");
+		assertEquals(1 ,cut.getLength(), "Incorrect message length");
+		assertTrue(cut.toString().startsWith("MessageUninterested["), "Incorrect toString start.");
 	}
 
 	@Test
 	public void testProcess() {
-		Peer peerMock = createMock(Peer.class);
-
-		peerMock.setInterested(eq(PeerDirection.Upload), eq(false));
-
-		replayAll();
+		Peer peerMock = mock(Peer.class);
 
 		MessageUninterested cut = new MessageUninterested();
 		cut.process(peerMock);
 
-		verifyAll();
+		verify(peerMock).setInterested(eq(PeerDirection.Upload), eq(false));
 	}
 
 }

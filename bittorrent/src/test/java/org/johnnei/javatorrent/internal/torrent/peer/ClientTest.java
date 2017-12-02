@@ -3,13 +3,13 @@ package org.johnnei.javatorrent.internal.torrent.peer;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.junit.jupiter.api.Test;
+
 import org.johnnei.javatorrent.torrent.files.Piece;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -23,10 +23,10 @@ public class ClientTest {
 		Client cut = new Client();
 
 		cut.choke();
-		assertTrue("Client is unchoked after choke call", cut.isChoked());
+		assertTrue(cut.isChoked(), "Client is unchoked after choke call");
 
 		cut.unchoke();
-		assertFalse("Client is choked after unchoke call", cut.isChoked());
+		assertFalse(cut.isChoked(), "Client is choked after unchoke call");
 	}
 
 	@Test
@@ -34,10 +34,10 @@ public class ClientTest {
 		Client cut = new Client();
 
 		cut.interested();
-		assertTrue("Client is uninterested after interested call", cut.isInterested());
+		assertTrue(cut.isInterested(), "Client is uninterested after interested call");
 
 		cut.uninterested();
-		assertFalse("Client is interested after uninterested call", cut.isInterested());
+		assertFalse(cut.isInterested(), "Client is interested after uninterested call");
 	}
 
 	@Test
@@ -49,7 +49,7 @@ public class ClientTest {
 
 		cut.addJob(new Job(pieceMock, 2, 3));
 
-		assertEquals("Job did not get added", 1, cut.getQueueSize());
+		assertEquals(1, cut.getQueueSize(), "Job did not get added");
 	}
 
 	@Test
@@ -63,8 +63,8 @@ public class ClientTest {
 		cut.addJob(job);
 		Job returnedJob = cut.popNextJob();
 
-		assertEquals("Incorrect job got returned", job, returnedJob);
-		assertEquals("Job did not get removed", 0, cut.getQueueSize());
+		assertEquals(job, returnedJob, "Incorrect job got returned");
+		assertEquals(0, cut.getQueueSize(), "Job did not get removed");
 	}
 
 	@Test
@@ -81,13 +81,13 @@ public class ClientTest {
 		cut.addJob(jobOne);
 		cut.addJob(jobTwo);
 
-		assertEquals("Incorrect amount of jobs before remove", 2, cut.getQueueSize());
+		assertEquals(2, cut.getQueueSize(), "Incorrect amount of jobs before remove");
 
 		cut.removeJob(jobTwo);
-		assertEquals("Incorrect amount of jobs after remove", 1, cut.getQueueSize());
+		assertEquals(1, cut.getQueueSize(), "Incorrect amount of jobs after remove");
 		Job returnedJob = cut.popNextJob();
 
-		assertEquals("Incorrect job got returned", jobOne, returnedJob);
+		assertEquals(jobOne, returnedJob, "Incorrect job got returned");
 	}
 
 	@Test
@@ -102,11 +102,11 @@ public class ClientTest {
 		cut.addJob(new Job(pieceMockOne, 2, 3));
 		cut.addJob(new Job(pieceMockTwo, 3, 4));
 
-		assertEquals("Incorrect amount of jobs before clear", 2, cut.getQueueSize());
+		assertEquals(2, cut.getQueueSize(), "Incorrect amount of jobs before clear");
 
 		cut.clearJobs();
 
-		assertEquals("Incorrect amount of jobs after clear", 0, cut.getQueueSize());
+		assertEquals(0, cut.getQueueSize(), "Incorrect amount of jobs after clear");
 	}
 
 	@Test
@@ -127,10 +127,10 @@ public class ClientTest {
 		cut.addJob(jobOne);
 		cut.addJob(jobTwo);
 
-		assertEquals("Incorrect amount of jobs before getting all", 2, cut.getQueueSize());
+		assertEquals(2, cut.getQueueSize(), "Incorrect amount of jobs before getting all");
 
 		for (Job job : cut.getJobs()) {
-			assertTrue("Incorrect job returned", jobs.contains(job));
+			assertTrue(jobs.contains(job), "Incorrect job returned");
 			jobs.remove(job);
 		}
 	}
