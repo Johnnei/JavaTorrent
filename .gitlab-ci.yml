@@ -52,6 +52,15 @@ sonarqube.johnnei.org:
       - quicktests
       - integration-tests
 
+pages:
+    stage: deploy
+    script:
+    - bundle install
+    - bundle exec jekyll build -s docs -d public
+    artifacts:
+      paths:
+        - public
+
 test deployment:
     stage: test
     script: "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
