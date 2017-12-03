@@ -17,7 +17,7 @@ title: JavaTorrent
 email: johnnei@johnnei.org
 description: >- # this means to ignore newlines until "baseurl:"
   The home of JavaTorrent
-baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: "/JavaTorrent" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: Johnnei07
 github_username:  Johnnei

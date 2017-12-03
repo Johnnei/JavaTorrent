@@ -3,7 +3,7 @@ Java Torrent is a BitTorrent Protocol implementation in Java which aims to provi
  extensions on the BitTorrent Protocol to allow high compatibility with popular torrent applications.
 
 ## Information
-- [Documentation](https://github.com/Johnnei/JavaTorrent/wiki)
+- [Documentation](https://johnnei.johnnei.org/JavaTorrent)
 - [Issue Tracker](https://jira.johnnei.org/browse/JBT)
 
 ## Status
