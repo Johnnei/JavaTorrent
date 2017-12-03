@@ -54,6 +54,8 @@ sonarqube.johnnei.org:
 
 pages:
     stage: deploy
+    dependencies: []
+    image: ruby:2.3
     script:
     - bundle install
     - bundle exec jekyll build -s docs -d public
