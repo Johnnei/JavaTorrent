@@ -60,6 +60,7 @@ pages:
     - cd docs
     - bundle install
     - bundle exec jekyll build -d ../public
+    only: ["develop"]
     artifacts:
       paths:
         - public
