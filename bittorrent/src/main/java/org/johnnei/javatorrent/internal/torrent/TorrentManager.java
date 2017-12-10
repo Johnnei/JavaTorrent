@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.internal.torrent;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,16 +10,11 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
+import org.johnnei.javatorrent.internal.network.connector.NioConnectionAcceptor;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
-import org.johnnei.javatorrent.network.TcpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.torrent.Torrent;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TorrentManager {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentManager.class);
 
 	private final Object torrentListLock = new Object();
 
@@ -30,9 +24,8 @@ public class TorrentManager {
 
 	private List<TorrentPair> activeTorrents;
 
-	private LoopingRunnable connectorRunnable;
-
 	private LoopingRunnable peerIoRunnable;
+	private NioConnectionAcceptor connectionAcceptor;
 
 	public TorrentManager(TrackerManager trackerManager) {
 		this.trackerManager = trackerManager;
@@ -56,14 +49,7 @@ public class TorrentManager {
 	 * Attempts to start a server socket to accept incoming TCP connections.
 	 */
 	public void enableConnectionAcceptor() {
-		try {
-			connectorRunnable = new LoopingRunnable(new TcpPeerConnectionAcceptor(torrentClient));
-			Thread connectorThread = new Thread(connectorRunnable, "Connection Acceptor");
-			connectorThread.setDaemon(true);
-			connectorThread.start();
-		} catch (IOException e) {
-			LOGGER.warn("Failed to start connection acceptor", e);
-		}
+		connectionAcceptor = new NioConnectionAcceptor(torrentClient);
 	}
 
 	/**
@@ -72,8 +58,8 @@ public class TorrentManager {
 	public void stop() {
 		peerIoRunnable.stop();
 
-		if (connectorRunnable != null) {
-			connectorRunnable.stop();
+		if (connectionAcceptor != null) {
+			connectionAcceptor.stop();
 		}
 	}
 

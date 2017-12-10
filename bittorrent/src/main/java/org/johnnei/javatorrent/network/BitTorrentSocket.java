@@ -279,6 +279,7 @@ public class BitTorrentSocket {
 		}
 
 		if (inStream.available() < HANDSHAKE_SIZE) {
+			LOGGER.debug("Remote end supplied {} out of {} bytes.", inStream.available(), HANDSHAKE_SIZE);
 			throw new IOException("Remote end failed to supply handshake within 5 seconds");
 		}
 
