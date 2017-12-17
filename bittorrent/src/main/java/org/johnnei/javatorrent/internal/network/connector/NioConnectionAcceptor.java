@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -12,13 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentProtocolViolationException;
-import org.johnnei.javatorrent.network.BitTorrentSocket;
-import org.johnnei.javatorrent.network.socket.ISocket;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
-import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.torrent.peer.Peer;
 
 public class NioConnectionAcceptor {
 
@@ -51,7 +43,7 @@ public class NioConnectionAcceptor {
 		SocketChannel channel;
 		try {
 			while ((channel = serverChannel.accept()) != null) {
-				onConnectionAccepted(channel);
+				torrentClient.getHandshakeHandler().onConnectionReceived(channel);
 			}
 		} catch (IOException e) {
 			LOGGER.warn("Failed to accept connection", e);
@@ -59,40 +51,4 @@ public class NioConnectionAcceptor {
 
 	}
 
-	private void onConnectionAccepted(SocketChannel channel) throws IOException {
-		try {
-			BitTorrentSocket socket = createSocket(new TcpSocket(channel.socket()));
-			acceptConnection(socket);
-		} catch (BitTorrentProtocolViolationException e) {
-			LOGGER.debug("Disconnection client {} due to protocol violation", e);
-			channel.close();
-		}
-	}
-
-	private void acceptConnection(BitTorrentSocket peerSocket) throws IOException {
-		BitTorrentHandshake handshake = peerSocket.readHandshake();
-
-		Optional<Torrent> torrent = torrentClient.getTorrentByHash(handshake.getTorrentHash());
-		if (!torrent.isPresent()) {
-			throw new BitTorrentProtocolViolationException("Peer connection was for unknown torrent.");
-		}
-
-		Peer peer = createPeer(peerSocket, torrent.get(), handshake.getPeerExtensionBytes(), handshake.getPeerId());
-		peerSocket.sendHandshake(torrentClient.getExtensionBytes(), torrentClient.getPeerId(), torrent.get().getMetadata().getHash());
-		LOGGER.debug("Accepted connection from {}", peerSocket);
-		torrent.get().addPeer(peer);
-	}
-
-	BitTorrentSocket createSocket(ISocket socket) throws IOException {
-		return new BitTorrentSocket(torrentClient.getMessageFactory(), socket);
-	}
-
-	Peer createPeer(BitTorrentSocket socket, Torrent torrent, byte[] extensionBytes, byte[] peerId) {
-		return new Peer.Builder()
-			.setSocket(socket)
-			.setTorrent(torrent)
-			.setExtensionBytes(extensionBytes)
-			.setId(peerId)
-			.build();
-	}
 }

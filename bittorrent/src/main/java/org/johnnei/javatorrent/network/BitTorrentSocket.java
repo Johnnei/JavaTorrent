@@ -217,7 +217,9 @@ public class BitTorrentSocket {
 	 * @param peerId The peer ID which this peer will send out.
 	 * @param torrentHash The hash of the torrent on which we wish to interact on with this peer.
 	 * @throws IOException
+	 * @Deprecated
 	 */
+	@Deprecated
 	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
 		if (passedHandshake) {
 			throw new IllegalStateException("Handshake has already been completed.");
