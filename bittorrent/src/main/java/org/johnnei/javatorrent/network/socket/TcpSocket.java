@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.SelectableChannel;
 import java.util.Objects;
 
 /**
@@ -63,6 +64,11 @@ public class TcpSocket implements ISocket {
 	@Override
 	public boolean isOutputShutdown() {
 		return socket.isOutputShutdown();
+	}
+
+	@Override
+	public SelectableChannel getChannel() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

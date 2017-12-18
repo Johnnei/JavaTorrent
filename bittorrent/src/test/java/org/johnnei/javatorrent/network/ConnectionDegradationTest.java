@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,11 @@ public class ConnectionDegradationTest {
 		@Override
 		public void close() throws IOException {
 
+		}
+
+		@Override
+		public SelectableChannel getChannel() {
+			return null;
 		}
 
 		@Override
