@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
@@ -39,6 +38,7 @@ import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 import org.johnnei.javatorrent.internal.utp.stream.StreamState;
 import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
+import org.johnnei.javatorrent.network.socket.ISocket;
 
 import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.STATE;
 import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.SYN;
@@ -474,6 +474,11 @@ public class UtpSocket implements ISocket, Closeable {
 	@Override
 	public void flush() {
 		outputStream.flush();
+	}
+
+	@Override
+	public DatagramChannel getChannel() {
+		return null;
 	}
 
 	public boolean isShutdown() {

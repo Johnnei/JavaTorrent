@@ -3,18 +3,19 @@ package org.johnnei.javatorrent.network;
 import java.io.IOException;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Created by johnn on 14/05/2016.
  */
+@Deprecated
 public abstract class AbstractPeerConnectionAcceptor implements Runnable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPeerConnectionAcceptor.class);

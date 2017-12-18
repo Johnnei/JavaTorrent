@@ -36,6 +36,7 @@ public class BitTorrentSocket {
 	 */
 	private Clock clock = Clock.systemDefaultZone();
 
+	@Deprecated
 	private static final int HANDSHAKE_SIZE = 68;
 
 	private ISocket socket;
@@ -153,6 +154,7 @@ public class BitTorrentSocket {
 		}
 	}
 
+	@Deprecated
 	private void createIOStreams() throws IOException {
 		inStream = new ByteInputStream(new BufferedInputStream(socket.getInputStream()));
 		outStream = new ByteOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -217,7 +219,7 @@ public class BitTorrentSocket {
 	 * @param peerId The peer ID which this peer will send out.
 	 * @param torrentHash The hash of the torrent on which we wish to interact on with this peer.
 	 * @throws IOException
-	 * @Deprecated
+	 * @deprecated
 	 */
 	@Deprecated
 	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
@@ -241,7 +243,9 @@ public class BitTorrentSocket {
 	 * @return A successfully read handshake
 	 * @throws IOException
 	 *             when either an io error occurs, a protocol error occurs or the peer doesn't respond within 5 seconds.
+	 * @deprecated
 	 */
+	@Deprecated
 	public BitTorrentHandshake readHandshake() throws IOException {
 		if (passedHandshake) {
 			throw new IllegalStateException("Handshake has already been completed.");
@@ -267,6 +271,7 @@ public class BitTorrentSocket {
 		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
 	}
 
+	@Deprecated
 	private void awaitHandshake() throws IOException {
 		LocalDateTime startTime = LocalDateTime.now(clock);
 
@@ -395,14 +400,18 @@ public class BitTorrentSocket {
 	/**
 	 * Gets if this socket has completed the BitTorrent handshake
 	 * @return <code>true</code> if the handshake was completed
+	 * @deprecated
 	 */
+	@Deprecated
 	public boolean getPassedHandshake() {
 		return passedHandshake;
 	}
 
 	/**
 	 * Marks that this socket has passed the BitTorrent handshake and therefor is a valid BitTorrent socket.
+	 * @deprecated
 	 */
+	@Deprecated
 	public void setPassedHandshake() {
 		passedHandshake = true;
 	}
