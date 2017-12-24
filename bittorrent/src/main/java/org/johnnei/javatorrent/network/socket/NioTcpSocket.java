@@ -10,10 +10,18 @@ public class NioTcpSocket implements ISocket {
 
 	private SocketChannel channel;
 
+	public NioTcpSocket() {
+		try {
+			channel = SocketChannel.open();
+			channel.configureBlocking(false);
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to create socket channel", e);
+		}
+	}
+
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
-		channel = SocketChannel.open(endpoint);
-		channel.configureBlocking(false);
+		channel.connect(endpoint);
 	}
 
 	@Override

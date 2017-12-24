@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBitfield;
@@ -22,9 +25,6 @@ import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Torrent {
 
@@ -109,7 +109,6 @@ public class Torrent {
 			return;
 		}
 
-		peer.getBitTorrentSocket().setPassedHandshake();
 		for (IModule module : torrentClient.getModules()) {
 			module.onPostHandshake(peer);
 		}

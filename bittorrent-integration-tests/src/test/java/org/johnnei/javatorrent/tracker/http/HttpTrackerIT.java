@@ -27,7 +27,7 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,7 +122,7 @@ public class HttpTrackerIT {
 			.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
-		PeerConnector peerConnectorMock = mock(PeerConnector.class);
+		IPeerConnector peerConnectorMock = mock(IPeerConnector.class);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		when(torrentClientMock.getPeerId()).thenReturn(peerId);

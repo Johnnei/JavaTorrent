@@ -1,5 +1,9 @@
 # Unreleased
 
+## Added
+- [JBT-104](https://jira.johnnei.org/browse/JBT-104): `NioPeerConnector` is now available. This connector is optimized to run with out a dedicated thread but on
+the executor threads.
+
 ## Improvements
 - [JBT-98](https://jira.johnnei.org/browse/JBT-98): The network layer has been rewritten to be event driven in favor of polling.
 
@@ -7,6 +11,7 @@
 - [JBT-100](https://jira.johnnei.org/browse/JBT-100): `AbstractPeerConnectionAcceptor` has been replaced by `BitTorrentHandshakeHandler`
 - [JBT-102](https://jira.johnnei.org/browse/JBT-102): `BitTorrentSocket` has forgotten how to process handshakes.
 - [JBT-102](https://jira.johnnei.org/browse/JBT-102): `ISocket` has been remodelled around Channels instead of Sockets.
+- [JBT-104](https://jira.johnnei.org/browse/JBT-104): `BitTorrentSocket` is now always a socket which has passed the handshake process.
 
 # 0.6.0
 ## Added

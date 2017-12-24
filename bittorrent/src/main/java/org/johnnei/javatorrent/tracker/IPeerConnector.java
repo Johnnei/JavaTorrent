@@ -5,7 +5,7 @@ import org.johnnei.javatorrent.network.PeerConnectInfo;
 
 /**
  * Interface which defines a system to establish connections with {@link PeerConnectInfo} received from
- * {@link org.johnnei.javatorrent.bittorrent.tracker.ITracker}. Implementation <strong>must</strong> honor the results {@link IPeerDistributor}
+ * {@link org.johnnei.javatorrent.bittorrent.tracker.ITracker}. Implementation <strong>must</strong> honor the results of {@link IPeerDistributor}
  */
 public interface IPeerConnector {
 

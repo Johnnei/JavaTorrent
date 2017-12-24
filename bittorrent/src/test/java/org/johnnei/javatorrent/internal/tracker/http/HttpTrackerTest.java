@@ -10,7 +10,7 @@ import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
 
 import static org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent.EVENT_NONE;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
@@ -102,7 +102,7 @@ public class HttpTrackerTest {
 	@Test
 	public void testConnectPeer() throws Exception {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		PeerConnector peerConnectorMock = mock(PeerConnector.class);
+		IPeerConnector peerConnectorMock = mock(IPeerConnector.class);
 
 		when(torrentClientMock.getPeerConnector()).thenReturn(peerConnectorMock);
 

@@ -3,19 +3,16 @@ package org.johnnei.javatorrent.network;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
@@ -36,9 +33,6 @@ public class BitTorrentSocket {
 	 */
 	private Clock clock = Clock.systemDefaultZone();
 
-	@Deprecated
-	private static final int HANDSHAKE_SIZE = 68;
-
 	private ISocket socket;
 
 	private ByteInputStream inStream;
@@ -56,11 +50,6 @@ public class BitTorrentSocket {
 	 * The amount of bytes written in the last second
 	 */
 	private int uploadRate;
-
-	/**
-	 * Remembers if this socket has read the handshake information or not
-	 */
-	private boolean passedHandshake;
 
 	/**
 	 * The queue containing the messages which still have to be send
@@ -90,6 +79,7 @@ public class BitTorrentSocket {
 	 * Creates a new unbound BitTorrent socket.
 	 * @param messageFactory The factory to create {@link IMessage} instances.
 	 */
+	@Deprecated
 	public BitTorrentSocket(MessageFactory messageFactory) {
 		this.messageFactory = messageFactory;
 		messageQueue = new LinkedList<>();
@@ -107,35 +97,6 @@ public class BitTorrentSocket {
 		this(messageFactory);
 		this.socket = Objects.requireNonNull(socket, "Socket cannot be null, use other constructor instead.");
 		createIOStreams();
-	}
-
-	/**
-	 * Attempts to connect to the given endpoint in a blocking manner.
-	 * @param degradation The socket degradation order.
-	 * @param address The address to connect to
-	 * @throws IOException When an IO error occur during the establishing of a connection.
-	 */
-	public void connect(ConnectionDegradation degradation, InetSocketAddress address) throws IOException {
-		if (socket != null) {
-			return;
-		}
-
-		BitTorrentSocketException exception = new BitTorrentSocketException("Failed to connect to end point.");
-		socket = degradation.createPreferredSocket();
-		while (socket.isClosed()) {
-			try {
-				socket.connect(address);
-				createIOStreams();
-			} catch (IOException e) {
-				exception.addConnectionFailure(socket, e);
-				Optional<ISocket> fallbackSocket = degradation.degradeSocket(socket);
-				if (fallbackSocket.isPresent()) {
-					socket = fallbackSocket.get();
-				} else {
-					throw exception;
-				}
-			}
-		}
 	}
 
 	/**
@@ -210,86 +171,6 @@ public class BitTorrentSocket {
 		outStream.write(outBuffer.toByteArray());
 		outStream.flush();
 		lastActivity = LocalDateTime.now(clock);
-	}
-
-	/**
-	 * Writes the handshake onto the output stream
-	 *
-	 * @param extensionBytes The bytes indicating which extensions we support
-	 * @param peerId The peer ID which this peer will send out.
-	 * @param torrentHash The hash of the torrent on which we wish to interact on with this peer.
-	 * @throws IOException
-	 * @deprecated
-	 */
-	@Deprecated
-	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
-		if (passedHandshake) {
-			throw new IllegalStateException("Handshake has already been completed.");
-		}
-
-		LOGGER.debug("Writing handshake", socket);
-
-		outStream.writeByte(0x13);
-		outStream.writeString("BitTorrent protocol");
-		outStream.write(extensionBytes);
-		outStream.write(torrentHash);
-		outStream.write(peerId);
-		outStream.flush();
-	}
-
-	/**
-	 * Reads the handshake information from the peer
-	 *
-	 * @return A successfully read handshake
-	 * @throws IOException
-	 *             when either an io error occurs, a protocol error occurs or the peer doesn't respond within 5 seconds.
-	 * @deprecated
-	 */
-	@Deprecated
-	public BitTorrentHandshake readHandshake() throws IOException {
-		if (passedHandshake) {
-			throw new IllegalStateException("Handshake has already been completed.");
-		}
-
-		awaitHandshake();
-
-		int protocolLength = inStream.read();
-		if (protocolLength != 0x13) {
-			throw new IOException("Protocol handshake failed");
-		}
-
-		String protocol = inStream.readString(0x13);
-
-		if (!"BitTorrent protocol".equals(protocol)) {
-			throw new IOException("Protocol handshake failed");
-		}
-
-		byte[] extensionBytes = inStream.readByteArray(8);
-		byte[] torrentHash = inStream.readByteArray(20);
-		byte[] peerId = inStream.readByteArray(20);
-
-		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
-	}
-
-	@Deprecated
-	private void awaitHandshake() throws IOException {
-		LocalDateTime startTime = LocalDateTime.now(clock);
-
-		while (Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				// Honour the cancellation and rethrow it as IOException
-				throw new IOException(e);
-			}
-		}
-
-		if (inStream.available() < HANDSHAKE_SIZE) {
-			LOGGER.debug("Remote end supplied {} out of {} bytes.", inStream.available(), HANDSHAKE_SIZE);
-			throw new IOException("Remote end failed to supply handshake within 5 seconds");
-		}
-
 	}
 
 	/**
@@ -395,25 +276,6 @@ public class BitTorrentSocket {
 		}
 
 		return socket.isClosed();
-	}
-
-	/**
-	 * Gets if this socket has completed the BitTorrent handshake
-	 * @return <code>true</code> if the handshake was completed
-	 * @deprecated
-	 */
-	@Deprecated
-	public boolean getPassedHandshake() {
-		return passedHandshake;
-	}
-
-	/**
-	 * Marks that this socket has passed the BitTorrent handshake and therefor is a valid BitTorrent socket.
-	 * @deprecated
-	 */
-	@Deprecated
-	public void setPassedHandshake() {
-		passedHandshake = true;
 	}
 
 	/**
