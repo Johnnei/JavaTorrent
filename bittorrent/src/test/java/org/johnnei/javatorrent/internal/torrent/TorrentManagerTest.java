@@ -169,22 +169,23 @@ public class TorrentManagerTest {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		TrackerManager trackerManager = mock(TrackerManager.class);
 		when(torrentClientMock.getDownloadPort()).thenReturn(DummyEntity.findAvailableTcpPort());
+		ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+
+		when(torrentClientMock.getExecutorService()).thenReturn(executor);
 
 		TorrentManager cut = new TorrentManager(trackerManager);
 
+		ScheduledFuture task = mock(ScheduledFuture.class);
+		when(executor.scheduleWithFixedDelay(notNull(), eq(50L), eq(100L), eq(TimeUnit.MILLISECONDS))).thenReturn(task);
 
 		cut.start(torrentClientMock);
 		cut.enableConnectionAcceptor();
 
-		LoopingRunnable peerIoRunnable = Whitebox.getInternalState(cut, "peerIoRunnable");
-		LoopingRunnable peerConnectorRunnable = Whitebox.getInternalState(cut, "connectorRunnable");
-		assertNotNull(peerIoRunnable, "Peer IO runner should have been started.");
-		assertNotNull(peerConnectorRunnable, "Peer connector runner should have been started.");
+		verify(executor).scheduleWithFixedDelay(notNull(), eq(50L), eq(100L), eq(TimeUnit.MILLISECONDS));
 
 		cut.stop();
 
-		assertFalse(isRunning(peerIoRunnable), "Peer IO runner should have been tasked to stop");
-		assertFalse(isRunning(peerConnectorRunnable), "Peer connector runner should have been tasked to stop");
+		verify(task).cancel(false);
 	}
 
 	private boolean isRunning(LoopingRunnable runnable) {

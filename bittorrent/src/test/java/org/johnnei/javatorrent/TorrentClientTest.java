@@ -297,8 +297,5 @@ public class TorrentClientTest {
 				.build();
 
 		verify(peerConnectorMock).start();
-
-		TorrentManager torrentManager = Whitebox.getInternalState(cut, TorrentManager.class);
-		assertNotNull(Whitebox.getInternalState(torrentManager, "connectorRunnable"), "Connector should have been attempted to start.");
 	}
 }

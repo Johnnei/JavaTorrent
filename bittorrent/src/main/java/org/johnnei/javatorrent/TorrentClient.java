@@ -105,12 +105,13 @@ public class TorrentClient {
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
 				.reduce((a, b) -> a + ", " + b).orElse(""));
 
-		handshakeHandler = new BitTorrentHandshakeHandlerImpl(this);
-
 		downloadPort = builder.downloadPort;
 		extensionBytes = builder.extensionBytes;
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
+
+		handshakeHandler = new BitTorrentHandshakeHandlerImpl(this);
+
 		ioManager = new IOManager();
 		ioManagerRunner = new LoopingRunnable(ioManager, true);
 		Thread ioManagerThread = new Thread(ioManagerRunner, String.format("Disk Manager - %s", ioManager.toString()));
