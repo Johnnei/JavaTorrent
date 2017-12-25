@@ -53,12 +53,9 @@ public class BitTorrentSocketTest {
 		when(socketMock.getInputStream()).thenReturn(inputStream);
 		when(socketMock.getOutputStream()).thenReturn(outputStream);
 
-		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock);
-		BitTorrentSocket cutTwo = new BitTorrentSocket(messageFactoryMock, socketMock);
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
 
-		assertTrue(cut.toString().startsWith("BitTorrentSocket["), "Incorrect toString start");
-		assertEquals("", cut.getSocketName(), "Incorrect socket name on null socket");
-		assertTrue(cutTwo.getSocketName().length() > 0, "Incorrect socket name on nonnull socket");
+		assertTrue(cut.getSocketName().length() > 0, "Incorrect socket name on nonnull socket");
 	}
 
 	@Test
@@ -73,12 +70,10 @@ public class BitTorrentSocketTest {
 		when(socketMock.getOutputStream()).thenReturn(outputStream);
 		when(socketMock.isClosed()).thenReturn(false, true);
 
-		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock);
-		BitTorrentSocket cutTwo = new BitTorrentSocket(messageFactoryMock, socketMock);
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
 
-		assertTrue(cut.closed(), "Null socket is always closed.");
-		assertFalse(cutTwo.closed(), "Socket is should have returned that it's closed.");
-		assertTrue(cutTwo.closed(), "Socket is should have returned that it's NOT closed.");
+		assertFalse(cut.closed(), "Socket is should have returned that it's closed.");
+		assertTrue(cut.closed(), "Socket is should have returned that it's NOT closed.");
 	}
 
 	@Test
@@ -91,7 +86,11 @@ public class BitTorrentSocketTest {
 		when(inputStream.pollSpeed()).thenReturn(42);
 		when(outputStream.pollSpeed()).thenReturn(7);
 
-		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock);
+		ISocket socket = mock(ISocket.class);
+		when(socket.getInputStream()).thenReturn(inputStream);
+		when(socket.getOutputStream()).thenReturn(outputStream);
+
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socket);
 
 		Whitebox.setInternalState(cut, "inStream", inputStream);
 		Whitebox.setInternalState(cut, "outStream", outputStream);
@@ -100,10 +99,6 @@ public class BitTorrentSocketTest {
 
 		assertEquals(42, cut.getDownloadRate(), "Incorrect download speed");
 		assertEquals(7, cut.getUploadRate(), "Incorrect upload speed");
-
-		// Assert that poll rates can be safely called on unbound socket
-		BitTorrentSocket cutTwo = new BitTorrentSocket(messageFactoryMock);
-		cutTwo.pollRates();
 	}
 
 	@Test

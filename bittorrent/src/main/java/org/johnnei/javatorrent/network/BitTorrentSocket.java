@@ -33,7 +33,7 @@ public class BitTorrentSocket {
 	 */
 	private Clock clock = Clock.systemDefaultZone();
 
-	private ISocket socket;
+	private final ISocket socket;
 
 	private ByteInputStream inStream;
 
@@ -76,26 +76,17 @@ public class BitTorrentSocket {
 	private LocalDateTime lastActivity;
 
 	/**
-	 * Creates a new unbound BitTorrent socket.
-	 * @param messageFactory The factory to create {@link IMessage} instances.
-	 */
-	@Deprecated
-	public BitTorrentSocket(MessageFactory messageFactory) {
-		this.messageFactory = messageFactory;
-		messageQueue = new LinkedList<>();
-		blockQueue = new LinkedList<>();
-		lastActivity = LocalDateTime.now(clock);
-	}
-
-	/**
 	 * Creates a new bound BitTorrent socket.
 	 * @param messageFactory The factory to create {@link IMessage} instances.
 	 * @param socket The bound socket.
 	 * @throws IOException When the IO streams can not be wrapped.
 	 */
 	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) throws IOException {
-		this(messageFactory);
-		this.socket = Objects.requireNonNull(socket, "Socket cannot be null, use other constructor instead.");
+		this.messageFactory = messageFactory;
+		messageQueue = new LinkedList<>();
+		blockQueue = new LinkedList<>();
+		lastActivity = LocalDateTime.now(clock);
+		this.socket = Objects.requireNonNull(socket, "Socket cannot be null");
 		createIOStreams();
 	}
 
@@ -271,10 +262,6 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if the underlying socket is closed, otherwise <code>false</code>
 	 */
 	public boolean closed() {
-		if (socket == null) {
-			return true;
-		}
-
 		return socket.isClosed();
 	}
 
@@ -292,10 +279,6 @@ public class BitTorrentSocket {
 	 * @return The name of the socket or an empty string when no socket is set.
 	 */
 	public String getSocketName() {
-		if (socket == null) {
-			return "";
-		}
-
 		return socket.getClass().getSimpleName();
 	}
 
