@@ -71,7 +71,7 @@ public class UtpPeerConnectionAcceptor implements Runnable {
 
 		synchronized (this) {
 			socketQueue.remove(connectedSocket.get());
-			torrentClient.getHandshakeHandler().onConnectionReceived(connectedSocket.get().getChannel());
+			torrentClient.getHandshakeHandler().onConnectionReceived(connectedSocket.get());
 		}
 	}
 

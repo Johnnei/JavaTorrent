@@ -8,7 +8,14 @@ import java.nio.channels.SocketChannel;
 
 public class NioTcpSocket implements ISocket {
 
-	private SocketChannel channel;
+	private final SocketChannel channel;
+
+	public NioTcpSocket(SocketChannel channel) {
+		if (channel.isBlocking()) {
+			throw new IllegalArgumentException("Only non-blocking Channels are supported.");
+		}
+		this.channel = channel;
+	}
 
 	public NioTcpSocket() {
 		try {

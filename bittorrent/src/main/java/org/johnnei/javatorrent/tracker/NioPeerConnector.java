@@ -1,9 +1,6 @@
 package org.johnnei.javatorrent.tracker;
 
 import java.io.IOException;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.Channel;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.time.Clock;
@@ -142,7 +139,7 @@ public class NioPeerConnector implements IPeerConnector {
 				SelectionKey key = keys.next();
 				PeerConnectionState state = (PeerConnectionState) key.attachment();
 
-				onConnected(state, key.channel());
+				onConnected(state);
 
 				key.cancel();
 				keys.remove();
@@ -152,9 +149,9 @@ public class NioPeerConnector implements IPeerConnector {
 		}
 	}
 
-	private void onConnected(PeerConnectionState state, Channel channel) {
+	private void onConnected(PeerConnectionState state) {
 		torrentClient.getHandshakeHandler()
-			.onConnectionEstablished((SelectableChannel & ByteChannel) channel, state.getPeer().getTorrent().getMetadata().getHash());
+			.onConnectionEstablished(state.getCurrentSocket(), state.getPeer().getTorrent().getMetadata().getHash());
 	}
 
 	@Override

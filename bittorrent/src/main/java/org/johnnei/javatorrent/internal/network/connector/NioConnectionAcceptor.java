@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.network.socket.NioTcpSocket;
 
 public class NioConnectionAcceptor {
 
@@ -43,7 +44,7 @@ public class NioConnectionAcceptor {
 		SocketChannel channel;
 		try {
 			while ((channel = serverChannel.accept()) != null) {
-				torrentClient.getHandshakeHandler().onConnectionReceived(channel);
+				torrentClient.getHandshakeHandler().onConnectionReceived(new NioTcpSocket(channel));
 			}
 		} catch (IOException e) {
 			LOGGER.warn("Failed to accept connection", e);

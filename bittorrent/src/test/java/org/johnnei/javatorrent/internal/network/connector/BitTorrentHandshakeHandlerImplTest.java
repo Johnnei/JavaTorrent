@@ -7,6 +7,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -25,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.network.socket.ISocket;
+import org.johnnei.javatorrent.network.socket.NioTcpSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestUtils;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -76,6 +79,8 @@ class BitTorrentHandshakeHandlerImplTest {
 	@Test
 	void testOnConnectionEstablished() throws Exception {
 		SelectableByteChannel channel = mock(SelectableByteChannel.class);
+		ISocket socket = mock(ISocket.class);
+		when(socket.getChannel()).thenReturn(channel);
 
 		byte[] expectedHandshake = new byte[] {
 			// Protocol Identification
@@ -106,7 +111,7 @@ class BitTorrentHandshakeHandlerImplTest {
 			return buffer.limit();
 		});
 
-		cut.onConnectionEstablished(channel, torrentHash);
+		cut.onConnectionEstablished(socket, torrentHash);
 
 		ArgumentCaptor<ByteBuffer> sendBuffer = ArgumentCaptor.forClass(ByteBuffer.class);
 		verify(channel).write(sendBuffer.capture());
@@ -135,8 +140,10 @@ class BitTorrentHandshakeHandlerImplTest {
 	@Test
 	void onConnectionReceived() throws Exception {
 		SelectableByteChannel channel = mock(SelectableByteChannel.class);
+		ISocket socket = mock(ISocket.class);
+		when(socket.getChannel()).thenReturn(channel);
 
-		cut.onConnectionReceived(channel);
+		cut.onConnectionReceived(socket);
 		verify(channel).register(any(), eq(SelectionKey.OP_READ), any());
 	}
 
@@ -156,7 +163,7 @@ class BitTorrentHandshakeHandlerImplTest {
 
 			LOGGER.info("Sending handshake to remote.");
 
-			cut.onConnectionEstablished(localChannel, requestedHash);
+			cut.onConnectionEstablished(new NioTcpSocket(localChannel), requestedHash);
 
 			ByteBuffer receivedHandshake = ByteBuffer.allocate(68);
 			remoteChannel.read(receivedHandshake);
@@ -200,7 +207,7 @@ class BitTorrentHandshakeHandlerImplTest {
 
 			LOGGER.info("Simulating handshake from remote.");
 
-			cut.onConnectionReceived(localChannel);
+			cut.onConnectionReceived(new NioTcpSocket(localChannel));
 
 			ByteBuffer remoteHandshake = ByteBuffer.allocate(68);
 			remoteHandshake.put(response);
@@ -225,8 +232,12 @@ class BitTorrentHandshakeHandlerImplTest {
 	}
 
 	public static Stream<Arguments> connectToRemoteScenarios() {
-		Torrent torrent = DummyEntity.createUniqueTorrent();
-		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrent);
+		TorrentClient torrentClient = mock(TorrentClient.class);
+		when(torrentClient.getModules()).thenReturn(Collections.emptyList());
+
+		Torrent torrentPass = DummyEntity.createUniqueTorrent(torrentClient);
+		Torrent torrent = DummyEntity.createUniqueTorrent(torrentClient);
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrentClient, torrent);
 
 		byte[] incorrectProtocolName = createHandshake(torrent.getMetadata().getHash());
 		incorrectProtocolName[12] = 'P';
@@ -235,7 +246,7 @@ class BitTorrentHandshakeHandlerImplTest {
 		incorrectProtocolLength[0] = 0x12;
 
 		return Stream.of(
-			Arguments.of(torrent, torrent.getMetadata().getHash(), createHandshake(torrent.getMetadata().getHash()), true),
+			Arguments.of(torrentPass, torrentPass.getMetadata().getHash(), createHandshake(torrentPass.getMetadata().getHash()), true),
 			Arguments.of(torrent, torrent.getMetadata().getHash(), createHandshake(torrentTwo.getMetadata().getHash()), false),
 			Arguments.of(torrent, torrentTwo.getMetadata().getHash(), createHandshake(torrent.getMetadata().getHash()), false),
 			Arguments.of(torrent, torrent.getMetadata().getHash(), incorrectProtocolLength, false),
@@ -245,8 +256,12 @@ class BitTorrentHandshakeHandlerImplTest {
 	}
 
 	public static Stream<Arguments> connectionFromRemoteScenarios() {
-		Torrent torrent = DummyEntity.createUniqueTorrent();
-		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrent);
+		TorrentClient torrentClient = mock(TorrentClient.class);
+		when(torrentClient.getModules()).thenReturn(Collections.emptyList());
+
+		Torrent torrentPass = DummyEntity.createUniqueTorrent(torrentClient);
+		Torrent torrent = DummyEntity.createUniqueTorrent(torrentClient);
+		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrentClient, torrent);
 
 		byte[] incorrectProtocolName = createHandshake(torrent.getMetadata().getHash());
 		incorrectProtocolName[12] = 'P';
@@ -255,7 +270,7 @@ class BitTorrentHandshakeHandlerImplTest {
 		incorrectProtocolLength[0] = 0x12;
 
 		return Stream.of(
-			Arguments.of(torrent, createHandshake(torrent.getMetadata().getHash()), true),
+			Arguments.of(torrentPass, createHandshake(torrentPass.getMetadata().getHash()), true),
 			Arguments.of(torrent, createHandshake(torrentTwo.getMetadata().getHash()), false)
 		);
 	}

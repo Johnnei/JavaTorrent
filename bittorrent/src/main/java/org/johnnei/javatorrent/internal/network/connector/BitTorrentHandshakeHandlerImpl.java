@@ -3,9 +3,7 @@ package org.johnnei.javatorrent.internal.network.connector;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.Channel;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.time.Clock;
@@ -18,7 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentProtocolViolationException;
+import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.connector.BitTorrentHandshakeHandler;
+import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
@@ -70,35 +70,35 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 	}
 
 	@Override
-	public synchronized <T extends SelectableChannel & ByteChannel> void onConnectionEstablished(T channel, byte[] torrentHash) {
+	public synchronized void onConnectionEstablished(ISocket socket, byte[] torrentHash) {
 		try {
-			sendHandshake(channel, torrentHash);
+			sendHandshake((ByteChannel) socket.getChannel(), torrentHash);
 		} catch (IOException e) {
 			LOGGER.debug("Failed to send handshake", e);
-			close(channel);
+			close(socket);
 			return;
 		}
 		try {
-			HandshakeState state = new HandshakeState(clock, torrentHash);
-			channel.register(selector, SelectionKey.OP_READ, state);
+			HandshakeState state = new HandshakeState(clock, socket, torrentHash);
+			socket.getChannel().register(selector, SelectionKey.OP_READ, state);
 		} catch (ClosedChannelException e) {
 			throw new IllegalStateException("Attempted to connect to peer on closed selector.", e);
 		}
 	}
 
-	public void close(Channel channel) {
+	public void close(ISocket socket) {
 		try {
-			channel.close();
+			socket.close();
 		} catch (IOException ce) {
 			LOGGER.warn("Failed to close channel.", ce);
 		}
 	}
 
 	@Override
-	public synchronized <T extends SelectableChannel & ByteChannel> void onConnectionReceived(T channel) {
+	public synchronized void onConnectionReceived(ISocket socket) {
 		try {
-			HandshakeState state = new HandshakeState(clock, null);
-			channel.register(selector, SelectionKey.OP_READ, state);
+			HandshakeState state = new HandshakeState(clock, socket,null);
+			socket.getChannel().register(selector, SelectionKey.OP_READ, state);
 		} catch (ClosedChannelException e) {
 			throw new IllegalStateException("Attempted to connect to peer on closed selector.", e);
 		}
@@ -149,7 +149,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 
 			if (clock.instant().minusSeconds(5).isAfter(state.getConnectionStart())) {
 				LOGGER.debug("Handshake timed out for {} missing {} bytes.", channel, state.getHandshakeBuffer().remaining());
-				close(channel);
+				close(state.getSocket());
 			}
 		}
 	}
@@ -163,7 +163,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 			}
 		} catch (Exception e) {
 			LOGGER.debug("Failed to process peer handshake.", e);
-			close(channel);
+			close(state.getSocket());
 		}
 	}
 
@@ -206,8 +206,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 			.setId(receivedPeerId)
 			.setExtensionBytes(extensionBytes)
 			.setTorrent(torrent)
-			// FIXME BitTorrentSocket must support channels.
-			.setSocket(null)
+			.setSocket(new BitTorrentSocket(torrentClient.getMessageFactory(), state.getSocket()))
 			.build();
 
 		torrent.addPeer(peer);
