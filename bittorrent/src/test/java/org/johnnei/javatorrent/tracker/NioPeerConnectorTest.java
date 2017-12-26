@@ -139,6 +139,9 @@ class NioPeerConnectorTest {
 		TestClock clock = new TestClock(Clock.systemDefaultZone());
 		cut = new NioPeerConnector(clock, torrentClient, 4);
 
+		BitTorrentHandshakeHandler handshakeHandler = mock(BitTorrentHandshakeHandler.class);
+		when(torrentClient.getHandshakeHandler()).thenReturn(handshakeHandler);
+
 		PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
 		when(infoOne.getAddress()).thenReturn(InetSocketAddress.createUnresolved("localhost", 27960));
 
@@ -187,9 +190,6 @@ class NioPeerConnectorTest {
 		when(degradation.createPreferredSocket()).thenReturn(socketTypeOne).thenReturn(socketTypeTwo);
 
 		cut.enqueuePeer(infoOne);
-		cut.pollReadyConnections();
-		assertThat(cut.getConnectingCount(), is(1));
-
 		cut.enqueuePeer(infoTwo);
 		cut.pollReadyConnections();
 		assertThat(cut.getConnectingCount(), is(2));
