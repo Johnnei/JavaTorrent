@@ -142,19 +142,24 @@ class NioPeerConnectorTest {
 		BitTorrentHandshakeHandler handshakeHandler = mock(BitTorrentHandshakeHandler.class);
 		when(torrentClient.getHandshakeHandler()).thenReturn(handshakeHandler);
 
-		PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
-		when(infoOne.getAddress()).thenReturn(InetSocketAddress.createUnresolved("localhost", 27960));
+		try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
+			serverChannel.bind(null);
 
-		cut.enqueuePeer(infoOne);
-		cut.pollReadyConnections();
+			PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
+			when(infoOne.getAddress())
+				.thenReturn(InetSocketAddress.createUnresolved("localhost", ((InetSocketAddress) serverChannel.getLocalAddress()).getPort()));
 
-		clock.setClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(15)));
+			cut.enqueuePeer(infoOne);
+			cut.pollReadyConnections();
 
-		cut.pollReadyConnections();
+			clock.setClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(15)));
 
-		verify(socketTypeOne).close();
-		verify(socketTypeOne).connect(notNull());
-		verify(socketTypeTwo).connect(notNull());
+			cut.pollReadyConnections();
+
+			verify(socketTypeOne).close();
+			verify(socketTypeOne).connect(notNull());
+			verify(socketTypeTwo).connect(notNull());
+		}
 	}
 
 	@Test

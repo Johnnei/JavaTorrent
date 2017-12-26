@@ -210,6 +210,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 			.build();
 
 		torrent.addPeer(peer);
+		// FIXME: The SelectionKey should be cancelled here.
 	}
 
 }
