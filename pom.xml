@@ -148,6 +148,7 @@
         <version>2.19.1</version>
         <configuration>
           <skipTests>${skipUTs}</skipTests>
+          <trimStackTrace>false</trimStackTrace>
         </configuration>
         <dependencies>
           <dependency>
