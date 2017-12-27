@@ -139,9 +139,13 @@ public class NioPeerConnector implements IPeerConnector {
 				SelectionKey key = keys.next();
 				PeerConnectionState state = (PeerConnectionState) key.attachment();
 
-				onConnected(state);
+				if (state.getCurrentSocket().isConnected()) {
+					onConnected(state);
+					key.cancel();
+				} else {
+					onDegradeSocket(state);
+				}
 
-				key.cancel();
 				keys.remove();
 			}
 		} catch (IOException e) {

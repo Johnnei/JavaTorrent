@@ -477,6 +477,11 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	@Override
+	public boolean isConnected() {
+		return connectionState == ConnectionState.CONNECTED;
+	}
+
+	@Override
 	public DatagramChannel getChannel() {
 		return null;
 	}

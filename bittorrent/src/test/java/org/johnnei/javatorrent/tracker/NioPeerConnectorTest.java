@@ -87,6 +87,7 @@ class NioPeerConnectorTest {
 	public void tearDown() throws Exception {
 		channelOne.close();
 		channelTwo.close();
+		channelThree.close();
 	}
 
 	@Test
@@ -142,24 +143,21 @@ class NioPeerConnectorTest {
 		BitTorrentHandshakeHandler handshakeHandler = mock(BitTorrentHandshakeHandler.class);
 		when(torrentClient.getHandshakeHandler()).thenReturn(handshakeHandler);
 
-		try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
-			serverChannel.bind(null);
+		PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
+		when(infoOne.getAddress())
+			.thenReturn(InetSocketAddress.createUnresolved("localhost", DummyEntity.findAvailableTcpPort()));
 
-			PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
-			when(infoOne.getAddress())
-				.thenReturn(InetSocketAddress.createUnresolved("localhost", ((InetSocketAddress) serverChannel.getLocalAddress()).getPort()));
+		cut.enqueuePeer(infoOne);
+		cut.pollReadyConnections();
 
-			cut.enqueuePeer(infoOne);
-			cut.pollReadyConnections();
+		verify(socketTypeOne).connect(notNull());
 
-			clock.setClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(15)));
+		clock.setClock(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(15)));
 
-			cut.pollReadyConnections();
+		cut.pollReadyConnections();
 
-			verify(socketTypeOne).close();
-			verify(socketTypeOne).connect(notNull());
-			verify(socketTypeTwo).connect(notNull());
-		}
+		verify(socketTypeOne).close();
+		verify(socketTypeTwo).connect(notNull());
 	}
 
 	@Test
@@ -204,7 +202,7 @@ class NioPeerConnectorTest {
 	public void tesGetConnectingCountFor() {
 		Torrent torrent = DummyEntity.createUniqueTorrent();
 		Torrent torrentTwo = DummyEntity.createUniqueTorrent(torrent);
-		
+
 		PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
 		PeerConnectInfo infoTwo = mock(PeerConnectInfo.class);
 		PeerConnectInfo infoThree = mock(PeerConnectInfo.class);

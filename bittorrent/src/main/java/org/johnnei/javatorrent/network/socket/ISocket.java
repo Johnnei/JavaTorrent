@@ -15,11 +15,17 @@ import java.nio.channels.SelectableChannel;
 public interface ISocket<T extends SelectableChannel & ByteChannel> extends AutoCloseable {
 
 	/**
-	 * Connects the underlying Socket to the endpoint
+	 * Connects the underlying Socket to the endpoint. This event <em>must</em> happen asynchronously.
+	 * To notify the socket is connected (or it failed) use {@link java.nio.channels.SelectionKey#OP_CONNECT} in combination with {@link #isConnected()}.
 	 * @param endpoint The Address to connect to
 	 * @throws IOException When connection fails
 	 */
 	void connect(InetSocketAddress endpoint) throws IOException;
+
+	/**
+	 * @return <code>true</code> if the connection is successfully established. Otherwise <code>false</code>.
+	 */
+	boolean isConnected();
 
 	/**
 	 * Gets the inputstream from the underlaying socket

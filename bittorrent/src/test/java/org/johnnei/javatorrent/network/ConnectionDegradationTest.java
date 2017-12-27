@@ -65,6 +65,11 @@ public class ConnectionDegradationTest {
 		}
 
 		@Override
+		public boolean isConnected() {
+			return false;
+		}
+
+		@Override
 		public InputStream getInputStream() throws IOException {
 			return null;
 		}
