@@ -134,7 +134,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 
 				HandshakeState state = (HandshakeState) key.attachment();
 				ByteChannel channel = (ByteChannel) key.channel();
-				handlePeer(state, channel);
+				handlePeer(key, state, channel);
 
 				keys.remove();
 			}
@@ -154,12 +154,12 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		}
 	}
 
-	private void handlePeer(HandshakeState state, ByteChannel channel) {
+	private void handlePeer(SelectionKey key, HandshakeState state, ByteChannel channel) {
 		try {
 			channel.read(state.getHandshakeBuffer());
 
 			if (!state.getHandshakeBuffer().hasRemaining()) {
-				onHandshakeReceived(channel, state);
+				onHandshakeReceived(key, channel, state);
 			}
 		} catch (Exception e) {
 			LOGGER.debug("Failed to process peer handshake.", e);
@@ -167,7 +167,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		}
 	}
 
-	private void onHandshakeReceived(ByteChannel channel, HandshakeState state) throws IOException {
+	private void onHandshakeReceived(SelectionKey key, ByteChannel channel, HandshakeState state) throws IOException {
 		ByteBuffer buffer = state.getHandshakeBuffer();
 		buffer.flip();
 
@@ -210,7 +210,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 			.build();
 
 		torrent.addPeer(peer);
-		// FIXME: The SelectionKey should be cancelled here.
+		key.cancel();
 	}
 
 }
