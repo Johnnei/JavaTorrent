@@ -1,14 +1,16 @@
 package org.johnnei.javatorrent.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Queue;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.powermock.reflect.Whitebox;
@@ -18,19 +20,21 @@ import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
-import org.johnnei.javatorrent.internal.network.ByteInputStream;
-import org.johnnei.javatorrent.internal.network.ByteOutputStream;
 import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.test.DummyEntity;
+import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.test.TestUtils;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNotNull;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -43,15 +47,10 @@ import static org.mockito.Mockito.when;
 public class BitTorrentSocketTest {
 
 	@Test
-	public void testToString() throws Exception {
+	public void testToString() {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
 
@@ -59,15 +58,10 @@ public class BitTorrentSocketTest {
 	}
 
 	@Test
-	public void testIsClosed() throws Exception {
+	public void testIsClosed() {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
 		when(socketMock.isClosed()).thenReturn(false, true);
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
@@ -77,40 +71,68 @@ public class BitTorrentSocketTest {
 	}
 
 	@Test
-	public void testGetSpeeds() throws Exception {
+	public void testGetDownloadRate() throws IOException {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 
-		ByteInputStream inputStream = mock(ByteInputStream.class);
-		ByteOutputStream outputStream = mock(ByteOutputStream.class);
+		ISocket socketMock = mock(ISocket.class);
+		SocketChannel channelMock = mock(SocketChannel.class);
+		when(socketMock.getChannel()).thenReturn(channelMock);
 
-		when(inputStream.pollSpeed()).thenReturn(42);
-		when(outputStream.pollSpeed()).thenReturn(7);
+		mockReadMessage(messageFactoryMock, mock(IMessage.class), channelMock);
 
-		ISocket socket = mock(ISocket.class);
-		when(socket.getInputStream()).thenReturn(inputStream);
-		when(socket.getOutputStream()).thenReturn(outputStream);
+		Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+		TestClock clock = new TestClock(fixedClock);
 
-		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socket);
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock, clock);
 
-		Whitebox.setInternalState(cut, "inStream", inputStream);
-		Whitebox.setInternalState(cut, "outStream", outputStream);
-
+		clock.setClock(Clock.offset(fixedClock, Duration.ofSeconds(1)));
+		cut.canReadMessage();
 		cut.pollRates();
 
-		assertEquals(42, cut.getDownloadRate(), "Incorrect download speed");
-		assertEquals(7, cut.getUploadRate(), "Incorrect upload speed");
+		assertThat("Incorrect speed", cut.getDownloadRate(), equalTo(5));
+	}
+
+	@Test
+	public void testGetUploadRate() throws IOException {
+		MessageFactory messageFactoryMock = mock(MessageFactory.class);
+
+		ISocket socket = mock(ISocket.class);
+		SocketChannel socketChannel = mock(SocketChannel.class);
+		when(socket.getChannel()).thenReturn(socketChannel);
+
+		when(socketChannel.write((ByteBuffer) notNull())).thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			return buffer.remaining();
+		});
+
+		Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+		TestClock clock = new TestClock(fixedClock);
+
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socket, clock);
+
+		mockSendBlock(cut);
+
+		clock.setClock(Clock.offset(fixedClock, Duration.ofSeconds(1)));
+
+		cut.sendMessages();
+		cut.pollRates();
+
+		assertThat("Incorrect upload speed", cut.getUploadRate(), equalTo(10));
 	}
 
 	@Test
 	public void testReadMessageKeepAlive() throws Exception {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[4]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
+		SocketChannel channel = mock(SocketChannel.class);
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
+		when(socketMock.getChannel()).thenReturn(channel);
+
+		when(channel.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			buffer.put(new byte[4]);
+			return 4;
+		});
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
 		assertTrue(cut.canReadMessage(), "Should be able to read keep alive message");
@@ -118,30 +140,27 @@ public class BitTorrentSocketTest {
 	}
 
 	@Test
-	public void testCanReadMessageAfterThreeReads() throws Exception {
+	public void testCanReadMessageMultipleReads() throws Exception {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 		IMessage messageMock = mock(IMessage.class);
 		when(messageFactoryMock.createById(eq(1))).thenReturn(messageMock);
 
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		InputStream inputStream = mock(InputStream.class);
-		when(inputStream.available()).thenReturn(2, 4, 0, 1);
-
+		SocketChannel channel = mock(SocketChannel.class);
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
+		when(socketMock.getChannel()).thenReturn(channel);
 
-		ArgumentCaptor<byte[]> bufferCapture = ArgumentCaptor.forClass(byte[].class);
-		when(inputStream.read(bufferCapture.capture(), eq(0), anyInt())).thenAnswer(inv -> {
-			bufferCapture.getValue()[3] = 1;
+		when(channel.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			buffer.put(new byte[] { 0, 0, 0, 1 });
 			return 4;
-		}).thenAnswer(inv -> {
-			bufferCapture.getValue()[0] = 1;
+		}).thenAnswer(inv -> 0)
+		.thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			buffer.put(new byte[] { 1 });
 			return 1;
 		});
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
-		assertFalse(cut.canReadMessage(), "Shouldn't be able to read message");
 		assertFalse(cut.canReadMessage(), "Shouldn't be able to read message");
 		assertTrue(cut.canReadMessage(), "Should be able to read message");
 		assertEquals(messageMock, cut.readMessage(), "Incorrect message type");
@@ -153,36 +172,30 @@ public class BitTorrentSocketTest {
 	public void testCanReadMessageNotEnoughBytes() throws Exception {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[]{
-			// Length
-			0x00, 0x00
-		});
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
+		SocketChannel channelMock = mock(SocketChannel.class);
+		when(socketMock.getChannel()).thenReturn(channelMock);
+
+		when(channelMock.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			buffer.put(new byte[2]);
+			return 2;
+		});
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
-		assertFalse(cut.canReadMessage(), "Should be able to read message");
+		assertThat("Length is not yet available.", cut.canReadMessage(), equalTo(false));
 	}
 
 	@Test
 	public void testReadMessage() throws Exception {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 		IMessage messageMock = mock(IMessage.class);
-		when(messageFactoryMock.createById(eq(1))).thenReturn(messageMock);
-
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[]{
-			// Length
-			0x00, 0x00, 0x00, 0x01,
-			// ID
-			0x01 });
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
+		SocketChannel channelMock = mock(SocketChannel.class);
+		when(socketMock.getChannel()).thenReturn(channelMock);
+
+		mockReadMessage(messageFactoryMock, messageMock, channelMock);
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
 
@@ -199,16 +212,6 @@ public class BitTorrentSocketTest {
 		ISocket socketTwoMock = mock(ISocket.class);
 		ISocket socketThreeMock = mock(ISocket.class);
 
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-		when(socketOneMock.getInputStream()).thenReturn(inputStream);
-		when(socketOneMock.getOutputStream()).thenReturn(outputStream);
-		when(socketTwoMock.getInputStream()).thenReturn(inputStream);
-		when(socketTwoMock.getOutputStream()).thenReturn(outputStream);
-		when(socketThreeMock.getInputStream()).thenReturn(inputStream);
-		when(socketThreeMock.getOutputStream()).thenReturn(outputStream);
-
 		when(socketOneMock.isClosed()).thenReturn(true);
 		when(socketTwoMock.isClosed()).thenReturn(false);
 		when(socketThreeMock.isClosed()).thenReturn(false);
@@ -222,14 +225,9 @@ public class BitTorrentSocketTest {
 	}
 
 	@Test
-	public void testEnqueueMessage() throws Exception {
+	public void testEnqueueMessage() {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ISocket socketMock = mock(ISocket.class);
-
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
 
 		IMessage messageMock = mock(IMessage.class);
 		IMessage pieceMessageMock = mock(MessageBlock.class);
@@ -251,36 +249,69 @@ public class BitTorrentSocketTest {
 	@Test
 	public void testSendMessageNoMessagesQueued() throws Exception {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ISocket socketMock = mock(ISocket.class);
 
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
-
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
-		cut.sendMessage();
+		cut.sendMessages();
 	}
 
 	@Test
+	@DisplayName("testSendMessage() -> Keep alive")
 	public void testSendMessage() throws Exception {
 		Clock clock = Clock.fixed(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(1)).instant(), Clock.systemDefaultZone().getZone());
 
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new byte[0]);
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ISocket socketMock = mock(ISocket.class);
-
-		when(socketMock.getOutputStream()).thenReturn(outputStream);
-		when(socketMock.getInputStream()).thenReturn(inputStream);
+		SocketChannel channelMock = mock(SocketChannel.class);
+		when(socketMock.getChannel()).thenReturn(channelMock);
 
 		IMessage messageMock = mock(MessageKeepAlive.class);
-		IMessage pieceMessageMock = mock(MessageBlock.class);
 
 		// KeepAlive
-		when(pieceMessageMock.getId()).thenReturn(BitTorrent.MESSAGE_PIECE);
-
 		when(messageMock.getLength()).thenReturn(0);
+
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock, clock);
+		cut.enqueueMessage(messageMock);
+
+		cut.sendMessages();
+
+		ArgumentCaptor<ByteBuffer> bufferCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+		verify(channelMock).write(bufferCaptor.capture());
+
+		assertArrayEquals(new byte[4], ByteBufferUtils.getBytes(bufferCaptor.getValue(), 4), "Incorrect keep alive output.");
+	}
+
+	@Test
+	@DisplayName("testSendMessage() -> Piece")
+	public void testSendMessagePiece() throws Exception {
+		Clock clock = Clock.fixed(Clock.offset(Clock.systemDefaultZone(), Duration.ofSeconds(1)).instant(), Clock.systemDefaultZone().getZone());
+
+		MessageFactory messageFactoryMock = mock(MessageFactory.class);
+		ISocket socketMock = mock(ISocket.class);
+		SocketChannel channelMock = mock(SocketChannel.class);
+		when(socketMock.getChannel()).thenReturn(channelMock);
+
+
+		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock, clock);
+
+		byte[] randomBytes = mockSendBlock(cut);
+
+		cut.sendMessages();
+
+		ArgumentCaptor<ByteBuffer> bufferCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+		verify(channelMock).write(bufferCaptor.capture());
+
+		byte[] expectedBytes = new byte[5 + randomBytes.length];
+		expectedBytes[3] = (byte) randomBytes.length;
+		expectedBytes[4] = (byte) BitTorrent.MESSAGE_PIECE;
+		TestUtils.copySection(randomBytes, expectedBytes, 5);
+		assertArrayEquals(expectedBytes, ByteBufferUtils.getBytes(bufferCaptor.getValue(), expectedBytes.length), "Incorrect piece output.");
+		assertEquals(LocalDateTime.now(clock), cut.getLastActivity(), "Incorrect last activity timestamp");
+	}
+
+	private byte[] mockSendBlock(BitTorrentSocket cut) {
+		IMessage pieceMessageMock = mock(MessageBlock.class);
+		when(pieceMessageMock.getId()).thenReturn(BitTorrent.MESSAGE_PIECE);
 
 		byte[] randomBytes = DummyEntity.createRandomBytes(5);
 		when(pieceMessageMock.getLength()).thenReturn(randomBytes.length);
@@ -290,24 +321,22 @@ public class BitTorrentSocketTest {
 			return null;
 		}).when(pieceMessageMock).write(outStreamCapture.capture());
 
-		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock);
-		Whitebox.setInternalState(cut, "clock", clock);
-		cut.enqueueMessage(messageMock);
-
 		cut.enqueueMessage(pieceMessageMock);
+		return randomBytes;
+	}
 
-		cut.sendMessage();
-
-		assertArrayEquals(new byte[4], outputStream.toByteArray(), "Incorrect keep alive output.");
-		outputStream.reset();
-
-		cut.sendMessage();
-
-		byte[] whenedBytes = new byte[5 + randomBytes.length];
-		whenedBytes[3] = (byte) randomBytes.length;
-		whenedBytes[4] = (byte) BitTorrent.MESSAGE_PIECE;
-		TestUtils.copySection(randomBytes, whenedBytes, 5);
-		assertArrayEquals(whenedBytes, outputStream.toByteArray(), "Incorrect piece output.");
-		assertEquals(LocalDateTime.now(clock), cut.getLastActivity(), "Incorrect last activity timestamp");
+	private void mockReadMessage(MessageFactory messageFactoryMock, IMessage messageMock, SocketChannel channelMock) throws IOException {
+		when(messageFactoryMock.createById(eq(1))).thenReturn(messageMock);
+		when(channelMock.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			// Length
+			buffer.put(new byte[] { 0x00, 0x00, 0x00, 0x01 });
+			return 4;
+		}).thenAnswer(inv -> {
+			ByteBuffer buffer = inv.getArgument(0);
+			// ID
+			buffer.put(new byte[] { 0x01 });
+			return 1;
+		});
 	}
 }

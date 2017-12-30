@@ -9,6 +9,7 @@ import java.nio.channels.Selector;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentProtocolViolationException;
+import org.johnnei.javatorrent.internal.network.PeerIoHandler;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.network.connector.BitTorrentHandshakeHandler;
 import org.johnnei.javatorrent.network.socket.ISocket;
@@ -46,13 +48,18 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 
 	private final Selector selector;
 
-	public BitTorrentHandshakeHandlerImpl(TorrentClient torrentClient) {
-		this(torrentClient, Clock.systemDefaultZone());
+	private final PeerIoHandler peerIoHandler;
+	private final ScheduledFuture<?> poller;
+
+
+	public BitTorrentHandshakeHandlerImpl(TorrentClient torrentClient, PeerIoHandler peerIoHandler) {
+		this(torrentClient, peerIoHandler, Clock.systemDefaultZone());
 	}
 
-	BitTorrentHandshakeHandlerImpl(TorrentClient torrentClient, Clock clock) {
+	BitTorrentHandshakeHandlerImpl(TorrentClient torrentClient, PeerIoHandler peerIoHandler, Clock clock) {
 		this.torrentClient = torrentClient;
 		this.clock = clock;
+		this.peerIoHandler = peerIoHandler;
 
 		bittorrentHandshake.put((byte) 0x13);
 		putString(bittorrentHandshake, PROTOCOL_NAME);
@@ -66,7 +73,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 			throw new IllegalStateException("NIO is not available", e);
 		}
 
-		torrentClient.getExecutorService().scheduleWithFixedDelay(this::pollHandshakesReady, 50, 50, TimeUnit.MILLISECONDS);
+		poller = torrentClient.getExecutorService().scheduleWithFixedDelay(this::pollHandshakesReady, 50, 50, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -86,7 +93,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		}
 	}
 
-	public void close(ISocket socket) {
+	private void close(ISocket socket) {
 		try {
 			socket.close();
 		} catch (IOException ce) {
@@ -111,6 +118,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		} catch (IOException e) {
 			LOGGER.warn("Error during shutdown of selector", e);
 		}
+		poller.cancel(false);
 	}
 
 	private void sendHandshake(ByteChannel channel, byte[] torrentHash) throws IOException {
@@ -210,6 +218,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 			.build();
 
 		torrent.addPeer(peer);
+		peerIoHandler.registerPeer(peer, state.getSocket());
 		key.cancel();
 	}
 

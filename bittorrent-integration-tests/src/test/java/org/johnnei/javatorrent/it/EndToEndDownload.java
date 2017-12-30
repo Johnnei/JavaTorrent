@@ -33,6 +33,7 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.junit.jupiter.Folder;
 import org.johnnei.junit.jupiter.TempFolderExtension;
 
+import static com.jayway.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -160,25 +161,29 @@ public abstract class EndToEndDownload {
 		TorrentClient clientOne = createTorrentClient(latch);
 		TorrentClient clientTwo = createTorrentClient(latch);
 
-		LOGGER.info("Starting downloading");
-		LOGGER.debug("[CLIENT ONE] Directory: {}, Port: {}", downloadFolderOne.getAbsolutePath(), clientOne.getDownloadPort());
-		LOGGER.debug("[CLIENT TWO] Directory: {}, Port: {}", downloadFolderTwo.getAbsolutePath(), clientTwo.getDownloadPort());
-		Torrent torrentOne = createTorrent("GIMP ONE", clientOne, torrentFile, downloadFolderOne);
-		Torrent torrentTwo = createTorrent("GIMP TWO", clientTwo, torrentFile, downloadFolderTwo);
+		try {
+			LOGGER.info("Starting downloading");
+			LOGGER.debug("[CLIENT ONE] Directory: {}, Port: {}", downloadFolderOne.getAbsolutePath(), clientOne.getDownloadPort());
+			LOGGER.debug("[CLIENT TWO] Directory: {}, Port: {}", downloadFolderTwo.getAbsolutePath(), clientTwo.getDownloadPort());
+			Torrent torrentOne = createTorrent("GIMP ONE", clientOne, torrentFile, downloadFolderOne);
+			Torrent torrentTwo = createTorrent("GIMP TWO", clientTwo, torrentFile, downloadFolderTwo);
 
-		clientOne.download(torrentOne);
-		clientTwo.download(torrentTwo);
+			clientOne.download(torrentOne);
+			clientTwo.download(torrentTwo);
 
-		assertAll(
-			() -> assertEquals(184, torrentOne.getFileSet().countCompletedPieces(), "Incorrect amount of completed pieces for client one"),
-			() -> assertEquals(186, torrentTwo.getFileSet().countCompletedPieces(), "Incorrect amount of completed pieces for client two")
-		);
+			assertAll(
+				() -> assertEquals(184, torrentOne.getFileSet().countCompletedPieces(), "Incorrect amount of completed pieces for client one"),
+				() -> assertEquals(186, torrentTwo.getFileSet().countCompletedPieces(), "Incorrect amount of completed pieces for client two")
+			);
 
-		LOGGER.info("Adding peer connect request to client.");
-		clientTwo.getPeerConnector().enqueuePeer(new PeerConnectInfo(torrentTwo, new InetSocketAddress("localhost", clientOne.getDownloadPort())));
+			LOGGER.info("Adding peer connect request to client.");
+			clientTwo.getPeerConnector().enqueuePeer(new PeerConnectInfo(torrentTwo, new InetSocketAddress("localhost", clientOne.getDownloadPort())));
 
-		LOGGER.info("Waiting for download completion");
-		assertTimeoutPreemptively(Duration.of(5, ChronoUnit.MINUTES), () -> {
+			LOGGER.info("Waiting for Peers to become connected.");
+			await("Peers to connect").atMost(30, TimeUnit.SECONDS).until(() -> !torrentOne.getPeers().isEmpty() && !torrentTwo.getPeers().isEmpty());
+
+			LOGGER.info("Waiting for download completion");
+			assertTimeoutPreemptively(Duration.of(5, ChronoUnit.MINUTES), () -> {
 				do {
 					final int INTERVAL_IN_SECONDS = 10;
 					latch.await(INTERVAL_IN_SECONDS, TimeUnit.SECONDS);
@@ -196,9 +201,11 @@ public abstract class EndToEndDownload {
 
 				} while (latch.getCount() > 0);
 			});
+		} finally {
+			clientOne.shutdown();
+			clientTwo.shutdown();
+		}
 
-		clientOne.shutdown();
-		clientTwo.shutdown();
 	}
 
 	protected static class PhaseSeedCountdown extends PhaseSeed {

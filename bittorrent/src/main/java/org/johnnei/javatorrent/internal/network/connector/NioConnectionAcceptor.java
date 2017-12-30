@@ -44,7 +44,9 @@ public class NioConnectionAcceptor {
 		SocketChannel channel;
 		try {
 			while ((channel = serverChannel.accept()) != null) {
-				torrentClient.getHandshakeHandler().onConnectionReceived(new NioTcpSocket(channel));
+				NioTcpSocket socket = new NioTcpSocket(channel);
+				LOGGER.debug("Received connecting from {} with socket type {}", socket, socket.getClass().getSimpleName());
+				torrentClient.getHandshakeHandler().onConnectionReceived(socket);
 			}
 		} catch (IOException e) {
 			LOGGER.warn("Failed to accept connection", e);

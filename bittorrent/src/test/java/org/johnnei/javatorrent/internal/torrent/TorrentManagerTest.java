@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.internal.network.connector.NioConnectionAcceptor;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
@@ -16,11 +16,13 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.johnnei.javatorrent.test.TestUtils.assertNotPresent;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -148,7 +150,7 @@ public class TorrentManagerTest {
 	}
 
 	@Test
-	public void testStartStopWithoutPeerConnector() throws Exception {
+	public void testStartStopWithoutPeerConnector() {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		TrackerManager trackerManager = mock(TrackerManager.class);
 
@@ -156,12 +158,10 @@ public class TorrentManagerTest {
 
 		cut.start(torrentClientMock);
 
-		LoopingRunnable peerIoRunnable = Whitebox.getInternalState(cut, "peerIoRunnable");
-		assertNotNull(peerIoRunnable, "Peer IO runner should have been started.");
+		NioConnectionAcceptor connectionAcceptor = Whitebox.getInternalState(cut, "connectionAcceptor");
+		assertThat("Peer IO runner should have been started.", connectionAcceptor, nullValue());
 
 		cut.stop();
-
-		assertFalse(isRunning(peerIoRunnable), "Peer IO runner should have been tasked to stop");
 	}
 
 	@Test
@@ -181,15 +181,14 @@ public class TorrentManagerTest {
 		cut.start(torrentClientMock);
 		cut.enableConnectionAcceptor();
 
+		NioConnectionAcceptor connectionAcceptor = Whitebox.getInternalState(cut, "connectionAcceptor");
+		assertThat("Peer IO runner should have been started.", connectionAcceptor, notNullValue());
+
 		verify(executor).scheduleWithFixedDelay(notNull(), eq(50L), eq(100L), eq(TimeUnit.MILLISECONDS));
 
 		cut.stop();
 
 		verify(task).cancel(false);
-	}
-
-	private boolean isRunning(LoopingRunnable runnable) {
-		return Whitebox.getInternalState(runnable, "keepRunning");
 	}
 
 }

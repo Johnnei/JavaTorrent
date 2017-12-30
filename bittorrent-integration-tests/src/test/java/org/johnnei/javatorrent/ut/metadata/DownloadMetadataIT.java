@@ -25,7 +25,7 @@ import org.johnnei.javatorrent.magnetlink.MagnetLink;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.network.socket.TcpSocket;
+import org.johnnei.javatorrent.network.socket.NioTcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseMetadata;
 import org.johnnei.javatorrent.phases.PhasePreMetadata;
@@ -156,7 +156,7 @@ public class DownloadMetadataIT {
 		return new TorrentClient.Builder()
 				.acceptIncomingConnections(true)
 				.setConnectionDegradation(new ConnectionDegradation.Builder()
-						.registerDefaultConnectionType(TcpSocket.class, TcpSocket::new)
+						.registerDefaultConnectionType(NioTcpSocket.class, NioTcpSocket::new)
 						.build())
 				.setDownloadPort(DummyEntity.findAvailableTcpPort())
 				.setExecutorService(Executors.newScheduledThreadPool(2))

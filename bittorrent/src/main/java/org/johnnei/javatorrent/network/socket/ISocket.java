@@ -1,8 +1,6 @@
 package org.johnnei.javatorrent.network.socket;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectableChannel;
@@ -26,24 +24,6 @@ public interface ISocket<T extends SelectableChannel & ByteChannel> extends Auto
 	 * @return <code>true</code> if the connection is successfully established. Otherwise <code>false</code>.
 	 */
 	boolean isConnected();
-
-	/**
-	 * Gets the inputstream from the underlaying socket
-	 * @return An InputStream which allows to read data from it
-	 * @throws IOException when the stream could not be created
-	 * @deprecated
-	 */
-	@Deprecated
-	InputStream getInputStream() throws IOException;
-
-	/**
-	 * Gets the outputstream from the underlaying socket
-	 * @return An outputstream which allows to write data to the socket
-	 * @throws IOException when the stream could not be created
-	 * @deprecated
-	 */
-	@Deprecated
-	OutputStream getOutputStream() throws IOException;
 
 	T getChannel();
 
@@ -75,13 +55,5 @@ public interface ISocket<T extends SelectableChannel & ByteChannel> extends Auto
 	 */
 	@Deprecated
 	boolean isOutputShutdown();
-
-	/**
-	 * Forces the socket to send all data
-	 * @throws IOException When the flushing fails due to IO errors.
-	 * @deprecated
-	 */
-	@Deprecated
-	void flush() throws IOException;
 
 }

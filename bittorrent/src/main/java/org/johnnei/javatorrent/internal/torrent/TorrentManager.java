@@ -8,8 +8,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.internal.network.PeerIoRunnable;
 import org.johnnei.javatorrent.internal.network.connector.NioConnectionAcceptor;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.torrent.Torrent;
@@ -24,7 +22,6 @@ public class TorrentManager {
 
 	private List<TorrentPair> activeTorrents;
 
-	private LoopingRunnable peerIoRunnable;
 	private NioConnectionAcceptor connectionAcceptor;
 
 	public TorrentManager(TrackerManager trackerManager) {
@@ -37,12 +34,6 @@ public class TorrentManager {
 	 */
 	public void start(TorrentClient torrentClient) {
 		this.torrentClient = torrentClient;
-
-		// Start reading peer input/output
-		peerIoRunnable = new LoopingRunnable(new PeerIoRunnable(this));
-		Thread thread = new Thread(peerIoRunnable, "Peer IO");
-		thread.setDaemon(true);
-		thread.start();
 	}
 
 	/**
@@ -56,8 +47,6 @@ public class TorrentManager {
 	 * Gracefully stops the connection processing.
 	 */
 	public void stop() {
-		peerIoRunnable.stop();
-
 		if (connectionAcceptor != null) {
 			connectionAcceptor.stop();
 		}

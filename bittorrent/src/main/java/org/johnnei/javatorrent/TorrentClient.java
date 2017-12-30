@@ -24,6 +24,7 @@ import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
 import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.internal.disk.IOManager;
+import org.johnnei.javatorrent.internal.network.PeerIoHandler;
 import org.johnnei.javatorrent.internal.network.connector.BitTorrentHandshakeHandlerImpl;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
@@ -80,6 +81,8 @@ public class TorrentClient {
 
 	private BitTorrentHandshakeHandlerImpl handshakeHandler;
 
+	private PeerIoHandler peerIoHandler;
+
 	private TorrentClient(Builder builder) {
 		peerDistributor = Objects.requireNonNull(builder.peerDistributor.apply(this), "Peer distributor is invalid.");
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
@@ -110,7 +113,8 @@ public class TorrentClient {
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
 
-		handshakeHandler = new BitTorrentHandshakeHandlerImpl(this);
+		peerIoHandler = new PeerIoHandler(executorService);
+		handshakeHandler = new BitTorrentHandshakeHandlerImpl(this, peerIoHandler);
 
 		ioManager = new IOManager();
 		ioManagerRunner = new LoopingRunnable(ioManager, true);
@@ -170,6 +174,7 @@ public class TorrentClient {
 		handshakeHandler.stop();
 		torrentManager.stop();
 		ioManagerRunner.stop();
+		peerIoHandler.shutdown();
 		executorService.shutdown();
 		modules.stream().forEach(IModule::onShutdown);
 	}

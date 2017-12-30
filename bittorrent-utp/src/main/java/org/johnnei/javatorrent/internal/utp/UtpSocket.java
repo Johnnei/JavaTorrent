@@ -426,12 +426,10 @@ public class UtpSocket implements ISocket, Closeable {
 		return packetSizeHandler.getPacketSize() - PacketWriter.OVERHEAD_IN_BYTES;
 	}
 
-	@Override
 	public InputStream getInputStream() throws IOException {
 		return Objects.requireNonNull(inputStream, "Connection was not established yet");
 	}
 
-	@Override
 	public OutputStream getOutputStream() throws IOException {
 		return outputStream;
 	}
@@ -471,7 +469,6 @@ public class UtpSocket implements ISocket, Closeable {
 		return outputStreamState != StreamState.ACTIVE;
 	}
 
-	@Override
 	public void flush() {
 		outputStream.flush();
 	}

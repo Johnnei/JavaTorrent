@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.network.PeerIoHandler;
 import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.network.socket.NioTcpSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
@@ -41,6 +42,7 @@ import static org.johnnei.javatorrent.network.ByteBufferUtils.getBytes;
 import static org.johnnei.javatorrent.network.ByteBufferUtils.getString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,12 +55,14 @@ class BitTorrentHandshakeHandlerImplTest {
 
 	private ScheduledExecutorService executorService;
 	private TorrentClient torrentClient;
+	private PeerIoHandler peerIoHandler;
 	private byte[] extensionBytes;
 	private byte[] peerId;
 
 	@BeforeEach
 	public void setUp() {
 		torrentClient = mock(TorrentClient.class);
+		peerIoHandler = mock(PeerIoHandler.class);
 		extensionBytes = DummyEntity.createRandomBytes(8);
 		peerId = DummyEntity.createPeerId();
 		executorService = new ScheduledThreadPoolExecutor(2);
@@ -67,7 +71,7 @@ class BitTorrentHandshakeHandlerImplTest {
 		when(torrentClient.getExtensionBytes()).thenReturn(extensionBytes);
 
 		when(torrentClient.getExecutorService()).thenReturn(executorService);
-		cut = new BitTorrentHandshakeHandlerImpl(torrentClient);
+		cut = new BitTorrentHandshakeHandlerImpl(torrentClient, peerIoHandler);
 	}
 
 	@AfterEach
@@ -184,6 +188,7 @@ class BitTorrentHandshakeHandlerImplTest {
 			if (successful) {
 				LOGGER.info("Waiting for peer to be added to Torrent.");
 				await().until(() -> !torrent.getPeers().isEmpty());
+				verify(peerIoHandler).registerPeer(notNull(), notNull());
 			} else {
 				await().pollDelay(150, TimeUnit.MILLISECONDS).until(() -> torrent.getPeers().isEmpty());
 			}
@@ -224,6 +229,7 @@ class BitTorrentHandshakeHandlerImplTest {
 
 				LOGGER.info("Waiting for peer to be added to Torrent.");
 				await().until(() -> !torrent.getPeers().isEmpty());
+				verify(peerIoHandler).registerPeer(notNull(), notNull());
 			} else {
 				await().pollDelay(150, TimeUnit.MILLISECONDS).until(() -> torrent.getPeers().isEmpty());
 			}

@@ -522,7 +522,9 @@ public class Peer {
 	 *
 	 * @return The socket associated to this peer.
 	 *
+	 * @deprecated Will be replaced by alternatives as this class is handling a non-extensible process.
 	 */
+	@Deprecated
 	public BitTorrentSocket getBitTorrentSocket() {
 		return socket;
 	}
