@@ -44,11 +44,12 @@ public class NioConnectionAcceptor {
 		SocketChannel channel;
 		try {
 			while ((channel = serverChannel.accept()) != null) {
+				channel.configureBlocking(false);
 				NioTcpSocket socket = new NioTcpSocket(channel);
 				LOGGER.debug("Received connecting from {} with socket type {}", socket, socket.getClass().getSimpleName());
 				torrentClient.getHandshakeHandler().onConnectionReceived(socket);
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			LOGGER.warn("Failed to accept connection", e);
 		}
 
