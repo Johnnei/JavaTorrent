@@ -121,7 +121,7 @@ public abstract class EndToEndDownload {
 		LOGGER.info("Downloading test files...");
 		OkHttpClient client = new OkHttpClient();
 		Request request = new Request.Builder()
-			.url("https://minecraftsao.johnnei.org/javatorrent/gimp-2.8.16-setup-1.exe")
+			.url("https://johnnei.org/files/gimp-2.8.16-setup-1.exe")
 			.build();
 		Response response = client.newCall(request).execute();
 
