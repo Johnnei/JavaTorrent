@@ -42,8 +42,12 @@ public class PeerIoHandler {
 
 	public void registerPeer(Peer peer, ISocket socket) {
 		try {
-			socket.getReadableChannel().register(selector, SelectionKey.OP_READ, peer);
-			socket.getWritableChannel().register(selector, SelectionKey.OP_WRITE, peer);
+			if ((socket.getReadableChannel().validOps() & SelectionKey.OP_WRITE) != 0) {
+				socket.getReadableChannel().register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, peer);
+			} else {
+				socket.getReadableChannel().register(selector, SelectionKey.OP_READ, peer);
+				socket.getWritableChannel().register(selector, SelectionKey.OP_WRITE, peer);
+			}
 		} catch (ClosedChannelException e) {
 			throw new IllegalStateException("Channel mustn't be closed to be handled.", e);
 		}
@@ -54,6 +58,7 @@ public class PeerIoHandler {
 	}
 
 	public void pollChannels() {
+		LOGGER.trace("Go {}", this);
 		try {
 			selector.selectNow();
 
@@ -66,7 +71,7 @@ public class PeerIoHandler {
 
 				keys.remove();
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			LOGGER.warn("Failed to process ready channels.", e);
 		}
 	}
