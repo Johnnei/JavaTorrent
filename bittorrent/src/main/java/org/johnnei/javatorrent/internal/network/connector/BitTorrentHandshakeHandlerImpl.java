@@ -2,10 +2,11 @@ package org.johnnei.javatorrent.internal.network.connector;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.WritableByteChannel;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -79,7 +80,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 	@Override
 	public synchronized void onConnectionEstablished(ISocket socket, byte[] torrentHash) {
 		try {
-			sendHandshake((ByteChannel) socket.getChannel(), torrentHash);
+			sendHandshake((WritableByteChannel) socket.getWritableChannel(), torrentHash);
 		} catch (IOException e) {
 			LOGGER.debug("Failed to send handshake", e);
 			close(socket);
@@ -87,7 +88,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		}
 		try {
 			HandshakeState state = new HandshakeState(clock, socket, torrentHash);
-			socket.getChannel().register(selector, SelectionKey.OP_READ, state);
+			socket.getReadableChannel().register(selector, SelectionKey.OP_READ, state);
 		} catch (ClosedChannelException e) {
 			throw new IllegalStateException("Attempted to connect to peer on closed selector.", e);
 		}
@@ -104,8 +105,9 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 	@Override
 	public synchronized void onConnectionReceived(ISocket socket) {
 		try {
+			LOGGER.debug("Expecting handshake from: {}", socket);
 			HandshakeState state = new HandshakeState(clock, socket,null);
-			socket.getChannel().register(selector, SelectionKey.OP_READ, state);
+			socket.getReadableChannel().register(selector, SelectionKey.OP_READ, state);
 		} catch (ClosedChannelException e) {
 			throw new IllegalStateException("Attempted to connect to peer on closed selector.", e);
 		}
@@ -121,7 +123,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		poller.cancel(false);
 	}
 
-	private void sendHandshake(ByteChannel channel, byte[] torrentHash) throws IOException {
+	private void sendHandshake(WritableByteChannel channel, byte[] torrentHash) throws IOException {
 		bittorrentHandshake.position(TORRENT_HASH_OFFSET);
 		bittorrentHandshake.put(torrentHash);
 		bittorrentHandshake.position(bittorrentHandshake.capacity());
@@ -141,19 +143,19 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 				SelectionKey key = keys.next();
 
 				HandshakeState state = (HandshakeState) key.attachment();
-				ByteChannel channel = (ByteChannel) key.channel();
+				ReadableByteChannel channel = (ReadableByteChannel) key.channel();
 				handlePeer(key, state, channel);
 
 				keys.remove();
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			LOGGER.warn("Failed to select channels.", e);
 		}
 
 		// Handles channels which didn't respond within 5 seconds.
 		for (SelectionKey key : selector.keys()) {
 			HandshakeState state = (HandshakeState) key.attachment();
-			ByteChannel channel = (ByteChannel) key.channel();
+			ReadableByteChannel channel = (ReadableByteChannel) key.channel();
 
 			if (clock.instant().minusSeconds(5).isAfter(state.getConnectionStart())) {
 				LOGGER.debug("Handshake timed out for {} missing {} bytes.", channel, state.getHandshakeBuffer().remaining());
@@ -162,12 +164,12 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		}
 	}
 
-	private void handlePeer(SelectionKey key, HandshakeState state, ByteChannel channel) {
+	private void handlePeer(SelectionKey key, HandshakeState state, ReadableByteChannel channel) {
 		try {
 			channel.read(state.getHandshakeBuffer());
 
 			if (!state.getHandshakeBuffer().hasRemaining()) {
-				onHandshakeReceived(key, channel, state);
+				onHandshakeReceived(key, state);
 			}
 		} catch (Exception e) {
 			LOGGER.debug("Failed to process peer handshake.", e);
@@ -175,7 +177,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		}
 	}
 
-	private void onHandshakeReceived(SelectionKey key, ByteChannel channel, HandshakeState state) throws IOException {
+	private void onHandshakeReceived(SelectionKey key, HandshakeState state) throws IOException {
 		ByteBuffer buffer = state.getHandshakeBuffer();
 		buffer.flip();
 
@@ -199,7 +201,7 @@ public class BitTorrentHandshakeHandlerImpl implements BitTorrentHandshakeHandle
 		if (state.getExpectedTorrent() == null) {
 			torrent = torrentClient.getTorrentByHash(torrentHash)
 				.orElseThrow(() -> new BitTorrentProtocolViolationException("Remote peer is downloading torrent we don't have."));
-			sendHandshake(channel, torrentHash);
+			sendHandshake((WritableByteChannel) state.getSocket().getWritableChannel(), torrentHash);
 		} else {
 			if (!Arrays.equals(state.getExpectedTorrent(), torrentHash)) {
 				throw new BitTorrentProtocolViolationException("Remote peer reported different torrent than requested.");

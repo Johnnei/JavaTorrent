@@ -76,7 +76,7 @@ public class BitTorrentSocketTest {
 
 		ISocket socketMock = mock(ISocket.class);
 		SocketChannel channelMock = mock(SocketChannel.class);
-		when(socketMock.getChannel()).thenReturn(channelMock);
+		when(socketMock.getReadableChannel()).thenReturn(channelMock);
 
 		mockReadMessage(messageFactoryMock, mock(IMessage.class), channelMock);
 
@@ -98,7 +98,8 @@ public class BitTorrentSocketTest {
 
 		ISocket socket = mock(ISocket.class);
 		SocketChannel socketChannel = mock(SocketChannel.class);
-		when(socket.getChannel()).thenReturn(socketChannel);
+		when(socket.getReadableChannel()).thenReturn(socketChannel);
+		when(socket.getWritableChannel()).thenReturn(socketChannel);
 
 		when(socketChannel.write((ByteBuffer) notNull())).thenAnswer(inv -> {
 			ByteBuffer buffer = inv.getArgument(0);
@@ -126,7 +127,7 @@ public class BitTorrentSocketTest {
 
 		SocketChannel channel = mock(SocketChannel.class);
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getChannel()).thenReturn(channel);
+		when(socketMock.getReadableChannel()).thenReturn(channel);
 
 		when(channel.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
 			ByteBuffer buffer = inv.getArgument(0);
@@ -147,7 +148,7 @@ public class BitTorrentSocketTest {
 
 		SocketChannel channel = mock(SocketChannel.class);
 		ISocket socketMock = mock(ISocket.class);
-		when(socketMock.getChannel()).thenReturn(channel);
+		when(socketMock.getReadableChannel()).thenReturn(channel);
 
 		when(channel.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
 			ByteBuffer buffer = inv.getArgument(0);
@@ -174,7 +175,7 @@ public class BitTorrentSocketTest {
 
 		ISocket socketMock = mock(ISocket.class);
 		SocketChannel channelMock = mock(SocketChannel.class);
-		when(socketMock.getChannel()).thenReturn(channelMock);
+		when(socketMock.getReadableChannel()).thenReturn(channelMock);
 
 		when(channelMock.read((ByteBuffer) isNotNull())).thenAnswer(inv -> {
 			ByteBuffer buffer = inv.getArgument(0);
@@ -193,7 +194,7 @@ public class BitTorrentSocketTest {
 
 		ISocket socketMock = mock(ISocket.class);
 		SocketChannel channelMock = mock(SocketChannel.class);
-		when(socketMock.getChannel()).thenReturn(channelMock);
+		when(socketMock.getReadableChannel()).thenReturn(channelMock);
 
 		mockReadMessage(messageFactoryMock, messageMock, channelMock);
 
@@ -263,7 +264,8 @@ public class BitTorrentSocketTest {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 		ISocket socketMock = mock(ISocket.class);
 		SocketChannel channelMock = mock(SocketChannel.class);
-		when(socketMock.getChannel()).thenReturn(channelMock);
+		when(socketMock.getReadableChannel()).thenReturn(channelMock);
+		when(socketMock.getWritableChannel()).thenReturn(channelMock);
 
 		IMessage messageMock = mock(MessageKeepAlive.class);
 
@@ -289,8 +291,8 @@ public class BitTorrentSocketTest {
 		MessageFactory messageFactoryMock = mock(MessageFactory.class);
 		ISocket socketMock = mock(ISocket.class);
 		SocketChannel channelMock = mock(SocketChannel.class);
-		when(socketMock.getChannel()).thenReturn(channelMock);
-
+		when(socketMock.getReadableChannel()).thenReturn(channelMock);
+		when(socketMock.getWritableChannel()).thenReturn(channelMock);
 
 		BitTorrentSocket cut = new BitTorrentSocket(messageFactoryMock, socketMock, clock);
 

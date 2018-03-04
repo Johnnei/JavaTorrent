@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.utp;
 
-import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -13,7 +12,7 @@ import org.johnnei.javatorrent.test.DummyEntity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,7 +40,7 @@ public class UtpModuleTest {
 	}
 
 	@Test
-	public void testOnPostHandshake() throws IOException {
+	public void testOnPostHandshake() {
 		// Method is empty, nothing should crash.
 		new UtpModule.Builder().build().onPostHandshake(null);
 	}
@@ -54,7 +53,8 @@ public class UtpModuleTest {
 		ScheduledFuture scheduledFuture = mock(ScheduledFuture.class);
 		TorrentClient clientMock = mock(TorrentClient.class);
 		when(clientMock.getExecutorService()).thenReturn(scheduleServiceMock);
-		when(scheduleServiceMock.scheduleAtFixedRate(anyObject(), eq(0L), eq(100L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
+		when(scheduleServiceMock.scheduleAtFixedRate(any(), eq(0L), eq(100L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
+		when(scheduleServiceMock.scheduleWithFixedDelay(any(), eq(50L), eq(50L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
 
 		cut.onBuild(clientMock);
 

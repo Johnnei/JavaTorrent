@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -97,7 +98,15 @@ public abstract class EndToEndDownload {
 		}
 	}
 
-	protected abstract TorrentClient createTorrentClient(CountDownLatch latch) throws Exception;
+	protected abstract TorrentClient.Builder createTorrentClient(CountDownLatch latch) throws Exception;
+
+	private TorrentClient finishClient(TorrentClient.Builder builder) throws Exception {
+		return builder.setExecutorService(Executors.newScheduledThreadPool(8, r -> {
+			Thread t = new Thread(r);
+			t.setUncaughtExceptionHandler((thread, e) -> LOGGER.error("Thread {} encountered", thread, e));
+			return t;
+		})).build();
+	}
 
 	private Torrent createTorrent(String name, TorrentClient client, File torrentFile, File downloadFolder) throws IOException {
 		return new Torrent.Builder()
@@ -129,6 +138,8 @@ public abstract class EndToEndDownload {
 
 	@Test
 	public void testDownloadTorrent(@Folder Path tmp) throws Exception {
+		Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> LOGGER.error("Uncaught exception on thread: {}, Exception", thread, exception));
+
 		URL resultFileUrl = DownloadTorrentIT.class.getResource("/torrent-output/" + EXECUTABLE_NAME);
 		File resultFile;
 
@@ -158,8 +169,8 @@ public abstract class EndToEndDownload {
 
 		LOGGER.info("Preparing torrent clients");
 		CountDownLatch latch = new CountDownLatch(2);
-		TorrentClient clientOne = createTorrentClient(latch);
-		TorrentClient clientTwo = createTorrentClient(latch);
+		TorrentClient clientOne = finishClient(createTorrentClient(latch));
+		TorrentClient clientTwo = finishClient(createTorrentClient(latch));
 
 		try {
 			LOGGER.info("Starting downloading");

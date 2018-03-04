@@ -48,7 +48,12 @@ public class NioTcpSocket implements ISocket {
 	}
 
 	@Override
-	public SocketChannel getChannel() {
+	public SocketChannel getReadableChannel() {
+		return channel;
+	}
+
+	@Override
+	public SocketChannel getWritableChannel() {
 		return channel;
 	}
 

@@ -7,6 +7,9 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
@@ -15,6 +18,8 @@ import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
  * Accepts connection which have been detected as a new connection in {@link UtpMultiplexer}
  */
 public class UtpPeerConnectionAcceptor implements Runnable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UtpPeerConnectionAcceptor.class);
 
 	private final Lock notifyLock = new ReentrantLock();
 
@@ -59,6 +64,7 @@ public class UtpPeerConnectionAcceptor implements Runnable {
 			}
 
 			while (!(connectedSocket = getEstablishedConnection()).isPresent()) {
+				LOGGER.trace("Waiting for {} sockets to become connected.", socketQueue.size());
 				// Check the condition every once in a while to check that the socket has become connected.
 				Thread.sleep(500);
 			}

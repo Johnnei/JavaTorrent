@@ -1,23 +1,28 @@
 package org.johnnei.javatorrent.internal.utp;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
+import org.johnnei.javatorrent.network.ByteBufferUtils;
+import org.johnnei.javatorrent.network.socket.ISocket;
 
-public class UtpMultiplexer implements Closeable, Runnable {
+public class UtpMultiplexer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpMultiplexer.class);
 
@@ -33,35 +38,84 @@ public class UtpMultiplexer implements Closeable, Runnable {
 
 	private final Thread connectionAcceptorThread;
 
-	private DatagramChannel channel;
+	private final DatagramChannel channel;
 
-	public UtpMultiplexer(UtpPeerConnectionAcceptor connectionAcceptor, PacketReader packetReader, int port) throws IOException {
+	private final Future<?> poller;
+
+	public UtpMultiplexer(TorrentClient client, UtpPeerConnectionAcceptor connectionAcceptor, PacketReader packetReader, int port) throws IOException {
 		this.connectionAcceptor = connectionAcceptor;
 		this.packetReader = packetReader;
 		connectionAcceptorRunnable = new LoopingRunnable(connectionAcceptor);
 		connectionAcceptorThread = new Thread(connectionAcceptorRunnable, "uTP Connection Acceptor");
 		channel = DatagramChannel.open();
+		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		channel.bind(new InetSocketAddress(port));
-		channel.configureBlocking(true);
+		channel.configureBlocking(false);
 		socketRegistry = new UtpSocketRegistry(channel);
 		connectionAcceptorThread.start();
 		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
+
+		poller = client.getExecutorService().scheduleWithFixedDelay(this::pollPackets, 50, 50, TimeUnit.MILLISECONDS);
+		client.getExecutorService().scheduleWithFixedDelay(this::patchNio, 50, 50, TimeUnit.MILLISECONDS);
 	}
 
-	@Override
-	public void run() {
-		// Receive message
-		ByteBuffer buffer;
-		SocketAddress socketAddress;
+	void patchNio() {
 		try {
-			buffer = ByteBuffer.allocate(BUFFER_SIZE);
-			socketAddress = channel.receive(buffer);
-			buffer.flip();
-		} catch (IOException e) {
-			LOGGER.error("Failed to read message.", e);
-			return;
-		}
+			for (UtpSocket socket : socketRegistry.getAllSockets()) {
+				ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+				try {
+					socket.getOutputPipe().source().read(buffer);
+					buffer.flip();
+					if (buffer.remaining() > 0) {
+						LOGGER.trace("Moved {} bytes to output stream.", buffer.remaining());
+						socket.getOutputStream().write(ByteBufferUtils.getBytes(buffer, buffer.remaining()));
+						socket.getOutputStream().flush();
+					}
+				} catch (IOException e) {
+					LOGGER.warn("Failed to process output pipe for {}", socket, e);
+				}
+				try {
+					buffer.clear();
 
+					InputStream inputStream = socket.getInputStream();
+					int available = inputStream.available();
+					if (available > 0) {
+						byte[] inputBuffer = new byte[available];
+						inputStream.read(inputBuffer);
+						buffer.put(inputBuffer);
+						buffer.flip();
+						LOGGER.trace("Moved {} bytes to input pipe.", buffer.remaining());
+						socket.getInputPipe().sink().write(buffer);
+						if (buffer.hasRemaining()) {
+							LOGGER.error("Input write failed.");
+						}
+					}
+				} catch (IOException e) {
+					LOGGER.warn("Failed to process input pipe for {}", socket, e);
+				}
+			}
+		} catch (Exception e) {
+			LOGGER.debug("uTP to NIO layer failed", e);
+		}
+	}
+
+	void pollPackets() {
+		try {
+			ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+			SocketAddress socketAddress = channel.receive(buffer);
+
+			if (socketAddress == null) {
+				return;
+			}
+
+			buffer.flip();
+			onPacketReceived(socketAddress, buffer);
+		} catch (IOException e) {
+			LOGGER.warn("Failed to process uTP packets.", e);
+		}
+	}
+
+	private void onPacketReceived(SocketAddress socketAddress, ByteBuffer buffer) {
 		try {
 			// Transform message
 			UtpPacket packet = packetReader.read(buffer);
@@ -98,8 +152,8 @@ public class UtpMultiplexer implements Closeable, Runnable {
 		}
 	}
 
-	@Override
 	public void close() throws IOException {
+		poller.cancel(false);
 		channel.close();
 		connectionAcceptorRunnable.stop();
 		try {

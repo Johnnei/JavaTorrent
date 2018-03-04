@@ -42,7 +42,8 @@ public class PeerIoHandler {
 
 	public void registerPeer(Peer peer, ISocket socket) {
 		try {
-			socket.getChannel().register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, peer);
+			socket.getReadableChannel().register(selector, SelectionKey.OP_READ, peer);
+			socket.getWritableChannel().register(selector, SelectionKey.OP_WRITE, peer);
 		} catch (ClosedChannelException e) {
 			throw new IllegalStateException("Channel mustn't be closed to be handled.", e);
 		}

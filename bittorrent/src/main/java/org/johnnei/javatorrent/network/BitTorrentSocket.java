@@ -3,6 +3,8 @@ package org.johnnei.javatorrent.network;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -148,7 +150,7 @@ public class BitTorrentSocket {
 		ByteBuffer buffer;
 
 		while ((buffer = prepareMessageForSending()) != null) {
-			int transferredBytes = ((ByteChannel) socket.getChannel()).write(buffer);
+			int transferredBytes = ((WritableByteChannel) socket.getWritableChannel()).write(buffer);
 
 			uploadRate.addTransferredBytes(transferredBytes);
 			lastActivity = LocalDateTime.now(clock);
@@ -255,7 +257,7 @@ public class BitTorrentSocket {
 	}
 
 	private void readInput() throws IOException {
-		int readBytes = ((ByteChannel) socket.getChannel()).read(readBuffer);
+		int readBytes = ((ReadableByteChannel) socket.getReadableChannel()).read(readBuffer);
 		if (readBytes == -1) {
 			throw new IOException("Unexpected end of channel.");
 		} else {
@@ -320,8 +322,11 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if there is at least one {@link IMessage} waiting to be sent.
 	 */
 	public boolean hasOutboundMessages() {
-		LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
-		return writeBuffer != null || !messageQueue.isEmpty() || !blockQueue.isEmpty();
+		boolean hasPendingMessages = !messageQueue.isEmpty() || !blockQueue.isEmpty();
+		if (hasPendingMessages) {
+			LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
+		}
+		return writeBuffer != null || hasPendingMessages;
 	}
 
 	/**

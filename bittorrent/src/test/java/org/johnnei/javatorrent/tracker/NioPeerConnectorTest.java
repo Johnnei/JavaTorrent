@@ -73,9 +73,9 @@ class NioPeerConnectorTest {
 		socketTypeTwo = mock(ISocket.class, "ISocket Type B");
 		socketTypeThree = mock(ISocket.class, "ISocket Type C");
 
-		when(socketTypeOne.getChannel()).thenReturn(channelOne);
-		when(socketTypeTwo.getChannel()).thenReturn(channelTwo);
-		when(socketTypeThree.getChannel()).thenReturn(channelThree);
+		when(socketTypeOne.getReadableChannel()).thenReturn(channelOne);
+		when(socketTypeTwo.getReadableChannel()).thenReturn(channelTwo);
+		when(socketTypeThree.getReadableChannel()).thenReturn(channelThree);
 
 		when(degradation.createPreferredSocket()).thenReturn(socketTypeOne);
 		when(degradation.degradeSocket(same(socketTypeOne))).thenReturn(Optional.of(socketTypeTwo));

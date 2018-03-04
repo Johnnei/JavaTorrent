@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.torrent;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.it.EndToEndDownload;
@@ -19,14 +18,13 @@ import org.johnnei.javatorrent.tracker.UncappedDistributor;
  */
 public class DownloadTorrentIT extends EndToEndDownload {
 
-    protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
+    protected TorrentClient.Builder createTorrentClient(CountDownLatch latch) throws Exception {
         return new TorrentClient.Builder()
             .acceptIncomingConnections(true)
             .setConnectionDegradation(new ConnectionDegradation.Builder()
                 .registerDefaultConnectionType(NioTcpSocket.class, NioTcpSocket::new)
                 .build())
             .setDownloadPort(DummyEntity.findAvailableTcpPort())
-            .setExecutorService(Executors.newScheduledThreadPool(8))
             .setPeerConnector(tc -> new NioPeerConnector(tc, 4))
             .setRequestLimiter(new RateBasedLimiter())
             .setPeerDistributor(UncappedDistributor::new)
@@ -38,6 +36,6 @@ public class DownloadTorrentIT extends EndToEndDownload {
                     ((torrentClient, torrent) -> new PhaseSeedCountdown(latch, torrentClient, torrent))
                 )
                 .build()
-            ).build();
+            );
     }
 }

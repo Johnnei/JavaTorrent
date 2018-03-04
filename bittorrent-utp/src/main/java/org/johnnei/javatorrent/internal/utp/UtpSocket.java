@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.Pipe;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
@@ -80,6 +81,10 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private final LinkedList<DataPayload> sendQueue;
 
+	private final Pipe inputPipe;
+
+	private final Pipe outputPipe;
+
 	private PacketAckHandler packetAckHandler;
 
 	private UtpOutputStream outputStream;
@@ -143,6 +148,16 @@ public class UtpSocket implements ISocket, Closeable {
 		outputStreamState = StreamState.ACTIVE;
 		nextWindowViolation = clock.instant();
 		delayHandler = new SocketDelayHandler(precisionTimer);
+		try {
+			inputPipe = Pipe.open();
+			inputPipe.sink().configureBlocking(false);
+			inputPipe.source().configureBlocking(false);
+			outputPipe = Pipe.open();
+			outputPipe.sink().configureBlocking(false);
+			outputPipe.source().configureBlocking(false);
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to open uTP pipe", e);
+		}
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -152,6 +167,7 @@ public class UtpSocket implements ISocket, Closeable {
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
 		bind(endpoint);
+
 		send(new SynPayload());
 		connectionState = ConnectionState.SYN_SENT;
 
@@ -426,10 +442,12 @@ public class UtpSocket implements ISocket, Closeable {
 		return packetSizeHandler.getPacketSize() - PacketWriter.OVERHEAD_IN_BYTES;
 	}
 
+	@Deprecated
 	public InputStream getInputStream() throws IOException {
 		return Objects.requireNonNull(inputStream, "Connection was not established yet");
 	}
 
+	@Deprecated
 	public OutputStream getOutputStream() throws IOException {
 		return outputStream;
 	}
@@ -478,14 +496,27 @@ public class UtpSocket implements ISocket, Closeable {
 		return connectionState == ConnectionState.CONNECTED;
 	}
 
+	public Pipe getInputPipe() {
+		return inputPipe;
+	}
+
+	public Pipe getOutputPipe() {
+		return outputPipe;
+	}
+
 	@Override
-	public DatagramChannel getChannel() {
-		return null;
+	public Pipe.SourceChannel getReadableChannel() {
+		return inputPipe.source();
+	}
+
+	@Override
+	public Pipe.SinkChannel getWritableChannel() {
+		return outputPipe.sink();
 	}
 
 	public boolean isShutdown() {
 		return connectionState == ConnectionState.RESET || (inputStreamState == StreamState.SHUTDOWN
-			&& inputStream.isCompleteUntil(endOfStreamSequenceNumber)
+			&& (inputStream == null || inputStream.isCompleteUntil(endOfStreamSequenceNumber))
 			&& outputStreamState == StreamState.SHUTDOWN
 			&& windowHandler.getBytesInFlight() == 0);
 	}

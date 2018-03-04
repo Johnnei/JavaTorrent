@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.utp;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -11,32 +12,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utp.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.UtpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.utp.UtpSocket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.module.ModuleBuildException;
+import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
 
 /**
  * Module which allows for creating connections via uTP.
- * <p>
- * It's advised to re-use instances of this module as each will create a dedicated thread to receive uTP messages.
- * Using more instances allows for more connections to be used as each instance is limited to 65536 (2^16) connections by protocol design.
+ *
+ * Recommendations for: {@link TorrentClient.Builder#setExecutorService(ScheduledExecutorService)}. The module will use 1 'dedicated' task which is likely to
+ * run constantly on high throughput, and 1 irregular task.
  */
 public class UtpModule implements IModule {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpModule.class);
 
 	private UtpMultiplexer multiplexer;
-
-	private Thread workerThread;
-
-	private LoopingRunnable multiplexerRunner;
 
 	private ScheduledFuture<?> socketProcessorTask;
 
@@ -62,17 +58,14 @@ public class UtpModule implements IModule {
 	}
 
 	@Override
-	public void onPostHandshake(Peer peer) throws IOException {
+	public void onPostHandshake(Peer peer) {
 		// uTP doesn't do anything special with the BitTorrent protocol.
 	}
 
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException {
 		try {
-			multiplexer = new UtpMultiplexer(new UtpPeerConnectionAcceptor(torrentClient), new PacketReader(), listeningPort);
-			multiplexerRunner = new LoopingRunnable(multiplexer);
-			workerThread = new Thread(multiplexerRunner, "uTP Packet Reader");
-			workerThread.start();
+			multiplexer = new UtpMultiplexer(torrentClient, new UtpPeerConnectionAcceptor(torrentClient), new PacketReader(), listeningPort);
 			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(multiplexer::updateSockets, 0, 100, TimeUnit.MILLISECONDS);
 		} catch (IOException e) {
 			throw new ModuleBuildException("Failed to create uTP Multiplexer.", e);
@@ -81,17 +74,10 @@ public class UtpModule implements IModule {
 
 	@Override
 	public void onShutdown() {
-		multiplexerRunner.stop();
 		try {
 			multiplexer.close();
 		} catch (IOException e) {
 			LOGGER.warn("Failed to shutdown uTP Multiplexer", e);
-		}
-		try {
-			workerThread.join();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			LOGGER.warn("Interrupted while waiting for uTP worker to exit.", e);
 		}
 		socketProcessorTask.cancel(true);
 	}

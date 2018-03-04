@@ -84,7 +84,8 @@ class BitTorrentHandshakeHandlerImplTest {
 	void testOnConnectionEstablished() throws Exception {
 		SelectableByteChannel channel = mock(SelectableByteChannel.class);
 		ISocket socket = mock(ISocket.class);
-		when(socket.getChannel()).thenReturn(channel);
+		when(socket.getReadableChannel()).thenReturn(channel);
+		when(socket.getWritableChannel()).thenReturn(channel);
 
 		byte[] expectedHandshake = new byte[] {
 			// Protocol Identification
@@ -145,7 +146,7 @@ class BitTorrentHandshakeHandlerImplTest {
 	void onConnectionReceived() throws Exception {
 		SelectableByteChannel channel = mock(SelectableByteChannel.class);
 		ISocket socket = mock(ISocket.class);
-		when(socket.getChannel()).thenReturn(channel);
+		when(socket.getReadableChannel()).thenReturn(channel);
 
 		cut.onConnectionReceived(socket);
 		verify(channel).register(any(), eq(SelectionKey.OP_READ), any());

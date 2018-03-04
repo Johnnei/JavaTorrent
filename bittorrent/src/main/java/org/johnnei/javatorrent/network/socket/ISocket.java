@@ -2,15 +2,16 @@ package org.johnnei.javatorrent.network.socket;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ByteChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectableChannel;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * A facade to allow multiple channel implementations on the same type.
  *
  * @param <T> A channel which can be selected and transfer data.
  */
-public interface ISocket<T extends SelectableChannel & ByteChannel> extends AutoCloseable {
+public interface ISocket<I extends SelectableChannel & ReadableByteChannel, O extends SelectableChannel & WritableByteChannel> extends AutoCloseable {
 
 	/**
 	 * Connects the underlying Socket to the endpoint. This event <em>must</em> happen asynchronously.
@@ -25,7 +26,9 @@ public interface ISocket<T extends SelectableChannel & ByteChannel> extends Auto
 	 */
 	boolean isConnected();
 
-	T getChannel();
+	I getReadableChannel();
+
+	O getWritableChannel();
 
 	/**
 	 * Formally closes the connection

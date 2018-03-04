@@ -73,7 +73,12 @@ public class ConnectionDegradationTest {
 		}
 
 		@Override
-		public SelectableChannel getChannel() {
+		public SelectableChannel getReadableChannel() {
+			return null;
+		}
+
+		@Override
+		public SelectableChannel getWritableChannel() {
 			return null;
 		}
 

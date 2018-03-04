@@ -67,6 +67,7 @@ public class NioPeerConnector implements IPeerConnector {
 			return;
 		}
 
+		LOGGER.debug("Enqueued {} for connecting.", peer);
 		connectQueue.add(new PeerConnectionState(peer));
 	}
 
@@ -81,9 +82,13 @@ public class NioPeerConnector implements IPeerConnector {
 	}
 
 	void pollReadyConnections() {
-		updateReadyConnections();
-		degradeTimedOutConnections();
-		enqueueNewConnections();
+		try {
+			updateReadyConnections();
+			degradeTimedOutConnections();
+			enqueueNewConnections();
+		} catch (Exception e) {
+			LOGGER.warn("Peer connector update failed", e);
+		}
 	}
 
 	private void enqueueNewConnections() {
@@ -120,9 +125,16 @@ public class NioPeerConnector implements IPeerConnector {
 		if (socket != null) {
 			try {
 				state.updateSocket(clock.instant(), socket);
-				socket.getChannel().register(connected, SelectionKey.OP_CONNECT, state);
-				LOGGER.debug("Connecting to {} with socket type {}", state.getPeer().getAddress(), socket.getClass().getSimpleName());
-				socket.connect(state.getPeer().getAddress());
+
+				if ((socket.getReadableChannel().validOps() & SelectionKey.OP_CONNECT) != 0) {
+					socket.getReadableChannel().register(connected, SelectionKey.OP_CONNECT, state);
+					LOGGER.debug("Connecting to {} with socket type {}", state.getPeer().getAddress(), socket.getClass().getSimpleName());
+					socket.connect(state.getPeer().getAddress());
+				} else {
+					LOGGER.debug("Socket type is connectionless, passing directly to handshake handler.");
+					socket.connect(state.getPeer().getAddress());
+					onConnected(state);
+				}
 			} catch (IOException e) {
 				LOGGER.warn("Failed to start up connection", e);
 			}
