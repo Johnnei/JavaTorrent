@@ -533,18 +533,17 @@ public class Peer {
 	 * Requests to queue the next piece in the socket for sending
 	 */
 	public void queueNextPieceForSending() {
-		if (pendingMessages > 0) {
-			return;
+		while (pendingMessages < 5) {
+
+			Job request = peerClient.popNextJob();
+			if (request == null) {
+				return;
+			}
+
+			addToPendingMessages(1);
+
+			torrent.addDiskJob(new DiskJobReadBlock(request.getPiece(), request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
 		}
-
-		Job request = peerClient.popNextJob();
-		if (request == null) {
-			return;
-		}
-
-		addToPendingMessages(1);
-
-		torrent.addDiskJob(new DiskJobReadBlock(request.getPiece(), request.getBlockIndex(), request.getLength(), this::onReadBlockComplete));
 	}
 
 	/**
