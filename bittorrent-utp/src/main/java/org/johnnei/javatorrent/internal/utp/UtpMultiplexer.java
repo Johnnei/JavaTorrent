@@ -7,6 +7,9 @@ import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
@@ -23,6 +27,12 @@ import org.johnnei.javatorrent.network.ByteBufferUtils;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
 public class UtpMultiplexer {
+
+	private static final List<ConnectionState> INPUTSTREAM_LESS_STATES = Collections.unmodifiableList(Arrays.asList(
+		ConnectionState.PENDING,
+		ConnectionState.SYN_RECEIVED,
+		ConnectionState.SYN_SENT
+	));
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpMultiplexer.class);
 
@@ -55,8 +65,8 @@ public class UtpMultiplexer {
 		connectionAcceptorThread.start();
 		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
 
-		poller = client.getExecutorService().scheduleWithFixedDelay(this::pollPackets, 50, 50, TimeUnit.MILLISECONDS);
-		client.getExecutorService().scheduleWithFixedDelay(this::patchNio, 50, 50, TimeUnit.MILLISECONDS);
+		poller = client.getExecutorService().scheduleWithFixedDelay(this::pollPackets, 50, 10, TimeUnit.MILLISECONDS);
+		client.getExecutorService().scheduleWithFixedDelay(this::patchNio, 50, 10, TimeUnit.MILLISECONDS);
 	}
 
 	void patchNio() {
@@ -77,17 +87,19 @@ public class UtpMultiplexer {
 				try {
 					buffer.clear();
 
-					InputStream inputStream = socket.getInputStream();
-					int available = inputStream.available();
-					if (available > 0) {
-						byte[] inputBuffer = new byte[available];
-						inputStream.read(inputBuffer);
-						buffer.put(inputBuffer);
-						buffer.flip();
-						LOGGER.trace("Moved {} bytes to input pipe.", buffer.remaining());
-						socket.getInputPipe().sink().write(buffer);
-						if (buffer.hasRemaining()) {
-							LOGGER.error("Input write failed.");
+					if (!INPUTSTREAM_LESS_STATES.contains(socket.getConnectionState())) {
+						InputStream inputStream = socket.getInputStream();
+						int available = inputStream.available();
+						if (available > 0) {
+							byte[] inputBuffer = new byte[available];
+							inputStream.read(inputBuffer);
+							buffer.put(inputBuffer);
+							buffer.flip();
+							LOGGER.trace("Moved {} bytes to input pipe.", buffer.remaining());
+							socket.getInputPipe().sink().write(buffer);
+							if (buffer.hasRemaining()) {
+								LOGGER.error("Input write failed.");
+							}
 						}
 					}
 				} catch (IOException e) {

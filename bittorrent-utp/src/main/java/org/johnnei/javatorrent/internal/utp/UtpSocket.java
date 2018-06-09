@@ -254,7 +254,7 @@ public class UtpSocket implements ISocket, Closeable {
 					} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
 						send(new FinPayload());
 						outputStreamState = StreamState.SHUTDOWN;
-					} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
+					} else if (!acknowledgeQueue.isEmpty()/* && maxPayloadSize >= 0*/) {
 						sendStatePackets(maxPayloadSize);
 					}
 				}

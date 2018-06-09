@@ -66,7 +66,7 @@ public class UtpModule implements IModule {
 	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException {
 		try {
 			multiplexer = new UtpMultiplexer(torrentClient, new UtpPeerConnectionAcceptor(torrentClient), new PacketReader(), listeningPort);
-			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(multiplexer::updateSockets, 0, 100, TimeUnit.MILLISECONDS);
+			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(multiplexer::updateSockets, 0, 1, TimeUnit.MILLISECONDS);
 		} catch (IOException e) {
 			throw new ModuleBuildException("Failed to create uTP Multiplexer.", e);
 		}

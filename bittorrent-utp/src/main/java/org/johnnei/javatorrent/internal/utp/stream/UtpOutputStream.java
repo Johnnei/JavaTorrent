@@ -72,7 +72,7 @@ public class UtpOutputStream extends OutputStream {
 		while (payloadBuffer.hasRemaining()) {
 			ByteBuffer buffer = bufferedData.peek();
 
-			buffer.limit(Math.min(buffer.remaining(), payloadBuffer.remaining()));
+			buffer.limit(buffer.position() + Math.min(buffer.remaining(), payloadBuffer.remaining()));
 			payloadBuffer.put(buffer);
 			buffer.limit(buffer.capacity());
 			if (!buffer.hasRemaining()) {

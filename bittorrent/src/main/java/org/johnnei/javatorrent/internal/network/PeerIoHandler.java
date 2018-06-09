@@ -58,7 +58,6 @@ public class PeerIoHandler {
 	}
 
 	public void pollChannels() {
-		LOGGER.trace("Go {}", this);
 		try {
 			selector.selectNow();
 

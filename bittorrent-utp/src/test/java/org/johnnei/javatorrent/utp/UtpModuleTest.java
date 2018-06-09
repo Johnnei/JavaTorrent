@@ -53,8 +53,8 @@ public class UtpModuleTest {
 		ScheduledFuture scheduledFuture = mock(ScheduledFuture.class);
 		TorrentClient clientMock = mock(TorrentClient.class);
 		when(clientMock.getExecutorService()).thenReturn(scheduleServiceMock);
-		when(scheduleServiceMock.scheduleAtFixedRate(any(), eq(0L), eq(100L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
-		when(scheduleServiceMock.scheduleWithFixedDelay(any(), eq(50L), eq(50L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
+		when(scheduleServiceMock.scheduleAtFixedRate(any(), eq(0L), eq(1L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
+		when(scheduleServiceMock.scheduleWithFixedDelay(any(), eq(50L), eq(10L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
 
 		cut.onBuild(clientMock);
 
