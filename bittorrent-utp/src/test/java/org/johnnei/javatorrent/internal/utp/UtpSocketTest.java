@@ -194,7 +194,7 @@ public class UtpSocketTest {
 	public void testSend() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		socket.processSendQueue();
 
@@ -219,7 +219,7 @@ public class UtpSocketTest {
 	public void testReset() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		socket.processSendQueue();
 
@@ -245,7 +245,7 @@ public class UtpSocketTest {
 	public void testPacketLoss() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		socket.processSendQueue();
 
@@ -353,7 +353,7 @@ public class UtpSocketTest {
 
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		UtpPacket finPacket = new UtpPacket(
 			new UtpHeader.Builder()

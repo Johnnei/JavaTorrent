@@ -23,7 +23,6 @@ import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
-import org.johnnei.javatorrent.network.ByteBufferUtils;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
 public class UtpMultiplexer {
@@ -74,22 +73,11 @@ public class UtpMultiplexer {
 			for (UtpSocket socket : socketRegistry.getAllSockets()) {
 				ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
 				try {
-					socket.getOutputPipe().source().read(buffer);
-					buffer.flip();
-					if (buffer.remaining() > 0) {
-						LOGGER.trace("Moved {} bytes to output stream.", buffer.remaining());
-						socket.getOutputStream().write(ByteBufferUtils.getBytes(buffer, buffer.remaining()));
-						socket.getOutputStream().flush();
-					}
-				} catch (IOException e) {
-					LOGGER.warn("Failed to process output pipe for {}", socket, e);
-				}
-				try {
 					buffer.clear();
 
 					if (!INPUTSTREAM_LESS_STATES.contains(socket.getConnectionState())) {
 						InputStream inputStream = socket.getInputStream();
-						int available = inputStream.available();
+						int available = Math.min(BUFFER_SIZE, inputStream.available());
 						if (available > 0) {
 							byte[] inputBuffer = new byte[available];
 							inputStream.read(inputBuffer);
