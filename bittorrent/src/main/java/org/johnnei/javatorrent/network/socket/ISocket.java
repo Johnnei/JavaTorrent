@@ -9,7 +9,8 @@ import java.nio.channels.WritableByteChannel;
 /**
  * A facade to allow multiple channel implementations on the same type.
  *
- * @param <T> A channel which can be selected and transfer data.
+ * @param <I> A channel which can be selected and read data from
+ * @param <O> A channel which can be selected and write data to
  */
 public interface ISocket<I extends SelectableChannel & ReadableByteChannel, O extends SelectableChannel & WritableByteChannel> extends AutoCloseable {
 

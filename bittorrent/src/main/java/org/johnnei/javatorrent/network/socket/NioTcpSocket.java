@@ -7,12 +7,20 @@ import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Default TCP Socket implementation which uses NIO as the underlying platform.
+ */
 public class NioTcpSocket implements ISocket {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NioTcpSocket.class);
 
 	private final SocketChannel channel;
 
+	/**
+	 * Creates a new Socket with an pre-exisiting channel. The channel must be in non-blocking mode.
+	 * @param channel The pre-exisiting channel.
+	 * @throws IllegalArgumentException When the channel is in blocking mode.
+	 */
 	public NioTcpSocket(SocketChannel channel) {
 		if (channel.isBlocking()) {
 			throw new IllegalArgumentException("Only non-blocking Channels are supported.");
@@ -20,6 +28,9 @@ public class NioTcpSocket implements ISocket {
 		this.channel = channel;
 	}
 
+	/**
+	 * Creates a new non-blocking TCP Socket.
+	 */
 	public NioTcpSocket() {
 		try {
 			channel = SocketChannel.open();

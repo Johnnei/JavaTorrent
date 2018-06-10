@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.internal.network.connector;
 import java.nio.ByteBuffer;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 
 import org.johnnei.javatorrent.network.socket.ISocket;
 
@@ -17,7 +18,7 @@ public class HandshakeState {
 	private final byte[] expectedTorrent;
 
 	public HandshakeState(Clock clock, ISocket socket, byte[] expectedTorrent) {
-		this.expectedTorrent = expectedTorrent;
+		this.expectedTorrent = expectedTorrent == null ? null : Arrays.copyOf(expectedTorrent, expectedTorrent.length);
 		this.socket = socket;
 		connectionStart = clock.instant();
 	}
