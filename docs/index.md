@@ -19,7 +19,9 @@ The version system will follow [Semantic Versioning](http://semver.org/). The ve
 version due to the standard of only using 4 characters for the version section in the PeerID. The version reported in extension dictionary (BEP 10) will match
 the actual version.
 
-The public api is defined by exclusions: Classes are part of the public API unless they are within `org.johnnei.javatorrent.internal.**`
+The public api is defined by exclusions: Classes are part of the public API unless:
+ - They are within `org.johnnei.javatorrent.internal.**`
+ - Their visibility is 'default' (package private).
 
 Deprecation will be handled in several phases and versions:
 `@Deprecated` will be added to the offended class/method in version x (let's start at 1.4.0) and a replacement (if it will be replaced) will be introduced.

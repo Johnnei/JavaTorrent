@@ -2,17 +2,14 @@ package org.johnnei.javatorrent.internal.utp;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.Pipe;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
@@ -23,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utils.PrecisionTimer;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
@@ -35,10 +31,10 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
+import org.johnnei.javatorrent.internal.utp.stream.InputPacketSorter;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 import org.johnnei.javatorrent.internal.utp.stream.StreamState;
-import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
-import org.johnnei.javatorrent.internal.utp.stream.UtpOutputStream;
+import org.johnnei.javatorrent.network.socket.ISocket;
 
 import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.STATE;
 import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.SYN;
@@ -61,11 +57,6 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private final DatagramChannel channel;
 
-	/**
-	 * The time which needs to expire until we are allowed to violate the window as defined by the spec.
-	 */
-	private Instant nextWindowViolation;
-
 	private short sequenceNumberCounter;
 
 	private Short endOfStreamSequenceNumber;
@@ -78,13 +69,13 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private short lastSentAcknowledgeNumber;
 
-	private final LinkedList<DataPayload> sendQueue;
+	private final Pipe inputPipe;
+
+	private final Pipe outputPipe;
 
 	private PacketAckHandler packetAckHandler;
 
-	private UtpOutputStream outputStream;
-
-	private UtpInputStream inputStream;
+	private InputPacketSorter inputStream;
 
 	private SocketAddress remoteAddress;
 
@@ -130,19 +121,26 @@ public class UtpSocket implements ISocket, Closeable {
 		clock = Clock.systemDefaultZone();
 		connectionState = ConnectionState.PENDING;
 		acknowledgeQueue = new LinkedList<>();
-		sendQueue = new LinkedList<>();
 		resendQueue = new LinkedList<>();
 		packetWriter = new PacketWriter();
 		precisionTimer = new PrecisionTimer();
-		outputStream = new UtpOutputStream(this);
 		timeoutHandler = new SocketTimeoutHandler(precisionTimer);
 		packetLossHandler = new PacketLossHandler(this);
 		windowHandler = new SocketWindowHandler();
 		packetSizeHandler = new PacketSizeHandler(windowHandler);
 		inputStreamState = StreamState.ACTIVE;
 		outputStreamState = StreamState.ACTIVE;
-		nextWindowViolation = clock.instant();
 		delayHandler = new SocketDelayHandler(precisionTimer);
+		try {
+			inputPipe = Pipe.open();
+			inputPipe.sink().configureBlocking(false);
+			inputPipe.source().configureBlocking(false);
+			outputPipe = Pipe.open();
+			outputPipe.sink().configureBlocking(false);
+			outputPipe.source().configureBlocking(false);
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to open uTP pipe", e);
+		}
 	}
 
 	public void bind(SocketAddress remoteAddress) {
@@ -152,6 +150,7 @@ public class UtpSocket implements ISocket, Closeable {
 	@Override
 	public void connect(InetSocketAddress endpoint) throws IOException {
 		bind(endpoint);
+
 		send(new SynPayload());
 		connectionState = ConnectionState.SYN_SENT;
 
@@ -195,15 +194,6 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	/**
-	 * Submits data to be send.
-	 *
-	 * @param data The buffer to be send.
-	 */
-	public void send(ByteBuffer data) {
-		sendQueue.add(new DataPayload(data));
-	}
-
-	/**
 	 * Submits a packet that has been previously sent but has not arrived on the remote.
 	 *
 	 * @param packet The packet to be resend.
@@ -220,7 +210,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	/**
 	 * Writes the {@link UtpPacket} onto the {@link #channel} if the window allows for it.
-	 * This will consume elements from {@link #resendQueue}, {@link #sendQueue} and {@link #packetAckHandler}
+	 * This will consume elements from {@link #resendQueue}, {@link #outputPipe} and {@link #packetAckHandler}
 	 */
 	public void processSendQueue() throws IOException {
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
@@ -231,14 +221,19 @@ public class UtpSocket implements ISocket, Closeable {
 					send(resendQueue.poll(), false);
 					canSendMultiple = true;
 				} else {
-					int maxPayloadSize = windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES;
-					if (canSendNewPacket(maxPayloadSize)) {
-						send(sendQueue.poll());
-						canSendMultiple = true;
-					} else if (sendQueue.isEmpty() && outputStreamState == StreamState.SHUTDOWN_PENDING) {
+					int maxPayloadSize = Math.max(0, Math.min(getPacketPayloadSize(), windowHandler.getMaxWindow() - windowHandler.getBytesInFlight() - PacketWriter.OVERHEAD_IN_BYTES));
+
+					ByteBuffer sendBuffer = ByteBuffer.allocate(maxPayloadSize);
+					int bytesRead = outputPipe.source().read(sendBuffer);
+					sendBuffer.flip();
+
+					if (bytesRead > 0) {
+						send(new DataPayload(sendBuffer));
+						canSendMultiple = bytesRead == maxPayloadSize;
+					} else if (bytesRead == 0 && outputStreamState == StreamState.SHUTDOWN_PENDING) {
 						send(new FinPayload());
 						outputStreamState = StreamState.SHUTDOWN;
-					} else if (!acknowledgeQueue.isEmpty() && maxPayloadSize >= 0) {
+					} else if (!acknowledgeQueue.isEmpty()) {
 						sendStatePackets(maxPayloadSize);
 					}
 				}
@@ -261,75 +256,6 @@ public class UtpSocket implements ISocket, Closeable {
 		}
 	}
 
-	private boolean canSendNewPacket(int maxPayloadSize) {
-		if (sendQueue.isEmpty()) {
-			return false;
-		}
-
-		int payloadSize = sendQueue.peek().getData().length;
-
-		if (payloadSize <= maxPayloadSize) {
-			mergePayloadsIfPossible(Math.min(packetSizeHandler.getPacketSize(), maxPayloadSize));
-			return true;
-		}
-
-		if (!acknowledgeQueue.isEmpty()) {
-			// Favor releasing the other end window over violating our own window.
-			return false;
-		}
-
-		// Consider window violation for packets which are exceeding the max window size and thus will block the entire buffer.
-		int maxWindow = windowHandler.getMaxWindow();
-		if (payloadSize > maxWindow && maxWindow > 0 && clock.instant().isAfter(nextWindowViolation)) {
-			int secondsToAdd = payloadSize / maxWindow;
-			nextWindowViolation = clock.instant().plusSeconds(secondsToAdd);
-			LOGGER.trace(
-				"Violating window of [{}] bytes by [{}] bytes (shortage: [{}]). Blocking exceeds for [{}] seconds",
-				maxWindow,
-				payloadSize,
-				payloadSize - maxWindow,
-				secondsToAdd
-			);
-			return true;
-		}
-
-		return false;
-	}
-
-	private void mergePayloadsIfPossible(int maxPayloadSize) {
-		if (sendQueue.size() < 2) {
-			return;
-		}
-
-		int combinedPayloads = 1;
-
-		while (sendQueue.size() > 1) {
-			DataPayload payloadOne = sendQueue.get(0);
-			DataPayload payloadTwo = sendQueue.get(1);
-			int payloadSum = payloadOne.getData().length + payloadTwo.getData().length;
-
-			if (payloadSum <= maxPayloadSize) {
-				// Dequeue the two payloads.
-				sendQueue.poll();
-				sendQueue.poll();
-				// Combine the payloads in order.
-				ByteBuffer combinedPayload = ByteBuffer.allocate(payloadSum);
-				combinedPayload.put(payloadOne.getData());
-				combinedPayload.put(payloadTwo.getData());
-				combinedPayload.flip();
-				sendQueue.addFirst(new DataPayload(combinedPayload));
-				combinedPayloads++;
-			} else {
-				break;
-			}
-		}
-
-		if (combinedPayloads > 1) {
-			LOGGER.trace("Combined [{}] data payloads into 1.", combinedPayloads);
-		}
-
-	}
-
 	/**
 	 * Validates if the socket is in timeout state or not.
 	 */
@@ -340,13 +266,11 @@ public class UtpSocket implements ISocket, Closeable {
 
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", Integer.toString(Short.toUnsignedInt(sendConnectionId)))) {
 			LOGGER.trace(
-				"Socket triggered timeout. Window: {} bytes. Bytes in flight: {}. Payload Size: {} bytes. Resend Queue: {} packets. Send Queue: {} packets (head: {}), Ack Queue: {} packets.",
+				"Socket triggered timeout. Window: {} bytes. Bytes in flight: {}. Payload Size: {} bytes. Resend Queue: {} packets. Ack Queue: {} packets.",
 				windowHandler.getMaxWindow(),
 				windowHandler.getBytesInFlight(),
 				getPacketPayloadSize(),
 				resendQueue.size(),
-				sendQueue.size(),
-				sendQueue.peek(),
 				acknowledgeQueue.size()
 			);
 
@@ -427,18 +351,7 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	@Override
-	public InputStream getInputStream() throws IOException {
-		return Objects.requireNonNull(inputStream, "Connection was not established yet");
-	}
-
-	@Override
-	public OutputStream getOutputStream() throws IOException {
-		return outputStream;
-	}
-
-	@Override
 	public void close() {
-		flush();
 		setConnectionState(ConnectionState.CLOSING);
 		outputStreamState = StreamState.SHUTDOWN_PENDING;
 	}
@@ -472,13 +385,31 @@ public class UtpSocket implements ISocket, Closeable {
 	}
 
 	@Override
-	public void flush() {
-		outputStream.flush();
+	public boolean isConnected() {
+		return connectionState == ConnectionState.CONNECTED;
+	}
+
+	public Pipe getInputPipe() {
+		return inputPipe;
+	}
+
+	public Pipe getOutputPipe() {
+		return outputPipe;
+	}
+
+	@Override
+	public Pipe.SourceChannel getReadableChannel() {
+		return inputPipe.source();
+	}
+
+	@Override
+	public Pipe.SinkChannel getWritableChannel() {
+		return outputPipe.sink();
 	}
 
 	public boolean isShutdown() {
 		return connectionState == ConnectionState.RESET || (inputStreamState == StreamState.SHUTDOWN
-			&& inputStream.isCompleteUntil(endOfStreamSequenceNumber)
+			&& (inputStream == null || inputStream.isCompleteUntil(endOfStreamSequenceNumber))
 			&& outputStreamState == StreamState.SHUTDOWN
 			&& windowHandler.getBytesInFlight() == 0);
 	}
@@ -494,7 +425,7 @@ public class UtpSocket implements ISocket, Closeable {
 		connectionState = newState;
 
 		if (connectionState == ConnectionState.CONNECTED) {
-			inputStream = new UtpInputStream((short) (lastSentAcknowledgeNumber + 1));
+			inputStream = new InputPacketSorter(inputPipe.sink(), (short) (lastSentAcknowledgeNumber + 1));
 		}
 
 		Sync.signalAll(notifyLock, onStateChange);

@@ -47,13 +47,12 @@ TorrentClient client = new TorrentClient.Builder()
 
 ### 2. Peer Connector
 Now we know how you connect with peer, we also need a system which actually connects to peers.
-The Peer Connector is used to establish connections with peers (Commonly the result of an announce on a tracker). The core implementation provides two types of
-Connectors: `PeerConnector` and `PeerConnectorPool`. The peer connector is a connector which connects to a single peer at a time. The peer connector pool is a
-connector which connects to multiple peers at a time by using multiple `PeerConnector` instances.
+The Peer Connector is used to establish connections with peers (Commonly the result of an announce on a tracker). The core implementation provides a NIO based
+connector. This connector takes advantage of the shared Executor Service instead of a dedicated thread.
 
 ```java
 TorrentClient = new TorrentClient.Builder()
-    .setPeerConnector(PeerConnector::new)
+    .setPeerConnector(tc -> new NioPeerConnector(tc, 4))
     // ...other configuration
     .build();
 ```

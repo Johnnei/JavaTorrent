@@ -1,6 +1,5 @@
 package org.johnnei.javatorrent.internal.utp;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Optional;
@@ -8,16 +7,19 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
-import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.internal.utils.Sync;
 import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
-import org.johnnei.javatorrent.network.AbstractPeerConnectionAcceptor;
 
 /**
  * Accepts connection which have been detected as a new connection in {@link UtpMultiplexer}
  */
-public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
+public class UtpPeerConnectionAcceptor implements Runnable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UtpPeerConnectionAcceptor.class);
 
 	private final Lock notifyLock = new ReentrantLock();
 
@@ -25,12 +27,14 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 
 	private final Collection<UtpSocket> socketQueue;
 
+	private final TorrentClient torrentClient;
+
 	/**
 	 * Creates a new uTP acceptor
 	 * @param torrentClient The torrent client to which we are accepting peers.
 	 */
 	public UtpPeerConnectionAcceptor(TorrentClient torrentClient) {
-		super(torrentClient);
+		this.torrentClient = torrentClient;
 		socketQueue = new LinkedList<>();
 	}
 
@@ -46,8 +50,11 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 		Sync.signalAll(notifyLock, onNewConnection);
 	}
 
+	/**
+	 * FIXME: Run should be able to run on the Executor Pool instead of a dedicated thread.
+	 */
 	@Override
-	protected ISocket acceptSocket() throws IOException {
+	public void run() {
 		notifyLock.lock();
 
 		Optional<UtpSocket> connectedSocket;
@@ -57,19 +64,20 @@ public class UtpPeerConnectionAcceptor extends AbstractPeerConnectionAcceptor {
 			}
 
 			while (!(connectedSocket = getEstablishedConnection()).isPresent()) {
+				LOGGER.trace("Waiting for {} sockets to become connected.", socketQueue.size());
 				// Check the condition every once in a while to check that the socket has become connected.
 				Thread.sleep(500);
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IOException("Interrupted while waiting for a new connection", e);
+			throw new IllegalStateException("Interrupted while waiting for a new connection", e);
 		} finally {
 			notifyLock.unlock();
 		}
 
 		synchronized (this) {
 			socketQueue.remove(connectedSocket.get());
-			return connectedSocket.get();
+			torrentClient.getHandshakeHandler().onConnectionReceived(connectedSocket.get());
 		}
 	}
 

@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.utp;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.Disabled;
 
@@ -12,7 +11,7 @@ import org.johnnei.javatorrent.phases.PhaseData;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
-import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.NioPeerConnector;
 import org.johnnei.javatorrent.tracker.UncappedDistributor;
 
 /**
@@ -24,7 +23,7 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 	public DownloadTorrentWithUtpIT() {
 	}
 
-	protected TorrentClient createTorrentClient(CountDownLatch latch) throws Exception {
+	protected TorrentClient.Builder createTorrentClient(CountDownLatch latch) throws Exception {
 		int port = DummyEntity.findAvailableUdpPort();
 		UtpModule utpModule = new UtpModule.Builder().listenOn(port).build();
 
@@ -37,15 +36,14 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 						.build())
 				.setRequestLimiter(new RateBasedLimiter())
 				.setDownloadPort(port)
-				.setExecutorService(Executors.newScheduledThreadPool(2))
-				.setPeerConnector(PeerConnector::new)
+				.setPeerConnector(tc -> new NioPeerConnector(tc, 4))
 				.setPeerDistributor(UncappedDistributor::new)
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
 						.registerInitialPhase(PhaseData.class, PhaseData::new, PhaseSeedCountdown.class)
 						.registerPhase(PhaseSeedCountdown.class, ((torrentClient, torrent) -> new PhaseSeedCountdown(latch, torrentClient, torrent)))
 						.build()
-				).build();
+				);
 	}
 
 }

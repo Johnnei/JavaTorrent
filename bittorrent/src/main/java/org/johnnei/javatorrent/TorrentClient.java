@@ -13,6 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
@@ -21,10 +24,13 @@ import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
 import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.internal.disk.IOManager;
+import org.johnnei.javatorrent.internal.network.PeerIoHandler;
+import org.johnnei.javatorrent.internal.network.connector.BitTorrentHandshakeHandlerImpl;
 import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
+import org.johnnei.javatorrent.network.connector.BitTorrentHandshakeHandler;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
@@ -32,9 +38,6 @@ import org.johnnei.javatorrent.tracker.IPeerConnector;
 import org.johnnei.javatorrent.tracker.IPeerDistributor;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Torrent Client is the main entry point for the configuration and initiation of downloads/uploads.
@@ -76,35 +79,43 @@ public class TorrentClient {
 
 	private Collection<IModule> modules;
 
+	private BitTorrentHandshakeHandlerImpl handshakeHandler;
+
+	private PeerIoHandler peerIoHandler;
+
 	private TorrentClient(Builder builder) {
 		peerDistributor = Objects.requireNonNull(builder.peerDistributor.apply(this), "Peer distributor is invalid.");
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
-		LOGGER.info(String.format("Configured connection types: %s", connectionDegradation));
+		LOGGER.info("Configured connection types: {}", connectionDegradation);
 		messageFactory = builder.messageFactoryBuilder.build();
 		phaseRegulator = Objects.requireNonNull(builder.phaseRegulator, "Phase regulator is required to regulate the download/seed phases of a torrent.");
-		LOGGER.info(String.format("Configured phases: %s", phaseRegulator));
+		LOGGER.info("Configured phases: {}", phaseRegulator);
 		executorService = Objects.requireNonNull(builder.executorService, "Executor service is required to process torrent tasks.");
 		requestLimiter = Objects.requireNonNull(builder.requestLimiter, "Request Limiter is required to improve transfer rates.");
 
 		peerConnector = Objects.requireNonNull(builder.peerConnector, "Peer connector required to allow external connections").apply(this);
-		LOGGER.info(String.format("Configured %s as Peer Connector", peerConnector));
+		LOGGER.info("Configured {} as Peer Connector", peerConnector);
 
 		Objects.requireNonNull(builder.trackerFactoryBuilder, "At least one tracker protocol must be configured.");
 		TrackerFactory trackerFactory = builder.trackerFactoryBuilder.setTorrentClient(this).build();
 
 		trackerManager = new TrackerManager(peerConnector, trackerFactory);
 		torrentManager = new TorrentManager(trackerManager);
-		LOGGER.info(String.format("Configured trackers: %s", trackerFactory));
+		LOGGER.info("Configured trackers: {}", trackerFactory);
 
 		modules = builder.modules;
-		LOGGER.info(String.format("Configured modules: %s", modules.stream()
+		LOGGER.info("Configured modules: {}", modules.stream()
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
-				.reduce((a, b) -> a + ", " + b).orElse("")));
+				.reduce((a, b) -> a + ", " + b).orElse(""));
 
 		downloadPort = builder.downloadPort;
 		extensionBytes = builder.extensionBytes;
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
+
+		peerIoHandler = new PeerIoHandler(executorService);
+		handshakeHandler = new BitTorrentHandshakeHandlerImpl(this, peerIoHandler);
+
 		ioManager = new IOManager();
 		ioManagerRunner = new LoopingRunnable(ioManager, true);
 		Thread ioManagerThread = new Thread(ioManagerRunner, String.format("Disk Manager - %s", ioManager.toString()));
@@ -159,10 +170,12 @@ public class TorrentClient {
 	 * Shuts down all components of the TorrentClient.
 	 */
 	public void shutdown() {
+		peerConnector.stop();
+		handshakeHandler.stop();
 		torrentManager.stop();
 		ioManagerRunner.stop();
+		peerIoHandler.shutdown();
 		executorService.shutdown();
-		peerConnector.stop();
 		modules.stream().forEach(IModule::onShutdown);
 	}
 
@@ -308,6 +321,13 @@ public class TorrentClient {
 	 */
 	public IRequestLimiter getRequestLimiter() {
 		return requestLimiter;
+	}
+
+	/**
+	 * @return A handler instance which is able to process the BitTorrent handshake on freshly connected sockets.
+	 */
+	public BitTorrentHandshakeHandler getHandshakeHandler() {
+		return handshakeHandler;
 	}
 
 	public static class Builder {

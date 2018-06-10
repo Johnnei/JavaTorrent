@@ -2,17 +2,16 @@ package org.johnnei.javatorrent;
 
 import java.util.Collections;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
-import org.johnnei.javatorrent.async.LoopingRunnable;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.internal.disk.IOManager;
-import org.johnnei.javatorrent.internal.torrent.TorrentManager;
 import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
@@ -25,7 +24,6 @@ import org.johnnei.javatorrent.tracker.IPeerDistributor;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -35,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -217,6 +216,9 @@ public class TorrentClientTest {
 		when(moduleMock.getDependsOn()).thenReturn(Collections.emptyList());
 		when(moduleMock.getRelatedBep()).thenReturn(3);
 
+		ScheduledFuture futureMock = mock(ScheduledFuture.class);
+		when(executorServiceMock.scheduleWithFixedDelay(notNull(), anyLong(), anyLong(), notNull())).thenReturn(futureMock);
+
 		TorrentClient cut = new TorrentClient.Builder()
 				.setConnectionDegradation(connectionDegradationMock)
 				.setPhaseRegulator(phaseRegulatorMock)
@@ -228,10 +230,7 @@ public class TorrentClientTest {
 				.registerModule(moduleMock)
 				.build();
 
-		TorrentManager torrentManager = Whitebox.getInternalState(cut, TorrentManager.class);
-		LoopingRunnable peerIoRunnable = Whitebox.getInternalState(torrentManager, "peerIoRunnable");
-
-		assertTrue(Whitebox.<Boolean>getInternalState(peerIoRunnable, "keepRunning"), "Peer IO should have been invoked to start");
+		verify(executorServiceMock, times(2)).scheduleWithFixedDelay(notNull(), anyLong(), anyLong(), notNull());
 
 		cut.shutdown();
 
@@ -241,10 +240,9 @@ public class TorrentClientTest {
 
 		verify(peerConnectorMock).start();
 		verify(peerConnectorMock).stop();
+		verify(futureMock, times(2)).cancel(false);
 
 		verify(executorServiceMock).shutdown();
-
-		assertFalse(Whitebox.<Boolean>getInternalState(peerIoRunnable, "keepRunning"), "Peer IO should have been invoked to start");
 	}
 
 	@Test
@@ -297,8 +295,5 @@ public class TorrentClientTest {
 				.build();
 
 		verify(peerConnectorMock).start();
-
-		TorrentManager torrentManager = Whitebox.getInternalState(cut, TorrentManager.class);
-		assertNotNull(Whitebox.getInternalState(torrentManager, "connectorRunnable"), "Connector should have been attempted to start.");
 	}
 }

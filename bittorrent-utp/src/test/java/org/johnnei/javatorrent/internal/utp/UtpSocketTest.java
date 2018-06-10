@@ -1,7 +1,6 @@
 package org.johnnei.javatorrent.internal.utp;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -194,7 +193,7 @@ public class UtpSocketTest {
 	public void testSend() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		socket.processSendQueue();
 
@@ -219,7 +218,7 @@ public class UtpSocketTest {
 	public void testReset() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		socket.processSendQueue();
 
@@ -245,7 +244,7 @@ public class UtpSocketTest {
 	public void testPacketLoss() throws Exception {
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		socket.processSendQueue();
 
@@ -300,13 +299,11 @@ public class UtpSocketTest {
 			new DataPayload(ByteBuffer.wrap(new byte[]{ 1, 2, 3, 4 }))
 		);
 
-		InputStream inputStream = socket.getInputStream();
-
 		socket.onReceivedPacket(dataPacket);
 
-		byte[] data = new byte[4];
-		assertThat(inputStream.read(data), equalTo(4));
-		assertThat(data, equalTo(new byte[] { 1, 2, 3, 4 }));
+		ByteBuffer data = ByteBuffer.allocate(4);
+		assertThat(socket.getReadableChannel().read(data), equalTo(4));
+		assertThat(data.array(), equalTo(new byte[] { 1, 2, 3, 4 }));
 	}
 
 	@Test
@@ -353,7 +350,7 @@ public class UtpSocketTest {
 
 		UtpSocket socket = prepareSocketAfterHandshake();
 
-		socket.send(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
+		socket.getWritableChannel().write(ByteBuffer.wrap(new byte[] { 1, 2, 3, 4 }));
 
 		UtpPacket finPacket = new UtpPacket(
 			new UtpHeader.Builder()

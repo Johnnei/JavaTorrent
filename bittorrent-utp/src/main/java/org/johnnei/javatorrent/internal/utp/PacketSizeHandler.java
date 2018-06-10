@@ -53,6 +53,8 @@ public class PacketSizeHandler {
 
 	private void setPacketSize(int packetSize) {
 		this.packetSize = Math.max(150, packetSize);
+		// Avoid MTU fragmentation.
+		this.packetSize = Math.min(1000, this.packetSize);
 	}
 
 	public void onTimeout() {

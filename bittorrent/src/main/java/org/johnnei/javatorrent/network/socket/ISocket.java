@@ -1,35 +1,34 @@
 package org.johnnei.javatorrent.network.socket;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.WritableByteChannel;
 
 /**
- * A socket facade to get multiple socket protocols work on the some functions<br>
- * @author Johnnei
+ * A facade to allow multiple channel implementations on the same type.
  *
+ * @param <T> A channel which can be selected and transfer data.
  */
-public interface ISocket extends AutoCloseable {
+public interface ISocket<I extends SelectableChannel & ReadableByteChannel, O extends SelectableChannel & WritableByteChannel> extends AutoCloseable {
 
 	/**
-	 * Connects the underlaying Socket to the endpoint
+	 * Connects the underlying Socket to the endpoint. This event <em>must</em> happen asynchronously.
+	 * To notify the socket is connected (or it failed) use {@link java.nio.channels.SelectionKey#OP_CONNECT} in combination with {@link #isConnected()}.
 	 * @param endpoint The Address to connect to
 	 * @throws IOException When connection fails
 	 */
 	void connect(InetSocketAddress endpoint) throws IOException;
+
 	/**
-	 * Gets the inputstream from the underlaying socket
-	 * @return An InputStream which allows to read data from it
-	 * @throws IOException when the stream could not be created
+	 * @return <code>true</code> if the connection is successfully established. Otherwise <code>false</code>.
 	 */
-	InputStream getInputStream() throws IOException;
-	/**
-	 * Gets the outputstream from the underlaying socket
-	 * @return An outputstream which allows to write data to the socket
-	 * @throws IOException when the stream could not be created
-	 */
-	OutputStream getOutputStream() throws IOException;
+	boolean isConnected();
+
+	I getReadableChannel();
+
+	O getWritableChannel();
 
 	/**
 	 * Formally closes the connection
@@ -47,19 +46,17 @@ public interface ISocket extends AutoCloseable {
 	/**
 	 * Checks if there will be no more data incoming
 	 * @return true if EOF has been found
+	 * @deprecated
 	 */
+	@Deprecated
 	boolean isInputShutdown();
 
 	/**
 	 * Checks if no more data can be send on this socket
 	 * @return true if EOF has been send
+	 * @deprecated
 	 */
+	@Deprecated
 	boolean isOutputShutdown();
-
-	/**
-	 * Forces the socket to send all data
-	 * @throws IOException When the flushing fails due to IO errors.
-	 */
-	void flush() throws IOException;
 
 }

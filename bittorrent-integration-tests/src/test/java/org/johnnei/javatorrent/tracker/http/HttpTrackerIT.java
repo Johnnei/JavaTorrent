@@ -27,7 +27,7 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
-import org.johnnei.javatorrent.tracker.PeerConnector;
+import org.johnnei.javatorrent.tracker.IPeerConnector;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,10 +48,10 @@ public class HttpTrackerIT {
 
 	// @formatter:off
 	private final byte[] torrentHash = new byte[] {
-		(byte) 0x92,        0x28,        0x62, (byte) 0x85,        0x04,
-		(byte) 0xcc,        0x40, (byte) 0xef, (byte) 0xa5,        0x7b,
-		(byte) 0xf3, (byte) 0x8e, (byte) 0x85, (byte) 0xc9, (byte) 0xe3,
-		(byte) 0xbd,        0x2c,        0x57,        0x2b,        0x5b
+		(byte) 0x87, 0x4f, (byte) 0xc6, (byte) 0xa6, (byte) 0xa5,
+		       0x23, 0x72, (byte) 0xf7,        0x3b,        0x6b,
+		       0x07, 0x23,        0x34,        0x4e, (byte) 0xc8,
+		       0x12, 0x4f,        0x37,        0x7a,        0x00
 	};
 
 	private final byte[] peerId = new byte [] {
@@ -122,7 +122,7 @@ public class HttpTrackerIT {
 			.willReturn(WireMock.aResponse().withBody(outStream.toByteArray()))
 		);
 
-		PeerConnector peerConnectorMock = mock(PeerConnector.class);
+		IPeerConnector peerConnectorMock = mock(IPeerConnector.class);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		when(torrentClientMock.getPeerId()).thenReturn(peerId);

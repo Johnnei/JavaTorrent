@@ -114,7 +114,6 @@ public class TorrentTest {
 		Peer peerMock = mock(Peer.class);
 
 		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
-		socketMock.setPassedHandshake();
 		socketMock.enqueueMessage(isA(MessageHave.class));
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
@@ -180,7 +179,6 @@ public class TorrentTest {
 		when(socketMock.getDownloadRate()).thenReturn(5);
 		when(socketMock.getUploadRate()).thenReturn(3);
 		socketMock.pollRates();
-		socketMock.setPassedHandshake();
 
 		BitTorrentSocket socketMockTwo = mock(BitTorrentSocket.class);
 		Peer peerMockTwo = mock(Peer.class);
@@ -189,7 +187,6 @@ public class TorrentTest {
 		when(socketMockTwo.getDownloadRate()).thenReturn(10);
 		when(socketMockTwo.getUploadRate()).thenReturn(13);
 		socketMockTwo.pollRates();
-		socketMockTwo.setPassedHandshake();
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		when(torrentClientMock.getModules()).thenReturn(Collections.emptyList());
@@ -272,7 +269,6 @@ public class TorrentTest {
 		Peer peerMock = mock(Peer.class);
 
 		when(peerMock.getBitTorrentSocket()).thenReturn(socketMock);
-		socketMock.setPassedHandshake();
 		when(fileSetMock.countCompletedPieces()).thenReturn(0);
 		socketMock.enqueueMessage(isA(MessageHave.class));
 
@@ -297,7 +293,7 @@ public class TorrentTest {
 	}
 
 	@Test
-	public void testOnReceivedBlockIncorrectSize() throws Exception {
+	public void testOnReceivedBlockIncorrectSize() {
 		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
 		TorrentClient torrentClient = mock(TorrentClient.class);
 		Piece pieceMock = mock(Piece.class);
@@ -463,7 +459,6 @@ public class TorrentTest {
 
 		assertEquals(1, cut.getPeers().size(), "Peer one should have been added to the list.");
 		assertThat("Peer one should have been added to the list.", cut.getPeers(), hasItems(peerOne));
-		verify(socketMockOne).setPassedHandshake();
 
 		cut.addPeer(peerThree);
 
@@ -475,7 +470,6 @@ public class TorrentTest {
 
 		assertThat("Peer two should have been added to the list.", cut.getPeers(), hasSize(2));
 		assertThat("Peer two should have been added to the list.", cut.getPeers(), hasItem(peerTwo));
-		verify(socketMockTwo).setPassedHandshake();
 
 		cut.removePeer(peerTwo);
 
@@ -492,7 +486,6 @@ public class TorrentTest {
 		byte[] peerId = DummyEntity.createUniquePeerId();
 
 		BitTorrentSocket socketMockOne = mock(BitTorrentSocket.class);
-		socketMockOne.setPassedHandshake();
 
 		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
 		when(fileSetMock.countCompletedPieces()).thenReturn(0);
@@ -521,7 +514,6 @@ public class TorrentTest {
 		byte[] peerId = DummyEntity.createUniquePeerId();
 
 		BitTorrentSocket socketMockOne = mock(BitTorrentSocket.class);
-		socketMockOne.setPassedHandshake();
 		socketMockOne.enqueueMessage(isA(MessageBitfield.class));
 
 		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
@@ -551,7 +543,6 @@ public class TorrentTest {
 		ArgumentCaptor<MessageHave> haveCapture = ArgumentCaptor.forClass(MessageHave.class);
 
 		BitTorrentSocket socketMockOne = mock(BitTorrentSocket.class);
-		socketMockOne.setPassedHandshake();
 
 		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
 		when(fileSetMock.countCompletedPieces()).thenReturn(2);

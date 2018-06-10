@@ -1,32 +1,43 @@
 package org.johnnei.javatorrent.network;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.johnnei.javatorrent.bittorrent.protocol.BitTorrentHandshake;
 import org.johnnei.javatorrent.bittorrent.protocol.MessageFactory;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.IMessage;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock;
 import org.johnnei.javatorrent.bittorrent.protocol.messages.MessageKeepAlive;
-import org.johnnei.javatorrent.internal.network.ByteInputStream;
-import org.johnnei.javatorrent.internal.network.ByteOutputStream;
+import org.johnnei.javatorrent.internal.network.TransferRate;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
+import static org.johnnei.javatorrent.network.ByteBufferUtils.getBytes;
+
+/**
+ * Handles the raw data on the {@link ByteChannel} provided by {@link ISocket}.
+ */
 public class BitTorrentSocket {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BitTorrentSocket.class);
+
+	private static final int MESSAGE_LENGTH_SIZE = 4;
+
+	/**
+	 * The amount of bytes reserved for {@link #readBuffer}.
+	 * The size is chosen to be the 'largest' regular packet. ({@link MessageBlock}
+	 */
+	private static final int READ_BUFFER_SIZE = (1 << 14) + MESSAGE_LENGTH_SIZE;
 
 	private final Object queueLock = new Object();
 	private final Object blockQueueLock = new Object();
@@ -34,32 +45,15 @@ public class BitTorrentSocket {
 	/**
 	 * Clock instance to allow for speedy unit tests on this.
 	 */
-	private Clock clock = Clock.systemDefaultZone();
+	private final Clock clock;
 
-	private static final int HANDSHAKE_SIZE = 68;
-
-	private ISocket socket;
-
-	private ByteInputStream inStream;
-
-	private ByteOutputStream outStream;
+	private final ISocket socket;
 
 	private final MessageFactory messageFactory;
 
-	/**
-	 * The amount of bytes read in the last second
-	 */
-	private int downloadRate;
+	private final TransferRate downloadRate;
 
-	/**
-	 * The amount of bytes written in the last second
-	 */
-	private int uploadRate;
-
-	/**
-	 * Remembers if this socket has read the handshake information or not
-	 */
-	private boolean passedHandshake;
+	private final TransferRate uploadRate;
 
 	/**
 	 * The queue containing the messages which still have to be send
@@ -71,9 +65,15 @@ public class BitTorrentSocket {
 	 */
 	private Queue<IMessage> blockQueue;
 
-	private OutStream buffer;
+	/**
+	 * Buffer holding incomplete {@link IMessage} binary data.
+	 */
+	private ByteBuffer readBuffer;
 
-	private int bufferSize;
+	/**
+	 * Buffer holding incomplete sent {@link IMessage} binary data.
+	 */
+	private ByteBuffer writeBuffer;
 
 	/**
 	 * The last time a buffer was created
@@ -86,55 +86,25 @@ public class BitTorrentSocket {
 	private LocalDateTime lastActivity;
 
 	/**
-	 * Creates a new unbound BitTorrent socket.
+	 * Creates a new bound BitTorrent socket.
 	 * @param messageFactory The factory to create {@link IMessage} instances.
+	 * @param socket The bound socket.
 	 */
-	public BitTorrentSocket(MessageFactory messageFactory) {
+	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) {
+		this(messageFactory, socket, Clock.systemDefaultZone());
+	}
+
+	BitTorrentSocket(MessageFactory messageFactory, ISocket socket, Clock clock) {
+		this.clock = clock;
 		this.messageFactory = messageFactory;
 		messageQueue = new LinkedList<>();
 		blockQueue = new LinkedList<>();
 		lastActivity = LocalDateTime.now(clock);
-	}
-
-	/**
-	 * Creates a new bound BitTorrent socket.
-	 * @param messageFactory The factory to create {@link IMessage} instances.
-	 * @param socket The bound socket.
-	 * @throws IOException When the IO streams can not be wrapped.
-	 */
-	public BitTorrentSocket(MessageFactory messageFactory, ISocket socket) throws IOException {
-		this(messageFactory);
-		this.socket = Objects.requireNonNull(socket, "Socket cannot be null, use other constructor instead.");
-		createIOStreams();
-	}
-
-	/**
-	 * Attempts to connect to the given endpoint in a blocking manner.
-	 * @param degradation The socket degradation order.
-	 * @param address The address to connect to
-	 * @throws IOException When an IO error occur during the establishing of a connection.
-	 */
-	public void connect(ConnectionDegradation degradation, InetSocketAddress address) throws IOException {
-		if (socket != null) {
-			return;
-		}
-
-		BitTorrentSocketException exception = new BitTorrentSocketException("Failed to connect to end point.");
-		socket = degradation.createPreferredSocket();
-		while (socket.isClosed()) {
-			try {
-				socket.connect(address);
-				createIOStreams();
-			} catch (IOException e) {
-				exception.addConnectionFailure(socket, e);
-				Optional<ISocket> fallbackSocket = degradation.degradeSocket(socket);
-				if (fallbackSocket.isPresent()) {
-					socket = fallbackSocket.get();
-				} else {
-					throw exception;
-				}
-			}
-		}
+		this.socket = Objects.requireNonNull(socket, "Socket cannot be null");
+		this.readBuffer = ByteBuffer.allocate(READ_BUFFER_SIZE);
+		this.readBuffer.limit(0);
+		this.downloadRate = new TransferRate(clock);
+		this.uploadRate = new TransferRate(clock);
 	}
 
 	/**
@@ -153,13 +123,11 @@ public class BitTorrentSocket {
 		}
 	}
 
-	private void createIOStreams() throws IOException {
-		inStream = new ByteInputStream(new BufferedInputStream(socket.getInputStream()));
-		outStream = new ByteOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-	}
-
+	/**
+	 * Converts the buffered message to an {@link IMessage}. <em>must</em> only be called when {@link #canReadMessage()} returns <code>true</code>.
+	 * @return The next message on the stream.
+	 */
 	public IMessage readMessage() {
-
 		InStream stream = getBufferedMessage();
 		int length = stream.readInt();
 		if (length == 0) {
@@ -175,10 +143,33 @@ public class BitTorrentSocket {
 	}
 
 	/**
-	 * Sends at most 1 pending message. {@link org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock} will be send last
-	 * @throws IOException
+	 * Sends messages until the operation is no longer blocking. {@link org.johnnei.javatorrent.bittorrent.protocol.messages.MessageBlock} will be send last.
+	 * @throws IOException When write fails.
 	 */
-	public void sendMessage() throws IOException {
+	public void sendMessages() throws IOException {
+		ByteBuffer buffer;
+
+		while ((buffer = prepareMessageForSending()) != null) {
+			int transferredBytes = ((WritableByteChannel) socket.getWritableChannel()).write(buffer);
+
+			uploadRate.addTransferredBytes(transferredBytes);
+			lastActivity = LocalDateTime.now(clock);
+
+			if (buffer.hasRemaining()) {
+				writeBuffer = buffer;
+				return;
+			} else {
+				writeBuffer = null;
+			}
+
+		}
+	}
+
+	private ByteBuffer prepareMessageForSending() {
+		if (writeBuffer != null) {
+			return writeBuffer;
+		}
+
 		IMessage message = null;
 
 		if (!messageQueue.isEmpty()) {
@@ -192,7 +183,7 @@ public class BitTorrentSocket {
 		}
 
 		if (message == null) {
-			return;
+			return null;
 		}
 
 		LOGGER.trace("Writing message {}", message);
@@ -205,95 +196,15 @@ public class BitTorrentSocket {
 			message.write(outBuffer);
 		}
 
-		outStream.write(outBuffer.toByteArray());
-		outStream.flush();
-		lastActivity = LocalDateTime.now(clock);
-	}
-
-	/**
-	 * Writes the handshake onto the output stream
-	 *
-	 * @param extensionBytes The bytes indicating which extensions we support
-	 * @param peerId The peer ID which this peer will send out.
-	 * @param torrentHash The hash of the torrent on which we wish to interact on with this peer.
-	 * @throws IOException
-	 */
-	public void sendHandshake(byte[] extensionBytes, byte[] peerId, byte[] torrentHash) throws IOException {
-		if (passedHandshake) {
-			throw new IllegalStateException("Handshake has already been completed.");
-		}
-
-		LOGGER.debug("Writing handshake", socket);
-
-		outStream.writeByte(0x13);
-		outStream.writeString("BitTorrent protocol");
-		outStream.write(extensionBytes);
-		outStream.write(torrentHash);
-		outStream.write(peerId);
-		outStream.flush();
-	}
-
-	/**
-	 * Reads the handshake information from the peer
-	 *
-	 * @return A successfully read handshake
-	 * @throws IOException
-	 *             when either an io error occurs, a protocol error occurs or the peer doesn't respond within 5 seconds.
-	 */
-	public BitTorrentHandshake readHandshake() throws IOException {
-		if (passedHandshake) {
-			throw new IllegalStateException("Handshake has already been completed.");
-		}
-
-		awaitHandshake();
-
-		int protocolLength = inStream.read();
-		if (protocolLength != 0x13) {
-			throw new IOException("Protocol handshake failed");
-		}
-
-		String protocol = inStream.readString(0x13);
-
-		if (!"BitTorrent protocol".equals(protocol)) {
-			throw new IOException("Protocol handshake failed");
-		}
-
-		byte[] extensionBytes = inStream.readByteArray(8);
-		byte[] torrentHash = inStream.readByteArray(20);
-		byte[] peerId = inStream.readByteArray(20);
-
-		return new BitTorrentHandshake(torrentHash, extensionBytes, peerId);
-	}
-
-	private void awaitHandshake() throws IOException {
-		LocalDateTime startTime = LocalDateTime.now(clock);
-
-		while (Duration.between(startTime, LocalDateTime.now(clock)).minusSeconds(5).isNegative() && inStream.available() < HANDSHAKE_SIZE) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				// Honour the cancellation and rethrow it as IOException
-				throw new IOException(e);
-			}
-		}
-
-		if (inStream.available() < HANDSHAKE_SIZE) {
-			throw new IOException("Remote end failed to supply handshake within 5 seconds");
-		}
-
+		return ByteBuffer.wrap(outBuffer.toByteArray());
 	}
 
 	/**
 	 * Polls all the transfer speeds.
 	 */
 	public void pollRates() {
-		if (inStream != null) {
-			downloadRate = inStream.pollSpeed();
-		}
-		if (outStream != null) {
-			uploadRate = outStream.pollSpeed();
-		}
+		downloadRate.pollRate();
+		uploadRate.pollRate();
 	}
 
 	/**
@@ -317,34 +228,55 @@ public class BitTorrentSocket {
 	 * @throws IOException When an IO error occurs during the buffering.
 	 */
 	public boolean canReadMessage() throws IOException {
-		if (buffer == null) {
-			if (inStream.available() < 4) {
-				return false;
+		if (readBuffer.position() == 0) {
+			lastBufferCreate = LocalDateTime.now(clock);
+			readBuffer.limit(4);
+		}
+
+		readInput();
+
+		if (readBuffer.position() >= MESSAGE_LENGTH_SIZE) {
+			ByteBuffer buffer = readBuffer.asReadOnlyBuffer();
+			buffer.flip();
+			int messageLength = buffer.getInt();
+			int bytesNeeded = MESSAGE_LENGTH_SIZE + messageLength;
+
+			if (readBuffer.capacity() < bytesNeeded) {
+				growReadBuffer(bytesNeeded);
 			}
 
-			lastBufferCreate = LocalDateTime.now(clock);
-			int length = inStream.readInt();
-			buffer = new OutStream(length + 4);
-			bufferSize = length + 4;
-			buffer.writeInt(length);
+			readBuffer.limit(bytesNeeded);
+			if (readBuffer.hasRemaining()) {
+				readInput();
+			}
+
+			return readBuffer.position() >= bytesNeeded;
 		}
 
-		int remainingBytes = bufferSize - buffer.size();
-		if (remainingBytes == 0) {
-			return true;
+		return false;
+	}
+
+	private void readInput() throws IOException {
+		int readBytes = ((ReadableByteChannel) socket.getReadableChannel()).read(readBuffer);
+		if (readBytes == -1) {
+			throw new IOException("Unexpected end of channel.");
+		} else {
+			downloadRate.addTransferredBytes(readBytes);
 		}
+	}
 
-		int availableBytes = Math.min(remainingBytes, inStream.available());
-		buffer.write(inStream.readByteArray(availableBytes));
-		lastActivity = LocalDateTime.now(clock);
-
-		return bufferSize - buffer.size() == 0;
+	private void growReadBuffer(int desiredSize) {
+		ByteBuffer buffer = ByteBuffer.allocate(desiredSize);
+		readBuffer.flip();
+		buffer.put(readBuffer);
+		this.readBuffer = buffer;
 	}
 
 	private InStream getBufferedMessage() {
-		InStream bufferedStream = new InStream(buffer.toByteArray(), getBufferLifetime());
-		buffer = null;
-		return bufferedStream;
+		readBuffer.flip();
+		InStream messageStream = new InStream(getBytes(readBuffer, readBuffer.remaining()), getBufferLifetime());
+		readBuffer.clear();
+		return messageStream;
 	}
 
 	/**
@@ -364,7 +296,7 @@ public class BitTorrentSocket {
 	 * @see #pollRates()
 	 */
 	public int getDownloadRate() {
-		return downloadRate;
+		return downloadRate.getRate();
 	}
 
 	/**
@@ -374,7 +306,7 @@ public class BitTorrentSocket {
 	 * @see #pollRates()
 	 */
 	public int getUploadRate() {
-		return uploadRate;
+		return uploadRate.getRate();
 	}
 
 	/**
@@ -382,26 +314,7 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if the underlying socket is closed, otherwise <code>false</code>
 	 */
 	public boolean closed() {
-		if (socket == null) {
-			return true;
-		}
-
 		return socket.isClosed();
-	}
-
-	/**
-	 * Gets if this socket has completed the BitTorrent handshake
-	 * @return <code>true</code> if the handshake was completed
-	 */
-	public boolean getPassedHandshake() {
-		return passedHandshake;
-	}
-
-	/**
-	 * Marks that this socket has passed the BitTorrent handshake and therefor is a valid BitTorrent socket.
-	 */
-	public void setPassedHandshake() {
-		passedHandshake = true;
 	}
 
 	/**
@@ -409,8 +322,11 @@ public class BitTorrentSocket {
 	 * @return <code>true</code> if there is at least one {@link IMessage} waiting to be sent.
 	 */
 	public boolean hasOutboundMessages() {
-		LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
-		return !messageQueue.isEmpty() || !blockQueue.isEmpty();
+		boolean hasPendingMessages = !messageQueue.isEmpty() || !blockQueue.isEmpty();
+		if (hasPendingMessages) {
+			LOGGER.trace("Pending outbound messages [{}] blocks [{}]", messageQueue.size(), blockQueue.size());
+		}
+		return writeBuffer != null || hasPendingMessages;
 	}
 
 	/**
@@ -418,10 +334,6 @@ public class BitTorrentSocket {
 	 * @return The name of the socket or an empty string when no socket is set.
 	 */
 	public String getSocketName() {
-		if (socket == null) {
-			return "";
-		}
-
 		return socket.getClass().getSimpleName();
 	}
 
