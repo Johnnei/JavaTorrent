@@ -2,8 +2,6 @@ package org.johnnei.javatorrent.internal.utp;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -12,7 +10,6 @@ import java.nio.channels.Pipe;
 import java.time.Clock;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
@@ -34,9 +31,9 @@ import org.johnnei.javatorrent.internal.utp.protocol.packet.StatePayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.SynPayload;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpHeader;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
+import org.johnnei.javatorrent.internal.utp.stream.InputPacketSorter;
 import org.johnnei.javatorrent.internal.utp.stream.PacketWriter;
 import org.johnnei.javatorrent.internal.utp.stream.StreamState;
-import org.johnnei.javatorrent.internal.utp.stream.UtpInputStream;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
 import static org.johnnei.javatorrent.internal.utp.protocol.PacketType.STATE;
@@ -78,7 +75,7 @@ public class UtpSocket implements ISocket, Closeable {
 
 	private PacketAckHandler packetAckHandler;
 
-	private UtpInputStream inputStream;
+	private InputPacketSorter inputStream;
 
 	private SocketAddress remoteAddress;
 
@@ -353,16 +350,6 @@ public class UtpSocket implements ISocket, Closeable {
 		return packetSizeHandler.getPacketSize() - PacketWriter.OVERHEAD_IN_BYTES;
 	}
 
-	@Deprecated
-	public InputStream getInputStream() throws IOException {
-		return Objects.requireNonNull(inputStream, "Connection was not established yet");
-	}
-
-	@Deprecated
-	public OutputStream getOutputStream() {
-		throw new UnsupportedOperationException();
-	}
-
 	@Override
 	public void close() {
 		setConnectionState(ConnectionState.CLOSING);
@@ -438,7 +425,7 @@ public class UtpSocket implements ISocket, Closeable {
 		connectionState = newState;
 
 		if (connectionState == ConnectionState.CONNECTED) {
-			inputStream = new UtpInputStream((short) (lastSentAcknowledgeNumber + 1));
+			inputStream = new InputPacketSorter(inputPipe.sink(), (short) (lastSentAcknowledgeNumber + 1));
 		}
 
 		Sync.signalAll(notifyLock, onStateChange);

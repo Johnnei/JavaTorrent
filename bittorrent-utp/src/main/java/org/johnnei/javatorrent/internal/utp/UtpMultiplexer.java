@@ -1,15 +1,11 @@
 package org.johnnei.javatorrent.internal.utp;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -18,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.async.LoopingRunnable;
-import org.johnnei.javatorrent.internal.utp.protocol.ConnectionState;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
@@ -26,12 +21,6 @@ import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
 public class UtpMultiplexer {
-
-	private static final List<ConnectionState> INPUTSTREAM_LESS_STATES = Collections.unmodifiableList(Arrays.asList(
-		ConnectionState.PENDING,
-		ConnectionState.SYN_RECEIVED,
-		ConnectionState.SYN_SENT
-	));
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpMultiplexer.class);
 
@@ -65,38 +54,6 @@ public class UtpMultiplexer {
 		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
 
 		poller = client.getExecutorService().scheduleWithFixedDelay(this::pollPackets, 50, 10, TimeUnit.MILLISECONDS);
-		client.getExecutorService().scheduleWithFixedDelay(this::patchNio, 50, 10, TimeUnit.MILLISECONDS);
-	}
-
-	void patchNio() {
-		try {
-			for (UtpSocket socket : socketRegistry.getAllSockets()) {
-				ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-				try {
-					buffer.clear();
-
-					if (!INPUTSTREAM_LESS_STATES.contains(socket.getConnectionState())) {
-						InputStream inputStream = socket.getInputStream();
-						int available = Math.min(BUFFER_SIZE, inputStream.available());
-						if (available > 0) {
-							byte[] inputBuffer = new byte[available];
-							inputStream.read(inputBuffer);
-							buffer.put(inputBuffer);
-							buffer.flip();
-							LOGGER.trace("Moved {} bytes to input pipe.", buffer.remaining());
-							socket.getInputPipe().sink().write(buffer);
-							if (buffer.hasRemaining()) {
-								LOGGER.error("Input write failed.");
-							}
-						}
-					}
-				} catch (IOException e) {
-					LOGGER.warn("Failed to process input pipe for {}", socket, e);
-				}
-			}
-		} catch (Exception e) {
-			LOGGER.debug("uTP to NIO layer failed", e);
-		}
 	}
 
 	void pollPackets() {
