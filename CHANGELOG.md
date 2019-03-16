@@ -12,6 +12,7 @@ the executor threads.
 - [JBT-99](https://jira.johnnei.org/browse/JBT-99): Peer IO is now processed until it can no longer be executed without blocking.
 - [JBT-106](https://jira.johnnei.org/browse/JBT-106): Unsupported tracker protocols no longer throw an exception but will log a warning and return `Optional#empty`
 - [JBT-107](https://jira.johnnei.org/browse/JBT-107): UDP Trackers now support the common `/announce` suffix.
+- [JBT-116](https://jira.johnnei.org/browse/JBT-116): Connection queue has been given a priority strategy to (mostly) evenly split over torrents.
 
 ## Deprecated
 - [JBT-102](https://jira.johnnei.org/browse/JBT-104): `Peer#getBitTorrentSocket()` is now deprecated. The `BitTorrentSocket` will become an internal class.
