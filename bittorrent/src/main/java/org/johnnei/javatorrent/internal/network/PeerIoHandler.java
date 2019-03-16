@@ -79,38 +79,36 @@ public class PeerIoHandler {
 		try (MDC.MDCCloseable ignored = MDC.putCloseable("context", peer.getIdAsString())) {
 			BitTorrentSocket socket = peer.getBitTorrentSocket();
 
-			if (key.isReadable()) {
-				onDataAvailable(peer, socket);
-			}
-			if (key.isWritable()) {
-				onDataRequested(peer, socket);
+			try {
+				if (key.isReadable()) {
+					onDataAvailable(peer, socket);
+				}
+				if (key.isWritable()) {
+					onDataRequested(peer, socket);
+				}
+			} catch (IOException e) {
+				LOGGER.info("Failed to process peer.", e);
+				socket.close();
 			}
 		}
 	}
 
-	private void onDataAvailable(Peer peer, BitTorrentSocket socket) {
+	private void onDataAvailable(Peer peer, BitTorrentSocket socket) throws IOException {
 		try {
 			while (socket.canReadMessage()) {
 				IMessage message = socket.readMessage();
 				message.process(peer);
 			}
 		} catch (BitTorrentProtocolViolationException e) {
-			LOGGER.debug("Peer {} violated protocol.", peer, e);
-			socket.close();
-		} catch (IOException e) {
-			LOGGER.warn("Failed to process peer {}", peer, e);
+			throw new IOException(String.format("Peer %s violated protocol", peer), e);
 		}
 	}
 
-	private void onDataRequested(Peer peer, BitTorrentSocket socket) {
-		try {
-			if (socket.hasOutboundMessages()) {
-				socket.sendMessages();
-			} else {
-				peer.queueNextPieceForSending();
-			}
-		} catch (IOException e) {
-			LOGGER.warn("Failed to process peer {}", peer, e);
+	private void onDataRequested(Peer peer, BitTorrentSocket socket) throws IOException {
+		if (socket.hasOutboundMessages()) {
+			socket.sendMessages();
+		} else {
+			peer.queueNextPieceForSending();
 		}
 	}
 
