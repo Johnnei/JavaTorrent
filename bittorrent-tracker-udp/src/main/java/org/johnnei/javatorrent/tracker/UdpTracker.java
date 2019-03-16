@@ -14,19 +14,20 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
+import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
+import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.internal.tracker.udp.AnnounceRequest;
 import org.johnnei.javatorrent.internal.tracker.udp.Connection;
 import org.johnnei.javatorrent.internal.tracker.udp.IUdpTrackerPayload;
 import org.johnnei.javatorrent.internal.tracker.udp.ScrapeRequest;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
-import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
-import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
-import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.johnnei.javatorrent.torrent.Torrent;
 
 /**
  * Manages the interaction with an UDP tracker
@@ -112,7 +113,7 @@ public class UdpTracker implements ITracker {
 		lastScrapeTime = LocalDateTime.now(clock).minus(DEFAULT_SCRAPE_INTERVAL, ChronoUnit.MILLIS);
 
 		// Parse URL
-		Pattern regex = Pattern.compile("udp://([^:]+):(\\d+)");
+		Pattern regex = Pattern.compile("udp://([^:]+):(\\d+)(?:/announce)?");
 		Matcher matcher = regex.matcher(builder.trackerUrl);
 
 		if (!matcher.matches()) {

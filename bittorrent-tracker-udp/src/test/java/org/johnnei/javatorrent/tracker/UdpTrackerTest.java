@@ -21,6 +21,8 @@ import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.torrent.Torrent;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.johnnei.javatorrent.test.DummyEntity.createUniqueTorrent;
 import static org.johnnei.javatorrent.test.TestUtils.assertEqualsMethod;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,6 +77,15 @@ public class UdpTrackerTest {
 		assertEquals(0x41727101980L, tracker.getConnection().getId(), "Incorrect connection id");
 		assertEquals("Unknown", tracker.getName(), "Incorrect name");
 		assertEquals("Invalid tracker", tracker.getStatus(), "Incorrect state");
+	}
+
+	@Test
+	public void testUdpTrackerWithAnnounceSuffix() throws Exception {
+		UdpTracker tracker = new UdpTracker.Builder()
+			.setUrl("udp://localhost:80/announce")
+			.build();
+
+		assertThat(tracker.getStatus(), equalTo("Idle"));
 	}
 
 	@Test
