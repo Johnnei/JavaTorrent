@@ -23,6 +23,7 @@ import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.network.socket.NioTcpSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestClock;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 import static com.jayway.awaitility.Awaitility.await;
@@ -51,6 +52,8 @@ class NioPeerConnectorTest {
 	private ISocket socketTypeThree;
 
 	private SocketChannel tmpChannel;
+
+	private Torrent torrent;
 
 	@BeforeEach
 	public void setUp() throws IOException {
@@ -81,6 +84,11 @@ class NioPeerConnectorTest {
 		when(degradation.degradeSocket(same(socketTypeOne))).thenReturn(Optional.of(socketTypeTwo));
 		when(degradation.degradeSocket(same(socketTypeTwo))).thenReturn(Optional.empty());
 		when(degradation.degradeSocket(same(socketTypeThree))).thenReturn(Optional.empty());
+
+		torrent = mock(Torrent.class);
+		Metadata metadata = mock(Metadata.class);
+		when(torrent.getMetadata()).thenReturn(metadata);
+		when(metadata.getHashString()).thenReturn("A");
 	}
 
 	@AfterEach
@@ -146,6 +154,7 @@ class NioPeerConnectorTest {
 		PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
 		when(infoOne.getAddress())
 			.thenReturn(InetSocketAddress.createUnresolved("localhost", DummyEntity.findAvailableTcpPort()));
+		when(infoOne.getTorrent()).thenReturn(torrent);
 
 		cut.enqueuePeer(infoOne);
 		cut.pollReadyConnections();
@@ -173,6 +182,10 @@ class NioPeerConnectorTest {
 		PeerConnectInfo infoTwo = mock(PeerConnectInfo.class);
 		PeerConnectInfo infoThree = mock(PeerConnectInfo.class);
 
+		when(infoOne.getTorrent()).thenReturn(torrent);
+		when(infoTwo.getTorrent()).thenReturn(torrent);
+		when(infoThree.getTorrent()).thenReturn(torrent);
+
 		when(degradation.createPreferredSocket()).thenReturn(socketTypeOne, socketTypeTwo, socketTypeThree);
 		cut = new NioPeerConnector(clock, torrentClient, 2);
 		cut.enqueuePeer(infoOne);
@@ -187,6 +200,9 @@ class NioPeerConnectorTest {
 	public void testGetConnectingCount() {
 		PeerConnectInfo infoOne = mock(PeerConnectInfo.class);
 		PeerConnectInfo infoTwo = mock(PeerConnectInfo.class);
+
+		when(infoOne.getTorrent()).thenReturn(torrent);
+		when(infoTwo.getTorrent()).thenReturn(torrent);
 
 		cut = new NioPeerConnector(torrentClient, 4);
 

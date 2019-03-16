@@ -6,8 +6,6 @@ import java.nio.channels.Selector;
 import java.time.Clock;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -15,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.network.connector.PeerConnectionQueue;
 import org.johnnei.javatorrent.internal.network.connector.PeerConnectionState;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.network.socket.ISocket;
@@ -34,7 +33,7 @@ public class NioPeerConnector implements IPeerConnector {
 
 	private final int maxConcurrentConnecting;
 
-	private final Queue<PeerConnectionState> connectQueue;
+	private final PeerConnectionQueue connectQueue;
 
 	private final Selector connected;
 
@@ -53,7 +52,7 @@ public class NioPeerConnector implements IPeerConnector {
 		this.clock = clock;
 		this.torrentClient = torrentClient;
 		this.maxConcurrentConnecting = maxConcurrentConnecting;
-		connectQueue = new ConcurrentLinkedQueue<>();
+		connectQueue = new PeerConnectionQueue();
 		try {
 			connected = Selector.open();
 		} catch (IOException e) {
