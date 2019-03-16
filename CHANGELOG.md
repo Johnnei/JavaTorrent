@@ -10,6 +10,7 @@ the executor threads.
 - [JBT-102](https://jira.johnnei.org/browse/JBT-102): `ISocket` has been remodelled around Channels instead of Sockets.
 - [JBT-104](https://jira.johnnei.org/browse/JBT-104): `BitTorrentSocket` is now always a socket which has passed the handshake process.
 - [JBT-99](https://jira.johnnei.org/browse/JBT-99): Peer IO is now processed until it can no longer be executed without blocking.
+- [JBT-106](https://jira.johnnei.org/browse/JBT-106): Unsupported tracker protocols no longer throw an exception but will log a warning and return `Optional#empty`
 
 ## Deprecated
 - [JBT-102](https://jira.johnnei.org/browse/JBT-104): `Peer#getBitTorrentSocket()` is now deprecated. The `BitTorrentSocket` will become an internal class.

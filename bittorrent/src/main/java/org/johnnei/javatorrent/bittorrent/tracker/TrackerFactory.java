@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TrackerFactory {
 
@@ -50,7 +51,8 @@ public class TrackerFactory {
 		String[] trackerParts = trackerUrl.split("://", 2);
 		final String protocol = trackerParts[0];
 		if (!trackerSuppliers.containsKey(protocol)) {
-			throw new IllegalArgumentException(String.format("Unsupported protocol: %s", protocol));
+			LOGGER.warn("Unsupported protocol: {}", protocol);
+			return Optional.empty();
 		}
 
 		try {
@@ -58,7 +60,7 @@ public class TrackerFactory {
 			trackerInstances.put(trackerUrl, tracker);
 			return Optional.of(tracker);
 		} catch (TrackerException e) {
-			LOGGER.warn(String.format("Failed create new tracker for url: %s", trackerUrl), e);
+			LOGGER.warn("Failed create new tracker for url: {}", trackerUrl, e);
 			return Optional.empty();
 		}
 	}

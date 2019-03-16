@@ -1,18 +1,15 @@
 package org.johnnei.javatorrent.bittorrent.tracker;
 
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.utils.CheckedBiFunction;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -149,9 +146,22 @@ public class TrackerFactoryTest {
 		assertTrue(resultTwo.get() == result.get(), "Trackers should have been the same instance");
 	}
 
-	@ParameterizedTest
-	@MethodSource("incorrectProtocols")
-	public void testGetTrackerForInvalidUrl(String trackerUrl, String message) {
+	@Test
+	public void testGetTrackerForUnparsableUrl() {
+		TorrentClient torrentClientMock = mock(TorrentClient.class);
+		ITracker trackerMock = mock(ITracker.class);
+
+		TrackerFactory cut = new TrackerFactory.Builder()
+			.setTorrentClient(torrentClientMock)
+			.registerProtocol("udp", (url, client) -> trackerMock)
+			.build();
+
+		Exception e = assertThrows(IllegalArgumentException.class, () -> cut.getTrackerFor("not_a_valid_url"));
+		assertThat(e.getMessage(), containsString("protocol definition"));
+	}
+
+	@Test
+	public void testGetTrackerForUnsupportedProtocol() {
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
 		ITracker trackerMock = mock(ITracker.class);
 
@@ -160,15 +170,7 @@ public class TrackerFactoryTest {
 				.registerProtocol("udp", (url, client) -> trackerMock)
 				.build();
 
-		Exception e = assertThrows(IllegalArgumentException.class, () -> cut.getTrackerFor(trackerUrl));
-		assertThat(e.getMessage(), containsString(message));
-	}
-
-	public static Stream<Arguments> incorrectProtocols() {
-		return Stream.of(
-			Arguments.of("not_a_valid_url", "protocol definition"),
-			Arguments.of("http://example.com", "Unsupported protocol")
-		);
+		assertThat(cut.getTrackerFor("http://example.com").isPresent(), is(false));
 	}
 
 }
