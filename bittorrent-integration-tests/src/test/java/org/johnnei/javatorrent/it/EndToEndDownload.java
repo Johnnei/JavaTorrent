@@ -117,25 +117,6 @@ public abstract class EndToEndDownload {
 			.build();
 	}
 
-	private void downloadTestFile(File resultFile) throws Exception {
-		LOGGER.info("Downloading test files...");
-		OkHttpClient client = new OkHttpClient();
-		Request request = new Request.Builder()
-			.url("https://johnnei.org/files/gimp-2.8.16-setup-1.exe")
-			.build();
-		Response response = client.newCall(request).execute();
-
-		try (FileOutputStream outputStream = new FileOutputStream(resultFile)) {
-			InputStream inputStream = response.body().byteStream();
-
-			byte[] buffer = new byte[32768];
-			int readBytes;
-			while ((readBytes = inputStream.read(buffer)) > 0) {
-				outputStream.write(buffer, 0, readBytes);
-			}
-		}
-	}
-
 	@Test
 	public void testDownloadTorrent(@Folder Path tmp) throws Exception {
 		Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> LOGGER.error("Uncaught exception on thread: {}, Exception", thread, exception));
@@ -144,11 +125,10 @@ public abstract class EndToEndDownload {
 		File resultFile;
 
 		if (resultFileUrl != null) {
-			LOGGER.info("Found cached torrent output, using that. Location: {}", resultFileUrl);
+			LOGGER.info("Found torrent output. Location: {}", resultFileUrl);
 			resultFile = new File(resultFileUrl.toURI());
 		} else {
-			resultFile = tmp.resolve(EXECUTABLE_NAME).toFile();
-			downloadTestFile(resultFile);
+			throw new IllegalStateException("Missing torrent output file.");
 		}
 
 		LOGGER.info("Verifying torrent files to be the correct ones.");

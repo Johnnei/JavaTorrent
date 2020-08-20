@@ -2,6 +2,7 @@
 .project
 **/.settings/**
 *.iml
+.idea/
 
 *.class
 

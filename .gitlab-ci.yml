@@ -4,7 +4,7 @@ stages:
     - qa
     - deploy
 
-image: maven:3.5.2-jdk-8
+image: registry.johnnei.org:443/docker-images/maven:lts
 
 variables:
   MAVEN_OPTS: -Dmaven.repo.local=/cache/.repository
@@ -21,8 +21,10 @@ quicktests:
     artifacts:
       expire_in: 1 week
       paths:
-      - "**/target/jacoco.exec"
+      - "**/target/site/jacoco/jacoco.xml"
       - "**/target/surefire-reports/*.xml"
+      reports:
+        junit: "**/target/surefire-reports/*.xml"
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
@@ -33,13 +35,15 @@ integration-tests:
       expire_in: 1 week
       paths:
       - "**/target/*.log"
-      - "**/target/jacoco-it.exec"
+      - "**/target/site/jacoco-it/jacoco.xml"
       - "**/target/failsafe-reports/*.xml"
+      reports:
+        junit: "**/target/failsafe-reports/*.xml"
 
 # PR Analysis
 sonarqube:
     stage: qa
-    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.analysis.mode=issues -Dsonar.gitlab.analyse.commit=$CI_BUILD_REF -Dsonar.login=$SONAR_TOKEN"
+    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
     only: ["/^feature\\/.*$/"]
     dependencies: []
 
