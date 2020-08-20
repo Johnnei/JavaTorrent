@@ -1,19 +1,9 @@
 package org.johnnei.javatorrent.tracker.http;
 
-import java.net.InetSocketAddress;
-import java.util.List;
-
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedList;
@@ -23,44 +13,30 @@ import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
 import org.johnnei.javatorrent.internal.tracker.http.HttpTracker;
 import org.johnnei.javatorrent.network.OutStream;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
-import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.ExecutorServiceMock;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.net.InetSocketAddress;
+import java.util.List;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.johnnei.javatorrent.tracker.http.HttpTrackerCompatibilityIT.*;
 
 /**
  * Tests {@link HttpTracker}
  */
-public class HttpTrackerIT {
-
-	public static final Logger LOGGER = LoggerFactory.getLogger(HttpTrackerIT.class);
+public class HttpTrackerWithMockIT {
 
 	private WireMockServer wireMock = new WireMockServer(options().dynamicPort());
-
-	// @formatter:off
-	private final byte[] torrentHash = new byte[] {
-		(byte) 0x3d, (byte) 0xc9, (byte) 0x31, (byte) 0x40, (byte) 0xc6,
-		(byte) 0xa5, (byte) 0xa2, (byte) 0x21, (byte) 0x21, (byte) 0x89,
-		(byte) 0xf3, (byte) 0x2c, (byte) 0xb5, (byte) 0xa4, (byte) 0x8e,
-		(byte) 0x02, (byte) 0x46, (byte) 0x93, (byte) 0x0c, (byte) 0x8a
-	};
-
-	private final byte[] peerId = new byte [] {
-		       0x58, 0x58,        0x58,        0x58,        0x58,
-		       0x58, 0x58,        0x58,        0x58,        0x58,
-		       0x58, 0x58,        0x58,        0x58, (byte) 0x58,
-		(byte) 0x58, 0x58, (byte) 0x58, (byte) 0x58,        0x58
-	};
-	// @formatter:on
 
 	@AfterEach
 	public void tearDown() {
@@ -88,11 +64,11 @@ public class HttpTrackerIT {
 		BencodedList peerList = new BencodedList();
 
 		BencodedMap peerWithoutHost = new BencodedMap();
-		peerWithoutHost.put("peer id", new BencodedString(peerId));
+		peerWithoutHost.put("peer id", new BencodedString(PEER_ID));
 		peerWithoutHost.put("port", new BencodedInteger(123));
 
 		BencodedMap peerWithoutPort = new BencodedMap();
-		peerWithoutPort.put("peer id", new BencodedString(peerId));
+		peerWithoutPort.put("peer id", new BencodedString(PEER_ID));
 		peerWithoutPort.put("ip", new BencodedString("127.0.0.1"));
 
 		BencodedMap peerWithoutId = new BencodedMap();
@@ -125,7 +101,7 @@ public class HttpTrackerIT {
 		IPeerConnector peerConnectorMock = mock(IPeerConnector.class);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		when(torrentClientMock.getPeerId()).thenReturn(peerId);
+		when(torrentClientMock.getPeerId()).thenReturn(PEER_ID);
 		when(torrentClientMock.getDownloadPort()).thenReturn(27960);
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 		when(torrentClientMock.getPeerConnector()).thenReturn(peerConnectorMock);
@@ -133,7 +109,7 @@ public class HttpTrackerIT {
 		Torrent torrentMock = mock(Torrent.class);
 		Metadata metadataMock = mock(Metadata.class);
 		when(torrentMock.getMetadata()).thenReturn(metadataMock);
-		when(metadataMock.getHash()).thenReturn(torrentHash);
+		when(metadataMock.getHash()).thenReturn(TORRENT_HASH);
 
 		HttpTracker cut = new HttpTracker.Builder()
 			.setTorrentClient(torrentClientMock)
@@ -177,14 +153,14 @@ public class HttpTrackerIT {
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		when(torrentClientMock.getPeerId()).thenReturn(peerId);
+		when(torrentClientMock.getPeerId()).thenReturn(PEER_ID);
 		when(torrentClientMock.getDownloadPort()).thenReturn(27960);
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
 		Metadata metadataMock = mock(Metadata.class);
 		when(torrentMock.getMetadata()).thenReturn(metadataMock);
-		when(metadataMock.getHash()).thenReturn(torrentHash);
+		when(metadataMock.getHash()).thenReturn(TORRENT_HASH);
 
 		HttpTracker cut = new HttpTracker.Builder()
 			.setTorrentClient(torrentClientMock)
@@ -228,14 +204,14 @@ public class HttpTrackerIT {
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		when(torrentClientMock.getPeerId()).thenReturn(peerId);
+		when(torrentClientMock.getPeerId()).thenReturn(PEER_ID);
 		when(torrentClientMock.getDownloadPort()).thenReturn(27960);
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
 		Metadata metadataMock = mock(Metadata.class);
 		when(torrentMock.getMetadata()).thenReturn(metadataMock);
-		when(metadataMock.getHash()).thenReturn(torrentHash);
+		when(metadataMock.getHash()).thenReturn(TORRENT_HASH);
 
 		HttpTracker cut = new HttpTracker.Builder()
 			.setTorrentClient(torrentClientMock)
@@ -278,14 +254,14 @@ public class HttpTrackerIT {
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		when(torrentClientMock.getPeerId()).thenReturn(peerId);
+		when(torrentClientMock.getPeerId()).thenReturn(PEER_ID);
 		when(torrentClientMock.getDownloadPort()).thenReturn(27960);
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
 		Metadata metadataMock = mock(Metadata.class);
 		when(torrentMock.getMetadata()).thenReturn(metadataMock);
-		when(metadataMock.getHash()).thenReturn(torrentHash);
+		when(metadataMock.getHash()).thenReturn(TORRENT_HASH);
 
 		HttpTracker cut = new HttpTracker.Builder()
 			.setTorrentClient(torrentClientMock)
@@ -333,14 +309,14 @@ public class HttpTrackerIT {
 		);
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		when(torrentClientMock.getPeerId()).thenReturn(peerId);
+		when(torrentClientMock.getPeerId()).thenReturn(PEER_ID);
 		when(torrentClientMock.getDownloadPort()).thenReturn(27960);
 		when(torrentClientMock.getExecutorService()).thenReturn(new ExecutorServiceMock());
 
 		Torrent torrentMock = mock(Torrent.class);
 		Metadata metadataMock = mock(Metadata.class);
 		when(torrentMock.getMetadata()).thenReturn(metadataMock);
-		when(metadataMock.getHash()).thenReturn(torrentHash);
+		when(metadataMock.getHash()).thenReturn(TORRENT_HASH);
 
 		HttpTracker cut = new HttpTracker.Builder()
 			.setTorrentClient(torrentClientMock)
@@ -357,48 +333,5 @@ public class HttpTrackerIT {
 		assertEquals("Announce failed", cut.getStatus(), "Status should not have returned to idle");
 		verify(torrentClientMock, never()).getPeerConnector();
 	}
-
-	@Test
-	public void testComplianceArchLinuxTracker() throws Exception {
-		String trackerUrl = "http://tracker.archlinux.org:6969/announce";
-
-		LOGGER.info("Preparing Tracker instance");
-
-		ExecutorServiceMock executorServiceMock = new ExecutorServiceMock();
-
-		byte[] peerId = DummyEntity.createPeerId();
-		TorrentClient torrentClientMock = mock(TorrentClient.class);
-		when(torrentClientMock.getPeerId()).thenReturn(peerId);
-		when(torrentClientMock.getExecutorService()).thenReturn(executorServiceMock);
-
-		Torrent torrentMock = mock(Torrent.class);
-		Metadata metadataMock = mock(Metadata.class);
-		when(torrentMock.getMetadata()).thenReturn(metadataMock);
-		when(metadataMock.getHash()).thenReturn(torrentHash);
-
-		HttpTracker tracker = new HttpTracker.Builder()
-			.setTorrentClient(torrentClientMock)
-			.setUrl(trackerUrl)
-			.build();
-
-		LOGGER.info("Announcing with start event to tracker...");
-
-		tracker.addTorrent(torrentMock);
-		tracker.announce(torrentMock);
-
-		assertEquals("Idle", tracker.getStatus(), "Status should have returned to idle");
-
-		LOGGER.info("Announce has completed.");
-
-		tracker.getInfo(torrentMock).get().setEvent(TrackerEvent.EVENT_STOPPED);
-		LOGGER.info("Announcing with stopped event to tracker...");
-
-		tracker.announce(torrentMock);
-
-		assertEquals("Idle", tracker.getStatus(), "Status should have returned to idle");
-
-		LOGGER.info("Announce completed.");
-	}
-
 
 }
