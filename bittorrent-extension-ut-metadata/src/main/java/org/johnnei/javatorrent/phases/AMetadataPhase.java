@@ -5,17 +5,17 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
+import org.johnnei.javatorrent.internal.ut.metadata.MetadataChocking;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
-import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AMetadataPhase implements IDownloadPhase {
 
@@ -34,7 +34,7 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 
 	protected final File downloadFolderRoot;
 
-	private IChokingStrategy chokingStrategy;
+	private final IChokingStrategy chokingStrategy;
 
 	public AMetadataPhase(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
@@ -47,7 +47,7 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 
 		this.metadataFile = metadataExtension.getTorrentFile(torrent);
 		this.downloadFolderRoot = metadataExtension.getDownloadFolder();
-		chokingStrategy = new PermissiveStrategy();
+		chokingStrategy = new MetadataChocking();
 	}
 
 	@Override

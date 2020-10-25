@@ -19,7 +19,6 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
-import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.StringUtils;
 import org.johnnei.junit.jupiter.Folder;
@@ -151,13 +150,12 @@ public class PhasePreMetadataTest {
 	}
 
 	@Test
-	public void testGetChokingStrategy() throws Exception {
+	public void testGetChokingStrategy() {
 		// No interaction expected.
 		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
 		IChokingStrategy result = cut.getChokingStrategy();
 
 		assertNotNull(result, "Value can never be null");
-		assertTrue(result instanceof PermissiveStrategy, "Strategy should have been Permissive");
 	}
 
 }

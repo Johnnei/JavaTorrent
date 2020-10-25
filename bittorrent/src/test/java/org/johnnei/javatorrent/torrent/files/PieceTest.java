@@ -66,18 +66,20 @@ public class PieceTest {
 
 		Optional<Block> blockOptional = piece.getRequestBlock();
 		assertTrue(blockOptional.isPresent(), "Piece should have returned a block, but didn't");
-		assertTrue(piece.isStarted(), "Piece should be started but isn't");
+		assertFalse(piece.isStarted(), "Piece should be started but isn't");
 
 		assertEquals(0, blockOptional.get().getIndex(), "Incorrect piece has been returned");
 		assertEquals(5, blockOptional.get().getSize(), "Incorrect block size");
 		assertEquals(5, piece.getBlockSize(0), "Incorrect block size");
-		assertEquals(BlockStatus.Requested, piece.getBlockStatus(0), "Incorrect block status");
-		assertEquals(BlockStatus.Requested, blockOptional.get().getStatus(), "Incorrect block status");
+		assertEquals(BlockStatus.Needed, piece.getBlockStatus(0), "Incorrect block status");
+		assertEquals(BlockStatus.Needed, blockOptional.get().getStatus(), "Incorrect block status");
+		blockOptional.get().setStatus(BlockStatus.Requested);
 
 		for (int i = 1; i < piece.getBlockCount(); i++) {
 			blockOptional = piece.getRequestBlock();
 			assertTrue(blockOptional.isPresent(), "Piece should have returned a block, but didn't");
 			assertTrue(piece.isStarted(), "Piece should be started but isn't");
+			blockOptional.get().setStatus(BlockStatus.Requested);
 		}
 
 		assertFalse(piece.getRequestBlock().isPresent(), "Should not have returned a piece after all pieces have been requested");

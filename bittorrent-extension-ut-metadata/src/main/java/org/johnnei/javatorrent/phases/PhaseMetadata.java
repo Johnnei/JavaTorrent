@@ -57,8 +57,13 @@ public class PhaseMetadata extends AMetadataPhase {
 
 			Piece piece = pieceOptional.get();
 			while (piece.hasBlockWithStatus(BlockStatus.Needed) && peer.getFreeWorkTime() > 0) {
-				piece.getRequestBlock().ifPresent(block ->
-						peer.addBlockRequest(piece, block.getIndex() * MetadataFileSet.BLOCK_SIZE, block.getSize(), PeerDirection.Download));
+				piece.getRequestBlock()
+						.ifPresent(block -> {
+							if (peer.addBlockRequest(piece, block.getIndex() * MetadataFileSet.BLOCK_SIZE, block.getSize(), PeerDirection.Download)) {
+								block.setStatus(BlockStatus.Requested);
+							}
+						});
+
 			}
 		}
 	}

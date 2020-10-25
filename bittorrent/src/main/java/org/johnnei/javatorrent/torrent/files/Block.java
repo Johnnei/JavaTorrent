@@ -1,6 +1,10 @@
 package org.johnnei.javatorrent.torrent.files;
 
-public class Block {
+public final class Block {
+
+	public static Block copyWithStatus(Block original, BlockStatus newStatus) {
+		return new Block(original.index, original.size, newStatus);
+	}
 
 	/**
 	 * The index of this block within the piece
@@ -23,15 +27,21 @@ public class Block {
 	 * @param size The size in bytes of this block.
 	 */
 	public Block(int index, int size) {
+		this(index, size, BlockStatus.Needed);
+	}
+
+	private Block(int index, int size, BlockStatus status) {
 		this.index = index;
 		this.size = size;
-		this.status = BlockStatus.Needed;
+		this.status = status;
 	}
 
 	/**
 	 * Updates the status of the block.
 	 * @param status The new status of this block.
+	 * @deprecated Blocks are moving to become immutable use the copy factory {@link #copyWithStatus(Block, BlockStatus)} instead.
 	 */
+	@Deprecated
 	public void setStatus(BlockStatus status) {
 		this.status = status;
 	}

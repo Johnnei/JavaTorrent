@@ -311,13 +311,7 @@ public class Piece {
 	 * @return an unrequested block
 	 */
 	public Optional<Block> getRequestBlock() {
-		Optional<Block> block = blocks.stream().filter(p -> p.getStatus() == BlockStatus.Needed).findAny();
-
-		if (block.isPresent()) {
-			block.get().setStatus(BlockStatus.Requested);
-		}
-
-		return block;
+		return blocks.stream().filter(p -> p.getStatus() == BlockStatus.Needed).findAny();
 	}
 
 	/**

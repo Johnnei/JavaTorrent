@@ -192,17 +192,25 @@ public class Peer {
 	 * @param byteOffset The offset in bytes within the piece.
 	 * @param blockLength The amount of bytes requested.
 	 * @param type The direction of the request.
+	 * @return <code>true</code> when the block has been requested, otherwise <code>false</code>
 	 */
-	public void addBlockRequest(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
+	public boolean addBlockRequest(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
+		Client client = getClientByDirection(type);
+
+		if (client.isChoked()) {
+			return false;
+		}
+
 		Job job = createJob(piece, byteOffset, blockLength, type);
-		getClientByDirection(type).addJob(job);
+		client.addJob(job);
 
 		if (type != PeerDirection.Download) {
-			return;
+			return true;
 		}
 
 		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(this, piece, byteOffset, blockLength));
+		return true;
 	}
 
 	/**
