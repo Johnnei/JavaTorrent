@@ -11,8 +11,9 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentException;
 
 /**
- * The phase in which the torrent needs to wait to connect to peers. Upon handshake with the peers the ut_metadata extension will allow us to discover the
- * torrent file size. Once the torrent file size is known we can advance to the next phase and start downloading the torrent file.
+ * The phase in which the torrent needs to wait to connect to peers.
+ * Upon handshake with the peers the ut_metadata extension will allow us to discover the torrent file size.
+ * Once the torrent file size is known we can advance to the next phase and start downloading the torrent file.
  */
 public class PhasePreMetadata extends AMetadataPhase {
 

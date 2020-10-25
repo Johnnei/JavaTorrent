@@ -55,6 +55,7 @@ public class Client {
 
 	/**
 	 * Returns if the client is choked or not.
+	 * When a client is Choked no data transfer is expected to happen
 	 * @return <code>true</code> when the client is choked, otherwise <code>false</code>
 	 */
 	public boolean isChoked() {
@@ -63,7 +64,9 @@ public class Client {
 
 	/**
 	 * Returns if the client is interested or not.
+	 * When a client is interested it is expected to start requesting data when becoming unchoked.
 	 * @return <code>true</code> when the client is interested, otherwise <code>false</code>
+	 * @see #isChoked()
 	 */
 	public boolean isInterested() {
 		return isInterested;

@@ -102,7 +102,7 @@ public class PhaseMetadataTest {
 		IPieceSelector pieceSelectorMock = mock(IPieceSelector.class);
 		Piece pieceMockOne = mock(Piece.class);
 		Piece pieceMockTwo = mock(Piece.class);
-		Block blockMock = mock(Block.class);
+		Block blockMock = new Block(0, 14);
 
 		Peer peerWithoutExtensions = mock(Peer.class, "peerWithoutExtensions");
 		Peer peerWithoutUtMetadata = mock(Peer.class, "peerWithoutUtMetadata");
@@ -147,7 +147,7 @@ public class PhaseMetadataTest {
 		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
 		cut.process();
 
-		verify(peerWithThreeBlocks).addBlockRequest(pieceMockOne, 0, 0, PeerDirection.Download);
+		verify(peerWithThreeBlocks).addBlockRequest(pieceMockOne, 0, 14, PeerDirection.Download);
 	}
 
 	@Test

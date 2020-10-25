@@ -13,6 +13,8 @@ the executor threads.
 - [JBT-106](https://jira.johnnei.org/browse/JBT-106): Unsupported tracker protocols no longer throw an exception but will log a warning and return `Optional#empty`
 - [JBT-107](https://jira.johnnei.org/browse/JBT-107): UDP Trackers now support the common `/announce` suffix.
 - [JBT-116](https://jira.johnnei.org/browse/JBT-116): Connection queue has been given a priority strategy to (mostly) evenly split over torrents.
+- [JBT-117](https://jira.johnnei.org/browse/JBT-117): `Peer#addBlockRequest` now rejects when the peer is choked
+- [JBT-117](https://jira.johnnei.org/browse/JBT-117): Metadata phases now use a dedicated choking strategy to show interest into clients which have the metadata and the ut_metadata extension data
 
 ## Deprecated
 - [JBT-102](https://jira.johnnei.org/browse/JBT-104): `Peer#getBitTorrentSocket()` is now deprecated. The `BitTorrentSocket` will become an internal class.

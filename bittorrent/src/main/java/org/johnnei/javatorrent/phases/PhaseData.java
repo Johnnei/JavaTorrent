@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,9 @@ public class PhaseData implements IDownloadPhase {
 			}
 
 			final Block block = blockOptional.get();
-			peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download);
+			if (peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download)) {
+				block.setStatus(BlockStatus.Requested);
+			}
 		}
 	}
 
