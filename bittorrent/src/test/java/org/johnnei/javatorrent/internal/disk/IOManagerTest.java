@@ -11,7 +11,7 @@ import org.powermock.reflect.Whitebox;
 
 import org.johnnei.javatorrent.disk.IDiskJob;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -43,7 +43,7 @@ public class IOManagerTest {
 		await().atMost(1, TimeUnit.SECONDS).until(() -> {
 			cutLock.lock();
 			try {
-				cutLock.hasWaiters(cutCondition);
+				return cutLock.hasWaiters(cutCondition);
 			} finally {
 				cutLock.unlock();
 			}
@@ -66,7 +66,7 @@ public class IOManagerTest {
 		await().atMost(1, TimeUnit.SECONDS).until(() -> {
 			cutLock.lock();
 			try {
-				cutLock.hasWaiters(cutCondition);
+				return cutLock.hasWaiters(cutCondition);
 			} finally {
 				cutLock.unlock();
 			}

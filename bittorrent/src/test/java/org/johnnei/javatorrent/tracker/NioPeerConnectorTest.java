@@ -26,7 +26,7 @@ import org.johnnei.javatorrent.test.TestClock;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -119,7 +119,7 @@ class NioPeerConnectorTest {
 
 			cut.enqueuePeer(info);
 
-			await("The connection to be established.").atMost(10, TimeUnit.SECONDS).until(() -> {
+			await("The connection to be established.").atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
 				try {
 					SocketChannel channel = serverSocket.accept();
 					if (channel == null) {
@@ -132,7 +132,7 @@ class NioPeerConnectorTest {
 			});
 			await("Connection to be handed over to the handshake handler")
 				.atMost(10, TimeUnit.SECONDS)
-				.until(() -> verify(handshakeHandler).onConnectionEstablished(notNull(), eq(torrent.getMetadata().getHash())));
+				.untilAsserted(() -> verify(handshakeHandler).onConnectionEstablished(notNull(), eq(torrent.getMetadata().getHash())));
 		} finally {
 			if (tmpChannel != null) {
 				tmpChannel.close();

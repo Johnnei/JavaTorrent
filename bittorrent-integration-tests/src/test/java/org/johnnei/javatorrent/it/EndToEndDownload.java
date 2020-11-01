@@ -34,7 +34,7 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.junit.jupiter.Folder;
 import org.johnnei.junit.jupiter.TempFolderExtension;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
