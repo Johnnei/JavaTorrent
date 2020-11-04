@@ -7,13 +7,14 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.TorrentClientSettings;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.test.DummyEntity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,11 +48,14 @@ public class UtpModuleTest {
 
 	@Test
 	public void testCreateSocketFactory() throws ModuleBuildException {
-		UtpModule cut = new UtpModule.Builder().listenOn(DummyEntity.findAvailableUdpPort()).build();
+		UtpModule cut = new UtpModule.Builder().build();
 
 		ScheduledExecutorService scheduleServiceMock = mock(ScheduledExecutorService.class);
 		ScheduledFuture scheduledFuture = mock(ScheduledFuture.class);
 		TorrentClient clientMock = mock(TorrentClient.class);
+		TorrentClientSettings clientSettingsMock = mock(TorrentClientSettings.class);
+		when(clientSettingsMock.getAcceptingPort()).thenReturn(DummyEntity.findAvailableUdpPort());
+		when(clientMock.getSettings()).thenReturn(clientSettingsMock);
 		when(clientMock.getExecutorService()).thenReturn(scheduleServiceMock);
 		when(scheduleServiceMock.scheduleAtFixedRate(any(), eq(0L), eq(1L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);
 		when(scheduleServiceMock.scheduleWithFixedDelay(any(), eq(50L), eq(10L), eq(TimeUnit.MILLISECONDS))).thenReturn(scheduledFuture);

@@ -25,7 +25,7 @@ public class DownloadTorrentWithUtpIT extends EndToEndDownload {
 
 	protected TorrentClient.Builder createTorrentClient(CountDownLatch latch) throws Exception {
 		int port = DummyEntity.findAvailableUdpPort();
-		UtpModule utpModule = new UtpModule.Builder().listenOn(port).build();
+		UtpModule utpModule = new UtpModule.Builder().build();
 
 		return new TorrentClient.Builder()
 				// Disable incoming TCP connections, only expect UTP

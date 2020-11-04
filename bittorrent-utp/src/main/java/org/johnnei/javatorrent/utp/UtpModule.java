@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.TorrentClientSettings;
 import org.johnnei.javatorrent.internal.utp.UtpMultiplexer;
 import org.johnnei.javatorrent.internal.utp.UtpPeerConnectionAcceptor;
 import org.johnnei.javatorrent.internal.utp.UtpSocket;
@@ -20,7 +21,6 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.network.socket.ISocket;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.utils.Argument;
 
 /**
  * Module which allows for creating connections via uTP.
@@ -36,10 +36,7 @@ public class UtpModule implements IModule {
 
 	private ScheduledFuture<?> socketProcessorTask;
 
-	private int listeningPort;
-
-	private UtpModule(Builder builder) {
-		listeningPort = builder.listeningPort;
+	private UtpModule() {
 	}
 
 	@Override
@@ -65,7 +62,9 @@ public class UtpModule implements IModule {
 	@Override
 	public void onBuild(TorrentClient torrentClient) throws ModuleBuildException {
 		try {
-			multiplexer = new UtpMultiplexer(torrentClient, new UtpPeerConnectionAcceptor(torrentClient), new PacketReader(), listeningPort);
+			multiplexer = new UtpMultiplexer.Builder(torrentClient, new PacketReader())
+				.withConnectionAcceptor(new UtpPeerConnectionAcceptor(torrentClient))
+				.build();
 			socketProcessorTask = torrentClient.getExecutorService().scheduleAtFixedRate(multiplexer::updateSockets, 0, 1, TimeUnit.MILLISECONDS);
 		} catch (IOException e) {
 			throw new ModuleBuildException("Failed to create uTP Multiplexer.", e);
@@ -99,16 +98,14 @@ public class UtpModule implements IModule {
 
 	public static final class Builder {
 
-		private int listeningPort;
-
 		/**
 		 * Configures on which UDP port uTP connections will be accepted.
 		 * @param port The UDP port.
 		 * @return The updated builder (this).
+		 * @deprecated Relies on {@link TorrentClientSettings#getAcceptingPort()} instead
 		 */
+		@Deprecated
 		public Builder listenOn(int port) {
-			Argument.requireWithinBounds(port, 0, Short.MAX_VALUE + 1, () -> "Port must be a valid port (0 >= x < 2^16)");
-			listeningPort = port;
 			return this;
 		}
 
@@ -116,7 +113,7 @@ public class UtpModule implements IModule {
 		 * @return The newly created and configured UtpModule instance.
 		 */
 		public UtpModule build() {
-			return new UtpModule(this);
+			return new UtpModule();
 		}
 
 	}

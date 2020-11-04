@@ -3,6 +3,7 @@
 ## Added
 - [JBT-104](https://jira.johnnei.org/browse/JBT-104): `NioPeerConnector` is now available. This connector is optimized to run with out a dedicated thread but on
 the executor threads.
+- [JBT-110](https://jira.johnnei.org/browse/JBT-110): `TorrentClientSettings` is introduced on `TorrentClient` to separate client state from configuration
 
 ## Changed
 - [JBT-98](https://jira.johnnei.org/browse/JBT-98): The network layer has been rewritten to be event driven in favor of polling.
@@ -15,10 +16,15 @@ the executor threads.
 - [JBT-116](https://jira.johnnei.org/browse/JBT-116): Connection queue has been given a priority strategy to (mostly) evenly split over torrents.
 - [JBT-117](https://jira.johnnei.org/browse/JBT-117): `Peer#addBlockRequest` now rejects when the peer is choked
 - [JBT-117](https://jira.johnnei.org/browse/JBT-117): Metadata phases now use a dedicated choking strategy to show interest into clients which have the metadata and the ut_metadata extension data
+- [JBT-110](https://jira.johnnei.org/browse/JBT-110): `UtpModule` now reuses the download port set on the `TorrentClient`
 
 ## Deprecated
 - [JBT-102](https://jira.johnnei.org/browse/JBT-104): `Peer#getBitTorrentSocket()` is now deprecated. The `BitTorrentSocket` will become an internal class.
 Functionality will be replaced.
+- [JBT-110](https://jira.johnnei.org/browse/JBT-110): `UtpModule.Builder#listenOn(int)` now reuses the download port set on the `TorrentClient`
+
+## Fixed
+- [JBT-110](https://jira.johnnei.org/browse/JBT-110): Remote connections coming in through uTP now correctly get ignored when `isAcceptingConnections` is false.
 
 ## Removed
 - [JBT-102](https://jira.johnnei.org/browse/JBT-102): `BitTorrentSocket` has forgotten how to process handshakes.

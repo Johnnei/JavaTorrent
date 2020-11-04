@@ -1,11 +1,14 @@
 package org.johnnei.javatorrent.internal.utp;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -13,14 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.TorrentClientSettings;
 import org.johnnei.javatorrent.async.LoopingRunnable;
+import org.johnnei.javatorrent.internal.utils.CheckedSupplier;
 import org.johnnei.javatorrent.internal.utp.protocol.PacketType;
 import org.johnnei.javatorrent.internal.utp.protocol.UtpProtocolViolationException;
 import org.johnnei.javatorrent.internal.utp.protocol.packet.UtpPacket;
 import org.johnnei.javatorrent.internal.utp.stream.PacketReader;
 import org.johnnei.javatorrent.network.socket.ISocket;
 
-public class UtpMultiplexer {
+public class UtpMultiplexer implements Closeable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UtpMultiplexer.class);
 
@@ -40,20 +45,31 @@ public class UtpMultiplexer {
 
 	private final Future<?> poller;
 
-	public UtpMultiplexer(TorrentClient client, UtpPeerConnectionAcceptor connectionAcceptor, PacketReader packetReader, int port) throws IOException {
-		this.connectionAcceptor = connectionAcceptor;
-		this.packetReader = packetReader;
-		connectionAcceptorRunnable = new LoopingRunnable(connectionAcceptor);
-		connectionAcceptorThread = new Thread(connectionAcceptorRunnable, "uTP Connection Acceptor");
-		channel = DatagramChannel.open();
-		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		channel.bind(new InetSocketAddress(port));
-		channel.configureBlocking(false);
-		socketRegistry = new UtpSocketRegistry(channel);
-		connectionAcceptorThread.start();
-		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
+	private final TorrentClientSettings clientSettings;
 
-		poller = client.getExecutorService().scheduleWithFixedDelay(this::pollPackets, 50, 10, TimeUnit.MILLISECONDS);
+	public UtpMultiplexer(Builder builder) throws IOException {
+		this.connectionAcceptor = builder.connectionAcceptor;
+		this.packetReader = builder.packetReader;
+		this.clientSettings = builder.client.getSettings();
+
+		channel = builder.channelFactory.get();
+		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+		channel.bind(new InetSocketAddress(clientSettings.getAcceptingPort()));
+		channel.configureBlocking(false);
+		LOGGER.trace("Configured to listen on {}", channel.getLocalAddress());
+		socketRegistry = new UtpSocketRegistry(channel);
+
+		if (clientSettings.isAcceptingConnections()) {
+			connectionAcceptorRunnable = new LoopingRunnable(connectionAcceptor);
+			connectionAcceptorThread = new Thread(connectionAcceptorRunnable, "uTP Connection Acceptor");
+			connectionAcceptorThread.start();
+		} else {
+			connectionAcceptorRunnable = null;
+			connectionAcceptorThread = null;
+		}
+
+
+		poller = builder.client.getExecutorService().scheduleWithFixedDelay(this::pollPackets, 50, 10, TimeUnit.MILLISECONDS);
 	}
 
 	void pollPackets() {
@@ -74,22 +90,26 @@ public class UtpMultiplexer {
 
 	private void onPacketReceived(SocketAddress socketAddress, ByteBuffer buffer) {
 		try {
-			// Transform message
 			UtpPacket packet = packetReader.read(buffer);
-
-			// Retrieve socket
-			UtpSocket socket;
-			if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
-				LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
-				socket = socketRegistry.createSocket(socketAddress, packet);
-				connectionAcceptor.onReceivedConnection(socket);
-			} else {
-				socket = socketRegistry.getSocket(packet.getHeader().getConnectionId());
-			}
-
-			socket.onReceivedPacket(packet);
+			findSocketForPacket(socketAddress, packet)
+				.ifPresent(socket -> socket.onReceivedPacket(packet));
 		} catch (UtpProtocolViolationException e) {
 			LOGGER.trace("uTP protocol was violated.", e);
+		}
+	}
+
+	private Optional<UtpSocket> findSocketForPacket(SocketAddress socketAddress, UtpPacket packet) {
+		if (packet.getHeader().getType() == PacketType.SYN.getTypeField()) {
+			if (clientSettings.isAcceptingConnections()) {
+				LOGGER.debug("Received connection with id [{}]", Short.toUnsignedInt(packet.getHeader().getConnectionId()));
+				UtpSocket socket = socketRegistry.createSocket(socketAddress, packet);
+				connectionAcceptor.onReceivedConnection(socket);
+				return Optional.of(socket);
+			} else {
+				return Optional.empty();
+			}
+		} else {
+			return Optional.of(socketRegistry.getSocket(packet.getHeader().getConnectionId()));
 		}
 	}
 
@@ -112,13 +132,48 @@ public class UtpMultiplexer {
 	public void close() throws IOException {
 		poller.cancel(false);
 		channel.close();
-		connectionAcceptorRunnable.stop();
-		try {
-			connectionAcceptorThread.interrupt();
-			connectionAcceptorThread.join();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			LOGGER.warn("Interrupted while waiting for connection acceptor thread to shutdown.", e);
+		if (connectionAcceptorRunnable != null) {
+			connectionAcceptorRunnable.stop();
+			try {
+				connectionAcceptorThread.interrupt();
+				connectionAcceptorThread.join();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOGGER.warn("Interrupted while waiting for connection acceptor thread to shutdown.", e);
+			}
+		}
+	}
+
+	public static final class Builder {
+
+		private final TorrentClient client;
+
+		private final PacketReader packetReader;
+
+		private UtpPeerConnectionAcceptor connectionAcceptor;
+
+		private CheckedSupplier<DatagramChannel, IOException> channelFactory = DatagramChannel::open;
+
+		public Builder(TorrentClient client, PacketReader packetReader) {
+			this.client = client;
+			this.packetReader = packetReader;
+		}
+
+		public Builder withConnectionAcceptor(UtpPeerConnectionAcceptor connectionAcceptor) {
+			this.connectionAcceptor = connectionAcceptor;
+			return this;
+		}
+
+		public Builder withChannelFactory(CheckedSupplier<DatagramChannel, IOException> channelFactory) {
+			this.channelFactory = channelFactory;
+			return this;
+		}
+
+		public UtpMultiplexer build() throws IOException {
+			if (client.getSettings().isAcceptingConnections()) {
+				Objects.requireNonNull(connectionAcceptor, "Connection Acceptor is required when accepting connections");
+			}
+			return new UtpMultiplexer(this);
 		}
 	}
 }

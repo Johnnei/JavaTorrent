@@ -23,6 +23,7 @@ import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerFactory;
 import org.johnnei.javatorrent.disk.IDiskJob;
+import org.johnnei.javatorrent.internal.TorrentClientSettingsImpl;
 import org.johnnei.javatorrent.internal.disk.IOManager;
 import org.johnnei.javatorrent.internal.network.PeerIoHandler;
 import org.johnnei.javatorrent.internal.network.connector.BitTorrentHandshakeHandlerImpl;
@@ -69,8 +70,6 @@ public class TorrentClient {
 
 	private LoopingRunnable ioManagerRunner;
 
-	private int downloadPort;
-
 	private final byte[] extensionBytes;
 
 	private final byte[] peerId;
@@ -83,7 +82,10 @@ public class TorrentClient {
 
 	private PeerIoHandler peerIoHandler;
 
+	private TorrentClientSettings settings;
+
 	private TorrentClient(Builder builder) {
+		settings = builder.settingsBuilder.build();
 		peerDistributor = Objects.requireNonNull(builder.peerDistributor.apply(this), "Peer distributor is invalid.");
 		connectionDegradation = Objects.requireNonNull(builder.connectionDegradation, "Connection degradation is required to setup connections with peers.");
 		LOGGER.info("Configured connection types: {}", connectionDegradation);
@@ -108,7 +110,6 @@ public class TorrentClient {
 				.map(m -> String.format("%s (BEP %d)", m.getClass().getSimpleName(), m.getRelatedBep()))
 				.reduce((a, b) -> a + ", " + b).orElse(""));
 
-		downloadPort = builder.downloadPort;
 		extensionBytes = builder.extensionBytes;
 		peerId = createPeerId();
 		transactionId = new AtomicInteger(new Random().nextInt());
@@ -123,7 +124,7 @@ public class TorrentClient {
 		ioManagerThread.start();
 
 		torrentManager.start(this);
-		if (builder.acceptIncomingConnections) {
+		if (settings.isAcceptingConnections()) {
 			torrentManager.enableConnectionAcceptor();
 		}
 		peerConnector.start();
@@ -252,9 +253,11 @@ public class TorrentClient {
 	/**
 	 * Gets the port at which we are listening for peers
 	 * @return The port at which we are listening
+	 * @deprecated Use {@link TorrentClientSettings#getAcceptingPort()} instead.
 	 */
+	@Deprecated
 	public int getDownloadPort() {
-		return downloadPort;
+		return settings.getAcceptingPort();
 	}
 
 	/**
@@ -330,6 +333,13 @@ public class TorrentClient {
 		return handshakeHandler;
 	}
 
+	/**
+	 * @return The configuration of the Torrent Client
+	 */
+	public TorrentClientSettings getSettings() {
+		return settings;
+	}
+
 	public static class Builder {
 
 		private final MessageFactory.Builder messageFactoryBuilder;
@@ -350,11 +360,9 @@ public class TorrentClient {
 
 		private IRequestLimiter requestLimiter;
 
-		private boolean acceptIncomingConnections;
-
-		private int downloadPort;
-
 		private byte[] extensionBytes;
+
+		private TorrentClientSettingsImpl.Builder settingsBuilder = new TorrentClientSettingsImpl.Builder();
 
 		public Builder() {
 			messageFactoryBuilder = new MessageFactory.Builder();
@@ -396,7 +404,7 @@ public class TorrentClient {
 		 * @return this
 		 */
 		public Builder acceptIncomingConnections(boolean acceptIncomingConnections) {
-			this.acceptIncomingConnections = acceptIncomingConnections;
+			settingsBuilder.withAcceptingConnections(acceptIncomingConnections);
 			return this;
 		}
 
@@ -441,7 +449,7 @@ public class TorrentClient {
 		 * @return The modified instance
 		 */
 		public Builder setDownloadPort(int downloadPort) {
-			this.downloadPort = downloadPort;
+			settingsBuilder.withAcceptingPort(downloadPort);
 			return this;
 		}
 
