@@ -74,7 +74,7 @@ test deployment:
     - "echo $GPG_PRIVATE_KEY | base64 -d | gpg --import --batch"
     - "mkdir -p ~/.m2"
     - "cp $OSSRH_SETTINGS ~/.m2/settings.xml"
-    - "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
+    - "mvn -B -Prelease -pl \!bittorrent-integration-tests clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
   tags: [ "docker" ]
   dependencies: [ ]
   variables:
@@ -92,7 +92,7 @@ deploy to maven central:
     - "echo $GPG_PRIVATE_KEY | base64 -d | gpg --import --batch"
     - "mkdir -p ~/.m2"
     - "cp $OSSRH_SETTINGS ~/.m2/settings.xml"
-    - "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
+    - "mvn -B -Prelease -pl \!bittorrent-integration-tests clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
   environment:
     name: "MavenCentral"
     url: "https://search.maven.org/search?q=g:org.johnnei%20javatorrent"
