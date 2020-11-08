@@ -11,12 +11,14 @@ variables:
 
 # Compile the code, must succeed before we start testing.
 build:
+    tags: [ "docker" ]
     stage: build
     script: "mvn -B clean compile"
 
 # Run the quick test suite (Unit tests mostly)
 quicktests:
     stage: test
+    tags: [ "docker" ]
     script: "mvn -B test --fail-at-end"
     artifacts:
       expire_in: 1 week
@@ -29,6 +31,7 @@ quicktests:
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
     stage: test
+    tags: [ "docker" ]
     script: "mvn -B verify --fail-at-end -DskipUTs=true"
     artifacts:
       when: always
@@ -43,6 +46,7 @@ integration-tests:
 # Run a sonar analysis.
 sonarqube.johnnei.org:
     stage: qa
+    tags: [ "docker" ]
     script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
     only: ["develop"]
     dependencies:
@@ -51,8 +55,10 @@ sonarqube.johnnei.org:
 
 pages:
     stage: deploy
-    dependencies: []
     image: ruby:2.7.2
+    tags: [ "docker" ]
+    dependencies: []
+    needs: []
     script:
     - cd docs
     - bundle install
@@ -69,7 +75,7 @@ test deployment:
     - "mkdir -p ~/.m2"
     - "cp $OSSRH_SETTINGS ~/.m2/settings.xml"
     - "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
-  tags: [ "deploy" ]
+  tags: [ "docker" ]
   dependencies: [ ]
   variables:
     MAVEN_OPTS: ""
@@ -98,6 +104,6 @@ deploy to maven central:
       - "**/target/*.jar"
       - "**/target/*.jar.asc"
   when: manual
-  tags: [ "deploy" ]
+  tags: [ "docker" ]
   only:
     - tags
