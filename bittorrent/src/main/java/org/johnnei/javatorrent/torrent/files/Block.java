@@ -39,9 +39,7 @@ public final class Block {
 	/**
 	 * Updates the status of the block.
 	 * @param status The new status of this block.
-	 * @deprecated Blocks are moving to become immutable use the copy factory {@link #copyWithStatus(Block, BlockStatus)} instead.
 	 */
-	@Deprecated
 	public void setStatus(BlockStatus status) {
 		this.status = status;
 	}
