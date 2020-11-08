@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.0
+
 ## Added
 - [JBT-104](https://jira.johnnei.org/browse/JBT-104): `NioPeerConnector` is now available. This connector is optimized to run with out a dedicated thread but on
 the executor threads.

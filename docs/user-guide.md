@@ -37,8 +37,8 @@ UtpModule utpModule = new UtpModule.Builder()
 TorrentClient client = new TorrentClient.Builder()
     .registerModule(utpModule)
     .setConnectionDegradation(new ConnectionDegradation.Builder()
-        .registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), TcpSocket.class)
-        .registerConnectionType(TcpSocket.class, TcpSocket::new)
+        .registerDefaultConnectionType(utpModule.getUtpSocketClass(), utpModule.createSocketFactory(), NioTcpSocket.class)
+        .registerConnectionType(NioTcpSocket.class, NioTcpSocket::new)
         .build())
     // ...other configuration
     .build();

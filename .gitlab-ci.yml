@@ -40,13 +40,6 @@ integration-tests:
       reports:
         junit: "**/target/failsafe-reports/*.xml"
 
-# PR Analysis
-sonarqube:
-    stage: qa
-    script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
-    only: ["/^feature\\/.*$/"]
-    dependencies: []
-
 # Run a sonar analysis.
 sonarqube.johnnei.org:
     stage: qa
@@ -59,7 +52,7 @@ sonarqube.johnnei.org:
 pages:
     stage: deploy
     dependencies: []
-    image: ruby:2.3
+    image: ruby:2.7.2
     script:
     - cd docs
     - bundle install
@@ -70,31 +63,41 @@ pages:
         - public
 
 test deployment:
-    stage: test
-    script: "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
-    tags: ["deploy"]
-    dependencies: []
-    variables:
-      MAVEN_OPTS: ""
-    artifacts:
-      expire_in: 1 week
-      paths:
+  stage: test
+  script:
+    - "echo $GPG_PRIVATE_KEY | base64 -d | gpg --import --batch"
+    - "mkdir -p ~/.m2"
+    - "cp $OSSRH_SETTINGS ~/.m2/settings.xml"
+    - "mvn -B -Prelease clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
+  tags: [ "deploy" ]
+  dependencies: [ ]
+  variables:
+    MAVEN_OPTS: ""
+  artifacts:
+    expire_in: 1 week
+    paths:
       - "**/target/*.jar"
       - "**/target/*.jar.asc"
-    only: ["/^release\\/.*$/"]
+  only: [ "/^release\\/.*$/" ]
 
 deploy to maven central:
-    stage: deploy
-    script: "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
-    environment: MavenCentral
-    dependencies: []
-    variables:
-      MAVEN_OPTS: ""
-    artifacts:
-      paths:
+  stage: deploy
+  script:
+    - "echo $GPG_PRIVATE_KEY | base64 -d | gpg --import --batch"
+    - "mkdir -p ~/.m2"
+    - "cp $OSSRH_SETTINGS ~/.m2/settings.xml"
+    - "mvn -B -Prelease clean deploy -DskipTests -Dgpg.passphrase=$GPG_PASS"
+  environment:
+    name: "MavenCentral"
+    url: "https://search.maven.org/search?q=g:org.johnnei%20javatorrent"
+  dependencies: [ ]
+  variables:
+    MAVEN_OPTS: ""
+  artifacts:
+    paths:
       - "**/target/*.jar"
       - "**/target/*.jar.asc"
-    when: manual
-    tags: ["deploy"]
-    only:
-      - tags
+  when: manual
+  tags: [ "deploy" ]
+  only:
+    - tags

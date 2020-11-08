@@ -9,7 +9,6 @@ public interface TorrentClientSettings {
 	boolean isAcceptingConnections();
 
 	/**
-	 * Returns a non-empty value when {@link #isAcceptingConnections()}} is true.
 	 * @return The port on which the client should be listening for connections.
 	 */
 	int getAcceptingPort();
