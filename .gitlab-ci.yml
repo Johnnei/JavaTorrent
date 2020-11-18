@@ -53,6 +53,24 @@ sonarqube.johnnei.org:
       - quicktests
       - integration-tests
 
+site:
+  stage: qa
+  tags:
+    - docker
+  script:
+    - "mvn -B test-compile site:site"
+  only:
+    - develop
+  dependencies: []
+  needs:
+    - build
+  artifacts:
+    paths:
+      - "target/site/*"
+      - "target/site/css/*"
+      - "target/site/images/*"
+      - "target/site/images/logos/*"
+
 pages:
     stage: deploy
     image: ruby:2.7.2
