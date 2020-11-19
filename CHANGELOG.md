@@ -1,5 +1,8 @@
 # Unreleased
 
+## Changed
+- Library is now compiled against JDK 11
+
 # 0.7.0
 
 ## Added
