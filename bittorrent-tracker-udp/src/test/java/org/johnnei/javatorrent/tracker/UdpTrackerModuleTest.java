@@ -7,6 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.powermock.reflect.Whitebox;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.TorrentClientSettings;
 import org.johnnei.javatorrent.bittorrent.tracker.ITracker;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
 import org.johnnei.javatorrent.internal.tracker.udp.UdpTrackerSocket;
@@ -17,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class UdpTrackerModuleTest {
@@ -46,23 +49,20 @@ public class UdpTrackerModuleTest {
 	public void testOnBuildAndShutdown() throws Exception {
 		final int port = findAvailableUdpPort();
 		UdpTrackerModule cut = new UdpTrackerModule.Builder()
-				.setPort(port)
 				.build();
 
 		TorrentClient torrentClientMock = mock(TorrentClient.class);
-
-		cut.onBuild(torrentClientMock);
+		TorrentClientSettings settingsMock = mock(TorrentClientSettings.class);
+		when(torrentClientMock.getSettings()).thenReturn(settingsMock);
 
 		try {
-			assertEquals(port, (int) Whitebox.getInternalState(cut, "trackerPort"), "Incorrect port stored");
-			UdpTrackerSocket trackerSocket = Whitebox.getInternalState(cut, "socket");
-			DatagramSocket socket = Whitebox.getInternalState(trackerSocket, "udpSocket");
-
-			assertEquals(port, socket.getLocalPort(), "Incorrect port being used");
+			cut.onBuild(torrentClientMock);
 		} finally {
 			// Clean up the socket after the test to prevent retaining a bound socket.
 			cut.onShutdown();
 		}
+
+		verify(settingsMock, times(1)).getAcceptingPort();
 	}
 
 	@Test

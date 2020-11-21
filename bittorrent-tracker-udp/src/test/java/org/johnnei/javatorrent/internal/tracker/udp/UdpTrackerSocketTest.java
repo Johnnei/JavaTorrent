@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.TorrentClientSettings;
 import org.johnnei.javatorrent.bittorrent.tracker.TorrentInfo;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerAction;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerException;
@@ -78,11 +79,14 @@ public class UdpTrackerSocketTest {
 		testThread = Thread.currentThread();
 		testClock = new TestClock(Clock.systemDefaultZone());
 
+		TorrentClientSettings settings = mock(TorrentClientSettings.class);
+		when(settings.getAcceptingPort()).thenReturn(27500);
+		when(torrentClientMock.getSettings()).thenReturn(settings);
+
 		// Prepare context
 		readAttempt = 0;
 		cut = new UdpTrackerSocket.Builder()
 				.setTorrentClient(torrentClientMock)
-				.setSocketPort(27500)
 				.setSocketUtils(utilsMock)
 				.setClock(testClock)
 				.build();

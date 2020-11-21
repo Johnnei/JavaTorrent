@@ -67,7 +67,7 @@ the `javatorrent-bittorrent-tracker-udp` artifact.
 
 ```java
 TorrentClient = new TorrentClient.Builder()
-    .registerModule(new UdpTrackerModule.Builder().setPort(8661).build())
+    .registerModule(new UdpTrackerModule.Builder().build())
     .registerModule(new HttpTrackerModule())
     // ... other configuration
     .build();

@@ -2,6 +2,7 @@
 
 ## Changed
 - Library is now compiled against JDK 11
+- [JBT-120](https://jira.johnnei.org/browse/JBT-120): `UdpTrackerModule` now reads the incoming port from `TorrentClientSettings` in favor of duplicating it.
 
 # 0.7.0
 

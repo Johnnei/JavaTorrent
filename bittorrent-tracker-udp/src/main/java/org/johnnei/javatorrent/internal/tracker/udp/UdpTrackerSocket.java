@@ -78,7 +78,7 @@ public class UdpTrackerSocket implements Runnable {
 		torrentClient = builder.torrentClient;
 		socketUtils = builder.socketUtils;
 		try {
-			udpSocket = new DatagramSocket(builder.socketPort);
+			udpSocket = new DatagramSocket(torrentClient.getSettings().getAcceptingPort());
 			udpSocket.setSoTimeout((int) Duration.of(5, ChronoUnit.SECONDS).toMillis());
 		} catch (SocketException e) {
 			throw new TrackerException("Failed to create UDP Socket", e);
@@ -377,8 +377,6 @@ public class UdpTrackerSocket implements Runnable {
 
 		private UdpSocketUtils socketUtils;
 
-		private int socketPort;
-
 		private Clock clock;
 
 		public Builder() {
@@ -397,11 +395,6 @@ public class UdpTrackerSocket implements Runnable {
 
 		public Builder setSocketUtils(UdpSocketUtils socketUtils) {
 			this.socketUtils = socketUtils;
-			return this;
-		}
-
-		public Builder setSocketPort(int socketPort) {
-			this.socketPort = socketPort;
 			return this;
 		}
 

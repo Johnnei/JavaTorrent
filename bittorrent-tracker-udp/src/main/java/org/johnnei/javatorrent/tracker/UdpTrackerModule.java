@@ -11,14 +11,11 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.module.ModuleBuildException;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
-public class UdpTrackerModule implements IModule {
+public final class UdpTrackerModule implements IModule {
 
 	private UdpTrackerSocket socket;
 
-	private int trackerPort;
-
-	public UdpTrackerModule(Builder builder) {
-		trackerPort = builder.port;
+	private UdpTrackerModule() {
 	}
 
 	@Override
@@ -51,7 +48,6 @@ public class UdpTrackerModule implements IModule {
 			socket = new UdpTrackerSocket.Builder()
 					.setTorrentClient(torrentClient)
 					.setSocketUtils(new UdpSocketUtils())
-					.setSocketPort(trackerPort)
 					.build();
 			Thread thread = new Thread(socket, "UdpTracker Worker Thread");
 			thread.setDaemon(true);
@@ -68,15 +64,8 @@ public class UdpTrackerModule implements IModule {
 
 	public static final class Builder {
 
-		private int port;
-
-		public Builder setPort(int port) {
-			this.port = port;
-			return this;
-		}
-
 		public UdpTrackerModule build() {
-			return new UdpTrackerModule(this);
+			return new UdpTrackerModule();
 		}
 
 	}
