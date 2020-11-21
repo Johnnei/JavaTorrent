@@ -64,6 +64,9 @@
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
 
+    <!-- Fix SonarQube Scanner not detecting Java 11 from parent pom -->
+    <sonar.java.source>11</sonar.java.source>
+
     <!-- Define dependency versions -->
     <dependency.org.awaitility.awaitility>4.0.3</dependency.org.awaitility.awaitility>
     <dependency.com.squareup.okhttp3.okhttp>4.9.0</dependency.com.squareup.okhttp3.okhttp>
