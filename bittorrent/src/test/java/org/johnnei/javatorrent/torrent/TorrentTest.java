@@ -23,7 +23,6 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.BitTorrentSocket;
 import org.johnnei.javatorrent.test.DummyEntity;
 import org.johnnei.javatorrent.test.TestUtils;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.peer.Peer;
@@ -54,19 +53,6 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(TempFolderExtension.class)
 public class TorrentTest {
-
-	@Test
-	public void testSetGetPieceSelector() {
-		Torrent cut = DummyEntity.createUniqueTorrent();
-
-		IPieceSelector selector = (p) -> Optional.empty();
-
-		assertNotEquals(selector, cut.getPieceSelector(), "Selector should not be equal before setting");
-
-		cut.setPieceSelector(selector);
-
-		assertEquals(selector, cut.getPieceSelector(), "Selector should not be equal before setting");
-	}
 
 	@Test
 	public void testEquality() {

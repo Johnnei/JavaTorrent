@@ -11,15 +11,20 @@ import org.slf4j.LoggerFactory;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.internal.ut.metadata.MetadataChocking;
+import org.johnnei.javatorrent.module.MetadataInformation;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
+import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.NopPrioritizer;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.PiecePrioritizer;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
 
-public abstract class AMetadataPhase implements IDownloadPhase {
+public abstract class AbstractMetadataPhase implements IDownloadPhase {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(AMetadataPhase.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMetadataPhase.class);
 
 	protected Torrent torrent;
 
@@ -36,9 +41,12 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 
 	private final IChokingStrategy chokingStrategy;
 
-	public AMetadataPhase(TorrentClient torrentClient, Torrent torrent) {
+	private final PiecePrioritizer piecePrioritizer;
+
+	public AbstractMetadataPhase(TorrentClient torrentClient, Torrent torrent) {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
+		this.piecePrioritizer = new NopPrioritizer();
 
 		ExtensionModule extensionModule = torrentClient.getModule(ExtensionModule.class)
 				.orElseThrow(() -> new IllegalStateException("Metadata phase registered without registering Extension module."));
@@ -72,5 +80,16 @@ public abstract class AMetadataPhase implements IDownloadPhase {
 	@Override
 	public IChokingStrategy getChokingStrategy() {
 		return chokingStrategy;
+	}
+
+	@Override
+	public boolean isPeerSupportedForDownload(Peer peer) {
+		return peer.getModuleInfo(PeerExtensions.class).map(extensions -> extensions.hasExtension(UTMetadata.NAME)).orElse(false)
+			&& peer.getModuleInfo(MetadataInformation.class).filter(metadata -> metadata.getMetadataSize() > 0).isPresent();
+	}
+
+	@Override
+	public PiecePrioritizer getPiecePrioritizer() {
+		return piecePrioritizer;
 	}
 }

@@ -41,7 +41,6 @@ public class MessageChokeTest {
 		cut.process(peerMock);
 
 		verify(peerMock).setChoked(PeerDirection.Download, true);
-		verify(peerMock).discardAllBlockRequests();
 	}
 
 }

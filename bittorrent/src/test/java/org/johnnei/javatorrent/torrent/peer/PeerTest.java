@@ -224,7 +224,6 @@ public class PeerTest {
 		peer.setChoked(PeerDirection.Download, false);
 		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
 
-		assertEquals(1, peer.getWorkQueueSize(PeerDirection.Download), "Working queue should have increased");
 		verify(socketMock).enqueueMessage(any());
 	}
 
@@ -245,7 +244,6 @@ public class PeerTest {
 		peer.setChoked(PeerDirection.Download, true);
 		assertFalse(peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download));
 
-		assertEquals(0, peer.getWorkQueueSize(PeerDirection.Download), "Working queue should have increased");
 		verify(socketMock, never()).enqueueMessage(any());
 	}
 
@@ -286,15 +284,9 @@ public class PeerTest {
 		when(fileSetMock.getRequestFactory()).thenReturn(requestFactoryMock);
 
 		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.setChoked(PeerDirection.Download, false);
-		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
-		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Download);
-		assertEquals(2, peer.getWorkQueueSize(PeerDirection.Download), "Working queue should have two items");
-
 		peer.cancelBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
 
-		assertEquals(1, peer.getWorkQueueSize(PeerDirection.Download), "Working queue should have one item anymore");
-		verify(socketMock, times(3)).enqueueMessage(any());
+		verify(socketMock, times(1)).enqueueMessage(any());
 	}
 
 	@Test
@@ -322,37 +314,6 @@ public class PeerTest {
 		peer.cancelBlockRequest(pieceMock, 15, 15, PeerDirection.Upload);
 
 		assertEquals(1, peer.getWorkQueueSize(PeerDirection.Upload), "Working queue should have one item anymore");
-	}
-
-	@Test
-	public void testOnReceivedBlock() {
-		Torrent torrentMock = mock(Torrent.class);
-		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
-		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
-		TorrentFileSetRequestFactory requestFactoryMock = mock(TorrentFileSetRequestFactory.class);
-		Piece pieceMock = mock(Piece.class);
-
-		when(torrentMock.getFileSet()).thenReturn(fileSetMock);
-		when(fileSetMock.getBlockSize()).thenReturn(15);
-		when(fileSetMock.getBitfieldBytes()).thenReturn(new byte[1]);
-		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
-		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
-		when(pieceMock.getIndex()).thenReturn(0);
-		when(pieceMock.getFileSet()).thenReturn(fileSetMock);
-		when(fileSetMock.getRequestFactory()).thenReturn(requestFactoryMock);
-
-		Peer peer = DummyEntity.createPeer(socketMock, torrentMock);
-		peer.setChoked(PeerDirection.Download, false);
-		peer.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
-		peer.addBlockRequest(pieceMock, 30, 15, PeerDirection.Download);
-		assertEquals(2, peer.getWorkQueueSize(PeerDirection.Download), "Working queue should have two items");
-
-		peer.onReceivedBlock(pieceMock, 15);
-
-		assertEquals(1, peer.getWorkQueueSize(PeerDirection.Download), "Working queue should have one item anymore");
-		verify(requestFactoryMock).createRequestFor(peer, pieceMock, 15, 15);
-		verify(requestFactoryMock).createRequestFor(peer, pieceMock, 30, 15);
-		verify(socketMock, times(2)).enqueueMessage(any());
 	}
 
 	@Test
@@ -430,40 +391,6 @@ public class PeerTest {
 	}
 
 	@Test
-	public void testDiscardAllBlockRequests() {
-		Torrent torrentMock = mock(Torrent.class);
-		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
-		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
-		Piece pieceMock = mock(Piece.class);
-
-		when(fileSetMock.getBitfieldBytes()).thenReturn(new byte[1]);
-		when(fileSetMock.getBlockSize()).thenReturn(15);
-		when(pieceMock.getIndex()).thenReturn(0);
-		when(fileSetMock.getRequestFactory()).thenReturn(mock(TorrentFileSetRequestFactory.class));
-		when(pieceMock.getFileSet()).thenReturn(fileSetMock);
-		pieceMock.setBlockStatus(eq(0), eq(BlockStatus.Needed));
-		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Needed));
-
-		Peer cut = new Peer.Builder()
-				.setTorrent(torrentMock)
-				.setSocket(socketMock)
-				.setId(DummyEntity.createUniquePeerId())
-				.setExtensionBytes(DummyEntity.createRandomBytes(8))
-				.build();
-
-		cut.setChoked(PeerDirection.Download, false);
-		cut.addBlockRequest(pieceMock, 0, 15, PeerDirection.Download);
-		cut.addBlockRequest(pieceMock, 15, 15, PeerDirection.Download);
-
-		assertEquals(2, cut.getWorkQueueSize(PeerDirection.Download), "Working queue should have two items");
-
-		cut.discardAllBlockRequests();
-		assertEquals(0, cut.getWorkQueueSize(PeerDirection.Download), "Working queue should have two items");
-		verify(socketMock, times(2)).enqueueMessage(any());
-
-	}
-
-	@Test
 	public void testSetHasPiece() {
 		Torrent torrentMock = mock(Torrent.class);
 		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
@@ -518,42 +445,6 @@ public class PeerTest {
 
 		cut.setRequestLimit(7);
 		assertEquals(5, cut.getRequestLimit(), "Request limit should not have changed");
-	}
-
-	@Test
-	public void testGetFreeWorkTime() {
-		Torrent torrentMock = mock(Torrent.class);
-		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
-		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
-		TorrentFileSetRequestFactory requestMock = mock(TorrentFileSetRequestFactory.class);
-		Piece pieceMock = mock(Piece.class);
-
-		when(torrentMock.getFileSet()).thenReturn(fileSetMock);
-		when(fileSetMock.getBitfieldBytes()).thenReturn(new byte[1]);
-		when(fileSetMock.getBlockSize()).thenReturn(15);
-		when(fileSetMock.getRequestFactory()).thenReturn(requestMock);
-		when(pieceMock.getIndex()).thenReturn(0);
-		when(pieceMock.getFileSet()).thenReturn(fileSetMock);
-
-		Peer cut = new Peer.Builder()
-				.setTorrent(torrentMock)
-				.setSocket(socketMock)
-				.setId(DummyEntity.createUniquePeerId())
-				.setExtensionBytes(DummyEntity.createRandomBytes(8))
-				.build();
-
-		assertEquals(1, cut.getFreeWorkTime(), "Initial free work time incorrect");
-
-		cut.setChoked(PeerDirection.Download, false);
-		cut.addBlockRequest(pieceMock, 0, 15, PeerDirection.Download);
-
-		assertEquals(0, cut.getFreeWorkTime(), "Work time should have been affected by the download job.");
-		verify(socketMock).enqueueMessage(any());
-		verify(requestMock).createRequestFor(cut, pieceMock, 0, 15);
-
-		cut.setRequestLimit(5);
-
-		assertEquals(4, cut.getFreeWorkTime(), "Work time should have been affected by request limit.");
 	}
 
 	@Test

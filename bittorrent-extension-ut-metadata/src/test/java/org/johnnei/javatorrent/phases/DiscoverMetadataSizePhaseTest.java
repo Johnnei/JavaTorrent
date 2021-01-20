@@ -35,10 +35,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests {@link PhasePreMetadata}
+ * Tests {@link DiscoverMetadataSizePhase}
  */
 @ExtendWith(TempFolderExtension.class)
-public class PhasePreMetadataTest {
+public class DiscoverMetadataSizePhaseTest {
 
 	private File metadataFile;
 	private Torrent torrentMock;
@@ -47,7 +47,7 @@ public class PhasePreMetadataTest {
 
 	@BeforeEach
 	public void setUpTorrentClient(@Folder Path tmp) throws Exception {
-		metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
+		metadataFile = new File(DiscoverMetadataSizePhase.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
 		torrentMock = mock(Torrent.class);
 		metadataMock = mock(Metadata.class);
 		ExtensionModule extensionModuleMock = mock(ExtensionModule.class);
@@ -70,7 +70,7 @@ public class PhasePreMetadataTest {
 		when(peerMockOne.getModuleInfo(eq(MetadataInformation.class))).thenReturn(Optional.empty());
 		when(peerMockTwo.getModuleInfo(eq(MetadataInformation.class))).thenReturn(Optional.of(new MetadataInformation()));
 
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 
 		assertTrue(cut.isDone(), "Peer has information so it should have been done.");
 	}
@@ -79,7 +79,7 @@ public class PhasePreMetadataTest {
 	public void testIsDoneNoPeers() throws Exception {
 		when(torrentMock.getPeers()).thenReturn(Collections.emptyList());
 
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 
 		assertFalse(cut.isDone(), "No peers registered so can't be done.");
 	}
@@ -87,7 +87,7 @@ public class PhasePreMetadataTest {
 	@Test
 	public void testProcess() throws Exception {
 		// No interaction expected.
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.process();
 	}
 
@@ -97,7 +97,7 @@ public class PhasePreMetadataTest {
 				(byte) 0xc8, 0x36, (byte) 0x9f, 0x0b, (byte) 0xa4, (byte) 0xbf, 0x6c, (byte) 0xd8,        0x7f, (byte) 0xb1,
 				       0x3b, 0x34,        0x37, 0x78,        0x2e,        0x2c, 0x78,        0x20, (byte) 0xbb,        0x38 });
 
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
 		assertTrue(cut.foundMatchingFile, "Torrent file should have matched");
@@ -107,7 +107,7 @@ public class PhasePreMetadataTest {
 	public void testOnPhaseEnterMissingFile() throws Exception {
 		metadataFile = new File("this_file_should_never_exist_hopefully.torrent");
 
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
 		assertFalse(cut.foundMatchingFile, "Torrent file should not have matched");
@@ -117,7 +117,7 @@ public class PhasePreMetadataTest {
 	public void testOnPhaseEnterMismatchedHash() throws Exception {
 		when(metadataMock.getHash()).thenReturn(new byte[0]);
 
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
 		assertFalse(cut.foundMatchingFile, "Torrent file should not have matched");
@@ -139,7 +139,7 @@ public class PhasePreMetadataTest {
 		when(metadataMock.getHash()).thenReturn(hash);
 		when(metadataMock.getHashString()).thenReturn(StringUtils.byteArrayToString(hash));
 
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.isDone();
 		cut.onPhaseExit();
 
@@ -152,7 +152,7 @@ public class PhasePreMetadataTest {
 	@Test
 	public void testGetChokingStrategy() {
 		// No interaction expected.
-		PhasePreMetadata cut = new PhasePreMetadata(torrentClientMock, torrentMock);
+		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		IChokingStrategy result = cut.getChokingStrategy();
 
 		assertNotNull(result, "Value can never be null");

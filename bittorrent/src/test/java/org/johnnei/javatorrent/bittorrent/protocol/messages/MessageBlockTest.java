@@ -54,7 +54,6 @@ public class MessageBlockTest {
 		MessageBlock cut = new MessageBlock(5, 0x37FF, new byte[] {});
 		cut.process(peerMock);
 
-		verify(peerMock).onReceivedBlock(pieceMock, 0x37FF);
 		verify(peerMock).addStrike(1);
 	}
 
@@ -75,7 +74,6 @@ public class MessageBlockTest {
 		cut.process(peerMock);
 
 		verify(torrentMock).onReceivedBlock(fileSetMock, 5, 0x3800, new byte[] { 0x00 });
-		verify(peerMock).onReceivedBlock(pieceMock, 0x3800);
 		verify(peerMock).addStrike(-1);
 		verify(requestLimiterMock).onReceivedBlock(peerMock, cut);
 	}
@@ -97,7 +95,6 @@ public class MessageBlockTest {
 		cut.process(peerMock);
 
 		verify(torrentMock).onReceivedBlock(fileSetMock, 5, 0x3800, new byte[] { 0x00 });
-		verify(peerMock).onReceivedBlock(pieceMock, 0x3800);
 		verify(peerMock).addStrike(-1);
 	}
 

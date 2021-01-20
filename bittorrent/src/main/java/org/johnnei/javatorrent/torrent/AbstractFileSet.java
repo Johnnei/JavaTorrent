@@ -8,10 +8,11 @@ import java.util.stream.Stream;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.torrent.fileset.Fileset;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
 
-public abstract class AbstractFileSet {
+public abstract class AbstractFileSet implements Fileset {
 
 	/**
 	 * The pieces which contain all the information to complete the downloading of the files.

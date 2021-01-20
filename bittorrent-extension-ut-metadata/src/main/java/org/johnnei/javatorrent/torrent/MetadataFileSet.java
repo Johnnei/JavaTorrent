@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import org.johnnei.javatorrent.internal.torrent.MetadataFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
 
 public class MetadataFileSet extends AbstractFileSet {
@@ -34,6 +35,11 @@ public class MetadataFileSet extends AbstractFileSet {
 		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile, 1));
 		this.pieces = new ArrayList<>(1);
 		this.pieces.add(new Piece(this, torrent.getMetadata().getHash(), 0, fileSize, BLOCK_SIZE));
+	}
+
+	@Override
+	public boolean hasPiece(Peer peer, int pieceIndex) {
+		return true;
 	}
 
 	@Override

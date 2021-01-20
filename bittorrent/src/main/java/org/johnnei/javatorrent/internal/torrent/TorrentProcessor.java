@@ -5,11 +5,18 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.internal.torrent.selection.PieceSelectionHandler;
+import org.johnnei.javatorrent.internal.torrent.selection.PieceSelectionState;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
 import org.johnnei.javatorrent.phases.IDownloadPhase;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
+import org.johnnei.javatorrent.torrent.PeerStateAccess;
 import org.johnnei.javatorrent.torrent.Torrent;
+import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +24,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A state machine wrapped around the torrent
  */
-class TorrentProcessor {
+class TorrentProcessor implements PeerStateAccess {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TorrentProcessor.class);
 
@@ -31,6 +38,8 @@ class TorrentProcessor {
 
 	private IDownloadPhase downloadPhase;
 
+	private PieceSelectionHandler pieceSelectionHandler;
+
 	private Collection<ScheduledFuture<?>> scheduledTasks;
 
 	public TorrentProcessor(TorrentManager torrentManager, TrackerManager trackerManager, TorrentClient torrentClient, Torrent torrent) {
@@ -41,7 +50,7 @@ class TorrentProcessor {
 		scheduledTasks = new ArrayList<>(3);
 
 		downloadPhase = torrentClient.getPhaseRegulator().createInitialPhase(torrentClient, torrent);
-		downloadPhase.onPhaseEnter();
+		doPhaseEnter();
 
 		scheduledTasks.add(torrentClient.getExecutorService().scheduleAtFixedRate(this::updateTorrentState, 0, 250, TimeUnit.MILLISECONDS));
 		scheduledTasks.add(torrentClient.getExecutorService().scheduleAtFixedRate(this::updateChokingStates, 1, 10, TimeUnit.SECONDS));
@@ -72,7 +81,7 @@ class TorrentProcessor {
 				if (newPhase.isPresent()) {
 					LOGGER.info("Torrent transitioning from {} to {}", downloadPhase, newPhase.get());
 					downloadPhase = newPhase.get();
-					downloadPhase.onPhaseEnter();
+					doPhaseEnter();
 				} else {
 					LOGGER.info("Torrent ended from {}", downloadPhase);
 					shutdownTorrent();
@@ -81,6 +90,7 @@ class TorrentProcessor {
 			}
 
 			downloadPhase.process();
+			pieceSelectionHandler.updateState();
 		} catch (Exception e) {
 			LOGGER.error("Failed to update torrent state", e);
 			shutdownTorrent();
@@ -93,6 +103,25 @@ class TorrentProcessor {
 		}
 
 		torrentManager.removeTorrent(torrent);
+	}
+
+	@Override
+	public int getPendingBlocks(Peer peer, PeerDirection direction) {
+		if (direction == PeerDirection.Upload) {
+			return peer.getWorkQueueSize(PeerDirection.Upload);
+		} else {
+			return pieceSelectionHandler.getBlockQueueFor(peer);
+		}
+	}
+
+	private void doPhaseEnter() {
+		downloadPhase.onPhaseEnter();
+		Supplier<Optional<AbstractFileSet>> fileSetSupplier = () -> downloadPhase.getFileSet();
+		pieceSelectionHandler = new PieceSelectionHandler(
+			fileSetSupplier,
+			downloadPhase.getPiecePrioritizer(),
+			new PieceSelectionState(torrent, downloadPhase::isPeerSupportedForDownload, fileSetSupplier)
+		);
 	}
 
 }

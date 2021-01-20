@@ -60,7 +60,6 @@ public class MessageRejectTest {
 		cut.process(peerMock);
 
 		verify(pieceMock).setBlockStatus(5, BlockStatus.Needed);
-		verify(peerMock).onReceivedBlock(pieceMock, 5);
 	}
 
 	@Test

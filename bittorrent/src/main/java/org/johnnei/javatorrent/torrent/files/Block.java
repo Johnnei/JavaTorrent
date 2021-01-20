@@ -1,5 +1,7 @@
 package org.johnnei.javatorrent.torrent.files;
 
+import java.util.Objects;
+
 public final class Block {
 
 	public static Block copyWithStatus(Block original, BlockStatus newStatus) {
@@ -66,6 +68,25 @@ public final class Block {
 	 */
 	public int getIndex() {
 		return index;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		Block block = (Block) o;
+		return index == block.index && size == block.size && status == block.status;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(index, size, status);
 	}
 
 	public String toString() {

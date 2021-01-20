@@ -8,6 +8,7 @@ import org.johnnei.javatorrent.internal.torrent.TorrentFileSetRequestFactory;
 import org.johnnei.javatorrent.internal.torrent.peer.Bitfield;
 import org.johnnei.javatorrent.torrent.files.Piece;
 import org.johnnei.javatorrent.torrent.fileset.FileEntry;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.MathUtils;
 
@@ -69,6 +70,11 @@ public class TorrentFileSet extends AbstractFileSet {
 	public void setHavingPiece(int pieceIndex) {
 		super.setHavingPiece(pieceIndex);
 		bitfield.havePiece(pieceIndex);
+	}
+
+	@Override
+	public boolean hasPiece(Peer peer, int pieceIndex) {
+		return peer.hasPiece(pieceIndex);
 	}
 
 	private int getBitfieldSize() {

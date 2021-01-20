@@ -19,8 +19,6 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.MetadataSelect;
 import org.johnnei.javatorrent.torrent.files.Block;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
@@ -41,10 +39,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests {@link PhaseMetadata}
+ * Tests {@link DownloadMetadataPhase}
  */
 @ExtendWith(TempFolderExtension.class)
-public class PhaseMetadataTest {
+public class DownloadMetadataPhaseTest {
 
 	private static final byte[] TORRENT_FILE_HASH = new byte[] {
 			(byte) 0xc8,        0x36, (byte) 0x9f,        0x0b, (byte) 0xa4,
@@ -61,7 +59,7 @@ public class PhaseMetadataTest {
 	@BeforeEach
 	public void setUpTorrentClient(@Folder Path tmp) throws Exception {
 		if (metadataFile == null) {
-			metadataFile = new File(PhasePreMetadata.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
+			metadataFile = new File(DiscoverMetadataSizePhase.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
 		}
 		torrentMock = mock(Torrent.class);
 		metadataMock = mock(Metadata.class);
@@ -83,7 +81,7 @@ public class PhaseMetadataTest {
 		when(metadataMock.getFileSet()).thenReturn(Optional.of(metadataFileSetMock));
 		when(metadataFileSetMock.isDone()).thenReturn(true);
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 
 		assertTrue(cut.isDone(), "Torrent file should have been marked done");
 	}
@@ -92,62 +90,9 @@ public class PhaseMetadataTest {
 	public void testIsDoneMissingMetadata() throws Exception {
 		when(metadataMock.getFileSet()).thenReturn(Optional.empty());
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 
 		assertFalse(cut.isDone(), "Torrent file should have been marked done");
-	}
-
-	@Test
-	public void testProcess() throws Exception {
-		IPieceSelector pieceSelectorMock = mock(IPieceSelector.class);
-		Piece pieceMockOne = mock(Piece.class);
-		Piece pieceMockTwo = mock(Piece.class);
-		Block blockMock = new Block(0, 14);
-
-		Peer peerWithoutExtensions = mock(Peer.class, "peerWithoutExtensions");
-		Peer peerWithoutUtMetadata = mock(Peer.class, "peerWithoutUtMetadata");
-		Peer peerWithEmptyPiece = mock(Peer.class, "peerWithEmptyPiece");
-		Peer peerWithThreeBlocks = mock(Peer.class, "peerWithThreeBlocks");
-		Peer peerWithOneBlock = mock(Peer.class, "peerWithOneBlock");
-		Peer peerWithStolenBlock = mock(Peer.class, "peerWithStolenBlock");
-
-		PeerExtensions extensionWithoutUtMetadata = mock(PeerExtensions.class);
-		PeerExtensions extensionWithUtMetadata = mock(PeerExtensions.class);
-
-		when(torrentMock.getPeers())
-				.thenReturn(
-						asList(peerWithoutExtensions, peerWithoutUtMetadata, peerWithEmptyPiece, peerWithThreeBlocks, peerWithOneBlock, peerWithStolenBlock)
-				);
-		when(torrentMock.getPieceSelector()).thenReturn(pieceSelectorMock);
-
-		when(peerWithoutExtensions.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.empty());
-		when(peerWithoutUtMetadata.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionWithoutUtMetadata));
-		when(peerWithEmptyPiece.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionWithUtMetadata));
-		when(peerWithThreeBlocks.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionWithUtMetadata));
-		when(peerWithOneBlock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionWithUtMetadata));
-		when(peerWithStolenBlock.getModuleInfo(PeerExtensions.class)).thenReturn(Optional.of(extensionWithUtMetadata));
-
-		when(extensionWithoutUtMetadata.hasExtension(UTMetadata.NAME)).thenReturn(false);
-		when(extensionWithUtMetadata.hasExtension(UTMetadata.NAME)).thenReturn(true);
-
-		when(pieceSelectorMock.getPieceForPeer(peerWithEmptyPiece)).thenReturn(Optional.empty());
-		when(pieceSelectorMock.getPieceForPeer(peerWithThreeBlocks)).thenReturn(Optional.of(pieceMockOne));
-		when(pieceSelectorMock.getPieceForPeer(peerWithOneBlock)).thenReturn(Optional.of(pieceMockTwo));
-		when(pieceSelectorMock.getPieceForPeer(peerWithStolenBlock)).thenReturn(Optional.of(pieceMockTwo));
-
-		when(pieceMockOne.hasBlockWithStatus(BlockStatus.Needed)).thenReturn(true, false);
-		when(pieceMockTwo.hasBlockWithStatus(BlockStatus.Needed)).thenReturn(true, false);
-		when(peerWithThreeBlocks.getFreeWorkTime()).thenReturn(1);
-		when(peerWithOneBlock.getFreeWorkTime()).thenReturn(0);
-		when(peerWithStolenBlock.getFreeWorkTime()).thenReturn(1);
-
-		when(pieceMockOne.getRequestBlock()).thenReturn(Optional.of(blockMock));
-		when(pieceMockTwo.getRequestBlock()).thenReturn(Optional.empty());
-
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
-		cut.process();
-
-		verify(peerWithThreeBlocks).addBlockRequest(pieceMockOne, 0, 14, PeerDirection.Download);
 	}
 
 	@Test
@@ -158,7 +103,7 @@ public class PhaseMetadataTest {
 		when(metadataMock.getFileEntries()).thenReturn(Collections.emptyList());
 		when(metadataMock.getPieceHashes()).thenReturn(Collections.emptyList());
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 		cut.onPhaseExit();
 
 		ArgumentCaptor<byte[]> bufferCapture = ArgumentCaptor.forClass(byte[].class);
@@ -170,12 +115,11 @@ public class PhaseMetadataTest {
 
 	@Test
 	public void testOnPhaseEnter() throws Exception {
-		torrentMock.setPieceSelector(isA(MetadataSelect.class));
 		when(metadataMock.getHash()).thenReturn(new byte[] {
 				(byte) 0xc8, 0x36, (byte) 0x9f, 0x0b, (byte) 0xa4, (byte) 0xbf, 0x6c, (byte) 0xd8,        0x7f, (byte) 0xb1,
 				0x3b, 0x34,        0x37, 0x78,        0x2e,        0x2c, 0x78,        0x20, (byte) 0xbb,        0x38 });
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 
 		assertTrue(cut.foundMatchingFile, "Torrent file should have matched");
@@ -189,11 +133,9 @@ public class PhaseMetadataTest {
 
 		when(metadataMock.getFileSet()).thenReturn(Optional.empty());
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
 		boolean isDone = cut.isDone();
-
-		verify(torrentMock).setPieceSelector(isA(MetadataSelect.class));
 
 		assertFalse(cut.foundMatchingFile, "Torrent file should not have matched");
 		assertFalse(isDone, "Torrent file should not have been marked done");
@@ -203,10 +145,8 @@ public class PhaseMetadataTest {
 	public void testOnPhaseEnterMismatchedHash() throws Exception {
 		when(metadataMock.getHash()).thenReturn(new byte[0]);
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
-
-		verify(torrentMock).setPieceSelector(isA(MetadataSelect.class));
 
 		assertFalse(cut.foundMatchingFile, "Torrent file should not have matched");
 	}
@@ -215,7 +155,7 @@ public class PhaseMetadataTest {
 	public void testOnPhaseExitDoNothingWhenPreDownloaded() throws Exception {
 		when(torrentMock.isDownloadingMetadata()).thenReturn(false);
 
-		PhaseMetadata cut = new PhaseMetadata(torrentClientMock, torrentMock);
+		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 		cut.onPhaseExit();
 
 		verify(torrentMock).isDownloadingMetadata();

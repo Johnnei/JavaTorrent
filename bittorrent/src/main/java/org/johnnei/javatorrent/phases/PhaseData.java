@@ -1,26 +1,21 @@
 package org.johnnei.javatorrent.phases;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.tracker.TrackerEvent;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentException;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.algos.choking.PermissiveStrategy;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
-import org.johnnei.javatorrent.torrent.files.Block;
-import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.AvailabilityPrioritizer;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.PiecePrioritizer;
 import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
 /**
  * The download phase in which the actual torrent files will be downloaded.
@@ -35,6 +30,8 @@ public class PhaseData implements IDownloadPhase {
 
 	private final IChokingStrategy chokingStrategy;
 
+	private final PiecePrioritizer piecePrioritizer;
+
 	/**
 	 * Creates a new Data Phase for the given torrent.
 	 * @param torrentClient The client used to notify trackers.
@@ -44,6 +41,7 @@ public class PhaseData implements IDownloadPhase {
 		this.torrentClient = torrentClient;
 		this.torrent = torrent;
 		chokingStrategy = new PermissiveStrategy();
+		piecePrioritizer = new AvailabilityPrioritizer();
 	}
 
 	@Override
@@ -53,37 +51,11 @@ public class PhaseData implements IDownloadPhase {
 
 	@Override
 	public void process() {
-		getRelevantPeers(torrent.getPeers()).forEach(peer -> {
-			while (peer.getFreeWorkTime() > 0) {
-				Optional<Piece> piece = torrent.getPieceSelector().getPieceForPeer(peer);
-				if (piece.isPresent()) {
-					requestBlocksOfPiece(peer, piece.get());
-				} else {
-					// Stop processing for this peer when no more pieces are available.
-					break;
-				}
-			}
-		});
-	}
-
-	private void requestBlocksOfPiece(Peer peer, Piece piece) {
-		while (peer.getFreeWorkTime() > 0) {
-			Optional<Block> blockOptional = piece.getRequestBlock();
-			if (!blockOptional.isPresent()) {
-				break;
-			}
-
-			final Block block = blockOptional.get();
-			if (peer.addBlockRequest(piece, torrent.getFileSet().getBlockSize() * block.getIndex(), block.getSize(), PeerDirection.Download)) {
-				block.setStatus(BlockStatus.Requested);
-			}
-		}
 	}
 
 	@Override
 	public void onPhaseEnter() {
 		torrent.checkProgress();
-		torrent.setPieceSelector(new FullPieceSelect(torrent));
 		File downloadFolder = torrent.getFileSet().getDownloadFolder();
 
 		if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
@@ -97,16 +69,23 @@ public class PhaseData implements IDownloadPhase {
 		LOGGER.info("Download of {} completed", torrent);
 	}
 
-	Stream<Peer> getRelevantPeers(Collection<Peer> peers) {
-		Collection<Piece> neededPiece = torrent.getFileSet().getNeededPieces().collect(Collectors.toList());
-
-		return peers.stream()
-			.filter(peer -> !peer.isChoked(PeerDirection.Download))
-			.filter(peer -> neededPiece.stream().anyMatch(piece -> peer.hasPiece(piece.getIndex())));
-	}
-
 	@Override
 	public IChokingStrategy getChokingStrategy() {
 		return chokingStrategy;
+	}
+
+	@Override
+	public boolean isPeerSupportedForDownload(Peer peer) {
+		return true;
+	}
+
+	@Override
+	public Optional<AbstractFileSet> getFileSet() {
+		return Optional.of(torrent.getFileSet());
+	}
+
+	@Override
+	public PiecePrioritizer getPiecePrioritizer() {
+		return piecePrioritizer;
 	}
 }

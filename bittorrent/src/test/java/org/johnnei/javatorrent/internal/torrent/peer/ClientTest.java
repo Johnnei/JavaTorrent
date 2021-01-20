@@ -44,21 +44,18 @@ public class ClientTest {
 	public void testAddJob() {
 		Client cut = new Client();
 
-		Piece pieceMock = mock(Piece.class);
-		when(pieceMock.getIndex()).thenReturn(1);
-
-		cut.addJob(new Job(pieceMock, 2, 3));
+		Piece piece = new Piece(null, null, 2, 1, 1);
+		cut.addJob(new Job(piece, 2, 3));
 
 		assertEquals(1, cut.getQueueSize(), "Job did not get added");
 	}
 
 	@Test
 	public void testGetNextJob() {
-		Piece pieceMock = mock(Piece.class);
-		when(pieceMock.getIndex()).thenReturn(1);
+		Piece piece = new Piece(null, null, 1, 1, 1);
 
 		Client cut = new Client();
-		Job job = new Job(pieceMock, 2, 3);
+		Job job = new Job(piece, 2, 3);
 
 		cut.addJob(job);
 		Job returnedJob = cut.popNextJob();
@@ -69,14 +66,12 @@ public class ClientTest {
 
 	@Test
 	public void testRemoveJob() {
-		Piece pieceMockOne = mock(Piece.class);
-		Piece pieceMockTwo = mock(Piece.class);
-		when(pieceMockOne.getIndex()).thenReturn(1);
-		when(pieceMockTwo.getIndex()).thenReturn(2);
+		Piece pieceOne = new Piece(null, null, 1, 1, 1);
+		Piece pieceTwo = new Piece(null, null, 2, 1, 1);
 
 		Client cut = new Client();
-		Job jobOne = new Job(pieceMockOne, 2, 3);
-		Job jobTwo = new Job(pieceMockTwo, 3, 4);
+		Job jobOne = new Job(pieceOne, 2, 3);
+		Job jobTwo = new Job(pieceTwo, 3, 4);
 
 		cut.addJob(jobOne);
 		cut.addJob(jobTwo);
@@ -92,15 +87,13 @@ public class ClientTest {
 
 	@Test
 	public void testClearJobs() {
-		Piece pieceMockOne = mock(Piece.class);
-		Piece pieceMockTwo = mock(Piece.class);
-		when(pieceMockOne.getIndex()).thenReturn(1);
-		when(pieceMockTwo.getIndex()).thenReturn(2);
+		Piece pieceOne = new Piece(null, null, 1, 1, 1);
+		Piece pieceTwo = new Piece(null, null, 2, 1, 1);
 
 		Client cut = new Client();
 
-		cut.addJob(new Job(pieceMockOne, 2, 3));
-		cut.addJob(new Job(pieceMockTwo, 3, 4));
+		cut.addJob(new Job(pieceOne, 2, 3));
+		cut.addJob(new Job(pieceTwo, 3, 4));
 
 		assertEquals(2, cut.getQueueSize(), "Incorrect amount of jobs before clear");
 
@@ -111,14 +104,12 @@ public class ClientTest {
 
 	@Test
 	public void testGetJobs() {
-		Piece pieceMockOne = mock(Piece.class);
-		Piece pieceMockTwo = mock(Piece.class);
-		when(pieceMockOne.getIndex()).thenReturn(1);
-		when(pieceMockTwo.getIndex()).thenReturn(2);
+		Piece pieceOne = new Piece(null, null, 1, 1, 1);
+		Piece pieceTwo = new Piece(null, null, 2, 1, 1);
 
 		Client cut = new Client();
-		Job jobOne = new Job(pieceMockOne, 2, 3);
-		Job jobTwo = new Job(pieceMockTwo, 3, 4);
+		Job jobOne = new Job(pieceOne, 2, 3);
+		Job jobTwo = new Job(pieceTwo, 3, 4);
 
 		Collection<Job> jobs = new ArrayList<>();
 		jobs.add(jobOne);

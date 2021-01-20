@@ -27,8 +27,8 @@ import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.PeerConnectInfo;
 import org.johnnei.javatorrent.network.socket.NioTcpSocket;
 import org.johnnei.javatorrent.phases.PhaseData;
-import org.johnnei.javatorrent.phases.PhaseMetadata;
-import org.johnnei.javatorrent.phases.PhasePreMetadata;
+import org.johnnei.javatorrent.phases.DownloadMetadataPhase;
+import org.johnnei.javatorrent.phases.DiscoverMetadataSizePhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.test.DummyEntity;
@@ -95,8 +95,8 @@ public class DownloadMetadataIT {
 		TorrentClient clientWithLink = prepareTorrentClient(downloadFolderOne, downloadFolderOne)
 				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
-						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, PhaseMetadata.class)
-						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, PhaseDataCountDown.class)
+						.registerInitialPhase(DiscoverMetadataSizePhase.class, DiscoverMetadataSizePhase::new, DownloadMetadataPhase.class)
+						.registerPhase(DownloadMetadataPhase.class, DownloadMetadataPhase::new, PhaseDataCountDown.class)
 						.registerPhase(PhaseDataCountDown.class, (client, torrent) -> new PhaseDataCountDown(linkCompleteLatch, client, torrent))
 						.build())
 				.build();
@@ -106,8 +106,8 @@ public class DownloadMetadataIT {
 		TorrentClient clientWithTorrent = prepareTorrentClient(torrentFile.getParentFile(), downloadFolderTwo)
 				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
-						.registerInitialPhase(PhasePreMetadata.class, PhasePreMetadata::new, PhaseMetadata.class)
-						.registerPhase(PhaseMetadata.class, PhaseMetadata::new, PhaseDataCountDown.class)
+						.registerInitialPhase(DiscoverMetadataSizePhase.class, DiscoverMetadataSizePhase::new, DownloadMetadataPhase.class)
+						.registerPhase(DownloadMetadataPhase.class, DownloadMetadataPhase::new, PhaseDataCountDown.class)
 						.registerPhase(PhaseDataCountDown.class, (client, torrent) -> new PhaseDataCountDown(metadataInitalizedLatch, client, torrent))
 						.build())
 				.build();
