@@ -4,15 +4,19 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.utils.MathUtils;
 import org.johnnei.javatorrent.utils.StringUtils;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Represents a piece within a {@link AbstractFileSet}.
@@ -24,21 +28,25 @@ public class Piece {
 	/**
 	 * The files associated with this piece
 	 */
-	protected AbstractFileSet files;
+	@Deprecated(forRemoval = true)
+	protected final AbstractFileSet files;
+
 	/**
 	 * The index of this piece in the torrent
 	 */
-	private int index;
+	private final int index;
+
 	/**
 	 * All the blocks in this piece
 	 */
-	private List<Block> blocks;
+	private final List<Block> blocks;
+
 	/**
 	 * The next piece which will be dropped on hash fail
 	 */
 	private int hashFailCheck;
 
-	private byte[] expectedHash;
+	private final byte[] expectedHash;
 
 	/**
 	 * Creates a new piece.
@@ -84,6 +92,7 @@ public class Piece {
 	 * @return The read bytes or an exception
 	 * @throws IOException When the underlying IO causes an error.
 	 */
+	@Deprecated(forRemoval = true)
 	public byte[] loadPiece(int offset, int length) throws IOException {
 		byte[] pieceData = new byte[length];
 
@@ -127,6 +136,7 @@ public class Piece {
 	 *
 	 * @return hashMatched ? true : false
 	 */
+	@Deprecated(forRemoval = true)
 	public boolean checkHash() throws IOException {
 		final int pieceSize = getSize();
 
@@ -168,6 +178,7 @@ public class Piece {
 	 * @param blockIndex The index of the block to write
 	 * @param blockData The data of the block
 	 */
+	@Deprecated(forRemoval = true)
 	public void storeBlock(int blockIndex, byte[] blockData) throws IOException {
 		Block block = blocks.get(blockIndex);
 		int remainingBytesToWrite = block.getSize();
@@ -309,9 +320,18 @@ public class Piece {
 	 * Gets a new block to be requested
 	 *
 	 * @return an unrequested block
+	 * @deprecated Use {@link #getRequestableBlocks(int)} instead
 	 */
+	@Deprecated(since = "0.8.0")
 	public Optional<Block> getRequestBlock() {
-		return blocks.stream().filter(p -> p.getStatus() == BlockStatus.Needed).findAny();
+		return getRequestableBlocks(1).stream().findFirst();
+	}
+
+	public Collection<Block> getRequestableBlocks(int amount) {
+		return blocks.stream()
+			.filter(p -> p.getStatus() == BlockStatus.Needed)
+			.limit(amount)
+			.collect(toList());
 	}
 
 	/**
@@ -331,6 +351,7 @@ public class Piece {
 	/**
 	 * @return The {@link AbstractFileSet} which contains this piece.
 	 */
+	@Deprecated(forRemoval = true)
 	public AbstractFileSet getFileSet() {
 		return files;
 	}

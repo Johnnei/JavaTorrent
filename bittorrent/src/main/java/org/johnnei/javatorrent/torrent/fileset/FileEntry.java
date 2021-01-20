@@ -2,19 +2,19 @@ package org.johnnei.javatorrent.torrent.fileset;
 
 import java.util.Objects;
 
-public class FileEntry {
+public final class FileEntry {
 	/**
 	 * The fileName
 	 */
-	private String fileName;
+	private final String fileName;
 	/**
 	 * The filesize of this file in the torrent
 	 */
-	private long filesize;
+	private final long filesize;
 	/**
 	 * The offset of the first byte crossed across all files
 	 */
-	private long firstByteOffset;
+	private final long firstByteOffset;
 
 	public FileEntry(String fileName, long filesize, long firstByteOffset) {
 		this.fileName = fileName;

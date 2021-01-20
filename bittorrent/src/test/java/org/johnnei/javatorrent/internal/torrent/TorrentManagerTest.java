@@ -23,6 +23,7 @@ import static org.johnnei.javatorrent.test.TestUtils.assertNotPresent;
 import static org.johnnei.javatorrent.test.TestUtils.assertPresent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -189,6 +190,27 @@ public class TorrentManagerTest {
 		cut.stop();
 
 		verify(task).cancel(false);
+	}
+
+	@Test
+	public void testGetPeerState() {
+		TrackerManager trackerManager = mock(TrackerManager.class);
+		TorrentClient torrentClient = mock(TorrentClient.class);
+		ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+		PhaseRegulator phaseRegulator = mock(PhaseRegulator.class);
+		IDownloadPhase downloadPhase = mock(IDownloadPhase.class);
+		Torrent torrent = mock(Torrent.class);
+
+		when(torrentClient.getExecutorService()).thenReturn(executor);
+		when(torrentClient.getPhaseRegulator()).thenReturn(phaseRegulator);
+		when(phaseRegulator.createInitialPhase(torrentClient, torrent)).thenReturn(downloadPhase);
+
+		TorrentManager cut = new TorrentManager(trackerManager);
+
+		cut.start(torrentClient);
+		cut.addTorrent(torrent);
+
+		assertNotNull(cut.getPeerStateAccess(torrent));
 	}
 
 }

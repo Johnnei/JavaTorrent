@@ -3,6 +3,7 @@ package org.johnnei.javatorrent.test;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -13,6 +14,7 @@ import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 
+import static java.lang.Integer.min;
 import static org.mockito.Mockito.mock;
 
 public class DummyEntity {
@@ -54,22 +56,27 @@ public class DummyEntity {
 		return newHash;
 	}
 
-	public static Peer createPeer() {
-		BitTorrentSocket socketMock = mock(BitTorrentSocket.class);
-		return createPeer(socketMock);
+	public static byte[] toPeerId(String idString) {
+		return Arrays.copyOf(idString.getBytes(StandardCharsets.UTF_8), 20);
 	}
 
-	public static Peer createPeer(BitTorrentSocket socket) {
-		return createPeer(socket, createUniqueTorrent());
+	public static Peer.Builder withPeer() {
+		return new Peer.Builder()
+			.setSocket(mock(BitTorrentSocket.class))
+			.setTorrent(createUniqueTorrent())
+			.setExtensionBytes(createRandomBytes(8))
+			.setId(createPeerId());
+	}
+
+	public static Peer createPeer() {
+		return withPeer().build();
 	}
 
 	public static Peer createPeer(BitTorrentSocket socket, Torrent torrent) {
-		return new Peer.Builder()
-				.setSocket(socket)
-				.setTorrent(torrent)
-				.setExtensionBytes(createRandomBytes(8))
-				.setId(createPeerId())
-				.build();
+		return withPeer()
+			.setSocket(socket)
+			.setTorrent(torrent)
+			.build();
 	}
 
 	public static Metadata createMetadata() {

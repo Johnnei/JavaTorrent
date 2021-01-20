@@ -3,6 +3,11 @@
 ## Changed
 - Library is now compiled against JDK 11
 - [JBT-120](https://jira.johnnei.org/browse/JBT-120): `UdpTrackerModule` now reads the incoming port from `TorrentClientSettings` in favor of duplicating it.
+- [JBT-122](https://jira.johnnei.org/browse/JBT-122): Rewrote the piece selection handling
+  - `PieceSelector` has been replaced by `PiecePrioritzer`
+  -  Piece/Block request state management is no longer owned by `Peer` (has been moved to an internal class)
+  - `Peer#getFreeWorkTime()` has been removed
+  - `PeerStateAccess` has been introduced to expose state based on internal state
 
 # 0.7.0
 

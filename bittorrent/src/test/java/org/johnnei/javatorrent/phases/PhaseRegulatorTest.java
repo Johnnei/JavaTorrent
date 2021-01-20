@@ -5,8 +5,12 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import org.johnnei.javatorrent.TorrentClient;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.NopPrioritizer;
+import org.johnnei.javatorrent.torrent.algos.pieceselector.PiecePrioritizer;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -120,6 +124,21 @@ public class PhaseRegulatorTest {
 		public IChokingStrategy getChokingStrategy() {
 			return null;
 		}
+
+		@Override
+		public boolean isPeerSupportedForDownload(Peer peer) {
+			return true;
+		}
+
+		@Override
+		public Optional<AbstractFileSet> getFileSet() {
+			return Optional.empty();
+		}
+
+		@Override
+		public PiecePrioritizer getPiecePrioritizer() {
+			return new NopPrioritizer();
+		}
 	}
 
 	private static class SecondPhase implements IDownloadPhase {
@@ -144,6 +163,21 @@ public class PhaseRegulatorTest {
 		@Override
 		public IChokingStrategy getChokingStrategy() {
 			return null;
+		}
+
+		@Override
+		public boolean isPeerSupportedForDownload(Peer peer) {
+			return true;
+		}
+
+		@Override
+		public Optional<AbstractFileSet> getFileSet() {
+			return Optional.empty();
+		}
+
+		@Override
+		public PiecePrioritizer getPiecePrioritizer() {
+			return new NopPrioritizer();
 		}
 	}
 

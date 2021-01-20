@@ -21,7 +21,6 @@ public class MessageChoke implements IMessage {
 	@Override
 	public void process(Peer peer) {
 		peer.setChoked(PeerDirection.Download, true);
-		peer.discardAllBlockRequests();
 	}
 
 	@Override

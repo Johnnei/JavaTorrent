@@ -46,7 +46,6 @@ public class MessageBlock implements IMessage {
 	public void process(Peer peer) {
 		TorrentFileSet torrentFileSet = peer.getTorrent().getFileSet();
 
-		peer.onReceivedBlock(torrentFileSet.getPiece(index), offset);
 		if (data.length <= 0) {
 			peer.addStrike(1);
 			return;

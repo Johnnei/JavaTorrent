@@ -33,6 +33,7 @@ import org.johnnei.javatorrent.module.IModule;
 import org.johnnei.javatorrent.network.ConnectionDegradation;
 import org.johnnei.javatorrent.network.connector.BitTorrentHandshakeHandler;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
+import org.johnnei.javatorrent.torrent.PeerStateAccess;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.tracker.IPeerConnector;
@@ -303,6 +304,15 @@ public class TorrentClient {
 	 */
 	public Optional<Torrent> getTorrentByHash(byte[] torrentHash) {
 		return torrentManager.getTorrent(torrentHash);
+	}
+
+	/**
+	 * Gets the associated peer state access for the given torrent.
+	 * @param torrent The torrent to get the peer state access for.
+	 * @return The peer state view if the torrent is registered, otherwise {@link Optional#empty()}
+	 */
+	public Optional<PeerStateAccess> getTorrentPeerState(Torrent torrent) {
+		return torrentManager.getPeerStateAccess(torrent);
 	}
 
 	/**

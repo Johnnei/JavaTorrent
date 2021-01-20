@@ -201,14 +201,12 @@ public class Peer {
 			return false;
 		}
 
-		Job job = createJob(piece, byteOffset, blockLength, type);
-		client.addJob(job);
-
 		if (type != PeerDirection.Download) {
+			Job job = createJob(piece, byteOffset, blockLength, type);
+			client.addJob(job);
 			return true;
 		}
 
-		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createRequestFor(this, piece, byteOffset, blockLength));
 		return true;
 	}
@@ -227,26 +225,12 @@ public class Peer {
 			throw new IllegalArgumentException(String.format("The file set of %s doesn't support cancelling piece requests.", piece));
 		}
 
-		Job job = createJob(piece, byteOffset, blockLength, type);
-		getClientByDirection(type).removeJob(job);
-
-		if (type != PeerDirection.Download) {
-			return;
+		if (type == PeerDirection.Upload) {
+			Job job = createJob(piece, byteOffset, blockLength, type);
+			getClientByDirection(type).removeJob(job);
+		} else {
+			socket.enqueueMessage(piece.getFileSet().getRequestFactory().createCancelRequestFor(this, piece, byteOffset, blockLength));
 		}
-
-		socket.enqueueMessage(piece.getFileSet().getRequestFactory().createCancelRequestFor(this, piece, byteOffset, blockLength));
-		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
-	}
-
-	/**
-	 * Indicates that we've received the requested block from the peer.
-	 * @param piece The requested piece.
-	 * @param byteOffset The offset in bytes within the piece.
-	 */
-	public void onReceivedBlock(Piece piece, int byteOffset) {
-		int blockLength = piece.getBlockSize(byteOffset / torrent.getFileSet().getBlockSize());
-		getClientByDirection(PeerDirection.Download).removeJob(createJob(piece, byteOffset, blockLength, PeerDirection.Download));
-		LOGGER.trace(LOG_OUTSTANDING_BLOCK_REQUESTS, getClientByDirection(PeerDirection.Download).getQueueSize());
 	}
 
 	private Job createJob(Piece piece, int byteOffset, int blockLength, PeerDirection type) {
@@ -300,31 +284,15 @@ public class Peer {
 	}
 
 	/**
-	 * Calculates the amount of blocks we can request without overflowing the peer and without slowing us down.
-	 * @return The amount of blocks which can still be requested.
-	 */
-	public int getFreeWorkTime() {
-		return Math.max(0, getRequestLimit() - getWorkQueueSize(PeerDirection.Download));
-	}
-
-	/**
 	 * Gets the amount of pieces the client still needs to send
 	 *
 	 * @return The amount of blocks which still need to be send/received.
 	 */
 	public int getWorkQueueSize(PeerDirection direction) {
-		return getClientByDirection(direction).getQueueSize();
-	}
-
-	/**
-	 * Cancels all pieces
-	 */
-	public void discardAllBlockRequests() {
-		synchronized (this) {
-			for (Job job : myClient.getJobs()) {
-				job.getPiece().setBlockStatus(job.getBlockIndex(), BlockStatus.Needed);
-			}
-			myClient.clearJobs();
+		if (direction == PeerDirection.Download) {
+			throw new IllegalArgumentException("Use PeerStateAccess#getPendingBlock(peer, Download) instead");
+		} else {
+			return getClientByDirection(direction).getQueueSize();
 		}
 	}
 
@@ -446,9 +414,6 @@ public class Peer {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean equals(Object o) {
 		if (o == null) {
@@ -468,9 +433,6 @@ public class Peer {
 		return Arrays.equals(id, other.id);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(id);
@@ -532,7 +494,7 @@ public class Peer {
 	 *
 	 * @deprecated Will be replaced by alternatives as this class is handling a non-extensible process.
 	 */
-	@Deprecated
+	@Deprecated(forRemoval = true, since = "0.6.0")
 	public BitTorrentSocket getBitTorrentSocket() {
 		return socket;
 	}

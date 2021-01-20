@@ -18,8 +18,6 @@ import org.johnnei.javatorrent.disk.DiskJobCheckHash;
 import org.johnnei.javatorrent.disk.DiskJobWriteBlock;
 import org.johnnei.javatorrent.disk.IDiskJob;
 import org.johnnei.javatorrent.module.IModule;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.FullPieceSelect;
-import org.johnnei.javatorrent.torrent.algos.pieceselector.IPieceSelector;
 import org.johnnei.javatorrent.torrent.algos.requests.IRequestLimiter;
 import org.johnnei.javatorrent.torrent.files.BlockStatus;
 import org.johnnei.javatorrent.torrent.files.Piece;
@@ -51,11 +49,6 @@ public class Torrent {
 	private Metadata metadata;
 
 	/**
-	 * Regulates the selection of pieces and the peers to download the pieces
-	 */
-	private IPieceSelector pieceSelector;
-
-	/**
 	 * The amount of downloaded bytes
 	 */
 	private long downloadedBytes;
@@ -75,7 +68,6 @@ public class Torrent {
 	 * @param builder The builder with the components for the torrent.
 	 */
 	public Torrent(Builder builder) {
-		this.metadata = builder.metadata;
 		this.metadata = Argument.requireNonNull(builder.metadata, "Torrent without minimal metadata information is not downloadable.");
 		if (builder.displayName == null) {
 			displayName = builder.metadata.getName();
@@ -85,7 +77,6 @@ public class Torrent {
 		torrentClient = builder.torrentClient;
 		downloadedBytes = 0L;
 		peers = new LinkedList<>();
-		pieceSelector = new FullPieceSelect(this);
 	}
 
 	private boolean hasPeer(Peer peer) {
@@ -127,12 +118,8 @@ public class Torrent {
 		Argument.requireNonNull(peer, "Peer can not be null");
 
 		synchronized (this) {
-			if (!peers.remove(peer)) {
-				return;
-			}
+			peers.remove(peer);
 		}
-
-		peer.discardAllBlockRequests();
 	}
 
 	private void sendHaveMessages(Peer peer) throws IOException {
@@ -386,15 +373,6 @@ public class Torrent {
 		return uploadedBytes;
 	}
 
-	/**
-	 * The regulator which is managing this download
-	 *
-	 * @return The current assigned regulator
-	 */
-	public IPieceSelector getPieceSelector() {
-		return pieceSelector;
-	}
-
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(metadata.getHash());
@@ -414,10 +392,6 @@ public class Torrent {
 		Torrent other = (Torrent) obj;
 
 		return metadata.equals(other.metadata);
-	}
-
-	public void setPieceSelector(IPieceSelector downloadRegulator) {
-		this.pieceSelector = downloadRegulator;
 	}
 
 	public IRequestLimiter getRequestLimiter() {

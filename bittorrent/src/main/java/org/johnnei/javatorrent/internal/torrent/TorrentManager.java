@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.internal.network.connector.NioConnectionAcceptor;
 import org.johnnei.javatorrent.internal.tracker.TrackerManager;
+import org.johnnei.javatorrent.torrent.PeerStateAccess;
 import org.johnnei.javatorrent.torrent.Torrent;
 
 public class TorrentManager {
@@ -20,7 +21,7 @@ public class TorrentManager {
 
 	private TrackerManager trackerManager;
 
-	private List<TorrentPair> activeTorrents;
+	private List<TorrentWithProcessor> activeTorrents;
 
 	private NioConnectionAcceptor connectionAcceptor;
 
@@ -58,7 +59,7 @@ public class TorrentManager {
 	 */
 	public void addTorrent(Torrent torrent) {
 		synchronized (torrentListLock) {
-			activeTorrents.add(new TorrentPair(this, trackerManager, torrentClient, torrent));
+			activeTorrents.add(new TorrentWithProcessor(this, trackerManager, torrentClient, torrent));
 		}
 	}
 
@@ -68,7 +69,7 @@ public class TorrentManager {
 	 */
 	public void removeTorrent(Torrent torrent) {
 		synchronized (torrentListLock) {
-			activeTorrents.removeIf(torrentPair -> torrentPair.getTorrent().equals(torrent));
+			activeTorrents.removeIf(torrentWithProcessor -> torrentWithProcessor.getTorrent().equals(torrent));
 		}
 	}
 
@@ -77,10 +78,10 @@ public class TorrentManager {
 	 * @param torrent The torrent to stop.
 	 */
 	public void shutdownTorrent(Torrent torrent) {
-		Optional<TorrentPair> pair;
+		Optional<TorrentWithProcessor> pair;
 		synchronized (torrentListLock) {
 			pair = activeTorrents.stream()
-					.filter(torrentPair -> torrentPair.getTorrent().equals(torrent))
+					.filter(torrentWithProcessor -> torrentWithProcessor.getTorrent().equals(torrent))
 					.findAny();
 
 			if (pair.isPresent()) {
@@ -93,6 +94,13 @@ public class TorrentManager {
 		}
 	}
 
+	public Optional<PeerStateAccess> getPeerStateAccess(Torrent torrent) {
+		return activeTorrents.stream()
+			.filter(t -> t.getTorrent().equals(torrent))
+			.findAny()
+			.map(TorrentWithProcessor::getTorrentProcessor);
+	}
+
 	/**
 	 * Gets the torrent associated with the given hash.
 	 * @param hash The BTIH of the torrent
@@ -100,7 +108,7 @@ public class TorrentManager {
 	 */
 	public Optional<Torrent> getTorrent(byte[] hash) {
 		return activeTorrents.stream()
-				.map(TorrentPair::getTorrent)
+				.map(TorrentWithProcessor::getTorrent)
 				.filter(torrent -> Arrays.equals(torrent.getMetadata().getHash(), hash))
 				.findAny();
 	}
@@ -111,17 +119,17 @@ public class TorrentManager {
 	 */
 	public Collection<Torrent> getTorrents() {
 		synchronized (torrentListLock) {
-			return activeTorrents.stream().map(TorrentPair::getTorrent).collect(Collectors.toList());
+			return activeTorrents.stream().map(TorrentWithProcessor::getTorrent).collect(Collectors.toList());
 		}
 	}
 
-	private final class TorrentPair {
+	private static final class TorrentWithProcessor {
 
 		private final Torrent torrent;
 
 		private final TorrentProcessor torrentProcessor;
 
-		TorrentPair(TorrentManager torrentManager, TrackerManager trackerManager, TorrentClient torrentClient, Torrent torrent) {
+		TorrentWithProcessor(TorrentManager torrentManager, TrackerManager trackerManager, TorrentClient torrentClient, Torrent torrent) {
 			this.torrent = torrent;
 			torrentProcessor = new TorrentProcessor(torrentManager, trackerManager, torrentClient, torrent);
 		}

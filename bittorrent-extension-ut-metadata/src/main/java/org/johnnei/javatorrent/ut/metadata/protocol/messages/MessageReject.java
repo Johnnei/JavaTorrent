@@ -37,7 +37,6 @@ public class MessageReject extends AbstractMessage {
 
 		Piece piece = optionalMetadata.get().getPiece(0);
 		piece.setBlockStatus(blockIndex, BlockStatus.Needed);
-		peer.onReceivedBlock(piece, blockIndex);
 	}
 
 	@Override

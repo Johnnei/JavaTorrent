@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.module.MetadataInformation;
+import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentException;
@@ -15,11 +16,11 @@ import org.johnnei.javatorrent.torrent.TorrentException;
  * Upon handshake with the peers the ut_metadata extension will allow us to discover the torrent file size.
  * Once the torrent file size is known we can advance to the next phase and start downloading the torrent file.
  */
-public class PhasePreMetadata extends AMetadataPhase {
+public class DiscoverMetadataSizePhase extends AbstractMetadataPhase {
 
 	private int fileSize;
 
-	public PhasePreMetadata(TorrentClient torrentClient, Torrent torrent) {
+	public DiscoverMetadataSizePhase(TorrentClient torrentClient, Torrent torrent) {
 		super(torrentClient, torrent);
 	}
 
@@ -69,4 +70,8 @@ public class PhasePreMetadata extends AMetadataPhase {
 		torrent.getMetadata().setFileSet(new MetadataFileSet(torrent, metadataFile));
 	}
 
+	@Override
+	public Optional<AbstractFileSet> getFileSet() {
+		return Optional.empty();
+	}
 }

@@ -50,9 +50,9 @@ public class MessageRequestTest {
 		Peer peerMock = mock(Peer.class);
 		Torrent torrentMock = mock(Torrent.class);
 		TorrentFileSet filesMock = mock(TorrentFileSet.class);
-		Piece pieceMock = mock(Piece.class);
+		Piece piece = new Piece(null, null, 1, 1, 1);
 
-		when(filesMock.getPiece(1)).thenReturn(pieceMock);
+		when(filesMock.getPiece(1)).thenReturn(piece);
 
 		when(peerMock.getTorrent()).thenReturn(torrentMock);
 		when(torrentMock.getFileSet()).thenReturn(filesMock);
@@ -62,7 +62,7 @@ public class MessageRequestTest {
 		cut.read(inStream);
 		cut.process(peerMock);
 
-		verify(peerMock).addBlockRequest(eq(pieceMock), eq(2), eq(3), eq(PeerDirection.Upload));
+		verify(peerMock).addBlockRequest(eq(piece), eq(2), eq(3), eq(PeerDirection.Upload));
 	}
 
 	@Test

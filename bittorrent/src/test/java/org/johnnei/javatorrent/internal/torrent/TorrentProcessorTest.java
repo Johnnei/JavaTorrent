@@ -16,7 +16,9 @@ import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.peer.Peer;
+import org.johnnei.javatorrent.torrent.peer.PeerDirection;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -133,6 +135,26 @@ public class TorrentProcessorTest {
 		processor.removeDisconnectedPeers();
 
 		verify(torrentMock).removePeer(same(peerMock));
+	}
+
+	@Test
+	public void testGetPendingBlocksDownload() {
+		Torrent torrent = mock(Torrent.class);
+		Peer peer = mock(Peer.class);
+		TorrentProcessor cut = new TorrentProcessor(managerMock, mock(TrackerManager.class), torrentClient, torrent);
+
+		assertEquals(0, cut.getPendingBlocks(peer, PeerDirection.Download));
+	}
+
+	@Test
+	public void testGetPendingBlocksUpload() {
+		Torrent torrent = mock(Torrent.class);
+		Peer peer = mock(Peer.class);
+		TorrentProcessor cut = new TorrentProcessor(managerMock, mock(TrackerManager.class), torrentClient, torrent);
+
+		when(peer.getWorkQueueSize(PeerDirection.Upload)).thenReturn(3);
+
+		assertEquals(3, cut.getPendingBlocks(peer, PeerDirection.Upload));
 	}
 
 }

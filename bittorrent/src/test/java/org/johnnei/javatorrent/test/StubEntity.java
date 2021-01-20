@@ -9,6 +9,7 @@ import org.johnnei.javatorrent.torrent.AbstractFileSet;
 import org.johnnei.javatorrent.torrent.FileInfo;
 import org.johnnei.javatorrent.torrent.files.IFileSetRequestFactory;
 import org.johnnei.javatorrent.torrent.files.Piece;
+import org.johnnei.javatorrent.torrent.peer.Peer;
 
 @Deprecated
 public class StubEntity {
@@ -58,6 +59,11 @@ public class StubEntity {
 
 		@Override
 		public boolean hasPiece(int pieceIndex) throws NoSuchElementException {
+			return false;
+		}
+
+		@Override
+		public boolean hasPiece(Peer peer, int pieceIndex) {
 			return false;
 		}
 
