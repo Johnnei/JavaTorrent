@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,6 +29,8 @@ import org.johnnei.javatorrent.utils.Argument;
 public class Torrent {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Torrent.class);
+
+	private static final Collection<BlockStatus> BLOCK_WRITABLE = EnumSet.of(BlockStatus.Needed, BlockStatus.Requested);
 
 	/**
 	 * The display name of this torrent
@@ -177,11 +181,13 @@ public class Torrent {
 		int blockIndex = offset / fileSet.getBlockSize();
 
 		Piece piece = fileSet.getPiece(index);
-		if (piece.getBlockSize(blockIndex) != data.length) {
-			LOGGER.debug("Received incorrect sized block for piece {}, offset {}", index, offset);
-			piece.setBlockStatus(blockIndex, BlockStatus.Needed);
-		} else {
-			addDiskJob(new DiskJobWriteBlock(piece, blockIndex, data, this::onStoreBlockComplete));
+		if (BLOCK_WRITABLE.contains(piece.getBlockStatus(blockIndex))) {
+			if (piece.getBlockSize(blockIndex) != data.length) {
+				LOGGER.debug("Received incorrect sized block for piece {}, offset {}", index, offset);
+				piece.setBlockStatus(blockIndex, BlockStatus.Needed);
+			} else {
+				addDiskJob(new DiskJobWriteBlock(piece, blockIndex, data, this::onStoreBlockComplete));
+			}
 		}
 	}
 

@@ -9,6 +9,9 @@
   - `Peer#getFreeWorkTime()` has been removed
   - `PeerStateAccess` has been introduced to expose state based on internal state
 
+## Fixed
+ - [JBT-123](https://jira.johnnei.org/browse/JBT-123): Ignore block message for blocks that are not expecting block data
+
 # 0.7.0
 
 ## Added

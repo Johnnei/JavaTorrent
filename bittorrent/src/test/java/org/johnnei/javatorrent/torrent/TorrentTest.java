@@ -8,8 +8,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.powermock.reflect.Whitebox;
 
@@ -40,10 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -203,6 +209,7 @@ public class TorrentTest {
 		when(fileSetMock.getBlockSize()).thenReturn(15);
 		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
 		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
+		when(pieceMock.getBlockStatus(1)).thenReturn(BlockStatus.Requested);
 		pieceMock.onHashMismatch();
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
@@ -239,6 +246,7 @@ public class TorrentTest {
 		when(fileSetMock.getBlockSize()).thenReturn(15);
 		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
 		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
+		when(pieceMock.getBlockStatus(1)).thenReturn(BlockStatus.Requested);
 		when(pieceMock.getIndex()).thenReturn(1);
 		when(pieceMock.getSize()).thenReturn(15);
 		fileSetMock.setHavingPiece(eq(1));
@@ -311,6 +319,7 @@ public class TorrentTest {
 		when(fileSetMock.getBlockSize()).thenReturn(15);
 		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
 		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
+		when(pieceMock.getBlockStatus(1)).thenReturn(BlockStatus.Requested);
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
@@ -342,6 +351,7 @@ public class TorrentTest {
 		when(fileSetMock.getBlockSize()).thenReturn(15);
 		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
 		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
+		when(pieceMock.getBlockStatus(1)).thenReturn(BlockStatus.Requested);
 		when(pieceMock.getIndex()).thenReturn(0);
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
@@ -365,6 +375,39 @@ public class TorrentTest {
 		checkHashCapture.getValue().process();
 	}
 
+	public static Stream<BlockStatus> ignoreWriteStatuses() {
+		return Stream.of(BlockStatus.Stored, BlockStatus.Verified);
+	}
+
+	@ParameterizedTest
+	@MethodSource("ignoreWriteStatuses")
+	public void testIgnoresOnReceivedBlockWhenForStatus(BlockStatus ignoreStatus) throws Exception {
+		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
+		TorrentClient torrentClient = mock(TorrentClient.class);
+		Piece pieceMock = mock(Piece.class);
+
+		when(fileSetMock.getBlockSize()).thenReturn(15);
+		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
+		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
+		when(pieceMock.getBlockStatus(1)).thenReturn(ignoreStatus);
+
+		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
+		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
+		when(pieceMock.countBlocksWithStatus(eq(BlockStatus.Stored))).thenReturn(2);
+		when(pieceMock.getBlockCount()).thenReturn(2);
+
+		Torrent cut = new Torrent.Builder()
+			.setName("On Received Block Test")
+			.setMetadata(DummyEntity.createMetadata())
+			.setTorrentClient(torrentClient)
+			.build();
+		cut.setFileSet(fileSetMock);
+
+		cut.onReceivedBlock(fileSetMock, 0, 15, new byte[15]);
+
+		verify(pieceMock, never()).setBlockStatus(eq(1), any());
+	}
+
 	@Test
 	public void testOnReceivedBlock() throws Exception {
 		TorrentFileSet fileSetMock = mock(TorrentFileSet.class);
@@ -377,6 +420,7 @@ public class TorrentTest {
 		when(fileSetMock.getBlockSize()).thenReturn(15);
 		when(fileSetMock.getPiece(eq(0))).thenReturn(pieceMock);
 		when(pieceMock.getBlockSize(eq(1))).thenReturn(15);
+		when(pieceMock.getBlockStatus(1)).thenReturn(BlockStatus.Requested);
 
 		pieceMock.storeBlock(eq(1), aryEq(new byte[15]));
 		pieceMock.setBlockStatus(eq(1), eq(BlockStatus.Stored));
