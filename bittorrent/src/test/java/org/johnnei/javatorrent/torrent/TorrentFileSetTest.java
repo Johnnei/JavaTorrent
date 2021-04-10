@@ -139,7 +139,7 @@ public class TorrentFileSetTest {
 	public void testConstructorNullDownloadFolder() throws Exception {
 		Exception e = assertThrows(
 			IllegalArgumentException.class,
-			() -> new TorrentFileSet(new Metadata.Builder().setHash(DummyEntity.createUniqueTorrentHash()).build(), null)
+			() -> new TorrentFileSet(new Metadata.Builder(DummyEntity.createUniqueTorrentHash()).withPieceSize(1).build(), null)
 		);
 		assertThat(e.getMessage(), containsString("Download folder"));
 	}

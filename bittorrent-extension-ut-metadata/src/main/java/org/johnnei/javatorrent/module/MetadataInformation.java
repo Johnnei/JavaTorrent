@@ -2,13 +2,13 @@ package org.johnnei.javatorrent.module;
 
 public class MetadataInformation {
 
-	private int metadataSize;
+	private long metadataSize;
 
-	public int getMetadataSize() {
+	public long getMetadataSize() {
 		return metadataSize;
 	}
 
-	public void setMetadataSize(int metadataSize) {
+	public void setMetadataSize(long metadataSize) {
 		this.metadataSize = metadataSize;
 	}
 }

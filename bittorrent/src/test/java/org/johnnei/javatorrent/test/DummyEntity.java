@@ -80,7 +80,7 @@ public class DummyEntity {
 	}
 
 	public static Metadata createMetadata() {
-		return new Metadata.Builder().setHash(createUniqueTorrentHash()).build();
+		return new Metadata.Builder(createUniqueTorrentHash()).withPieceSize(1).build();
 	}
 
 	public static Torrent createUniqueTorrent(Torrent... torrents) {
@@ -92,7 +92,7 @@ public class DummyEntity {
 		byte[] hash = createUniqueTorrentHash(hashes);
 
 		return new Torrent.Builder()
-				.setMetadata(new Metadata.Builder().setHash(hash).build())
+				.setMetadata(new Metadata.Builder(hash).withPieceSize(1).build())
 				.setName("Dummy Torrent")
 				.build();
 	}
@@ -106,7 +106,7 @@ public class DummyEntity {
 		byte[] hash = createUniqueTorrentHash(hashes);
 
 		return new Torrent.Builder()
-				.setMetadata(new Metadata.Builder().setHash(hash).build())
+				.setMetadata(new Metadata.Builder(hash).withPieceSize(1).build())
 				.setTorrentClient(torrentClient)
 				.setName("Dummy Torrent")
 				.build();

@@ -9,7 +9,7 @@ public final class MetadataChocking implements IChokingStrategy {
 
 	@Override
 	public void updateChoking(Peer peer) {
-		boolean expectedInterestedState = peer.getModuleInfo(MetadataInformation.class).map(MetadataInformation::getMetadataSize).orElse(0) > 0;
+		boolean expectedInterestedState = peer.getModuleInfo(MetadataInformation.class).map(MetadataInformation::getMetadataSize).orElse(0L) > 0L;
 
 		if (peer.isInterested(PeerDirection.Download) != expectedInterestedState) {
 			peer.setInterested(PeerDirection.Download, expectedInterestedState);

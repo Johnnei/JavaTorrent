@@ -1,14 +1,14 @@
 package org.johnnei.javatorrent.module;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
@@ -23,8 +23,6 @@ import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageData;
 import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageReject;
 import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageRequest;
 import org.johnnei.javatorrent.ut.metadata.protocol.messages.MessageUnknown;
-import org.johnnei.junit.jupiter.Folder;
-import org.johnnei.junit.jupiter.TempFolderExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,26 +34,25 @@ import static org.mockito.Mockito.when;
 /**
  * Tests {@link UTMetadataExtension}
  */
-@ExtendWith(TempFolderExtension.class)
 public class UTMetadataExtensionTest {
 
-	private static final Charset UTF8 = Charset.forName("UTF-8");
+	private static final Charset UTF8 = StandardCharsets.UTF_8;
 
 	private UTMetadataExtension cut;
 
-	private File torrentFileFolder;
-	private File downloadFolder;
+	private Path torrentFileFolder;
+	private Path downloadFolder;
 
 	@BeforeEach
-	public void setUp(@Folder Path tmp) {
-		torrentFileFolder = tmp.resolve("a").toFile();
-		downloadFolder = tmp.resolve("b").toFile();
+	public void setUp(@TempDir Path tmp) {
+		torrentFileFolder = tmp.resolve("a");
+		downloadFolder = tmp.resolve("b");
 		cut = new UTMetadataExtension(torrentFileFolder, downloadFolder);
 	}
 
 	@Test
-	public void testGetExtensionName(@Folder Path tmp) throws IOException {
-		assertEquals("ut_metadata", new UTMetadataExtension(tmp.resolve("a").toFile(), tmp.resolve("b").toFile()).getExtensionName());
+	public void testGetExtensionName(@TempDir Path tmp) throws IOException {
+		assertEquals("ut_metadata", new UTMetadataExtension(tmp.resolve("a"), tmp.resolve("b")).getExtensionName());
 	}
 
 	@Test
@@ -174,9 +171,9 @@ public class UTMetadataExtensionTest {
 		when(torrentMock.getMetadata()).thenReturn(metadataMock);
 		when(metadataMock.getHashString()).thenReturn("c8369f0ba4bf6cd87fb13b3437782e2c7820bb38");
 
-		File torrentFile = cut.getTorrentFile(torrentMock);
+		Path torrentFile = cut.getTorrentFile(torrentMock);
 
-		assertEquals(new File(torrentFileFolder, "c8369f0ba4bf6cd87fb13b3437782e2c7820bb38.torrent"), torrentFile, "Incorrect location");
+		assertEquals(torrentFileFolder.resolve("c8369f0ba4bf6cd87fb13b3437782e2c7820bb38.torrent"), torrentFile, "Incorrect location");
 	}
 
 }

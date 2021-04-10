@@ -32,7 +32,6 @@ import org.johnnei.javatorrent.phases.DiscoverMetadataSizePhase;
 import org.johnnei.javatorrent.phases.PhaseRegulator;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
 import org.johnnei.javatorrent.test.DummyEntity;
-import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.requests.RateBasedLimiter;
 import org.johnnei.javatorrent.tracker.NioPeerConnector;
@@ -85,12 +84,15 @@ public class DownloadMetadataIT {
 		copy(torrentFile, new File(torrentFile.getParentFile(), StringUtils.byteArrayToString(TORRENT_FILE_HASH).toLowerCase() + ".torrent"));
 		File downloadFolderOne = tmp.resolve("client-one").toFile();
 		File downloadFolderTwo = tmp.resolve("client-two").toFile();
+		File downloadFolderThree = tmp.resolve("client-three").toFile();
 
 		assertTrue(downloadFolderOne.mkdirs());
 		assertTrue(downloadFolderTwo.mkdirs());
+		assertTrue(downloadFolderThree.mkdirs());
 
-		LOGGER.info("Preparing torrent client to download with magnetlink.");
+		LOGGER.info("Preparing torrent client to download with magnetlink");
 		CountDownLatch linkCompleteLatch = new CountDownLatch(1);
+		CountDownLatch withoutTorrentCompleteLatch = new CountDownLatch(1);
 		// Pass an incorrect folder so that the metadata file can't be found
 		TorrentClient clientWithLink = prepareTorrentClient(downloadFolderOne, downloadFolderOne)
 				.setPeerDistributor(UncappedDistributor::new)
@@ -102,7 +104,7 @@ public class DownloadMetadataIT {
 				.build();
 
 		CountDownLatch metadataInitalizedLatch = new CountDownLatch(1);
-		LOGGER.info("Preparing torrent client to download with file.");
+		LOGGER.info("Preparing torrent client to download with file");
 		TorrentClient clientWithTorrent = prepareTorrentClient(torrentFile.getParentFile(), downloadFolderTwo)
 				.setPeerDistributor(UncappedDistributor::new)
 				.setPhaseRegulator(new PhaseRegulator.Builder()
@@ -112,35 +114,53 @@ public class DownloadMetadataIT {
 						.build())
 				.build();
 
+		LOGGER.info("Preparing torrent client to download from metadata without file");
+		TorrentClient clientWithoutTorrent = prepareTorrentClient(downloadFolderThree, downloadFolderThree)
+			.setPeerDistributor(UncappedDistributor::new)
+			.setPhaseRegulator(new PhaseRegulator.Builder()
+				.registerInitialPhase(DiscoverMetadataSizePhase.class, DiscoverMetadataSizePhase::new, DownloadMetadataPhase.class)
+				.registerPhase(DownloadMetadataPhase.class, DownloadMetadataPhase::new, PhaseDataCountDown.class)
+				.registerPhase(PhaseDataCountDown.class, (client, torrent) -> new PhaseDataCountDown(withoutTorrentCompleteLatch, client, torrent))
+				.build())
+			.build();
+
 		Torrent torrentFromFile = createTorrentFromFile(clientWithTorrent, torrentFile, downloadFolderTwo);
+		Torrent torrentFromFile2 = createTorrentFromFile(clientWithoutTorrent, torrentFile, downloadFolderThree);
 		Torrent torrentFromLink = new MagnetLink(METADATA_LINK, clientWithLink).getTorrent();
 
 		LOGGER.info("Starting downloading");
-		LOGGER.debug("[MAGNET ] Directory: {}, Port: {}", downloadFolderOne.getAbsolutePath(), clientWithLink.getDownloadPort());
-		LOGGER.debug("[TORRENT] Directory: {}, Port: {}", downloadFolderTwo.getAbsolutePath(), clientWithTorrent.getDownloadPort());
+		LOGGER.debug("[MAGNET  ] Directory: {}, Port: {}", downloadFolderOne.getAbsolutePath(), clientWithLink.getSettings().getAcceptingPort());
+		LOGGER.debug("[TORRENT ] Directory: {}, Port: {}", downloadFolderTwo.getAbsolutePath(), clientWithTorrent.getSettings().getAcceptingPort());
+		LOGGER.debug("[METADATA] Directory: {}, Port: {}", downloadFolderThree.getAbsolutePath(), clientWithoutTorrent.getSettings().getAcceptingPort());
 
 		clientWithTorrent.download(torrentFromFile);
 		clientWithLink.download(torrentFromLink);
+		clientWithoutTorrent.download(torrentFromFile2);
 
 		LOGGER.info("Waiting for client with torrent metadata to initialize the metadata structures.");
 		assertTrue(metadataInitalizedLatch.await(5, TimeUnit.SECONDS), "Torrent failed to initialize metadata structure.");
 
 		LOGGER.info("Adding peer connect request to client.");
 		clientWithTorrent.getPeerConnector().enqueuePeer(
-				new PeerConnectInfo(torrentFromFile, new InetSocketAddress("localhost", clientWithLink.getDownloadPort())));
+			new PeerConnectInfo(torrentFromFile, new InetSocketAddress("localhost", clientWithLink.getSettings().getAcceptingPort())));
+		clientWithTorrent.getPeerConnector().enqueuePeer(
+			new PeerConnectInfo(torrentFromFile, new InetSocketAddress("localhost", clientWithoutTorrent.getSettings().getAcceptingPort())));
 
 		assertTimeoutPreemptively(Duration.of(1, ChronoUnit.MINUTES), () -> {
 				do {
 					linkCompleteLatch.await(1, TimeUnit.SECONDS);
 					torrentFromFile.pollRates();
+					torrentFromFile2.pollRates();
 					torrentFromLink.pollRates();
-					LOGGER.debug("[MAGNET ] Download: {}kb/s, Upload: {}kb/s", torrentFromLink.getDownloadRate() / 1024, torrentFromLink.getUploadRate() / 1024);
-					LOGGER.debug("[TORRENT] Download: {}kb/s, Upload: {}kb/s", torrentFromFile.getDownloadRate() / 1024, torrentFromFile.getUploadRate() / 1024);
-				} while (linkCompleteLatch.getCount() > 0);
+					LOGGER.debug("[MAGNET  ] Download: {}kb/s, Upload: {}kb/s", torrentFromLink.getDownloadRate() / 1024, torrentFromLink.getUploadRate() / 1024);
+					LOGGER.debug("[TORRENT ] Download: {}kb/s, Upload: {}kb/s", torrentFromFile.getDownloadRate() / 1024, torrentFromFile.getUploadRate() / 1024);
+					LOGGER.debug("[METADATA] Download: {}kb/s, Upload: {}kb/s", torrentFromFile2.getDownloadRate() / 1024, torrentFromFile2.getUploadRate() / 1024);
+				} while (linkCompleteLatch.getCount() > 0 && withoutTorrentCompleteLatch.getCount() > 0);
 			});
 
 		clientWithLink.shutdown();
 		clientWithTorrent.shutdown();
+		clientWithoutTorrent.shutdown();
 	}
 
 	private Torrent createTorrentFromFile(TorrentClient torrentClient, File torrentFile, File downloadFolder) throws IOException {
@@ -148,7 +168,7 @@ public class DownloadMetadataIT {
 				.setTorrentClient(torrentClient)
 				.setName("GIMP")
 				.setDownloadFolder(downloadFolder)
-				.setMetadata(new Metadata.Builder().readFromFile(torrentFile).build())
+				.setMetadata(UtMetadata.from(torrentFile.toPath()).build())
 				.build();
 	}
 
@@ -163,7 +183,7 @@ public class DownloadMetadataIT {
 				.setRequestLimiter(new RateBasedLimiter())
 				.setPeerConnector(tc -> new NioPeerConnector(tc, 4))
 				.registerModule(new ExtensionModule.Builder()
-						.registerExtension(new UTMetadataExtension(torrentFileFolder, downloadFolder))
+						.registerExtension(new UTMetadataExtension(torrentFileFolder.toPath(), downloadFolder.toPath()))
 						.build())
 				.registerTrackerProtocol("stub", (s, torrentClient) -> null);
 	}

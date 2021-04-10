@@ -8,6 +8,10 @@
   -  Piece/Block request state management is no longer owned by `Peer` (has been moved to an internal class)
   - `Peer#getFreeWorkTime()` has been removed
   - `PeerStateAccess` has been introduced to expose state based on internal state
+- [#125](https://git.johnnei.org/Johnnei/JavaTorrent/-/issues/125): Changed ut-metadata module to use java.nio.Path instead of java.io.File
+- [#127](https://git.johnnei.org/Johnnei/JavaTorrent/-/issues/127): ut-metadata phases are now able to handle torrents that already have metadata
+  - Block requests are now rejected until we have a completed metadata fileset
+  - Introduced UtMetadata to build metadata fileset state according to download state
 
 ## Fixed
  - [JBT-123](https://git.johnnei.org/Johnnei/JavaTorrent/-/issues/123): Ignore block message for blocks that are not expecting block data

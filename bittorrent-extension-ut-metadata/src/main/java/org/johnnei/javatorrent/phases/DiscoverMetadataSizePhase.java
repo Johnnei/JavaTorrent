@@ -1,12 +1,16 @@
 package org.johnnei.javatorrent.phases;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.module.MetadataInformation;
 import org.johnnei.javatorrent.torrent.AbstractFileSet;
+import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentException;
@@ -18,7 +22,7 @@ import org.johnnei.javatorrent.torrent.TorrentException;
  */
 public class DiscoverMetadataSizePhase extends AbstractMetadataPhase {
 
-	private int fileSize;
+	private long fileSize;
 
 	public DiscoverMetadataSizePhase(TorrentClient torrentClient, Torrent torrent) {
 		super(torrentClient, torrent);
@@ -53,21 +57,33 @@ public class DiscoverMetadataSizePhase extends AbstractMetadataPhase {
 	public void onPhaseEnter() {
 		super.onPhaseEnter();
 		if (foundMatchingFile) {
-			fileSize = (int) metadataFile.length();
+			try {
+				fileSize = (int) Files.size(metadataFile);
+			} catch (IOException e) {
+				throw new TorrentException("Failed to read file size of " + metadataFile.toAbsolutePath(), e);
+			}
 		}
 	}
 
 	@Override
 	public void onPhaseExit() {
-		if (metadataFile.length() != fileSize) {
-			try (RandomAccessFile fileAccess = new RandomAccessFile(metadataFile, "rw")){
-				fileAccess.setLength(fileSize);
-			} catch (IOException e) {
-				throw new TorrentException("Failed to allocate space for the metadata file", e);
-			}
-		}
+		try {
+			if (Files.notExists(metadataFile) || Files.size(metadataFile) != fileSize) {
+				try (SeekableByteChannel channel = Files.newByteChannel(metadataFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+					channel.truncate(fileSize);
+					channel.position(fileSize - 1);
+					channel.write(ByteBuffer.wrap(new byte[] { 0 }));
+				}
 
-		torrent.getMetadata().setFileSet(new MetadataFileSet(torrent, metadataFile));
+				Metadata metadataWithFileset = new Metadata.Builder(torrent.getMetadata())
+					.withFileSet(new MetadataFileSet(torrent.getMetadata().getHash(), metadataFile))
+					.build();
+
+				torrent.setMetadata(metadataWithFileset);
+			}
+		} catch (IOException e) {
+			throw new TorrentException("Failed to allocate space for the metadata file: " + metadataFile.toAbsolutePath(), e);
+		}
 	}
 
 	@Override

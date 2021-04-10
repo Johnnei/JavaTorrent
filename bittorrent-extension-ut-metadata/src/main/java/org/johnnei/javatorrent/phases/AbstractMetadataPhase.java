@@ -1,8 +1,8 @@
 package org.johnnei.javatorrent.phases;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -35,9 +35,9 @@ public abstract class AbstractMetadataPhase implements IDownloadPhase {
 
 	protected TorrentClient torrentClient;
 
-	protected final File metadataFile;
+	protected final Path metadataFile;
 
-	protected final File downloadFolderRoot;
+	protected final Path downloadFolderRoot;
 
 	private final IChokingStrategy chokingStrategy;
 
@@ -60,14 +60,12 @@ public abstract class AbstractMetadataPhase implements IDownloadPhase {
 
 	@Override
 	public void onPhaseEnter() {
-		if(!metadataFile.exists()) {
+		if(Files.notExists(metadataFile)) {
 			return;
 		}
 
-		try (RandomAccessFile fileAccess = new RandomAccessFile(metadataFile, "r")) {
-			byte[] data = new byte[(int)fileAccess.length()];
-			fileAccess.seek(0);
-			fileAccess.read(data, 0, data.length);
+		try  {
+			byte[] data = Files.readAllBytes(metadataFile);
 			if(Arrays.equals(SHA1.hash(data), torrent.getMetadata().getHash())) {
 				foundMatchingFile = true;
 				LOGGER.info("Found pre-downloaded Torrent file");

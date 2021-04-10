@@ -113,7 +113,7 @@ public abstract class EndToEndDownload {
 			.setTorrentClient(client)
 			.setName(name)
 			.setDownloadFolder(downloadFolder)
-			.setMetadata(new Metadata.Builder().readFromFile(torrentFile).build())
+			.setMetadata(Metadata.Builder.from(torrentFile.toPath()).build())
 			.build();
 	}
 
@@ -154,8 +154,8 @@ public abstract class EndToEndDownload {
 
 		try {
 			LOGGER.info("Starting downloading");
-			LOGGER.debug("[CLIENT ONE] Directory: {}, Port: {}", downloadFolderOne.getAbsolutePath(), clientOne.getDownloadPort());
-			LOGGER.debug("[CLIENT TWO] Directory: {}, Port: {}", downloadFolderTwo.getAbsolutePath(), clientTwo.getDownloadPort());
+			LOGGER.debug("[CLIENT ONE] Directory: {}, Port: {}", downloadFolderOne.getAbsolutePath(), clientOne.getSettings().getAcceptingPort());
+			LOGGER.debug("[CLIENT TWO] Directory: {}, Port: {}", downloadFolderTwo.getAbsolutePath(), clientTwo.getSettings().getAcceptingPort());
 			Torrent torrentOne = createTorrent("GIMP ONE", clientOne, torrentFile, downloadFolderOne);
 			Torrent torrentTwo = createTorrent("GIMP TWO", clientTwo, torrentFile, downloadFolderTwo);
 
@@ -168,7 +168,7 @@ public abstract class EndToEndDownload {
 			);
 
 			LOGGER.info("Adding peer connect request to client.");
-			clientTwo.getPeerConnector().enqueuePeer(new PeerConnectInfo(torrentTwo, new InetSocketAddress("localhost", clientOne.getDownloadPort())));
+			clientTwo.getPeerConnector().enqueuePeer(new PeerConnectInfo(torrentTwo, new InetSocketAddress("localhost", clientOne.getSettings().getAcceptingPort())));
 
 			LOGGER.info("Waiting for Peers to become connected.");
 			await("Peers to connect").atMost(30, TimeUnit.SECONDS).until(() -> !torrentOne.getPeers().isEmpty() && !torrentTwo.getPeers().isEmpty());

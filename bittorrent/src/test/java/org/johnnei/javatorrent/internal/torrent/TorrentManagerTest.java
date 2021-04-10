@@ -56,13 +56,13 @@ public class TorrentManagerTest {
 		when(executorServiceMock.scheduleAtFixedRate(notNull(), eq(30L), eq(60L), eq(TimeUnit.SECONDS))).thenReturn(futureMock);
 		when(executorServiceMock.scheduleAtFixedRate(notNull(), eq(10L), eq(30L), eq(TimeUnit.SECONDS))).thenReturn(futureMock);
 
-		Metadata metadata = new Metadata.Builder()
-				.setHash(DummyEntity.createUniqueTorrentHash())
-				.build();
+		Metadata metadata = new Metadata.Builder(DummyEntity.createUniqueTorrentHash())
+			.withPieceSize(1)
+			.build();
 
-		Metadata metadataTwo = new Metadata.Builder()
-				.setHash(DummyEntity.createUniqueTorrentHash(metadata.getHash()))
-				.build();
+		Metadata metadataTwo = new Metadata.Builder(DummyEntity.createUniqueTorrentHash(metadata.getHash()))
+			.withPieceSize(1)
+			.build();
 
 		Torrent torrent = new Torrent.Builder()
 				.setName("Test")
@@ -118,13 +118,13 @@ public class TorrentManagerTest {
 		when(executorServiceMock.scheduleAtFixedRate(notNull(), eq(30L), eq(60L), eq(TimeUnit.SECONDS))).thenReturn(futureMock);
 		when(executorServiceMock.scheduleAtFixedRate(notNull(), eq(10L), eq(30L), eq(TimeUnit.SECONDS))).thenReturn(futureMock);
 
-		Metadata metadata = new Metadata.Builder()
-				.setHash(DummyEntity.createUniqueTorrentHash())
-				.build();
+		Metadata metadata = new Metadata.Builder(DummyEntity.createUniqueTorrentHash())
+			.withPieceSize(1)
+			.build();
 
-		Metadata metadataTwo = new Metadata.Builder()
-				.setHash(DummyEntity.createUniqueTorrentHash(metadata.getHash()))
-				.build();
+		Metadata metadataTwo = new Metadata.Builder(DummyEntity.createUniqueTorrentHash(metadata.getHash()))
+			.withPieceSize(1)
+			.build();
 
 		Torrent torrent = new Torrent.Builder()
 				.setName("Test")

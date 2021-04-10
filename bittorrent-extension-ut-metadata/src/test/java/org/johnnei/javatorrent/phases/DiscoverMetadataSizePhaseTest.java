@@ -1,6 +1,7 @@
 package org.johnnei.javatorrent.phases;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,7 +9,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.module.MetadataInformation;
@@ -21,8 +22,6 @@ import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.algos.choking.IChokingStrategy;
 import org.johnnei.javatorrent.torrent.peer.Peer;
 import org.johnnei.javatorrent.utils.StringUtils;
-import org.johnnei.junit.jupiter.Folder;
-import org.johnnei.junit.jupiter.TempFolderExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,32 +36,35 @@ import static org.mockito.Mockito.when;
 /**
  * Tests {@link DiscoverMetadataSizePhase}
  */
-@ExtendWith(TempFolderExtension.class)
 public class DiscoverMetadataSizePhaseTest {
 
-	private File metadataFile;
+	private Path metadataFile;
 	private Torrent torrentMock;
-	private Metadata metadataMock;
 	private TorrentClient torrentClientMock;
 
 	@BeforeEach
-	public void setUpTorrentClient(@Folder Path tmp) throws Exception {
-		metadataFile = new File(DiscoverMetadataSizePhase.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
+	public void setUpTorrentClient(@TempDir Path tmp) throws Exception {
+		metadataFile = Path.of(DiscoverMetadataSizePhase.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
 		torrentMock = mock(Torrent.class);
-		metadataMock = mock(Metadata.class);
+
+		Metadata metadata = new Metadata.Builder(new byte[]{
+			(byte) 0xc8, 0x36, (byte) 0x9f, 0x0b, (byte) 0xa4, (byte) 0xbf, 0x6c, (byte) 0xd8, 0x7f, (byte) 0xb1,
+			0x3b, 0x34, 0x37, 0x78, 0x2e, 0x2c, 0x78, 0x20, (byte) 0xbb, 0x38}
+		).build();
+
 		ExtensionModule extensionModuleMock = mock(ExtensionModule.class);
 		UTMetadataExtension metadataExtensionMock = mock(UTMetadataExtension.class);
 		torrentClientMock = mock(TorrentClient.class);
 
-		when(torrentMock.getMetadata()).thenReturn(metadataMock);
+		when(torrentMock.getMetadata()).thenReturn(metadata);
 		when(torrentClientMock.getModule(eq(ExtensionModule.class))).thenReturn(Optional.of(extensionModuleMock));
 		when(extensionModuleMock.getExtensionByName(eq("ut_metadata"))).thenReturn(Optional.of(metadataExtensionMock));
 		when(metadataExtensionMock.getTorrentFile(eq(torrentMock))).thenAnswer(inv -> metadataFile);
-		when(metadataExtensionMock.getDownloadFolder()).thenReturn(tmp.resolve("folder").toFile());
+		when(metadataExtensionMock.getDownloadFolder()).thenReturn(tmp.resolve("folder"));
 	}
 
 	@Test
-	public void testIsDone() throws Exception {
+	public void testIsDone() {
 		Peer peerMockOne = mock(Peer.class);
 		Peer peerMockTwo = mock(Peer.class);
 
@@ -76,7 +78,7 @@ public class DiscoverMetadataSizePhaseTest {
 	}
 
 	@Test
-	public void testIsDoneNoPeers() throws Exception {
+	public void testIsDoneNoPeers() {
 		when(torrentMock.getPeers()).thenReturn(Collections.emptyList());
 
 		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
@@ -85,17 +87,14 @@ public class DiscoverMetadataSizePhaseTest {
 	}
 
 	@Test
-	public void testProcess() throws Exception {
+	public void testProcess() {
 		// No interaction expected.
 		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.process();
 	}
 
 	@Test
-	public void testOnPhaseEnter() throws Exception {
-		when(metadataMock.getHash()).thenReturn(new byte[] {
-				(byte) 0xc8, 0x36, (byte) 0x9f, 0x0b, (byte) 0xa4, (byte) 0xbf, 0x6c, (byte) 0xd8,        0x7f, (byte) 0xb1,
-				       0x3b, 0x34,        0x37, 0x78,        0x2e,        0x2c, 0x78,        0x20, (byte) 0xbb,        0x38 });
+	public void testOnPhaseEnter() {
 
 		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
@@ -104,8 +103,8 @@ public class DiscoverMetadataSizePhaseTest {
 	}
 
 	@Test
-	public void testOnPhaseEnterMissingFile() throws Exception {
-		metadataFile = new File("this_file_should_never_exist_hopefully.torrent");
+	public void testOnPhaseEnterMissingFile() {
+		metadataFile = Path.of("this_file_should_never_exist_hopefully.torrent");
 
 		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
@@ -114,8 +113,10 @@ public class DiscoverMetadataSizePhaseTest {
 	}
 
 	@Test
-	public void testOnPhaseEnterMismatchedHash() throws Exception {
-		when(metadataMock.getHash()).thenReturn(new byte[0]);
+	public void testOnPhaseEnterMismatchedHash() {
+		when(torrentMock.getMetadata()).thenReturn(
+			new Metadata.Builder(new byte[20]).build()
+		);
 
 		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.onPhaseEnter();
@@ -124,10 +125,8 @@ public class DiscoverMetadataSizePhaseTest {
 	}
 
 	@Test
-	public void testOnPhaseExit(@Folder Path path) throws Exception {
-		metadataFile = path.resolve("metadata.torrent").toFile();
-
-		byte[] hash = DummyEntity.createUniqueTorrentHash();
+	public void testOnPhaseExit(@TempDir Path path) throws Exception {
+		metadataFile = path.resolve("metadata.torrent");
 
 		Peer peerMock = mock(Peer.class);
 
@@ -136,17 +135,14 @@ public class DiscoverMetadataSizePhaseTest {
 		when(torrentMock.getPeers()).thenReturn(Collections.singletonList(peerMock));
 		when(peerMock.getModuleInfo(eq(MetadataInformation.class))).thenReturn(Optional.of(info));
 
-		when(metadataMock.getHash()).thenReturn(hash);
-		when(metadataMock.getHashString()).thenReturn(StringUtils.byteArrayToString(hash));
-
 		DiscoverMetadataSizePhase cut = new DiscoverMetadataSizePhase(torrentClientMock, torrentMock);
 		cut.isDone();
 		cut.onPhaseExit();
 
-		verify(metadataMock).setFileSet(isA(MetadataFileSet.class));
+		verify(torrentMock).setMetadata(isA(Metadata.class));
 
-		assertTrue(metadataFile.exists(), String.format("Metadata file %s should have been created", metadataFile));
-		assertEquals(42, metadataFile.length(), "Incorrect metadata size");
+		assertTrue(Files.exists(metadataFile), String.format("Metadata file %s should have been created", metadataFile));
+		assertEquals(42L, Files.size(metadataFile), "Incorrect metadata size");
 	}
 
 	@Test

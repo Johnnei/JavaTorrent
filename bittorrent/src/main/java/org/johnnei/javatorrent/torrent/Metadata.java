@@ -1,24 +1,20 @@
 package org.johnnei.javatorrent.torrent;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-import org.johnnei.javatorrent.bittorrent.encoding.BencodedList;
-import org.johnnei.javatorrent.bittorrent.encoding.BencodedMap;
 import org.johnnei.javatorrent.bittorrent.encoding.Bencoding;
 import org.johnnei.javatorrent.bittorrent.encoding.IBencodedValue;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
-import org.johnnei.javatorrent.internal.network.ByteInputStream;
+import org.johnnei.javatorrent.internal.torrent.metadata.MetadataParser;
 import org.johnnei.javatorrent.network.InStream;
 import org.johnnei.javatorrent.torrent.fileset.FileEntry;
-import org.johnnei.javatorrent.utils.Argument;
 import org.johnnei.javatorrent.utils.StringUtils;
 
 /**
@@ -26,133 +22,38 @@ import org.johnnei.javatorrent.utils.StringUtils;
  */
 public class Metadata {
 
-	private static final String ERR_INCOMPLETE_INFO_ENTRY
-			= "Metadata file appears to be validly encoded but is missing critical information from the 'info' entry.";
+	private static final int METADATA_FILE_HASH_SIZE = 20;
 
-	private AbstractFileSet fileSet;
+	private static final int PIECE_HASH_SIZE = 20;
+
+	private final AbstractFileSet fileSet;
 
 	private final byte[] btihHash;
 
-	private List<FileEntry> fileEntries;
+	private final List<FileEntry> fileEntries;
 
-	private List<byte[]> pieceHashes;
+	private final List<byte[]> pieceHashes;
 
-	private long pieceSize;
+	private final long pieceSize;
 
-	private String name;
+	private final String name;
 
 	private Metadata(Builder builder) {
-		btihHash = Argument.requireNonNull(builder.btihHash, "info hash must be supplied.");
-		
-		if (builder.metadataStructure == null) {
-			fileEntries = Collections.emptyList();
-			pieceHashes = Collections.emptyList();
+		btihHash = builder.btihHash;
+		this.fileEntries = new ArrayList<>(builder.fileEntries);
+		this.pieceHashes = new ArrayList<>(builder.pieceHashes);
+
+		if (builder.name == null) {
+			this.name = String.format("magnet(%s)", StringUtils.byteArrayToString(btihHash));
 		} else {
-			parseMetadataStructure(builder.metadataStructure);
-		}
-	}
-
-	public void setFileSet(AbstractFileSet fileSet) {
-		if (this.fileSet != null) {
-			throw new IllegalStateException("Cannot replace the metadata fileset once set.");
+			this.name = builder.name;
 		}
 
-		this.fileSet = fileSet;
-	}
-
-	public void initializeMetadata(byte[] buffer) {
-		if (!fileEntries.isEmpty()) {
-			throw new IllegalStateException("Cannot re-initialize metadata.");
-		}
-
-		if (!Arrays.equals(btihHash, SHA1.hash(buffer))) {
-			throw new IllegalArgumentException("Data in buffer did not match the torrent hash");
-		}
-
-		BencodedMap metadataInfo = (BencodedMap) new Bencoding().decode(new InStream(buffer));
-		parseMetadataStructure(metadataInfo);
-	}
-
-	private void parseMetadataStructure(BencodedMap metadataInfo) {
-		fileEntries = new ArrayList<>();
-		pieceHashes = new ArrayList<>();
-
-		if (!isInfoDirectory(metadataInfo.asMap())) {
-			metadataInfo = (BencodedMap) metadataInfo.get("info").orElseThrow(() -> new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY));
-
-			if (!isInfoDirectory(metadataInfo.asMap())) {
-				throw new IllegalArgumentException(ERR_INCOMPLETE_INFO_ENTRY);
-			}
-		}
-
-		parseDictionary(metadataInfo);
-	}
-
-	private void parseDictionary(BencodedMap dictionary) {
-		dictionary.get("name").ifPresent(name -> this.name = name.asString());
-
-		// Because we got here the test in isInfoDirectory have passed, the size is available.
-		pieceSize = (int) dictionary.get("piece length").get().asLong();
-
-		Optional<IBencodedValue> filesEntry = dictionary.get("files");
-		if (filesEntry.isPresent()) {
-			// Multi-file torrent
-			List<IBencodedValue> files = filesEntry.get().asList();
-			long byteOffset = 0L;
-			for (IBencodedValue fileEntry : files) {
-				BencodedMap file = (BencodedMap) fileEntry;
-				long fileSize = file.get("length").get().asLong();
-				BencodedList fileStructure = (BencodedList) file.get("path").get();
-				String fileName = "";
-				if (fileStructure.size() > 1) {
-					for (int j = 0; j < fileStructure.size(); j++) {
-						fileName += "/" + fileStructure.get(j);
-					}
-				} else {
-					fileName = fileStructure.get(0).asString();
-				}
-				FileEntry info = new FileEntry(fileName, fileSize, byteOffset);
-				fileEntries.add(info);
-				byteOffset += fileSize;
-			}
-		} else {
-			// Single file torrent
-			String filename = dictionary.get("name").get().asString();
-			long fileSize = dictionary.get("length").get().asLong();
-			fileEntries.add(new FileEntry(filename, fileSize, 0));
-		}
-
-		byte[] hashBytes = dictionary.get("pieces").get().asBytes();
-		int pieceAmount = hashBytes.length / 20;
-		for (int index = 0; index < pieceAmount; index++) {
-			int hashOffset = index * 20;
-			byte[] sha1Hash = new byte[20];
-			System.arraycopy(hashBytes, hashOffset, sha1Hash, 0, sha1Hash.length);
-			pieceHashes.add(sha1Hash);
-		}
-	}
-
-	private boolean isInfoDirectory(Map<String, IBencodedValue> metadata) {
-		if (!metadata.containsKey("length") && !metadata.containsKey("files")) {
-			return false;
-		}
-
-		if (!metadata.containsKey("pieces")) {
-			return false;
-		}
-
-		if (!metadata.containsKey("piece length")) {
-			return false;
-		}
-
-		return true;
+		this.pieceSize = builder.pieceSize;
+		this.fileSet = builder.fileSet;
 	}
 
 	public String getName() {
-		if (name == null) {
-			return String.format("magnet(%s)", getHashString());
-		}
-
 		return name;
 	}
 
@@ -211,40 +112,82 @@ public class Metadata {
 
 	public static class Builder {
 
-		private final Bencoding bencoding;
+		private final byte[] btihHash;
 
-		private byte[] btihHash;
-		
-		private BencodedMap metadataStructure;
+		private final List<FileEntry> fileEntries;
 
-		public Builder() {
-			bencoding = new Bencoding();
+		private final List<byte[]> pieceHashes;
+
+		private AbstractFileSet fileSet;
+
+		private long pieceSize;
+
+		private String name;
+
+		public Builder(Metadata original) {
+			this.btihHash = original.btihHash;
+			this.fileEntries = original.fileEntries;
+			this.pieceHashes = original.pieceHashes;
+			this.fileSet = original.fileSet;
+			this.pieceSize = original.pieceSize;
+			this.name = original.name;
 		}
 
-		public Builder setHash(byte[] btihHash) {
+		public Builder(byte[] btihHash) {
+			if (btihHash.length != METADATA_FILE_HASH_SIZE) {
+				throw new IllegalArgumentException("Metadata file hash must be exactly " + METADATA_FILE_HASH_SIZE + " bytes");
+			}
 			this.btihHash = btihHash;
+			fileEntries = new LinkedList<>();
+			pieceHashes = new LinkedList<>();
+		}
+
+		public Builder withName(String name) {
+			this.name = name;
 			return this;
 		}
 
-		public Builder readFromFile(File metadataFile) throws IOException {
-			try (ByteInputStream in = new ByteInputStream(new FileInputStream(metadataFile))) {
-				byte[] buffer = new byte[(int) metadataFile.length()];
-				in.readFully(buffer);
-				readFromByteArray(buffer);
+		public Builder withFileEntry(FileEntry entry) {
+			this.fileEntries.add(entry);
+			return this;
+		}
+
+		public Builder withPieceHash(byte[] pieceHash) {
+			if (pieceHash.length != PIECE_HASH_SIZE) {
+				throw new IllegalArgumentException("Piece hash must be exactly " + PIECE_HASH_SIZE + " bytes");
 			}
 
+			this.pieceHashes.add(pieceHash);
 			return this;
 		}
 
-		public Builder readFromByteArray(byte[] buffer) {
-			btihHash = SHA1.hash(buffer);
-			metadataStructure = (BencodedMap) bencoding.decode(new InStream(buffer));
+		public Builder withPieceSize(int pieceSize) {
+			if (pieceSize <= 0) {
+				throw new IllegalArgumentException("Piece size must be > 0");
+			}
 
+			this.pieceSize = pieceSize;
 			return this;
 		}
-		
+
+		public Builder withFileSet(AbstractFileSet fileSet) {
+			this.fileSet = fileSet;
+			return this;
+		}
+
 		public Metadata build() {
 			return new Metadata(this);
+		}
+
+		public static Builder from(Path metadataFile) throws IOException {
+			byte[] metadataBytes = Files.readAllBytes(metadataFile);
+			Builder builder = new Builder(SHA1.hash(metadataBytes));
+
+			Bencoding bencoder = new Bencoding();
+			IBencodedValue metadataDictionary = bencoder.decode(new InStream(metadataBytes));
+			MetadataParser.readMetadata(builder, metadataDictionary);
+
+			return builder;
 		}
 
 	}

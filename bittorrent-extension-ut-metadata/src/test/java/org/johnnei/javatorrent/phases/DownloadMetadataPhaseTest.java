@@ -1,36 +1,26 @@
 package org.johnnei.javatorrent.phases;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 import org.johnnei.javatorrent.TorrentClient;
 import org.johnnei.javatorrent.bittorrent.encoding.SHA1;
 import org.johnnei.javatorrent.module.UTMetadataExtension;
 import org.johnnei.javatorrent.protocol.extension.ExtensionModule;
-import org.johnnei.javatorrent.protocol.extension.PeerExtensions;
 import org.johnnei.javatorrent.torrent.Metadata;
 import org.johnnei.javatorrent.torrent.MetadataFileSet;
 import org.johnnei.javatorrent.torrent.Torrent;
 import org.johnnei.javatorrent.torrent.TorrentFileSet;
-import org.johnnei.javatorrent.torrent.files.Block;
-import org.johnnei.javatorrent.torrent.files.BlockStatus;
-import org.johnnei.javatorrent.torrent.files.Piece;
-import org.johnnei.javatorrent.torrent.peer.Peer;
-import org.johnnei.javatorrent.torrent.peer.PeerDirection;
-import org.johnnei.javatorrent.ut.metadata.protocol.UTMetadata;
-import org.johnnei.junit.jupiter.Folder;
-import org.johnnei.junit.jupiter.TempFolderExtension;
 
-import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
@@ -41,7 +31,6 @@ import static org.mockito.Mockito.when;
 /**
  * Tests {@link DownloadMetadataPhase}
  */
-@ExtendWith(TempFolderExtension.class)
 public class DownloadMetadataPhaseTest {
 
 	private static final byte[] TORRENT_FILE_HASH = new byte[] {
@@ -51,15 +40,15 @@ public class DownloadMetadataPhaseTest {
 			0x2c,        0x78,        0x20, (byte) 0xbb,        0x38
 	};
 
-	private File metadataFile;
+	private Path metadataFile;
 	private Torrent torrentMock;
 	private Metadata metadataMock;
 	private TorrentClient torrentClientMock;
 
 	@BeforeEach
-	public void setUpTorrentClient(@Folder Path tmp) throws Exception {
+	public void setUpTorrentClient(@TempDir Path tmp) throws Exception {
 		if (metadataFile == null) {
-			metadataFile = new File(DiscoverMetadataSizePhase.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
+			metadataFile = Path.of(DiscoverMetadataSizePhase.class.getResource("gimp-2.8.16-setup-1.exe.torrent").toURI());
 		}
 		torrentMock = mock(Torrent.class);
 		metadataMock = mock(Metadata.class);
@@ -71,7 +60,7 @@ public class DownloadMetadataPhaseTest {
 		when(torrentClientMock.getModule(ExtensionModule.class)).thenReturn(Optional.of(extensionModuleMock));
 		when(extensionModuleMock.getExtensionByName("ut_metadata")).thenReturn(Optional.of(metadataExtensionMock));
 		when(metadataExtensionMock.getTorrentFile(torrentMock)).thenReturn(metadataFile);
-		when(metadataExtensionMock.getDownloadFolder()).thenReturn(tmp.resolve("folder").toFile());
+		when(metadataExtensionMock.getDownloadFolder()).thenReturn(tmp.resolve("folder"));
 	}
 
 	@Test
@@ -96,7 +85,7 @@ public class DownloadMetadataPhaseTest {
 	}
 
 	@Test
-	public void testOnPhaseExit() throws Exception {
+	public void testOnPhaseExit() {
 		when(torrentMock.isDownloadingMetadata()).thenReturn(true);
 		when(torrentMock.getDisplayName()).thenReturn("OnPhaseExit");
 
@@ -106,11 +95,10 @@ public class DownloadMetadataPhaseTest {
 		DownloadMetadataPhase cut = new DownloadMetadataPhase(torrentClientMock, torrentMock);
 		cut.onPhaseExit();
 
-		ArgumentCaptor<byte[]> bufferCapture = ArgumentCaptor.forClass(byte[].class);
+		ArgumentCaptor<Metadata> metadataCaptor = ArgumentCaptor.forClass(Metadata.class);
 		verify(torrentMock).setFileSet(isA(TorrentFileSet.class));
-		verify(metadataMock).initializeMetadata(bufferCapture.capture());
-
-		assertArrayEquals(TORRENT_FILE_HASH, SHA1.hash(bufferCapture.getValue()), "Incorrect data has been submitted");
+		verify(torrentMock).setMetadata(metadataCaptor.capture());
+		assertNotNull(metadataCaptor.getValue().getFileSet().orElse(null));
 	}
 
 	@Test
@@ -127,8 +115,8 @@ public class DownloadMetadataPhaseTest {
 	}
 
 	@Test
-	public void testOnPhaseEnterMissingFile(@Folder Path tmp) throws Exception {
-		metadataFile = new File("this_file_should_not_exist.torrent");
+	public void testOnPhaseEnterMissingFile(@TempDir Path tmp) throws Exception {
+		metadataFile = Path.of("this_file_should_not_exist.torrent");
 		setUpTorrentClient(tmp);
 
 		when(metadataMock.getFileSet()).thenReturn(Optional.empty());

@@ -278,6 +278,14 @@ public class Torrent {
 		return metadata;
 	}
 
+	public void setMetadata(Metadata metadata) {
+		if (Arrays.equals(this.metadata.getHash(), metadata.getHash())) {
+			this.metadata = metadata;
+		} else {
+			throw new IllegalArgumentException("New metadata must have same torrent hash");
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("Torrent[hash=%s]", metadata.getHashString());

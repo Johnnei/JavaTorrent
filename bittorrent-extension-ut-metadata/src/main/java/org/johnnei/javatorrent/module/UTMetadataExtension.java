@@ -1,6 +1,6 @@
 package org.johnnei.javatorrent.module;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import org.johnnei.javatorrent.bittorrent.encoding.BencodedInteger;
@@ -26,16 +26,16 @@ public class UTMetadataExtension implements IExtension {
 
 	private Bencoding bencoding = new Bencoding();
 
-	private File torrentFileFolder;
+	private Path torrentFileFolder;
 
-	private File downloadFolder;
+	private Path downloadFolder;
 
 	/**
 	 * Creates a new instance of the UT Metadata extension.
 	 * @param torrentFileFolder The folder for the torrent to download the torrent file into.
 	 * @param downloadFolder The folder for the torrent to download the data into.
 	 */
-	public UTMetadataExtension(File torrentFileFolder, File downloadFolder) {
+	public UTMetadataExtension(Path torrentFileFolder, Path downloadFolder) {
 		this.torrentFileFolder = Argument.requireNonNull(torrentFileFolder, "Torrent file folder must be configured.");
 		this.downloadFolder = Argument.requireNonNull(downloadFolder, "Download folder must be configured.");
 	}
@@ -95,7 +95,7 @@ public class UTMetadataExtension implements IExtension {
 	public void processHandshakeMetadata(Peer peer, BencodedMap dictionary, BencodedMap mEntry) {
 		dictionary.get("metadata_size").ifPresent(metadataSize -> {
 			MetadataInformation metadataInformation = new MetadataInformation();
-			metadataInformation.setMetadataSize((int) metadataSize.asLong());
+			metadataInformation.setMetadataSize(metadataSize.asLong());
 			peer.addModuleInfo(metadataInformation);
 		});
 	}
@@ -105,15 +105,17 @@ public class UTMetadataExtension implements IExtension {
 	 * @param torrent The torrent for which the metadata file location is requested.
 	 * @return The metadata file location for the given torrent.
 	 */
-	public File getTorrentFile(Torrent torrent) {
-		return new File(torrentFileFolder, String.format("%s.torrent", torrent.getMetadata().getHashString().toLowerCase()));
+	public Path getTorrentFile(Torrent torrent) {
+		return torrentFileFolder.resolve(
+			String.format("%s.torrent", torrent.getMetadata().getHashString().toLowerCase())
+		);
 	}
 
 	/**
 	 * Returns the root of the download folder.
 	 * @return The download folder.
 	 */
-	public File getDownloadFolder() {
+	public Path getDownloadFolder() {
 		return downloadFolder;
 	}
 

@@ -50,7 +50,7 @@ public class AnnounceRequestTest {
 		OutStream outStream = new OutStream();
 
 		Torrent torrent = new Torrent.Builder()
-				.setMetadata(new Metadata.Builder().setHash(DummyEntity.createRandomBytes(20)).build())
+				.setMetadata(new Metadata.Builder(DummyEntity.createRandomBytes(20)).build())
 				.setName("Dummy Torrent")
 				.build();
 
@@ -97,7 +97,7 @@ public class AnnounceRequestTest {
 		when(torrentFileSetMock.countRemainingBytes()).thenReturn(3L);
 
 		Torrent torrent = new Torrent.Builder()
-				.setMetadata(new Metadata.Builder().setHash(DummyEntity.createUniqueTorrentHash()).build())
+				.setMetadata(new Metadata.Builder(DummyEntity.createUniqueTorrentHash()).build())
 				.setName("Dummy Torrent")
 				.build();
 		torrent.setFileSet(torrentFileSetMock);

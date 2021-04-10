@@ -66,7 +66,7 @@ public class TorrentTest {
 		Torrent notEqual = DummyEntity.createUniqueTorrent(base);
 		Torrent equal = new Torrent.Builder()
 				.setName("Torrent")
-				.setMetadata(new Metadata.Builder().setHash(Arrays.copyOf(base.getMetadata().getHash(), 20)).build())
+				.setMetadata(new Metadata.Builder(Arrays.copyOf(base.getMetadata().getHash(), 20)).withPieceSize(1).build())
 				.build();
 
 		TestUtils.assertEqualityMethods(base, equal, notEqual);

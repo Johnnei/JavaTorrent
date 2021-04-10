@@ -88,7 +88,7 @@ public class MagnetLink {
 					torrentBuilder.setName(hashString);
 				}
 
-				torrentBuilder.setMetadata(new Metadata.Builder().setHash(base.getExtractFunction().apply(hashString.toUpperCase())).build());
+				torrentBuilder.setMetadata(new Metadata.Builder(base.getExtractFunction().apply(hashString.toUpperCase())).build());
 				return;
 			}
 		}

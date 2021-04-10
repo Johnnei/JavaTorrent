@@ -1,6 +1,8 @@
 package org.johnnei.javatorrent.torrent;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 import org.johnnei.javatorrent.internal.torrent.MetadataFileSetRequestFactory;
@@ -13,28 +15,32 @@ public class MetadataFileSet extends AbstractFileSet {
 
 	public static final int BLOCK_SIZE = 16384;
 
-	private MetadataFileSetRequestFactory requestFactory;
+	private final MetadataFileSetRequestFactory requestFactory;
 
 	/**
 	 * The size of the metadata file in total
 	 */
-	private int fileSize;
+	private final int fileSize;
 
-	public MetadataFileSet(Torrent torrent, File metadataFile) {
+	public MetadataFileSet(byte[] btihHash, Path metadataFile) {
 		super(BLOCK_SIZE);
-		Argument.requireNonNull(torrent, "Torrent cannot be null.");
+		Argument.requireNonNull(btihHash, "Hash cannot be null.");
 		Argument.requireNonNull(metadataFile, "Metadata file cannot be null.");
-		if (!metadataFile.exists()) {
+		if (Files.notExists(metadataFile)) {
 			throw new IllegalArgumentException("Metadata file must exist.");
 		}
 
 		requestFactory = new MetadataFileSetRequestFactory();
 
-		this.fileSize = (int) metadataFile.length();
+		try {
+			this.fileSize = (int) Files.size(metadataFile);
+		} catch (IOException e) {
+			throw new TorrentException("Failed to read metadata size: " + metadataFile.toAbsolutePath(), e);
+		}
 		this.fileInfos = new ArrayList<>();
-		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile, 1));
+		this.fileInfos.add(new FileInfo(fileSize, 0, metadataFile.toFile(), 1));
 		this.pieces = new ArrayList<>(1);
-		this.pieces.add(new Piece(this, torrent.getMetadata().getHash(), 0, fileSize, BLOCK_SIZE));
+		this.pieces.add(new Piece(this, btihHash, 0, fileSize, BLOCK_SIZE));
 	}
 
 	@Override
