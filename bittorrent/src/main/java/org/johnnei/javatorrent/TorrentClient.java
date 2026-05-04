@@ -279,6 +279,13 @@ public class TorrentClient {
 	}
 
 	/**
+	 * @return The currently known list of {@link Torrent}s
+	 */
+	public Collection<Torrent> getTorrents() {
+		return this.torrentManager.getTorrents();
+	}
+
+	/**
 	 * Gets the module instance if it is registered to this Torrent Client.
 	 * @param type The module class.
 	 * @param <T> The module type.
