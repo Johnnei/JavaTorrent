@@ -4,21 +4,30 @@ stages:
     - qa
     - deploy
 
-image: registry.johnnei.org:443/docker-images/maven:lts
 
-variables:
-  MAVEN_OPTS: -Dmaven.repo.local=/cache/.repository
+
+.maven:
+  tags:
+    - docker
+    - aarch64
+  image: registry.johnnei.org:443/docker-images/maven:jdk-17
+  variables:
+    MAVEN_OPTS: -Dmaven.repo.local=$CI_BUILDS_DIR/.cache/.m2/repository
+  cache:
+    key: m2
+    paths:
+      - .cache/.m2/**
 
 # Compile the code, must succeed before we start testing.
 build:
-    tags: [ "docker" ]
+    extends: [ .maven ]
     stage: build
     script: "mvn -B clean compile"
 
 # Run the quick test suite (Unit tests mostly)
 quicktests:
+    extends: [ .maven ]
     stage: test
-    tags: [ "docker" ]
     script: "mvn -B test --fail-at-end"
     artifacts:
       expire_in: 1 week
@@ -30,8 +39,8 @@ quicktests:
 
 # Run the integration test suite (Unit tests which don't use mocks and commonly exclude mock usages)
 integration-tests:
+    extends: [ .maven ]
     stage: test
-    tags: [ "docker" ]
     script: "mvn -B verify --fail-at-end -DskipUTs=true"
     artifacts:
       when: always
@@ -45,8 +54,8 @@ integration-tests:
 
 # Run a sonar analysis.
 sonarqube.johnnei.org:
+    extends: [ .maven ]
     stage: qa
-    tags: [ "docker" ]
     script: "mvn -B compile test-compile sonar:sonar -Dsonar.host.url=https://sonarqube.johnnei.org -Dsonar.login=$SONAR_TOKEN"
     only: ["develop"]
     dependencies:
@@ -74,7 +83,7 @@ site:
 pages:
     stage: deploy
     image: ruby:2.7.2
-    tags: [ "docker" ]
+    tags: [ "docker", "aarch64" ]
     dependencies: []
     needs: []
     script:
@@ -87,13 +96,13 @@ pages:
         - public
 
 test deployment:
+  extends: [ .maven ]
   stage: test
   script:
     - "echo $GPG_PRIVATE_KEY | base64 -d | gpg --import --batch"
     - "mkdir -p ~/.m2"
     - "cp $OSSRH_SETTINGS ~/.m2/settings.xml"
     - "mvn -B -Prelease -pl !bittorrent-integration-tests clean verify -DskipTests -Dgpg.passphrase=$GPG_PASS"
-  tags: [ "docker" ]
   dependencies: [ ]
   variables:
     MAVEN_OPTS: ""
@@ -105,6 +114,7 @@ test deployment:
   only: [ "/^release\\/.*$/" ]
 
 deploy to maven central:
+  extends: [ .maven ]
   stage: deploy
   script:
     - "echo $GPG_PRIVATE_KEY | base64 -d | gpg --import --batch"
@@ -122,6 +132,5 @@ deploy to maven central:
       - "**/target/*.jar"
       - "**/target/*.jar.asc"
   when: manual
-  tags: [ "docker" ]
   only:
     - tags

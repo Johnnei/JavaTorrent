@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.johnnei.parent</groupId>
     <artifactId>base</artifactId>
-    <version>11-2</version>
+    <version>17.1</version>
   </parent>
 
   <groupId>org.johnnei</groupId>
